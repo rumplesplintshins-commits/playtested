@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,7 +11,6 @@ type ApprovedGame = {
   description: string;
   game_link: string;
   image_url: string | null;
-  price: string;
   ai_type: string;
   ai_areas: string[];
 };
@@ -30,7 +28,7 @@ export default function ApprovedSubmissions() {
       const { data, error: queryError } = await supabase
         .from("game_submissions")
         .select(
-          "id, title, developer_name, genre, description, game_link, image_url, price, ai_type, ai_areas"
+          "id, title, developer_name, genre, description, game_link, image_url, ai_type, ai_areas"
         )
         .eq("status", "Approved")
         .order("submitted_at", { ascending: false });
@@ -41,7 +39,7 @@ export default function ApprovedSubmissions() {
         console.error("Could not load approved games:", queryError);
         setError(true);
       } else {
-        setGames(data ?? []);
+        setGames((data ?? []) as ApprovedGame[]);
       }
 
       setLoading(false);
@@ -57,7 +55,9 @@ export default function ApprovedSubmissions() {
   if (loading) {
     return (
       <section className="mx-auto max-w-7xl px-6 py-10">
-        <p className="text-sm text-zinc-400">Loading approved submissions...</p>
+        <p className="text-sm text-zinc-400">
+          Loading approved submissions...
+        </p>
       </section>
     );
   }
@@ -133,7 +133,9 @@ export default function ApprovedSubmissions() {
                 <p className="text-xs uppercase tracking-wider text-zinc-500">
                   Developer-declared AI involvement
                 </p>
-                <p className="mt-1 text-sm text-zinc-200">{game.ai_type}</p>
+                <p className="mt-1 text-sm text-zinc-200">
+                  {game.ai_type}
+                </p>
 
                 {game.ai_areas?.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -149,27 +151,19 @@ export default function ApprovedSubmissions() {
                 )}
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-zinc-200">
-                  {game.price
-  ? /^\d+(\.\d{1,2})?$/.test(game.price.trim())
-    ? `£${Number(game.price).toFixed(2)}`
-    : game.price
-  : "Price not specified"}
-                </span>
-
-                {game.game_link &&
-                  /^https?:\/\//i.test(game.game_link) && (
+              {game.game_link &&
+                /^https?:\/\//i.test(game.game_link) && (
+                  <div className="mt-5 border-t border-zinc-800 pt-4">
                     <a
                       href={game.game_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-lg bg-[#77f29b] px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-300"
+                      className="inline-block rounded-lg bg-[#77f29b] px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-300"
                     >
                       View game
                     </a>
-                  )}
-              </div>
+                  </div>
+                )}
             </div>
           </article>
         ))}

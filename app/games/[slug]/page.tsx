@@ -17,9 +17,10 @@ return (
 <SiteHeader />
 <section className="mx-auto max-w-6xl px-6 py-20">
 <h1 className="text-3xl font-bold">Game not found</h1>
-<a href="/store" className="mt-6 inline-block text-[#77f29b]">
-Back to Store
+<a href="/" className="mt-6 inline-block text-[#77f29b]">
+  Back to Game Discovery
 </a>
+
 </section>
 </main>
 );

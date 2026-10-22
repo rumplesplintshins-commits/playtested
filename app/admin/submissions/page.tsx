@@ -1,15 +1,35 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase";
+import SteamImporter from "./SteamImporter";
+import ImportedSteamCatalogue from "./ImportedSteamCatalogue";
 
 type SubmissionStatus =
   | "Pending Review"
   | "Approved"
   | "Rejected"
   | "Needs More Information";
+
+type SubmissionFilter =
+  | "All"
+  | "Needs attention"
+  | "Approved with missing information"
+  | SubmissionStatus;
+
+type ClaimStatus =
+  | "Pending"
+  | "Approved"
+  | "Rejected"
+  | "Needs More Information";
+
+type ClaimFilter =
+  | "All"
+  | "Needs attention"
+  | ClaimStatus;
+
+type ReviewTab = "submissions" | "claims";
 
 type AIStatus =
   | "Not Reviewed"
@@ -29,13 +49,31 @@ type Submission = {
   description: string;
   gameLink: string;
   imageUrl: string;
-  price: string;
   aiType: string;
   aiAreas: string[];
   aiExplanation: string;
   evidenceLink: string;
   submittedAt: string;
   status: SubmissionStatus;
+  reviewReason: string;
+};
+
+type GameClaim = {
+  id: string;
+  claimantId: string;
+  importedGameId: string | null;
+  approvedGameId: string | null;
+  submissionId: string | null;
+  gameTitle: string;
+  developerName: string;
+  relationship: string;
+  claimReason: string;
+  evidenceUrl: string;
+  status: ClaimStatus;
+  adminNotes: string;
+  createdAt: string;
+  reviewedAt: string;
+  reviewedBy: string;
 };
 
 type Verification = {
@@ -74,8 +112,15 @@ const emptyVerification: Verification = {
   limitations: "",
 };
 
-const statuses: SubmissionStatus[] = [
+const submissionStatuses: SubmissionStatus[] = [
   "Pending Review",
+  "Approved",
+  "Rejected",
+  "Needs More Information",
+];
+
+const claimStatuses: ClaimStatus[] = [
+  "Pending",
   "Approved",
   "Rejected",
   "Needs More Information",
@@ -100,7 +145,10 @@ const labelClass =
   "mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500";
 
 const panelClass =
-  "rounded-xl border border-zinc-800 bg-zinc-900/60 p-5";
+  "rounded-xl border border-zinc-800 bg-zinc-900/60";
+
+const inputClass =
+  "w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm text-zinc-100 outline-none focus:border-emerald-400";
 
 const checklistItems = [
   {
@@ -126,16 +174,113 @@ const checklistItems = [
   {
     field: "bugs_recorded",
     label: "Bugs and issues recorded",
-    description: "Documented observed defects or confirmed no issues during the test.",
+    description:
+      "Documented observed defects or explicitly recorded that no issues were observed.",
   },
   {
     field: "performance_checked",
     label: "Performance checked",
-    description: "Considered performance on the hardware and settings tested.",
+    description:
+      "Considered performance on the hardware and settings tested.",
   },
 ] as const;
 
 type ChecklistField = (typeof checklistItems)[number]["field"];
+
+function getMissingInformation(submission: Submission): string[] {
+  const missing: string[] = [];
+
+  if (!submission.gameLink.trim()) {
+    missing.push("Game or store link");
+  }
+
+  if (!submission.description.trim()) {
+    missing.push("Game description");
+  }
+
+  if (!submission.aiExplanation.trim()) {
+    missing.push("AI-use explanation");
+  }
+
+  if (!submission.evidenceLink.trim()) {
+    missing.push("Supporting evidence link");
+  }
+
+  if (!submission.aiType.trim()) {
+    missing.push("AI classification");
+  }
+
+  return missing;
+}
+
+function formatDate(value: string): string {
+  if (!value) return "Date not recorded";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date not recorded";
+  }
+
+  return date.toLocaleString();
+}
+
+function statusClasses(status: string): string {
+  if (status === "Approved") {
+    return "border-emerald-400/30 bg-emerald-400/10 text-emerald-300";
+  }
+
+  if (status === "Rejected") {
+    return "border-red-400/30 bg-red-400/10 text-red-300";
+  }
+
+  if (
+    status === "Needs More Information" ||
+    status === "Pending" ||
+    status === "Pending Review"
+  ) {
+    return "border-amber-400/30 bg-amber-400/10 text-amber-200";
+  }
+
+  return "border-zinc-700 bg-zinc-800 text-zinc-300";
+}
+
+function CollapsibleSection({
+  title,
+  description,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  description?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-xl border border-zinc-800 bg-zinc-900/40"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
+        <div>
+          <h3 className="font-semibold text-zinc-100">{title}</h3>
+
+          {description && (
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <span className="shrink-0 text-lg text-zinc-500 transition group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+
+      <div className="border-t border-zinc-800 p-5">{children}</div>
+    </details>
+  );
+}
 
 function ReadinessItem({
   complete,
@@ -157,6 +302,7 @@ function ReadinessItem({
       >
         {complete ? "✓" : "!"}
       </span>
+
       <div>
         <p className="text-sm font-medium text-zinc-200">{title}</p>
         <p className="mt-1 text-xs leading-5 text-zinc-500">{detail}</p>
@@ -166,21 +312,81 @@ function ReadinessItem({
 }
 
 export default function AdminSubmissionsPage() {
+  const [reviewTab, setReviewTab] =
+    useState<ReviewTab>("submissions");
+
+  const [catalogueOpen, setCatalogueOpen] = useState(false);
+
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [claims, setClaims] = useState<GameClaim[]>([]);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"All" | SubmissionStatus>("All");
+  const [selectedClaimId, setSelectedClaimId] =
+    useState<string | null>(null);
+
+  const [filter, setFilter] =
+    useState<SubmissionFilter>("Needs attention");
+
+  const [claimFilter, setClaimFilter] =
+    useState<ClaimFilter>("Needs attention");
+
   const [loaded, setLoaded] = useState(false);
+  const [claimsLoaded, setClaimsLoaded] = useState(false);
+
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
   const [pageError, setPageError] = useState("");
+  const [claimError, setClaimError] = useState("");
+  const [claimMessage, setClaimMessage] = useState("");
+
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingClaimId, setSavingClaimId] =
+    useState<string | null>(null);
+
+  const [draftStatus, setDraftStatus] =
+    useState<SubmissionStatus>("Pending Review");
+
+  const [reviewReasonDraft, setReviewReasonDraft] = useState("");
+
+  const [claimStatusDraft, setClaimStatusDraft] =
+    useState<ClaimStatus>("Pending");
+
+  const [claimAdminNotesDraft, setClaimAdminNotesDraft] =
+    useState("");
 
   const [verification, setVerification] =
     useState<Verification>(emptyVerification);
-  const [verificationLoaded, setVerificationLoaded] = useState(false);
-  const [verificationSaving, setVerificationSaving] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState("");
-  const [verificationError, setVerificationError] = useState("");
+
+  const [verificationLoaded, setVerificationLoaded] =
+    useState(false);
+
+  const [verificationSaving, setVerificationSaving] =
+    useState(false);
+
+  const [verificationMessage, setVerificationMessage] =
+    useState("");
+
+  const [verificationError, setVerificationError] =
+    useState("");
+
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillResult, setBackfillResult] = useState("");
+  const [backfillError, setBackfillError] = useState("");
+
+  const selectedSubmission =
+    submissions.find((submission) => submission.id === selectedId) ??
+    null;
+
+  const selectedClaim =
+    claims.find((claim) => claim.id === selectedClaimId) ?? null;
+
+  const draftMissingInformation = selectedSubmission
+    ? getMissingInformation({
+        ...selectedSubmission,
+        status: draftStatus,
+      })
+    : [];
 
   useEffect(() => {
     let mounted = true;
@@ -224,7 +430,6 @@ export default function AdminSubmissionsPage() {
 
     async function loadSubmissions() {
       setLoaded(false);
-      setPageError("");
 
       const { data, error } = await supabase
         .from("game_submissions")
@@ -235,37 +440,51 @@ export default function AdminSubmissionsPage() {
 
       if (error) {
         console.error("Could not load submissions:", error);
+
         setPageError(
           "Could not load submissions from the database. Check the database permissions and try refreshing."
         );
+
         setLoaded(true);
         return;
       }
 
       const mapped: Submission[] = (data ?? []).map((row) => ({
         id: row.id,
-        title: row.title,
-        developer: row.developer_name,
-        genre: row.genre,
-        description: row.description,
+        title: row.title ?? "",
+        developer: row.developer_name ?? "",
+        genre: row.genre ?? "",
+        description: row.description ?? "",
         gameLink: row.game_link ?? "",
         imageUrl: row.image_url ?? "",
-        price: row.price ?? "",
-        aiType: row.ai_type,
+        aiType: row.ai_type ?? "",
         aiAreas: row.ai_areas ?? [],
         aiExplanation: row.ai_explanation ?? "",
         evidenceLink: row.evidence_link ?? "",
-        submittedAt: row.submitted_at,
+        submittedAt: row.submitted_at ?? "",
         status: row.status as SubmissionStatus,
+        reviewReason: row.review_reason ?? "",
       }));
 
       setSubmissions(mapped);
+
       setSelectedId((currentId) => {
-        if (currentId && mapped.some((item) => item.id === currentId)) {
+        if (
+          currentId &&
+          mapped.some((submission) => submission.id === currentId)
+        ) {
           return currentId;
         }
-        return mapped[0]?.id ?? null;
+
+        const needsAttention = mapped.find(
+          (submission) =>
+            submission.status === "Pending Review" ||
+            submission.status === "Needs More Information"
+        );
+
+        return needsAttention?.id ?? mapped[0]?.id ?? null;
       });
+
       setLoaded(true);
     }
 
@@ -275,6 +494,231 @@ export default function AdminSubmissionsPage() {
       mounted = false;
     };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let mounted = true;
+    const supabase = createClient();
+
+    async function loadClaims() {
+      setClaimsLoaded(false);
+      setClaimError("");
+
+      const { data: claimRows, error } = await supabase
+        .from("game_claims")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!mounted) return;
+
+      if (error) {
+        console.error("Could not load game claims:", error);
+        setClaimError(
+          `Could not load developer claims: ${error.message}`
+        );
+        setClaimsLoaded(true);
+        return;
+      }
+
+      const rows = claimRows ?? [];
+
+      const importedIds = rows
+        .map((row) => row.imported_game_id)
+        .filter(Boolean) as string[];
+
+      const approvedIds = rows
+        .map((row) => row.approved_game_id)
+        .filter(Boolean) as string[];
+
+      const submissionIds = rows
+        .map((row) => row.submission_id)
+        .filter(Boolean) as string[];
+
+      let importedGames: {
+        id: string;
+        title: string;
+        developer_name: string | null;
+      }[] = [];
+
+      let approvedGames: {
+        id: string;
+        title: string | null;
+        developer_name: string | null;
+      }[] = [];
+
+      let submittedGames: {
+        id: string;
+        title: string;
+        developer_name: string;
+      }[] = [];
+
+      if (importedIds.length > 0) {
+        const { data, error: importedError } = await supabase
+          .from("imported_games")
+          .select("id, title, developer_name")
+          .in("id", importedIds);
+
+        if (importedError) {
+          console.error(
+            "Could not load imported claim games:",
+            importedError
+          );
+        } else {
+          importedGames = data ?? [];
+        }
+      }
+
+      if (approvedIds.length > 0) {
+        const { data, error: approvedError } = await supabase
+          .from("approved_games")
+          .select("id, title, developer_name")
+          .in("id", approvedIds);
+
+        if (approvedError) {
+          console.error(
+            "Could not load approved claim games:",
+            approvedError
+          );
+        } else {
+          approvedGames = data ?? [];
+        }
+      }
+
+      if (submissionIds.length > 0) {
+        const { data, error: submissionError } = await supabase
+          .from("game_submissions")
+          .select("id, title, developer_name")
+          .in("id", submissionIds);
+
+        if (submissionError) {
+          console.error(
+            "Could not load submission claim games:",
+            submissionError
+          );
+        } else {
+          submittedGames = data ?? [];
+        }
+      }
+
+      if (!mounted) return;
+
+      const mappedClaims: GameClaim[] = rows.map((row) => {
+        let gameTitle = "Unknown game";
+        let developerName = "Developer not recorded";
+
+        if (row.imported_game_id) {
+          const game = importedGames.find(
+            (item) => item.id === row.imported_game_id
+          );
+
+          if (game) {
+            gameTitle = game.title;
+            developerName =
+              game.developer_name ?? "Developer not recorded";
+          }
+        } else if (row.approved_game_id) {
+          const game = approvedGames.find(
+            (item) => item.id === row.approved_game_id
+          );
+
+          if (game) {
+            gameTitle = game.title ?? "Unknown game";
+            developerName =
+              game.developer_name ?? "Developer not recorded";
+          }
+        } else if (row.submission_id) {
+          const game = submittedGames.find(
+            (item) => item.id === row.submission_id
+          );
+
+          if (game) {
+            gameTitle = game.title;
+            developerName =
+              game.developer_name ?? "Developer not recorded";
+          }
+        }
+
+        return {
+          id: row.id,
+          claimantId: row.claimant_id,
+          importedGameId: row.imported_game_id ?? null,
+          approvedGameId: row.approved_game_id ?? null,
+          submissionId: row.submission_id ?? null,
+          gameTitle,
+          developerName,
+          relationship: row.relationship ?? "",
+          claimReason: row.claim_reason ?? "",
+          evidenceUrl: row.evidence_url ?? "",
+          status: row.status as ClaimStatus,
+          adminNotes: row.admin_notes ?? "",
+          createdAt: row.created_at ?? "",
+          reviewedAt: row.reviewed_at ?? "",
+          reviewedBy: row.reviewed_by ?? "",
+        };
+      });
+
+      setClaims(mappedClaims);
+
+      setSelectedClaimId((currentId) => {
+        if (
+          currentId &&
+          mappedClaims.some((claim) => claim.id === currentId)
+        ) {
+          return currentId;
+        }
+
+        const needsAttention = mappedClaims.find(
+          (claim) =>
+            claim.status === "Pending" ||
+            claim.status === "Needs More Information"
+        );
+
+        return needsAttention?.id ?? mappedClaims[0]?.id ?? null;
+      });
+
+      setClaimsLoaded(true);
+    }
+
+    loadClaims();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!selectedSubmission) {
+      setDraftStatus("Pending Review");
+      setReviewReasonDraft("");
+      return;
+    }
+
+    setDraftStatus(selectedSubmission.status);
+    setReviewReasonDraft(selectedSubmission.reviewReason);
+    setPageError("");
+  }, [
+    selectedSubmission?.id,
+    selectedSubmission?.status,
+    selectedSubmission?.reviewReason,
+  ]);
+
+  useEffect(() => {
+    if (!selectedClaim) {
+      setClaimStatusDraft("Pending");
+      setClaimAdminNotesDraft("");
+      return;
+    }
+
+    setClaimStatusDraft(selectedClaim.status);
+    setClaimAdminNotesDraft(selectedClaim.adminNotes);
+    setClaimError("");
+    setClaimMessage("");
+  }, [
+    selectedClaim?.id,
+    selectedClaim?.status,
+    selectedClaim?.adminNotes,
+  ]);
 
   useEffect(() => {
     if (!isAdmin || !selectedId) {
@@ -303,16 +747,20 @@ export default function AdminSubmissionsPage() {
 
       if (error) {
         console.error("Could not load verification:", error);
+
         setVerificationError(
           "Could not load verification data. Check that the checklist columns exist and admin permissions are correct."
         );
+
         setVerification(emptyVerification);
       } else if (data) {
         setVerification({
           ai_status: data.ai_status as AIStatus,
           quality_status: data.quality_status as QualityStatus,
           quality_score:
-            data.quality_score == null ? "" : String(data.quality_score),
+            data.quality_score == null
+              ? ""
+              : String(data.quality_score),
           public_summary: data.public_summary ?? "",
           evidence_summary: data.evidence_summary ?? "",
           reviewer_notes: data.reviewer_notes ?? "",
@@ -320,9 +768,11 @@ export default function AdminSubmissionsPage() {
           ai_claims_checked: data.ai_claims_checked ?? false,
           evidence_checked: data.evidence_checked ?? false,
           game_launched: data.game_launched ?? false,
-          core_gameplay_tested: data.core_gameplay_tested ?? false,
+          core_gameplay_tested:
+            data.core_gameplay_tested ?? false,
           bugs_recorded: data.bugs_recorded ?? false,
-          performance_checked: data.performance_checked ?? false,
+          performance_checked:
+            data.performance_checked ?? false,
           testing_notes: data.testing_notes ?? "",
           limitations: data.limitations ?? "",
         });
@@ -340,47 +790,231 @@ export default function AdminSubmissionsPage() {
     };
   }, [isAdmin, selectedId]);
 
-  async function updateStatus(id: string, status: SubmissionStatus) {
+  async function updateStatus(
+    id: string,
+    status: SubmissionStatus,
+    reason: string
+  ) {
+    const requiresReason =
+      status === "Rejected" ||
+      status === "Needs More Information";
+
+    if (requiresReason && !reason.trim()) {
+      setPageError(
+        status === "Rejected"
+          ? "Enter a reason before rejecting this submission."
+          : "Explain what information is needed before saving this decision."
+      );
+
+      return;
+    }
+
     setPageError("");
     setSavingId(id);
 
     const supabase = createClient();
+    const savedReason = requiresReason ? reason.trim() : "";
 
     const { error } = await supabase
       .from("game_submissions")
-      .update({ status })
+      .update({
+        status,
+        review_reason: savedReason || null,
+      })
       .eq("id", id);
 
     setSavingId(null);
 
     if (error) {
       console.error("Could not update submission:", error);
+
       setPageError(
-        "The status could not be saved. Check your admin database permissions and try again."
+        "The decision could not be saved. Check your admin database permissions and try again."
       );
+
       return;
     }
 
     setSubmissions((current) =>
       current.map((submission) =>
-        submission.id === id ? { ...submission, status } : submission
+        submission.id === id
+          ? {
+              ...submission,
+              status,
+              reviewReason: savedReason,
+            }
+          : submission
       )
     );
 
+    setDraftStatus(status);
+    setReviewReasonDraft(savedReason);
     setVerificationMessage("");
+  }
+
+  async function updateClaim() {
+    if (!selectedClaim) return;
+
+    const requiresNotes =
+      claimStatusDraft === "Rejected" ||
+      claimStatusDraft === "Needs More Information";
+
+    if (requiresNotes && !claimAdminNotesDraft.trim()) {
+      setClaimError(
+        claimStatusDraft === "Rejected"
+          ? "Enter an admin note explaining why this claim is being rejected."
+          : "Explain what additional information the claimant needs to provide."
+      );
+
+      return;
+    }
+
+    setClaimError("");
+    setClaimMessage("");
+    setSavingClaimId(selectedClaim.id);
+
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setSavingClaimId(null);
+      setClaimError("Your session has expired. Please log in again.");
+      return;
+    }
+
+    const reviewed =
+      claimStatusDraft === "Approved" ||
+      claimStatusDraft === "Rejected";
+
+    const { error } = await supabase
+      .from("game_claims")
+      .update({
+        status: claimStatusDraft,
+        admin_notes: claimAdminNotesDraft.trim() || null,
+        reviewed_at: reviewed
+          ? new Date().toISOString()
+          : null,
+        reviewed_by: reviewed ? user.id : null,
+      })
+      .eq("id", selectedClaim.id);
+
+    setSavingClaimId(null);
+
+    if (error) {
+      console.error("Could not update game claim:", error);
+      setClaimError(
+        `The claim decision could not be saved: ${error.message}`
+      );
+      return;
+    }
+
+    const reviewedAt = reviewed
+      ? new Date().toISOString()
+      : "";
+
+    setClaims((current) =>
+      current.map((claim) =>
+        claim.id === selectedClaim.id
+          ? {
+              ...claim,
+              status: claimStatusDraft,
+              adminNotes: claimAdminNotesDraft.trim(),
+              reviewedAt,
+              reviewedBy: reviewed ? user.id : "",
+            }
+          : claim
+      )
+    );
+
+    setClaimMessage(
+      claimStatusDraft === "Approved"
+        ? "Developer claim approved."
+        : claimStatusDraft === "Rejected"
+          ? "Developer claim rejected."
+          : claimStatusDraft === "Needs More Information"
+            ? "Claim marked as needing more information."
+            : "Claim returned to Pending."
+    );
   }
 
   function updateVerification<K extends keyof Verification>(
     field: K,
     value: Verification[K]
   ) {
-    setVerification((current) => ({ ...current, [field]: value }));
+    setVerification((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
     setVerificationMessage("");
     setVerificationError("");
   }
 
-  const selectedSubmission =
-    submissions.find((submission) => submission.id === selectedId) ?? null;
+  async function runMetadataBackfill() {
+    if (backfillRunning) return;
+
+    setBackfillRunning(true);
+    setBackfillResult("");
+    setBackfillError("");
+
+    try {
+      const response = await fetch(
+        "/api/admin/backfill-steam-metadata",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const responseText = await response.text();
+
+      let result: unknown;
+
+      try {
+        result = responseText
+          ? JSON.parse(responseText)
+          : {};
+      } catch {
+        result = responseText;
+      }
+
+      if (!response.ok) {
+        setBackfillError(
+          `Backfill failed (HTTP ${response.status}): ${
+            typeof result === "string"
+              ? result
+              : JSON.stringify(result, null, 2)
+          }`
+        );
+
+        return;
+      }
+
+      setBackfillResult(
+        typeof result === "string"
+          ? result
+          : JSON.stringify(result, null, 2)
+      );
+    } catch (error) {
+      console.error(
+        "Metadata backfill request failed:",
+        error
+      );
+
+      setBackfillError(
+        "Could not contact the metadata backfill API. Check that the development server is running and inspect the terminal for errors."
+      );
+    } finally {
+      setBackfillRunning(false);
+    }
+  }
 
   const readinessChecks = [
     {
@@ -412,6 +1046,20 @@ export default function AdminSubmissionsPage() {
         : "Core gameplay has not been tested.",
     },
     {
+      title: "Bugs recorded",
+      complete: verification.bugs_recorded,
+      detail: verification.bugs_recorded
+        ? "Bugs have been documented, or no observed issues have been recorded."
+        : "Bugs have not been documented and no-issue findings have not been confirmed.",
+    },
+    {
+      title: "Performance checked",
+      complete: verification.performance_checked,
+      detail: verification.performance_checked
+        ? "Performance has been checked in the recorded test environment."
+        : "Performance has not been checked.",
+    },
+    {
       title: "Testing notes recorded",
       complete: Boolean(verification.testing_notes.trim()),
       detail: verification.testing_notes.trim()
@@ -431,22 +1079,110 @@ export default function AdminSubmissionsPage() {
     (item) => item.complete
   ).length;
 
-  const filteredSubmissions =
+  const priorityOrder: Record<SubmissionStatus, number> = {
+    "Pending Review": 0,
+    "Needs More Information": 1,
+    Approved: 2,
+    Rejected: 3,
+  };
+
+  const claimPriorityOrder: Record<ClaimStatus, number> = {
+    Pending: 0,
+    "Needs More Information": 1,
+    Approved: 2,
+    Rejected: 3,
+  };
+
+  const approvedMissingInfoCount = submissions.filter(
+    (submission) =>
+      submission.status === "Approved" &&
+      getMissingInformation(submission).length > 0
+  ).length;
+
+  const filteredSubmissions = (
     filter === "All"
       ? submissions
-      : submissions.filter((submission) => submission.status === filter);
+      : filter === "Needs attention"
+        ? submissions.filter(
+            (submission) =>
+              submission.status === "Pending Review" ||
+              submission.status === "Needs More Information"
+          )
+        : filter === "Approved with missing information"
+          ? submissions.filter(
+              (submission) =>
+                submission.status === "Approved" &&
+                getMissingInformation(submission).length > 0
+            )
+          : submissions.filter(
+              (submission) => submission.status === filter
+            )
+  ).sort((a, b) => {
+    const priorityDifference =
+      priorityOrder[a.status] - priorityOrder[b.status];
+
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return (
+      new Date(a.submittedAt).getTime() -
+      new Date(b.submittedAt).getTime()
+    );
+  });
+
+  const filteredClaims = (
+    claimFilter === "All"
+      ? claims
+      : claimFilter === "Needs attention"
+        ? claims.filter(
+            (claim) =>
+              claim.status === "Pending" ||
+              claim.status === "Needs More Information"
+          )
+        : claims.filter(
+            (claim) => claim.status === claimFilter
+          )
+  ).sort((a, b) => {
+    const priorityDifference =
+      claimPriorityOrder[a.status] -
+      claimPriorityOrder[b.status];
+
+    if (priorityDifference !== 0) {
+      return priorityDifference;
+    }
+
+    return (
+      new Date(a.createdAt).getTime() -
+      new Date(b.createdAt).getTime()
+    );
+  });
 
   const pendingCount = submissions.filter(
     (submission) => submission.status === "Pending Review"
   ).length;
 
-  const approvedCount = submissions.filter(
-    (submission) => submission.status === "Approved"
+  const needsInfoCount = submissions.filter(
+    (submission) =>
+      submission.status === "Needs More Information"
   ).length;
 
-  const needsInfoCount = submissions.filter(
-    (submission) => submission.status === "Needs More Information"
+  const pendingClaimCount = claims.filter(
+    (claim) => claim.status === "Pending"
   ).length;
+
+  const claimNeedsInfoCount = claims.filter(
+    (claim) => claim.status === "Needs More Information"
+  ).length;
+
+  const submissionNeedsAttentionCount =
+    pendingCount + needsInfoCount;
+
+  const claimNeedsAttentionCount =
+    pendingClaimCount + claimNeedsInfoCount;
+
+  const totalNeedsAttention =
+    submissionNeedsAttentionCount + claimNeedsAttentionCount;
 
   async function saveVerification() {
     if (!selectedSubmission) return;
@@ -507,6 +1243,20 @@ export default function AdminSubmissionsPage() {
         return;
       }
 
+      if (!verification.bugs_recorded) {
+        setVerificationError(
+          "Record bugs found, or explicitly record that no bugs were observed, before saving a Tested status."
+        );
+        return;
+      }
+
+      if (!verification.performance_checked) {
+        setVerificationError(
+          "Complete the performance check before saving a Tested status."
+        );
+        return;
+      }
+
       if (!verification.testing_notes.trim()) {
         setVerificationError(
           "Add testing notes explaining what you played and assessed before marking the game Tested."
@@ -515,9 +1265,32 @@ export default function AdminSubmissionsPage() {
       }
     }
 
+    if (score !== null) {
+      const requiredScoreChecksComplete =
+        verification.quality_status === "Tested" &&
+        verification.ai_status ===
+          "Supported by Evidence" &&
+        verification.ai_claims_checked &&
+        verification.evidence_checked &&
+        verification.game_launched &&
+        verification.core_gameplay_tested &&
+        verification.bugs_recorded &&
+        verification.performance_checked &&
+        Boolean(verification.testing_notes.trim());
+
+      if (!requiredScoreChecksComplete) {
+        setVerificationError(
+          "A quality score requires a Tested status, supported AI evidence, all six verification checks completed, and documented testing notes."
+        );
+        return;
+      }
+    }
+
     if (
-      verification.ai_status === "Supported by Evidence" &&
-      (!verification.ai_claims_checked || !verification.evidence_checked)
+      verification.ai_status ===
+        "Supported by Evidence" &&
+      (!verification.ai_claims_checked ||
+        !verification.evidence_checked)
     ) {
       setVerificationError(
         "To mark AI claims as Supported by Evidence, review the claims and inspect supporting evidence first."
@@ -555,7 +1328,7 @@ export default function AdminSubmissionsPage() {
       !verification.limitations.trim()
     ) {
       setVerificationError(
-        "Some checks are incomplete. Add a public limitations statement explaining what has not been verified, or complete the outstanding checks."
+        "Some checks are incomplete. Add a public limitations statement explaining what remains unverified, or complete the outstanding checks."
       );
       return;
     }
@@ -571,7 +1344,9 @@ export default function AdminSubmissionsPage() {
 
     if (userError || !user) {
       setVerificationSaving(false);
-      setVerificationError("Your session has expired. Please log in again.");
+      setVerificationError(
+        "Your session has expired. Please log in again."
+      );
       return;
     }
 
@@ -583,17 +1358,24 @@ export default function AdminSubmissionsPage() {
           ai_status: verification.ai_status,
           quality_status: verification.quality_status,
           quality_score: score,
-          public_summary: verification.public_summary.trim(),
-          evidence_summary: verification.evidence_summary.trim(),
-          reviewer_notes: verification.reviewer_notes.trim(),
+          public_summary:
+            verification.public_summary.trim(),
+          evidence_summary:
+            verification.evidence_summary.trim(),
+          reviewer_notes:
+            verification.reviewer_notes.trim(),
           published: verification.published,
-          ai_claims_checked: verification.ai_claims_checked,
+          ai_claims_checked:
+            verification.ai_claims_checked,
           evidence_checked: verification.evidence_checked,
           game_launched: verification.game_launched,
-          core_gameplay_tested: verification.core_gameplay_tested,
+          core_gameplay_tested:
+            verification.core_gameplay_tested,
           bugs_recorded: verification.bugs_recorded,
-          performance_checked: verification.performance_checked,
-          testing_notes: verification.testing_notes.trim(),
+          performance_checked:
+            verification.performance_checked,
+          testing_notes:
+            verification.testing_notes.trim(),
           limitations: verification.limitations.trim(),
           reviewed_by: user.id,
           updated_at: new Date().toISOString(),
@@ -604,10 +1386,15 @@ export default function AdminSubmissionsPage() {
     setVerificationSaving(false);
 
     if (error) {
-      console.error("Could not save verification:", error);
+      console.error(
+        "Could not save verification:",
+        error
+      );
+
       setVerificationError(
         "Verification could not be saved. Check the table columns, policies and database permissions."
       );
+
       return;
     }
 
@@ -623,7 +1410,9 @@ export default function AdminSubmissionsPage() {
   if (checkingAdmin) {
     return (
       <main className="min-h-screen bg-[#090b0a] p-10 text-zinc-100">
-        <p className="text-zinc-400">Checking administrator permissions...</p>
+        <p className="text-zinc-400">
+          Checking administrator permissions...
+        </p>
       </main>
     );
   }
@@ -631,11 +1420,19 @@ export default function AdminSubmissionsPage() {
   if (!isAdmin) {
     return (
       <main className="min-h-screen bg-[#090b0a] p-10 text-zinc-100">
-        <h1 className="text-2xl font-bold">Access denied</h1>
+        <h1 className="text-2xl font-bold">
+          Access denied
+        </h1>
+
         <p className="mt-3 text-zinc-400">
-          You need administrator permissions to view this page.
+          You need administrator permissions to view this
+          page.
         </p>
-        <a href="/" className="mt-5 inline-block text-emerald-400 underline">
+
+        <a
+          href="/"
+          className="mt-5 inline-block text-emerald-400 underline"
+        >
           Return home
         </a>
       </main>
@@ -651,668 +1448,1541 @@ export default function AdminSubmissionsPage() {
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
             Playtested Admin
           </p>
+
           <h1 className="text-3xl font-bold sm:text-4xl">
-            Game submissions
+            Review
           </h1>
+
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Review submitted games, inspect their AI disclosures and evidence,
-            and manage independent verification assessments.
+            Review developer submissions and ownership
+            claims, then manage Playtested assessments
+            separately.
           </p>
         </div>
 
-        {pageError && (
-          <div
-            role="alert"
-            className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300"
-          >
-            {pageError}
-          </div>
-        )}
-
         <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { label: "Total submissions", value: submissions.length },
-            { label: "Pending review", value: pendingCount },
-            { label: "Approved", value: approvedCount },
-            { label: "Needs more info", value: needsInfoCount },
+            {
+              label: "Needs attention",
+              value: totalNeedsAttention,
+            },
+            {
+              label: "Pending submissions",
+              value: pendingCount,
+            },
+            {
+              label: "Pending claims",
+              value: pendingClaimCount,
+            },
+            {
+              label: "Needs more info",
+              value:
+                needsInfoCount + claimNeedsInfoCount,
+            },
           ].map((stat) => (
-            <div key={stat.label} className={panelClass}>
-              <p className="text-sm text-zinc-400">{stat.label}</p>
-              <p className="mt-3 text-3xl font-bold">{stat.value}</p>
+            <div
+              key={stat.label}
+              className={`${panelClass} p-5`}
+            >
+              <p className="text-sm text-zinc-400">
+                {stat.label}
+              </p>
+
+              <p className="mt-2 text-3xl font-bold">
+                {stat.value}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2">
-          {(["All", ...statuses] as Array<"All" | SubmissionStatus>).map(
-            (status) => (
-              <button
-                key={status}
-                onClick={() => setFilter(status)}
-                className={`rounded-lg px-4 py-2 text-sm transition ${
-                  filter === status
-                    ? "bg-emerald-400 font-semibold text-black"
-                    : "border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
-                }`}
-              >
-                {status}
-              </button>
-            )
+        <div className={`${panelClass} mb-8 overflow-hidden`}>
+          <button
+            type="button"
+            onClick={() =>
+              setCatalogueOpen((current) => !current)
+            }
+            className="flex w-full items-center justify-between gap-4 p-5 text-left"
+          >
+            <div>
+              <h2 className="text-lg font-semibold">
+                Catalogue management
+              </h2>
+
+              <p className="mt-1 text-sm text-zinc-500">
+                Steam importing, imported catalogue and
+                metadata tools.
+              </p>
+            </div>
+
+            <span
+              className={`text-xl text-zinc-500 transition ${
+                catalogueOpen ? "rotate-180" : ""
+              }`}
+            >
+              ▾
+            </span>
+          </button>
+
+          {catalogueOpen && (
+            <div className="space-y-6 border-t border-zinc-800 p-5">
+              <SteamImporter />
+
+              <ImportedSteamCatalogue />
+
+              <div className="rounded-xl border border-zinc-800 bg-[#090b0a] p-5">
+                <h3 className="font-semibold">
+                  Steam metadata backfill
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                  Process existing Steam catalogue records
+                  waiting for metadata. This does not verify
+                  or approve games.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={runMetadataBackfill}
+                  disabled={backfillRunning}
+                  className="mt-4 rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {backfillRunning
+                    ? "Processing metadata..."
+                    : "Run metadata backfill"}
+                </button>
+
+                {backfillRunning && (
+                  <p className="mt-3 text-sm text-zinc-400">
+                    Processing the batch. Keep this page open
+                    until the request finishes.
+                  </p>
+                )}
+
+                {backfillError && (
+                  <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
+                    {backfillError}
+                  </pre>
+                )}
+
+                {backfillResult && (
+                  <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs leading-5 text-zinc-300">
+                    {backfillResult}
+                  </pre>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
-        {!loaded ? (
-          <p className="py-10 text-zinc-400">Loading submissions...</p>
-        ) : pageError && submissions.length === 0 ? (
-          <div className={panelClass}>
-            <p className="text-sm text-zinc-300">
-              Submissions could not be loaded.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-black"
-            >
-              Retry
-            </button>
-          </div>
-        ) : submissions.length === 0 ? (
-          <div className={panelClass}>
-            <h2 className="text-lg font-semibold">No submissions yet</h2>
-            <p className="mt-2 text-sm text-zinc-400">
-              New developer submissions will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="grid items-start gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold">
-                Submissions ({filteredSubmissions.length})
-              </h2>
+        <div className="mb-6 flex border-b border-zinc-800">
+          <button
+            type="button"
+            onClick={() => setReviewTab("submissions")}
+            className={`border-b-2 px-5 py-4 text-sm font-semibold transition ${
+              reviewTab === "submissions"
+                ? "border-emerald-400 text-emerald-300"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Game submissions
+            {submissionNeedsAttentionCount > 0 && (
+              <span className="ml-2 rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-200">
+                {submissionNeedsAttentionCount}
+              </span>
+            )}
+          </button>
 
-              {filteredSubmissions.length === 0 ? (
-                <div className={panelClass}>
-                  <p className="text-sm text-zinc-400">
-                    No submissions match this filter.
-                  </p>
-                </div>
-              ) : (
-                filteredSubmissions.map((submission) => (
-                  <button
-                    key={submission.id}
-                    onClick={() => setSelectedId(submission.id)}
-                    className={`block w-full rounded-xl border p-4 text-left transition ${
-                      selectedId === submission.id
-                        ? "border-emerald-400 bg-emerald-400/5"
-                        : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600"
-                    }`}
-                  >
-                    <div className="mb-4 h-36 w-full overflow-hidden rounded-lg bg-[#090b0a]">
-                      {submission.imageUrl ? (
-                        <img
-                          src={submission.imageUrl}
-                          alt={`${submission.title} thumbnail`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-zinc-600">
-                          No game thumbnail supplied
-                        </div>
-                      )}
-                    </div>
+          <button
+            type="button"
+            onClick={() => setReviewTab("claims")}
+            className={`border-b-2 px-5 py-4 text-sm font-semibold transition ${
+              reviewTab === "claims"
+                ? "border-emerald-400 text-emerald-300"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Developer claims
+            {claimNeedsAttentionCount > 0 && (
+              <span className="ml-2 rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-200">
+                {claimNeedsAttentionCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold">{submission.title}</h3>
-                        <p className="mt-1 text-sm text-zinc-400">
-                          {submission.developer}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full border border-zinc-700 px-2 py-1 text-xs text-zinc-300">
-                        {submission.status}
-                      </span>
-                    </div>
+        {reviewTab === "submissions" && (
+          <>
+            {pageError && (
+              <div className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">
+                {pageError}
+              </div>
+            )}
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-400">
-                      <span className="rounded-md bg-zinc-800 px-2 py-1">
-                        {submission.genre}
-                      </span>
-                      <span className="rounded-md bg-zinc-800 px-2 py-1">
-                        {submission.aiType}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </section>
+            <div className="mb-6 flex flex-wrap gap-2">
+              {(
+                [
+                  "All",
+                  "Needs attention",
+                  "Approved with missing information",
+                  ...submissionStatuses,
+                ] as SubmissionFilter[]
+              ).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setFilter(status)}
+                  className={`rounded-lg px-3 py-2 text-xs transition sm:text-sm ${
+                    filter === status
+                      ? "bg-emerald-400 font-semibold text-black"
+                      : "border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
+                  }`}
+                >
+                  {status}
 
-            <section className={`${panelClass} lg:sticky lg:top-6`}>
-              {selectedSubmission ? (
-                <>
-                  <div className="mb-5 aspect-video w-full overflow-hidden rounded-xl bg-[#090b0a]">
-                    {selectedSubmission.imageUrl ? (
-                      <img
-                        src={selectedSubmission.imageUrl}
-                        alt={`${selectedSubmission.title} game artwork`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-zinc-600">
-                        No game artwork supplied
-                      </div>
-                    )}
-                  </div>
+                  {status === "Needs attention" && (
+                    <span className="ml-2">
+                      {submissionNeedsAttentionCount}
+                    </span>
+                  )}
 
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                      Submission details
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold">
-                      {selectedSubmission.title}
+                  {status ===
+                    "Approved with missing information" && (
+                    <span className="ml-2">
+                      {approvedMissingInfoCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {!loaded ? (
+              <p className="py-10 text-zinc-400">
+                Loading submissions...
+              </p>
+            ) : submissions.length === 0 ? (
+              <div className={`${panelClass} p-5`}>
+                <h2 className="font-semibold">
+                  No submissions yet
+                </h2>
+
+                <p className="mt-2 text-sm text-zinc-400">
+                  New developer submissions will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid items-start gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                <section>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="font-semibold">
+                      Submissions
                     </h2>
-                    <p className="mt-1 text-sm text-zinc-400">
-                      By {selectedSubmission.developer}
-                    </p>
+
+                    <span className="text-xs text-zinc-500">
+                      {filteredSubmissions.length} shown
+                    </span>
                   </div>
 
-                  <div className="mt-6">
-                    <label className={labelClass}>Listing review status</label>
-                    <select
-                      value={selectedSubmission.status}
-                      disabled={savingId === selectedSubmission.id}
-                      onChange={(event) =>
-                        updateStatus(
-                          selectedSubmission.id,
-                          event.target.value as SubmissionStatus
-                        )
-                      }
-                      className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm text-zinc-100 outline-none focus:border-emerald-400 disabled:opacity-60"
-                    >
-                      {statuses.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                    {savingId === selectedSubmission.id && (
-                      <p className="mt-2 text-xs text-zinc-400">
-                        Saving status...
-                      </p>
-                    )}
-                  </div>
+                  <div className="space-y-2">
+                    {filteredSubmissions.map(
+                      (submission) => {
+                        const missing =
+                          getMissingInformation(
+                            submission
+                          );
 
-                  <div className="mt-6 space-y-5">
-                    <div>
-                      <p className={labelClass}>Genre</p>
-                      <p className="text-sm">{selectedSubmission.genre}</p>
-                    </div>
+                        return (
+                          <button
+                            key={submission.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedId(
+                                submission.id
+                              )
+                            }
+                            className={`w-full rounded-xl border p-4 text-left transition ${
+                              selectedId === submission.id
+                                ? "border-emerald-400 bg-emerald-400/5"
+                                : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {submission.imageUrl ? (
+                                <img
+                                  src={
+                                    submission.imageUrl
+                                  }
+                                  alt=""
+                                  className="h-14 w-20 shrink-0 rounded-lg object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-[#090b0a] text-[10px] text-zinc-600">
+                                  No image
+                                </div>
+                              )}
 
-                    <div>
-                      <p className={labelClass}>Price</p>
-                      <p className="text-sm">
-                        {selectedSubmission.price || "Not specified"}
-                      </p>
-                    </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="truncate font-semibold">
+                                      {
+                                        submission.title
+                                      }
+                                    </p>
 
-                    <div>
-                      <p className={labelClass}>Game description</p>
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                        {selectedSubmission.description}
-                      </p>
-                    </div>
+                                    <p className="mt-1 truncate text-xs text-zinc-500">
+                                      {
+                                        submission.developer
+                                      }
+                                    </p>
+                                  </div>
 
-                    <div>
-                      <p className={labelClass}>Game or store link</p>
-                      {selectedSubmission.gameLink ? (
-                        <a
-                          href={selectedSubmission.gameLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="break-all text-sm text-emerald-400 underline"
-                        >
-                          {selectedSubmission.gameLink}
-                        </a>
-                      ) : (
-                        <p className="text-sm text-zinc-500">Not supplied</p>
-                      )}
-                    </div>
+                                  <span
+                                    className={`shrink-0 rounded-full border px-2 py-1 text-[10px] ${statusClasses(
+                                      submission.status
+                                    )}`}
+                                  >
+                                    {
+                                      submission.status
+                                    }
+                                  </span>
+                                </div>
 
-                    <div>
-                      <p className={labelClass}>Thumbnail image URL</p>
-                      {selectedSubmission.imageUrl ? (
-                        <a
-                          href={selectedSubmission.imageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="break-all text-sm text-emerald-400 underline"
-                        >
-                          Open image
-                        </a>
-                      ) : (
-                        <p className="text-sm text-zinc-500">Not supplied</p>
-                      )}
-                    </div>
+                                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-500">
+                                  <span>
+                                    {submission.genre ||
+                                      "Genre missing"}
+                                  </span>
 
-                    <div>
-                      <p className={labelClass}>AI classification declared</p>
-                      <p className="text-sm">{selectedSubmission.aiType}</p>
-                    </div>
+                                  <span>·</span>
 
-                    <div>
-                      <p className={labelClass}>Where AI is used</p>
-                      {selectedSubmission.aiAreas.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedSubmission.aiAreas.map((area) => (
-                            <span
-                              key={area}
-                              className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
-                            >
-                              {area}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-zinc-500">
-                          No areas specified
-                        </p>
-                      )}
-                    </div>
+                                  <span>
+                                    {formatDate(
+                                      submission.submittedAt
+                                    )}
+                                  </span>
+                                </div>
 
-                    <div>
-                      <p className={labelClass}>Developer's AI explanation</p>
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                        {selectedSubmission.aiExplanation || "Not supplied"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className={labelClass}>Developer-supplied evidence</p>
-                      {selectedSubmission.evidenceLink ? (
-                        <a
-                          href={selectedSubmission.evidenceLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="break-all text-sm text-emerald-400 underline"
-                        >
-                          Open evidence link
-                        </a>
-                      ) : (
-                        <p className="text-sm text-zinc-500">Not supplied</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className={labelClass}>Submitted</p>
-                      <p className="text-sm text-zinc-400">
-                        {selectedSubmission.submittedAt
-                          ? new Date(
-                              selectedSubmission.submittedAt
-                            ).toLocaleString()
-                          : "Date not recorded"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="my-8 border-t border-zinc-800" />
-
-                  <section aria-labelledby="verification-heading">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                      Independent assessment
-                    </p>
-                    <h2
-                      id="verification-heading"
-                      className="mt-2 text-2xl font-bold"
-                    >
-                      Verification assessment
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-zinc-400">
-                      Record what Playtested has actually assessed. Listing
-                      approval does not constitute verification.
-                    </p>
-
-                    {!verificationLoaded ? (
-                      <p className="mt-6 text-sm text-zinc-400">
-                        Loading verification record...
-                      </p>
-                    ) : (
-                      <div className="mt-6 space-y-5">
-                        <div className="rounded-xl border border-zinc-800 bg-[#090b0a] p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <h3 className="font-semibold">
-                                Assessment readiness
-                              </h3>
-                              <p className="mt-1 text-xs leading-5 text-zinc-500">
-                                This checklist tracks the information recorded.
-                                It does not automatically certify a game.
-                              </p>
+                                {missing.length > 0 && (
+                                  <p className="mt-2 text-xs text-amber-300">
+                                    {missing.length} missing
+                                    field
+                                    {missing.length === 1
+                                      ? ""
+                                      : "s"}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <span className="shrink-0 rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-300">
-                              {readinessCount}/{readinessChecks.length}
-                            </span>
+                          </button>
+                        );
+                      }
+                    )}
+
+                    {filteredSubmissions.length ===
+                      0 && (
+                      <div
+                        className={`${panelClass} p-5`}
+                      >
+                        <p className="text-sm text-zinc-400">
+                          No submissions match this
+                          filter.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="lg:sticky lg:top-6">
+                  {selectedSubmission ? (
+                    <div className="space-y-4">
+                      <div
+                        className={`${panelClass} p-5`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {selectedSubmission.imageUrl ? (
+                            <img
+                              src={
+                                selectedSubmission.imageUrl
+                              }
+                              alt=""
+                              className="h-20 w-28 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : null}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                              Submission review
+                            </p>
+
+                            <h2 className="mt-1 text-2xl font-bold">
+                              {
+                                selectedSubmission.title
+                              }
+                            </h2>
+
+                            <p className="mt-1 text-sm text-zinc-400">
+                              By{" "}
+                              {
+                                selectedSubmission.developer
+                              }
+                            </p>
                           </div>
 
-                          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-800">
-                            <div
-                              className="h-full rounded-full bg-emerald-400 transition-all"
-                              style={{
-                                width: `${
-                                  (readinessCount / readinessChecks.length) *
-                                  100
-                                }%`,
+                          <span
+                            className={`rounded-full border px-3 py-1 text-xs ${statusClasses(
+                              selectedSubmission.status
+                            )}`}
+                          >
+                            {
+                              selectedSubmission.status
+                            }
+                          </span>
+                        </div>
+                      </div>
+
+                      <CollapsibleSection
+                        title="Listing review"
+                        description="Approve, reject or request more information."
+                        defaultOpen
+                      >
+                        <label className={labelClass}>
+                          Listing review status
+                        </label>
+
+                        <select
+                          value={draftStatus}
+                          disabled={
+                            savingId ===
+                            selectedSubmission.id
+                          }
+                          onChange={(event) => {
+                            setDraftStatus(
+                              event.target
+                                .value as SubmissionStatus
+                            );
+                            setPageError("");
+                          }}
+                          className={inputClass}
+                        >
+                          {submissionStatuses.map(
+                            (status) => (
+                              <option
+                                key={status}
+                                value={status}
+                              >
+                                {status}
+                              </option>
+                            )
+                          )}
+                        </select>
+
+                        {draftStatus ===
+                          "Approved" &&
+                          draftMissingInformation.length >
+                            0 && (
+                            <div className="mt-4 rounded-lg border border-red-400/40 bg-red-400/10 p-4">
+                              <p className="text-sm font-bold text-red-300">
+                                Missing information
+                              </p>
+
+                              <p className="mt-2 text-xs leading-5 text-red-200">
+                                You are approving a
+                                listing with the
+                                following missing
+                                fields:
+                              </p>
+
+                              <ul className="mt-2 list-inside list-disc text-xs text-red-200">
+                                {draftMissingInformation.map(
+                                  (item) => (
+                                    <li key={item}>
+                                      {item}
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+
+                        {(draftStatus ===
+                          "Rejected" ||
+                          draftStatus ===
+                            "Needs More Information") && (
+                          <div className="mt-4">
+                            <label
+                              className={labelClass}
+                            >
+                              {draftStatus ===
+                              "Rejected"
+                                ? "Reason for rejection"
+                                : "Information required"}
+                            </label>
+
+                            <textarea
+                              rows={4}
+                              value={
+                                reviewReasonDraft
+                              }
+                              onChange={(event) => {
+                                setReviewReasonDraft(
+                                  event.target.value
+                                );
+                                setPageError("");
                               }}
+                              className={inputClass}
                             />
                           </div>
+                        )}
 
-                          <div className="mt-5 space-y-4">
-                            {readinessChecks.map((item) => (
-                              <ReadinessItem
-                                key={item.title}
-                                complete={item.complete}
-                                title={item.title}
-                                detail={item.detail}
-                              />
-                            ))}
-                          </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateStatus(
+                              selectedSubmission.id,
+                              draftStatus,
+                              reviewReasonDraft
+                            )
+                          }
+                          disabled={
+                            savingId ===
+                              selectedSubmission.id ||
+                            ((draftStatus ===
+                              "Rejected" ||
+                              draftStatus ===
+                                "Needs More Information") &&
+                              !reviewReasonDraft.trim())
+                          }
+                          className="mt-4 w-full rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-400/20 disabled:opacity-40"
+                        >
+                          {savingId ===
+                          selectedSubmission.id
+                            ? "Saving decision..."
+                            : "Save listing decision"}
+                        </button>
+                      </CollapsibleSection>
 
-                          {readinessCount < readinessChecks.length && (
-                            <p className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">
-                              Outstanding checks do not always prevent
-                              publication, but the public limitations must
-                              explain what remains unverified.
-                            </p>
-                          )}
-                        </div>
+                      <CollapsibleSection
+                        title="Game details & disclosure"
+                        description="Developer-supplied listing information and AI disclosure."
+                      >
+                        {(() => {
+                          const missing =
+                            getMissingInformation(
+                              selectedSubmission
+                            );
 
-                        <div>
-                          <label className={labelClass}>
-                            AI disclosure assessment
-                          </label>
-                          <select
-                            value={verification.ai_status}
-                            onChange={(event) =>
-                              updateVerification(
-                                "ai_status",
-                                event.target.value as AIStatus
-                              )
-                            }
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm outline-none focus:border-emerald-400"
-                          >
-                            {aiStatuses.map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="mt-2 text-xs leading-5 text-zinc-500">
-                            This is an evidence-based assessment of the
-                            disclosure, not a guarantee that every use of AI
-                            has been detected.
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>
-                            Gameplay testing status
-                          </label>
-                          <select
-                            value={verification.quality_status}
-                            onChange={(event) =>
-                              updateVerification(
-                                "quality_status",
-                                event.target.value as QualityStatus
-                              )
-                            }
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm outline-none focus:border-emerald-400"
-                          >
-                            {qualityStatuses.map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="rounded-xl border border-zinc-800 p-4">
-                          <h3 className="font-semibold">
-                            Verification checklist
-                          </h3>
-                          <p className="mt-1 text-xs leading-5 text-zinc-500">
-                            Tick an item only after performing that check.
-                            Unticked items remain unconfirmed.
-                          </p>
-
-                          <div className="mt-4 space-y-4">
-                            {checklistItems.map((item) => (
-                              <label
-                                key={item.field}
-                                className="flex cursor-pointer items-start gap-3"
+                          return (
+                            <>
+                              <div
+                                className={`mb-6 rounded-lg border p-4 ${
+                                  missing.length
+                                    ? "border-amber-400/30 bg-amber-400/5"
+                                    : "border-emerald-400/20 bg-emerald-400/5"
+                                }`}
                               >
+                                <p className="text-sm font-semibold">
+                                  {missing.length
+                                    ? `${missing.length} missing field${missing.length === 1 ? "" : "s"}`
+                                    : "Required listing information supplied"}
+                                </p>
+
+                                {missing.length >
+                                  0 && (
+                                  <p className="mt-2 text-xs leading-5 text-zinc-400">
+                                    {missing.join(
+                                      " · "
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="space-y-5">
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Genre
+                                  </p>
+                                  <p className="text-sm">
+                                    {selectedSubmission.genre ||
+                                      "Not supplied"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Description
+                                  </p>
+                                  <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                                    {selectedSubmission.description ||
+                                      "Not supplied"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Game or store link
+                                  </p>
+
+                                  {selectedSubmission.gameLink ? (
+                                    <a
+                                      href={
+                                        selectedSubmission.gameLink
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="break-all text-sm text-emerald-400 underline"
+                                    >
+                                      {
+                                        selectedSubmission.gameLink
+                                      }
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-zinc-500">
+                                      Not supplied
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    AI classification
+                                  </p>
+                                  <p className="text-sm">
+                                    {selectedSubmission.aiType ||
+                                      "Not supplied"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Where AI is used
+                                  </p>
+
+                                  {selectedSubmission
+                                    .aiAreas.length ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {selectedSubmission.aiAreas.map(
+                                        (area) => (
+                                          <span
+                                            key={
+                                              area
+                                            }
+                                            className="rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+                                          >
+                                            {
+                                              area
+                                            }
+                                          </span>
+                                        )
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-zinc-500">
+                                      No areas
+                                      specified
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Developer's AI
+                                    explanation
+                                  </p>
+                                  <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                                    {selectedSubmission.aiExplanation ||
+                                      "Not supplied"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Developer evidence
+                                  </p>
+
+                                  {selectedSubmission.evidenceLink ? (
+                                    <a
+                                      href={
+                                        selectedSubmission.evidenceLink
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-sm text-emerald-400 underline"
+                                    >
+                                      Open evidence
+                                      link ↗
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-zinc-500">
+                                      Not supplied
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={
+                                      labelClass
+                                    }
+                                  >
+                                    Submitted
+                                  </p>
+                                  <p className="text-sm text-zinc-400">
+                                    {formatDate(
+                                      selectedSubmission.submittedAt
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </CollapsibleSection>
+
+                      <CollapsibleSection
+                        title="Independent assessment"
+                        description={`Verification readiness: ${readinessCount}/${readinessChecks.length}`}
+                      >
+                        {!verificationLoaded ? (
+                          <p className="text-sm text-zinc-400">
+                            Loading verification
+                            record...
+                          </p>
+                        ) : (
+                          <div className="space-y-5">
+                            <div className="rounded-xl border border-zinc-800 bg-[#090b0a] p-4">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-semibold">
+                                  Assessment readiness
+                                </h3>
+
+                                <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs">
+                                  {readinessCount}/
+                                  {
+                                    readinessChecks.length
+                                  }
+                                </span>
+                              </div>
+
+                              <div className="mt-5 space-y-4">
+                                {readinessChecks.map(
+                                  (item) => (
+                                    <ReadinessItem
+                                      key={
+                                        item.title
+                                      }
+                                      complete={
+                                        item.complete
+                                      }
+                                      title={
+                                        item.title
+                                      }
+                                      detail={
+                                        item.detail
+                                      }
+                                    />
+                                  )
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                AI disclosure
+                                assessment
+                              </label>
+
+                              <select
+                                value={
+                                  verification.ai_status
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "ai_status",
+                                    event.target
+                                      .value as AIStatus
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              >
+                                {aiStatuses.map(
+                                  (status) => (
+                                    <option
+                                      key={
+                                        status
+                                      }
+                                      value={
+                                        status
+                                      }
+                                    >
+                                      {
+                                        status
+                                      }
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Gameplay testing
+                                status
+                              </label>
+
+                              <select
+                                value={
+                                  verification.quality_status
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "quality_status",
+                                    event.target
+                                      .value as QualityStatus
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              >
+                                {qualityStatuses.map(
+                                  (status) => (
+                                    <option
+                                      key={
+                                        status
+                                      }
+                                      value={
+                                        status
+                                      }
+                                    >
+                                      {
+                                        status
+                                      }
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </div>
+
+                            <div className="rounded-xl border border-zinc-800 p-4">
+                              <h3 className="font-semibold">
+                                Verification
+                                checklist
+                              </h3>
+
+                              <div className="mt-4 space-y-4">
+                                {checklistItems.map(
+                                  (item) => (
+                                    <label
+                                      key={
+                                        item.field
+                                      }
+                                      className="flex cursor-pointer items-start gap-3"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={
+                                          verification[
+                                            item
+                                              .field
+                                          ]
+                                        }
+                                        onChange={(
+                                          event
+                                        ) =>
+                                          updateVerification(
+                                            item.field as ChecklistField,
+                                            event
+                                              .target
+                                              .checked
+                                          )
+                                        }
+                                        className="mt-1 accent-emerald-400"
+                                      />
+
+                                      <span>
+                                        <span className="block text-sm font-medium">
+                                          {
+                                            item.label
+                                          }
+                                        </span>
+
+                                        <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                                          {
+                                            item.description
+                                          }
+                                        </span>
+                                      </span>
+                                    </label>
+                                  )
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Testing notes
+                              </label>
+
+                              <textarea
+                                rows={5}
+                                value={
+                                  verification.testing_notes
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "testing_notes",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Testing limitations
+                              </label>
+
+                              <textarea
+                                rows={3}
+                                value={
+                                  verification.limitations
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "limitations",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Quality score,
+                                optional, 1 to 10
+                              </label>
+
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                step="0.1"
+                                value={
+                                  verification.quality_score
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "quality_score",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Evidence reviewed
+                              </label>
+
+                              <textarea
+                                rows={4}
+                                value={
+                                  verification.evidence_summary
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "evidence_summary",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Public assessment
+                                summary
+                              </label>
+
+                              <textarea
+                                rows={4}
+                                value={
+                                  verification.public_summary
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "public_summary",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                className={labelClass}
+                              >
+                                Private reviewer
+                                notes
+                              </label>
+
+                              <textarea
+                                rows={4}
+                                value={
+                                  verification.reviewer_notes
+                                }
+                                onChange={(event) =>
+                                  updateVerification(
+                                    "reviewer_notes",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                className={
+                                  inputClass
+                                }
+                              />
+                            </div>
+
+                            <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                              <label className="flex cursor-pointer items-start gap-3">
                                 <input
                                   type="checkbox"
-                                  checked={verification[item.field]}
-                                  onChange={(event) =>
+                                  checked={
+                                    verification.published
+                                  }
+                                  onChange={(
+                                    event
+                                  ) =>
                                     updateVerification(
-                                      item.field as ChecklistField,
-                                      event.target.checked
+                                      "published",
+                                      event
+                                        .target
+                                        .checked
                                     )
                                   }
                                   className="mt-1 accent-emerald-400"
                                 />
+
                                 <span>
-                                  <span className="block text-sm font-medium">
-                                    {item.label}
+                                  <span className="block text-sm font-semibold">
+                                    Publish
+                                    verification
+                                    results
                                   </span>
-                                  <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                                    {item.description}
+
+                                  <span className="mt-1 block text-xs leading-5 text-zinc-400">
+                                    Only approved
+                                    listings can have
+                                    public assessments.
                                   </span>
                                 </span>
                               </label>
-                            ))}
+                            </div>
+
+                            {selectedSubmission.status !==
+                              "Approved" && (
+                              <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
+                                This listing is not
+                                approved. You can save
+                                an internal assessment,
+                                but cannot publish it.
+                              </p>
+                            )}
+
+                            {verificationError && (
+                              <p className="rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
+                                {
+                                  verificationError
+                                }
+                              </p>
+                            )}
+
+                            {verificationMessage && (
+                              <p className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-300">
+                                {
+                                  verificationMessage
+                                }
+                              </p>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={
+                                saveVerification
+                              }
+                              disabled={
+                                verificationSaving ||
+                                !verificationLoaded
+                              }
+                              className="w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black hover:bg-emerald-300 disabled:opacity-50"
+                            >
+                              {verificationSaving
+                                ? "Saving assessment..."
+                                : "Save verification assessment"}
+                            </button>
                           </div>
+                        )}
+                      </CollapsibleSection>
+                    </div>
+                  ) : (
+                    <div
+                      className={`${panelClass} p-5`}
+                    >
+                      <p className="text-sm text-zinc-400">
+                        Select a submission to review.
+                      </p>
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </>
+        )}
+
+        {reviewTab === "claims" && (
+          <>
+            {claimError && (
+              <div className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">
+                {claimError}
+              </div>
+            )}
+
+            <div className="mb-6 flex flex-wrap gap-2">
+              {(
+                [
+                  "All",
+                  "Needs attention",
+                  ...claimStatuses,
+                ] as ClaimFilter[]
+              ).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() =>
+                    setClaimFilter(status)
+                  }
+                  className={`rounded-lg px-3 py-2 text-sm transition ${
+                    claimFilter === status
+                      ? "bg-emerald-400 font-semibold text-black"
+                      : "border border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
+                  }`}
+                >
+                  {status}
+
+                  {status === "Needs attention" && (
+                    <span className="ml-2">
+                      {claimNeedsAttentionCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {!claimsLoaded ? (
+              <p className="py-10 text-zinc-400">
+                Loading developer claims...
+              </p>
+            ) : claims.length === 0 ? (
+              <div className={`${panelClass} p-5`}>
+                <h2 className="font-semibold">
+                  No developer claims
+                </h2>
+
+                <p className="mt-2 text-sm text-zinc-400">
+                  Claims for existing games will appear
+                  here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid items-start gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                <section>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="font-semibold">
+                      Developer claims
+                    </h2>
+
+                    <span className="text-xs text-zinc-500">
+                      {filteredClaims.length} shown
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {filteredClaims.map((claim) => (
+                      <button
+                        key={claim.id}
+                        type="button"
+                        onClick={() =>
+                          setSelectedClaimId(
+                            claim.id
+                          )
+                        }
+                        className={`w-full rounded-xl border p-4 text-left transition ${
+                          selectedClaimId === claim.id
+                            ? "border-emerald-400 bg-emerald-400/5"
+                            : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="truncate font-semibold">
+                              {claim.gameTitle}
+                            </h3>
+
+                            <p className="mt-1 truncate text-xs text-zinc-500">
+                              {claim.developerName}
+                            </p>
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-1 text-[10px] ${statusClasses(
+                              claim.status
+                            )}`}
+                          >
+                            {claim.status}
+                          </span>
                         </div>
 
-                        <div>
-                          <label className={labelClass}>Testing notes</label>
-                          <textarea
-                            rows={5}
-                            value={verification.testing_notes}
-                            onChange={(event) =>
-                              updateVerification(
-                                "testing_notes",
-                                event.target.value
-                              )
-                            }
-                            placeholder="What did you play? What features and gameplay did you test? Include duration, environment and observed results."
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-400"
-                          />
-                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-400">
+                          <span className="rounded-md bg-zinc-800 px-2 py-1">
+                            {claim.relationship}
+                          </span>
 
+                          <span>
+                            {formatDate(
+                              claim.createdAt
+                            )}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+
+                    {filteredClaims.length === 0 && (
+                      <div
+                        className={`${panelClass} p-5`}
+                      >
+                        <p className="text-sm text-zinc-400">
+                          No claims match this filter.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="lg:sticky lg:top-6">
+                  {selectedClaim ? (
+                    <div
+                      className={`${panelClass} p-5`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
                         <div>
-                          <label className={labelClass}>
-                            Testing limitations
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={verification.limitations}
-                            onChange={(event) =>
-                              updateVerification(
-                                "limitations",
-                                event.target.value
-                              )
+                          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                            Developer claim
+                          </p>
+
+                          <h2 className="mt-2 text-2xl font-bold">
+                            {
+                              selectedClaim.gameTitle
                             }
-                            placeholder="Explain what remains untested or unverified, including limited playtime, platforms or unavailable evidence."
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-400"
-                          />
-                          <p className="mt-2 text-xs leading-5 text-zinc-500">
-                            If you publish with incomplete checks, this
-                            statement will be shown as a caveat on the public
-                            assessment.
+                          </h2>
+
+                          <p className="mt-1 text-sm text-zinc-400">
+                            {
+                              selectedClaim.developerName
+                            }
                           </p>
                         </div>
 
-                        <div>
-                          <label className={labelClass}>
-                            Quality score, optional, 1 to 10
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            step="0.1"
-                            value={verification.quality_score}
-                            onChange={(event) =>
-                              updateVerification(
-                                "quality_score",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Only score games that have been tested"
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm outline-none focus:border-emerald-400"
-                          />
-                          <p className="mt-2 text-xs leading-5 text-zinc-500">
-                            A score is an editorial assessment, not an
-                            objective measure of everyone's enjoyment.
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs ${statusClasses(
+                            selectedClaim.status
+                          )}`}
+                        >
+                          {selectedClaim.status}
+                        </span>
+                      </div>
+
+                      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                          <p className={labelClass}>
+                            Relationship
                           </p>
-                        </div>
 
-                        <div>
-                          <label className={labelClass}>
-                            Evidence reviewed
-                          </label>
-                          <textarea
-                            rows={4}
-                            value={verification.evidence_summary}
-                            onChange={(event) =>
-                              updateVerification(
-                                "evidence_summary",
-                                event.target.value
-                              )
-                            }
-                            placeholder="What evidence did you inspect? What did it establish, and what remains unverified?"
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-400"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>
-                            Public assessment summary
-                          </label>
-                          <textarea
-                            rows={4}
-                            value={verification.public_summary}
-                            onChange={(event) =>
-                              updateVerification(
-                                "public_summary",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Summarise the checks performed, evidence supporting the findings and important caveats."
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-400"
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>
-                            Private reviewer notes
-                          </label>
-                          <textarea
-                            rows={4}
-                            value={verification.reviewer_notes}
-                            onChange={(event) =>
-                              updateVerification(
-                                "reviewer_notes",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Internal notes, follow-up questions and concerns"
-                            className="w-full rounded-lg border border-zinc-700 bg-[#090b0a] px-3 py-3 text-sm leading-6 outline-none focus:border-emerald-400"
-                          />
-                          <p className="mt-2 text-xs text-zinc-500">
-                            These notes are excluded from the public results
-                            view.
+                          <p className="text-sm">
+                            {selectedClaim.relationship ||
+                              "Not supplied"}
                           </p>
                         </div>
 
                         <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
-                          <label className="flex cursor-pointer items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={verification.published}
-                              onChange={(event) =>
-                                updateVerification(
-                                  "published",
-                                  event.target.checked
-                                )
-                              }
-                              className="mt-1 accent-emerald-400"
-                            />
-                            <span>
-                              <span className="block text-sm font-semibold">
-                                Publish verification results
-                              </span>
-                              <span className="mt-1 block text-xs leading-5 text-zinc-400">
-                                Only approved listings can have public
-                                assessments. Incomplete checks require a
-                                limitations statement.
-                              </span>
-                            </span>
-                          </label>
+                          <p className={labelClass}>
+                            Submitted
+                          </p>
+
+                          <p className="text-sm">
+                            {formatDate(
+                              selectedClaim.createdAt
+                            )}
+                          </p>
                         </div>
-
-                        {selectedSubmission.status !== "Approved" && (
-                          <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
-                            This listing is not approved. You can save an
-                            internal assessment, but cannot publish it.
-                          </p>
-                        )}
-
-                        {verificationError && (
-                          <p
-                            role="alert"
-                            className="rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300"
-                          >
-                            {verificationError}
-                          </p>
-                        )}
-
-                        {verificationMessage && (
-                          <p
-                            role="status"
-                            className="rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-300"
-                          >
-                            {verificationMessage}
-                          </p>
-                        )}
-
-                        <button
-                          onClick={saveVerification}
-                          disabled={
-                            verificationSaving || !verificationLoaded
-                          }
-                          className="w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {verificationSaving
-                            ? "Saving assessment..."
-                            : "Save verification assessment"}
-                        </button>
                       </div>
-                    )}
-                  </section>
-                </>
-              ) : (
-                <p className="text-sm text-zinc-400">
-                  Select a submission to review its details.
-                </p>
-              )}
-            </section>
-          </div>
+
+                      <div className="mt-5">
+                        <p className={labelClass}>
+                          Claim reason
+                        </p>
+
+                        <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                          <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                            {selectedClaim.claimReason ||
+                              "No reason supplied"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5">
+                        <p className={labelClass}>
+                          Verification evidence
+                        </p>
+
+                        {selectedClaim.evidenceUrl ? (
+                          <a
+                            href={
+                              selectedClaim.evidenceUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-emerald-400 underline"
+                          >
+                            Open evidence ↗
+                          </a>
+                        ) : (
+                          <p className="text-sm text-amber-300">
+                            No evidence URL supplied
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-5">
+                        <p className={labelClass}>
+                          Claimant account ID
+                        </p>
+
+                        <p className="break-all font-mono text-xs text-zinc-500">
+                          {selectedClaim.claimantId}
+                        </p>
+                      </div>
+
+                      <div className="my-6 border-t border-zinc-800" />
+
+                      <div>
+                        <label className={labelClass}>
+                          Claim decision
+                        </label>
+
+                        <select
+                          value={claimStatusDraft}
+                          onChange={(event) => {
+                            setClaimStatusDraft(
+                              event.target
+                                .value as ClaimStatus
+                            );
+                            setClaimError("");
+                            setClaimMessage("");
+                          }}
+                          disabled={
+                            savingClaimId ===
+                            selectedClaim.id
+                          }
+                          className={inputClass}
+                        >
+                          {claimStatuses.map(
+                            (status) => (
+                              <option
+                                key={status}
+                                value={status}
+                              >
+                                {status}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="mt-5">
+                        <label className={labelClass}>
+                          Admin notes
+                          {(claimStatusDraft ===
+                            "Rejected" ||
+                            claimStatusDraft ===
+                              "Needs More Information") &&
+                            " *"}
+                        </label>
+
+                        <textarea
+                          rows={5}
+                          value={
+                            claimAdminNotesDraft
+                          }
+                          onChange={(event) => {
+                            setClaimAdminNotesDraft(
+                              event.target.value
+                            );
+                            setClaimError("");
+                            setClaimMessage("");
+                          }}
+                          placeholder={
+                            claimStatusDraft ===
+                            "Needs More Information"
+                              ? "Explain what evidence or information is required."
+                              : claimStatusDraft ===
+                                  "Rejected"
+                                ? "Explain why the claim is being rejected."
+                                : "Private notes about the claim and evidence reviewed."
+                          }
+                          className={inputClass}
+                        />
+                      </div>
+
+                      {claimStatusDraft ===
+                        "Approved" && (
+                        <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4">
+                          <p className="text-sm font-semibold text-emerald-300">
+                            Approving developer
+                            relationship
+                          </p>
+
+                          <p className="mt-2 text-xs leading-5 text-zinc-400">
+                            This records that
+                            Playtested has approved
+                            the developer claim. It
+                            does not make the game
+                            Assessed or Verified.
+                          </p>
+                        </div>
+                      )}
+
+                      {claimError && (
+                        <p className="mt-5 rounded-lg border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
+                          {claimError}
+                        </p>
+                      )}
+
+                      {claimMessage && (
+                        <p className="mt-5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-300">
+                          {claimMessage}
+                        </p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={updateClaim}
+                        disabled={
+                          savingClaimId ===
+                          selectedClaim.id
+                        }
+                        className="mt-5 w-full rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {savingClaimId ===
+                        selectedClaim.id
+                          ? "Saving claim decision..."
+                          : "Save claim decision"}
+                      </button>
+
+                      {selectedClaim.reviewedAt && (
+                        <p className="mt-4 text-xs text-zinc-500">
+                          Last reviewed{" "}
+                          {formatDate(
+                            selectedClaim.reviewedAt
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={`${panelClass} p-5`}
+                    >
+                      <p className="text-sm text-zinc-400">
+                        Select a developer claim to
+                        review.
+                      </p>
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </>
         )}
 
         <p className="mt-10 border-t border-zinc-800 pt-5 text-xs leading-5 text-zinc-500">
-          Listing approval and verification are separate decisions.
-          Published assessments describe the checks actually performed and
-          do not guarantee that all AI use has been detected or that every
-          player will enjoy the game.
+          Developer ownership claims, listing approval
+          and Playtested verification are separate
+          decisions. Approving a claim does not make a
+          game Assessed or Verified.
         </p>
       </div>
     </main>

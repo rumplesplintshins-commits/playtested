@@ -1,24 +1,72 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase";
+import { isDisposableEmail } from "../../lib/disposable-email";
+
+type SignupRole = "player" | "tester" | "developer";
+
+const roleOptions: {
+  value: SignupRole;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "player",
+    label: "Player",
+    description: "Discover Games",
+  },
+  {
+    value: "tester",
+    label: "Tester",
+    description: "Playtest Games and Earn XP",
+  },
+  {
+    value: "developer",
+    label: "Game Developer",
+    description: "Submit and Manage Games",
+  },
+];
 
 export default function LoginPage() {
-const [mode, setMode] = useState<"login" | "signup">("login");
-
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  setMode(params.get("mode") === "signup" ? "signup" : "login");
-}, []);
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [signupRoles, setSignupRoles] = useState<SignupRole[]>(["player"]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMode(params.get("mode") === "signup" ? "signup" : "login");
+  }, []);
+
+  function toggleRole(role: SignupRole) {
+    setSignupRoles((current) =>
+      current.includes(role)
+        ? current.filter((item) => item !== role)
+        : [...current, role]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (mode === "signup" && signupRoles.length === 0) {
+      setMessage("Select at least one role to continue.");
+      return;
+    }
+
+    if (mode === "signup" && isDisposableEmail(normalizedEmail)) {
+      setMessage(
+        "Please use a permanent email address. Temporary or disposable email services aren't supported."
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -26,10 +74,13 @@ useEffect(() => {
 
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              signup_roles: signupRoles,
+            },
           },
         });
 
@@ -38,11 +89,13 @@ useEffect(() => {
         if (data.session) {
           window.location.href = "/";
         } else {
-          setMessage("Registration received. Check your email to confirm your account.");
+          setMessage(
+            "Registration received. Check your email to confirm your account."
+          );
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: normalizedEmail,
           password,
         });
 
@@ -76,45 +129,105 @@ useEffect(() => {
           <p className="mt-2 text-sm text-slate-400">
             {mode === "login"
               ? "Sign in to your Playtested account."
-              : "Join Playtested to discover and review games."}
+              : "Choose all the ways you want to use Playtested."}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            {mode === "signup" && (
+              <fieldset className="space-y-3">
+                <legend className="mb-3 text-sm font-medium">
+                  Your Roles
+                </legend>
+
+                {roleOptions.map((role) => {
+                  const checked = signupRoles.includes(role.value);
+
+                  return (
+                    <label
+                      key={role.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
+                        checked
+                          ? "border-emerald-400 bg-emerald-400/5"
+                          : "border-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleRole(role.value)}
+                        className="mt-1 h-4 w-4 accent-emerald-400"
+                      />
+
+                      <span>
+                        <span className="block text-sm font-semibold">
+                          {role.label} - {role.description}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+
+                <p className="text-xs text-slate-500">
+                  Select one, two or all three roles. You can take part in
+                  multiple areas of Playtested.
+                </p>
+              </fieldset>
+            )}
+
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium"
+              >
                 Email address
               </label>
+
               <input
                 id="email"
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setMessage("");
+                }}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium"
+              >
                 Password
               </label>
+
               <input
                 id="password"
                 type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
                 minLength={8}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setMessage("");
+                }}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400"
                 placeholder="At least 8 characters"
               />
             </div>
 
             {message && (
-              <p role="status" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">
+              <p
+                role="status"
+                className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200"
+              >
                 {message}
               </p>
             )}
@@ -133,7 +246,9 @@ useEffect(() => {
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-400">
-            {mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}
+            {mode === "login"
+              ? "New to Playtested?"
+              : "Already have an account?"}{" "}
             <button
               type="button"
               onClick={() => {

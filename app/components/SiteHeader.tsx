@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,33 +5,53 @@ import { createClient } from "../../lib/supabase";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Store", href: "/store" },
-  { label: "Library", href: "/library" },
-  { label: "Submit a Game", href: "/submit" },
+  { label: "Community", href: "/community" },
 ];
 
-const DEMO_ADMIN_BALANCE = 99999999.99;
-const DEMO_USER_BALANCE = 0;
+type SignupRole = "player" | "tester" | "developer";
 
 export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [role, setRole] = useState("user");
+  const [roles, setRoles] = useState<SignupRole[]>(["player"]);
+  const [testerXp, setTesterXp] = useState(0);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     let mounted = true;
 
-    async function loadRole(userId: string) {
+    async function loadProfile(userId: string) {
+      setProfileLoaded(false);
+
       const { data, error } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, roles, tester_xp")
         .eq("id", userId)
         .maybeSingle();
 
-      if (mounted) {
-        setRole(error ? "user" : data?.role ?? "user");
+      if (!mounted) return;
+
+      if (error) {
+        setRole("user");
+        setRoles(["player"]);
+        setTesterXp(0);
+      } else {
+        setRole(data?.role ?? "user");
+        setRoles(
+          Array.isArray(data?.roles)
+            ? data.roles.filter(
+                (item: string): item is SignupRole =>
+                  ["player", "tester", "developer"].includes(item)
+              )
+            : ["player"]
+        );
+        setTesterXp(data?.tester_xp ?? 0);
       }
+
+      setProfileLoaded(true);
     }
 
     async function checkSession() {
@@ -46,9 +65,12 @@ export default function SiteHeader() {
       setCheckingSession(false);
 
       if (session?.user) {
-        void loadRole(session.user.id);
+        void loadProfile(session.user.id);
       } else {
         setRole("user");
+        setRoles(["player"]);
+        setTesterXp(0);
+        setProfileLoaded(true);
       }
     }
 
@@ -72,9 +94,12 @@ export default function SiteHeader() {
       }
 
       if (session?.user) {
-        void loadRole(session.user.id);
+        void loadProfile(session.user.id);
       } else {
         setRole("user");
+        setRoles(["player"]);
+        setTesterXp(0);
+        setProfileLoaded(true);
       }
     });
 
@@ -96,45 +121,59 @@ export default function SiteHeader() {
     window.location.href = "/";
   }
 
-  const demoBalance =
-    role === "admin" ? DEMO_ADMIN_BALANCE : DEMO_USER_BALANCE;
+  const testerLevel = Math.floor(Math.max(0, testerXp) / 100) + 1;
+  const showRoleLinks = loggedIn && profileLoaded;
 
-  const formattedWallet = demoBalance.toLocaleString("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-  });
+  const allNavLinks = [
+    ...navLinks,
+    ...(showRoleLinks && roles.includes("developer")
+      ? [
+          { label: "Submit a Game", href: "/submit" },
+          { label: "My Games", href: "/my-submissions" },
+        ]
+      : []),
+    ...(showRoleLinks && roles.includes("tester")
+      ? [{ label: "Tester Hub", href: "/tester" }]
+      : []),
+    ...(!checkingSession && loggedIn && role === "admin"
+      ? [{ label: "Admin Review", href: "/admin/submissions" }]
+      : []),
+    ...(!checkingSession && loggedIn
+      ? [{ label: "Account", href: "/account" }]
+      : []),
+  ];
+
+  const navLinkClass =
+    "block rounded-md px-3 py-3 text-sm text-zinc-300 transition hover:bg-white/[0.05] hover:text-white sm:py-2";
 
   return (
     <header className="border-b border-white/[0.08]">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
         <a
           href="/"
-          className="shrink-0 font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider"
+          className="shrink-0 font-[family-name:var(--font-display)] text-xl font-bold tracking-wider sm:text-2xl"
         >
           PLAYTESTED<span className="text-[#77f29b]">_</span>
         </a>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {!checkingSession &&
             (loggedIn ? (
               <>
                 <a
                   href="/account"
-                  className="rounded-md px-2 py-2 text-sm text-zinc-300 transition hover:text-white"
+                  className="hidden rounded-md px-2 py-2 text-sm text-zinc-300 transition hover:text-white sm:inline-flex sm:items-center"
                 >
                   <span>Account</span>
-                  <span className="ml-1 text-zinc-500">(Wallet: </span>
-                  <span className="font-semibold text-[#77f29b]">
-                    {formattedWallet}
+                  <span className="ml-2 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
+                    {profileLoaded ? `Lv. ${testerLevel}` : "Lv. …"}
                   </span>
-                  <span className="text-zinc-500">)</span>
                 </a>
 
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-md border border-white/15 px-3 py-2 text-sm text-zinc-300 transition hover:border-white/30 hover:text-white"
+                  className="rounded-md border border-white/15 px-3 py-2 text-xs text-zinc-300 transition hover:border-white/30 hover:text-white sm:text-sm"
                 >
                   Log out
                 </button>
@@ -143,7 +182,7 @@ export default function SiteHeader() {
               <>
                 <a
                   href="/login"
-                  className="px-2 py-2 text-sm text-zinc-300 transition hover:text-white"
+                  className="rounded-md px-2 py-2 text-sm text-zinc-300 transition hover:text-white"
                 >
                   Log in
                 </a>
@@ -156,14 +195,25 @@ export default function SiteHeader() {
                 </a>
               </>
             ))}
+
+          <button
+            type="button"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-sm text-white transition hover:border-[#77f29b]/50 sm:hidden"
+          >
+            <span>{mobileMenuOpen ? "Close" : "Menu"}</span>
+            <span aria-hidden="true">{mobileMenuOpen ? "×" : "☰"}</span>
+          </button>
         </div>
       </div>
 
       <nav
         aria-label="Main navigation"
-        className="mx-auto flex max-w-7xl gap-6 overflow-x-auto px-6 pb-4 text-sm text-zinc-400"
+        className="mx-auto hidden max-w-7xl flex-wrap gap-x-6 gap-y-2 px-6 pb-4 text-sm text-zinc-400 sm:flex"
       >
-        {navLinks.map((link) => (
+        {allNavLinks.map((link) => (
           <a
             key={link.href}
             href={link.href}
@@ -172,34 +222,34 @@ export default function SiteHeader() {
             {link.label}
           </a>
         ))}
-
-        {!checkingSession && loggedIn && (
-          <a
-            href="/my-submissions"
-            className="shrink-0 transition hover:text-white"
-          >
-            My Submissions
-          </a>
-        )}
-
-        {!checkingSession && loggedIn && role === "admin" && (
-          <a
-            href="/admin/submissions"
-            className="shrink-0 transition hover:text-white"
-          >
-            Admin Review
-          </a>
-        )}
-
-        {!checkingSession && loggedIn && (
-          <a
-            href="/account"
-            className="shrink-0 transition hover:text-white"
-          >
-            Account
-          </a>
-        )}
       </nav>
+
+      {mobileMenuOpen && (
+        <nav
+          id="mobile-navigation"
+          aria-label="Mobile navigation"
+          className="border-t border-white/[0.08] bg-[#0e110f] px-4 py-3 sm:hidden"
+        >
+          <div className="mx-auto flex max-w-7xl flex-col gap-1">
+            {allNavLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={navLinkClass}
+              >
+                {link.label}
+              </a>
+            ))}
+
+            {loggedIn && (
+              <div className="mt-2 border-t border-white/10 px-3 pt-3 text-xs text-zinc-500">
+                Tester level: {profileLoaded ? testerLevel : "Loading…"}
+              </div>
+            )}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

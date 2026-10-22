@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { games as sampleGames } from "@/app/data/games";
 import { createClient } from "@/lib/supabase";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
@@ -18,9 +16,10 @@ type CatalogueGame = {
   image: string;
   aiType: string;
   score: number;
-  price: string;
   gameLink?: string;
+  steamAppId?: string;
   isSubmission: boolean;
+  isImportedSteam?: boolean;
   verificationStatus: VerificationStatus | null;
   submittedAt?: string;
 };
@@ -31,25 +30,18 @@ type VerificationRow = {
   quality_score: number | null;
 };
 
-type CartItem = {
-  game: CatalogueGame;
-  quantity: number;
-};
-
 const aiTypes = [
   "All AI types",
   "AI-generated",
   "AI-assisted",
   "No AI disclosed",
+  "AI use unknown",
 ];
-
-const priceOptions = ["All prices", "Free", "Paid"];
 
 const sortOptions = [
   "Featured",
   "Recently added",
   "Highest rated",
-  "Price: low to high",
   "Title A-Z",
 ];
 
@@ -58,23 +50,11 @@ const verificationOptions = [
   "Verified",
   "Assessed",
   "Not yet verified",
-  "Demo listings",
+  "Steam listings",
 ];
 
 const PAGE_SIZE = 12;
-
-function parsePrice(price: string): number {
-  const cleaned = price.replace(/[£,\s]/g, "");
-  const value = Number(cleaned);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function formatPrice(price: string): string {
-  if (!price || price.toLowerCase() === "free") return "Free";
-
-  const value = parsePrice(price);
-  return value === 0 ? "Free" : `£${value.toFixed(2)}`;
-}
+const DATABASE_BATCH_SIZE = 1000;
 
 function getVerificationStatus(
   verification?: VerificationRow
@@ -90,31 +70,62 @@ function getVerificationStatus(
   return "Not yet verified";
 }
 
+function normalizeSteamAppId(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function getFeaturedTier(game: CatalogueGame): number {
+  if (game.verificationStatus === "Verified") {
+    return 0;
+  }
+
+  if (game.verificationStatus === "Assessed") {
+    return 1;
+  }
+
+  if (game.isSubmission) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function getSearchRelevance(game: CatalogueGame, term: string): number {
+  const title = game.title.toLowerCase();
+  const developer = game.developer.toLowerCase();
+  const genre = game.genre.toLowerCase();
+  const description = game.description.toLowerCase();
+
+  if (title === term) return 100;
+  if (title.startsWith(term)) return 90;
+  if (title.includes(term)) return 80;
+  if (developer === term) return 70;
+  if (developer.startsWith(term)) return 60;
+  if (developer.includes(term)) return 50;
+  if (genre.includes(term)) return 30;
+  if (description.includes(term)) return 10;
+
+  return 0;
+}
+
 function VerificationBadge({
   status,
 }: {
   status: VerificationStatus | null;
 }) {
   if (!status) {
-    return (
-      <span className="inline-flex rounded-full border border-white/15 px-3 py-1 text-xs text-white/60">
-        Demo listing
-      </span>
-    );
+    return null;
   }
 
   const styles: Record<VerificationStatus, string> = {
-    Verified:
-      "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
-    Assessed:
-      "border-amber-400/40 bg-amber-400/10 text-amber-200",
-    "Not yet verified":
-      "border-white/20 bg-white/5 text-white/60",
+    Verified: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    Assessed: "border-amber-400/40 bg-amber-400/10 text-amber-200",
+    "Not yet verified": "border-white/20 bg-white/5 text-white/65",
   };
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs ${styles[status]}`}
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles[status]}`}
     >
       {status}
     </span>
@@ -123,7 +134,7 @@ function VerificationBadge({
 
 function GenreBadge({ genre }: { genre: string }) {
   return (
-    <span className="inline-flex w-fit rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300 sm:text-sm">
+    <span className="inline-flex w-fit rounded-md border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300 sm:text-sm">
       {genre}
     </span>
   );
@@ -132,22 +143,12 @@ function GenreBadge({ genre }: { genre: string }) {
 function GameCardContent({
   game,
   onOpen,
-  onBuy,
-  onAddToCart,
-  onInstall,
 }: {
   game: CatalogueGame;
   onOpen: () => void;
-  onBuy: () => void;
-  onAddToCart: () => void;
-  onInstall: () => void;
 }) {
-  const isFree = parsePrice(game.price) === 0;
-  const canPurchase =
-    game.isSubmission && game.verificationStatus === "Verified";
-
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] transition hover:border-white/25">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] transition hover:border-emerald-400/30">
       <button
         type="button"
         onClick={onOpen}
@@ -159,10 +160,11 @@ function GameCardContent({
           <img
             src={game.image}
             alt={game.title}
+            loading="lazy"
             className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-white/40">
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#253b2b] to-[#151815] text-sm text-white/45">
             Game image
           </div>
         )}
@@ -180,62 +182,24 @@ function GameCardContent({
           </h3>
         </button>
 
-        <p className="text-sm text-white/55">by {game.developer}</p>
+        <p className="text-sm text-white/60">by {game.developer}</p>
 
         <p className="line-clamp-3 text-sm leading-6 text-white/75">
           {game.description}
         </p>
 
         <div className="mt-auto space-y-3 pt-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm text-white/60">{game.aiType}</span>
-            <span className="font-semibold text-white">
-              {formatPrice(game.price)}
-            </span>
-          </div>
+          <span className="text-sm text-white/65">{game.aiType}</span>
 
-          <div className="flex flex-wrap gap-2">
-            {isFree ? (
-              <button
-                type="button"
-                onClick={onInstall}
-                className="flex-1 rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
-              >
-                Install
-              </button>
-            ) : canPurchase ? (
-              <>
-                <button
-                  type="button"
-                  onClick={onBuy}
-                  className="flex-1 rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
-                >
-                  Buy now
-                </button>
-                <button
-                  type="button"
-                  onClick={onAddToCart}
-                  className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/5"
-                >
-                  Add to cart
-                </button>
-              </>
-            ) : (
-              <span className="flex-1 rounded-md border border-white/10 px-3 py-2 text-center text-sm text-white/50">
-                {game.verificationStatus === "Verified"
-                  ? "Purchase unavailable"
-                  : "Awaiting verification"}
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={onOpen}
-              className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/5"
-            >
-              Details
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="w-full rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
+          >
+            {game.isImportedSteam
+              ? "View Steam page ↗"
+              : "View game and feedback"}
+          </button>
         </div>
       </div>
     </article>
@@ -251,19 +215,15 @@ export default function GameCatalogue() {
     "All verification statuses"
   );
   const [aiType, setAiType] = useState("All AI types");
-  const [priceFilter, setPriceFilter] = useState("All prices");
   const [sort, setSort] = useState("Featured");
   const [page, setPage] = useState(1);
 
   const [approvedGames, setApprovedGames] = useState<CatalogueGame[]>([]);
+  const [importedGames, setImportedGames] = useState<CatalogueGame[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
-
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartMessage, setCartMessage] = useState("");
-  const [checkoutMessage, setCheckoutMessage] = useState("");
-  const [showCart, setShowCart] = useState(false);
-  const [installGame, setInstallGame] = useState<CatalogueGame | null>(null);
+  const [importError, setImportError] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -271,60 +231,159 @@ export default function GameCatalogue() {
     async function loadGames() {
       const supabase = createClient();
 
-      const { data, error } = await supabase
-        .from("approved_games")
-        .select("*")
-        .order("submitted_at", { ascending: false });
+      try {
+        const [
+          { data: approvedData, error: approvedError },
+          { data: verificationData, error: verificationError },
+        ] = await Promise.all([
+          supabase
+            .from("approved_games")
+            .select("*")
+            .order("submitted_at", { ascending: false }),
+          supabase.from("published_game_verifications").select("*"),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (error) {
-        console.error("Could not load approved games:", error);
-        setLoadError(true);
+        if (approvedError) {
+          console.error("Could not load approved games:", approvedError);
+          setLoadError(true);
+        }
+
+        if (verificationError) {
+          console.error(
+            "Could not load published verifications:",
+            verificationError
+          );
+        }
+
+        const verifications = (verificationData ?? []) as VerificationRow[];
+
+        const mappedApprovedGames: CatalogueGame[] = (
+          approvedData ?? []
+        ).map((row: any) => {
+          const verification = verifications.find(
+            (item) => item.game_id === row.id
+          );
+
+          return {
+            key: row.id,
+            slug: `submission-${row.id}`,
+            title: row.title ?? "Untitled game",
+            developer:
+              row.developer_name ?? row.developer ?? "Unknown developer",
+            genre: row.genre ?? "Uncategorised",
+            description: row.description ?? "",
+            image: row.image_url ?? "",
+            aiType: row.ai_type ?? "AI use unknown",
+            score: verification?.quality_score ?? 0,
+            gameLink: row.game_link ?? "",
+            steamAppId: normalizeSteamAppId(row.steam_app_id),
+            isSubmission: true,
+            verificationStatus: getVerificationStatus(verification),
+            submittedAt: row.submitted_at ?? "",
+          };
+        });
+
+        setApprovedGames(mappedApprovedGames);
+
+        // Load only eligible Steam listings with complete core metadata.
+        // Demo/sample data is intentionally not included in the public catalogue.
+        const allImportedRows: any[] = [];
+        let from = 0;
+        let reachedEnd = false;
+
+        while (!reachedEnd) {
+          const to = from + DATABASE_BATCH_SIZE - 1;
+
+          const { data, error } = await supabase
+            .from("imported_games")
+            .select(
+              "id, steam_app_id, title, developer_name, genre, description, steam_url, image_url, imported_at, catalogue_eligible"
+            )
+            .eq("catalogue_eligible", true)
+            .eq("metadata_backfill_status", "complete")
+            .not("title", "is", null)
+            .not("developer_name", "is", null)
+            .not("genre", "is", null)
+            .not("image_url", "is", null)
+            .order("imported_at", { ascending: false })
+            .order("steam_app_id", { ascending: true })
+            .range(from, to);
+
+          if (cancelled) return;
+
+          if (error) {
+            console.error(
+              `Could not load eligible Steam listings starting at ${from}:`,
+              error
+            );
+            setImportError(true);
+            break;
+          }
+
+          const batch = data ?? [];
+          allImportedRows.push(...batch);
+
+          setLoadingProgress(
+            `Loaded ${allImportedRows.length.toLocaleString()} eligible Steam listings...`
+          );
+
+          if (batch.length < DATABASE_BATCH_SIZE) {
+            reachedEnd = true;
+          } else {
+            from += DATABASE_BATCH_SIZE;
+          }
+        }
+
+        if (cancelled) return;
+
+        const mappedImportedGames: CatalogueGame[] = allImportedRows.map(
+          (row: any) => ({
+            key: `steam-${row.steam_app_id}`,
+            slug: `steam-${row.steam_app_id}`,
+            title: row.title ?? "Untitled Steam game",
+            developer: row.developer_name ?? "Unknown developer",
+            genre: row.genre ?? "Uncategorised",
+            description: row.description ?? "",
+            image: row.image_url ?? "",
+            aiType: "AI use unknown",
+            score: 0,
+            gameLink:
+              row.steam_url ??
+              `https://store.steampowered.com/app/${row.steam_app_id}/`,
+            steamAppId: normalizeSteamAppId(row.steam_app_id),
+            isSubmission: false,
+            isImportedSteam: true,
+            verificationStatus: "Not yet verified",
+            submittedAt: row.imported_at ?? "",
+          })
+        );
+
+        const linkedSteamAppIds = new Set(
+          mappedApprovedGames
+            .map((game) => game.steamAppId)
+            .filter((appId): appId is string => Boolean(appId))
+        );
+
+        const uniqueImportedGames = mappedImportedGames.filter((game) => {
+          if (!game.steamAppId) return true;
+          return !linkedSteamAppIds.has(game.steamAppId);
+        });
+
+        setImportedGames(uniqueImportedGames);
+        setLoadingProgress("");
         setLoaded(true);
-        return;
+      } catch (error) {
+        console.error("Unexpected catalogue loading error:", error);
+
+        if (!cancelled) {
+          setLoadError(true);
+          setImportError(true);
+          setLoaded(true);
+          setLoadingProgress("");
+        }
       }
-
-      const { data: verificationData, error: verificationError } =
-        await supabase.from("published_game_verifications").select("*");
-
-      if (cancelled) return;
-
-      if (verificationError) {
-        console.error(
-          "Could not load published verifications:",
-          verificationError
-        );
-      }
-
-      const verifications = (verificationData ?? []) as VerificationRow[];
-
-      const mappedGames: CatalogueGame[] = (data ?? []).map((row: any) => {
-        const verification = verifications.find(
-          (item) => item.game_id === row.id
-        );
-
-        return {
-          key: row.id,
-          slug: `submission-${row.id}`,
-          title: row.title ?? "Untitled game",
-          developer:
-            row.developer_name ?? row.developer ?? "Unknown developer",
-          genre: row.genre ?? "Uncategorised",
-          description: row.description ?? "",
-          image: row.image_url ?? "",
-          aiType: row.ai_type ?? "No AI disclosed",
-          score: verification?.quality_score ?? 0,
-          price: row.price == null ? "Free" : String(row.price),
-          gameLink: row.game_link ?? "",
-          isSubmission: true,
-          verificationStatus: getVerificationStatus(verification),
-          submittedAt: row.submitted_at ?? "",
-        };
-      });
-
-      setApprovedGames(mappedGames);
-      setLoaded(true);
     }
 
     void loadGames();
@@ -334,27 +393,9 @@ export default function GameCatalogue() {
     };
   }, []);
 
-  const demoGames: CatalogueGame[] = (sampleGames as any[]).map(
-    (game, index) => ({
-      key: String(game.key ?? game.id ?? game.slug ?? index),
-      slug: String(game.slug ?? game.id ?? `demo-${index}`),
-      title: String(game.title ?? "Untitled game"),
-      developer: String(game.developer ?? "Unknown developer"),
-      genre: String(game.genre ?? "Uncategorised"),
-      description: String(game.description ?? ""),
-      image: String(game.image ?? game.image_url ?? ""),
-      aiType: String(game.aiType ?? game.ai_type ?? "No AI disclosed"),
-      score: Number(game.score ?? 0),
-      price: String(game.price ?? "Free"),
-      gameLink: game.gameLink ?? game.game_link ?? "",
-      isSubmission: false,
-      verificationStatus: null,
-    })
-  );
-
   const catalogueGames = useMemo(
-    () => [...approvedGames, ...demoGames],
-    [approvedGames]
+    () => [...approvedGames, ...importedGames],
+    [approvedGames, importedGames]
   );
 
   const genres = useMemo(
@@ -384,27 +425,21 @@ export default function GameCatalogue() {
       const searchableText =
         `${game.title} ${game.developer} ${game.genre} ${game.description}`.toLowerCase();
 
-      const matchesPrice =
-        priceFilter === "All prices" ||
-        (priceFilter === "Free" && parsePrice(game.price) === 0) ||
-        (priceFilter === "Paid" && parsePrice(game.price) > 0);
-
       const matchesVerification =
         verificationFilter === "All verification statuses" ||
-        (verificationFilter === "Demo listings" && !game.isSubmission) ||
+        (verificationFilter === "Steam listings" &&
+          game.isImportedSteam === true) ||
         (verificationFilter === "Verified" &&
           game.verificationStatus === "Verified") ||
         (verificationFilter === "Assessed" &&
           game.verificationStatus === "Assessed") ||
         (verificationFilter === "Not yet verified" &&
-          game.isSubmission &&
           game.verificationStatus === "Not yet verified");
 
       return (
         searchableText.includes(term) &&
         (genre === "All genres" || game.genre === genre) &&
         (aiType === "All AI types" || game.aiType === aiType) &&
-        matchesPrice &&
         matchesVerification
       );
     });
@@ -414,23 +449,48 @@ export default function GameCatalogue() {
         (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "")
       );
     } else if (sort === "Highest rated") {
-      result.sort((a, b) => b.score - a.score);
-    } else if (sort === "Price: low to high") {
-      result.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+      result.sort((a, b) => {
+        const scoreDifference = b.score - a.score;
+
+        if (scoreDifference !== 0) return scoreDifference;
+
+        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
+      });
     } else if (sort === "Title A-Z") {
       result.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (term) {
+      result.sort((a, b) => {
+        const relevanceDifference =
+          getSearchRelevance(b, term) - getSearchRelevance(a, term);
+
+        if (relevanceDifference !== 0) return relevanceDifference;
+
+        const tierDifference = getFeaturedTier(a) - getFeaturedTier(b);
+
+        if (tierDifference !== 0) return tierDifference;
+
+        const scoreDifference = b.score - a.score;
+
+        if (scoreDifference !== 0) return scoreDifference;
+
+        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
+      });
+    } else {
+      result.sort((a, b) => {
+        const tierDifference = getFeaturedTier(a) - getFeaturedTier(b);
+
+        if (tierDifference !== 0) return tierDifference;
+
+        const scoreDifference = b.score - a.score;
+
+        if (scoreDifference !== 0) return scoreDifference;
+
+        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
+      });
     }
 
     return result;
-  }, [
-    catalogueGames,
-    search,
-    genre,
-    aiType,
-    priceFilter,
-    sort,
-    verificationFilter,
-  ]);
+  }, [catalogueGames, search, genre, aiType, sort, verificationFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -439,23 +499,23 @@ export default function GameCatalogue() {
     currentPage * PAGE_SIZE
   );
 
-  // Prioritise real approved submissions, then fill remaining spaces with clearly labelled demos.
-  const recentlyAdded: CatalogueGame[] = [
-    ...approvedGames.slice(0, 4),
-    ...demoGames.slice(0, Math.max(0, 4 - Math.min(approvedGames.length, 4))),
-  ];
-
   function resetFilters() {
     setSearch("");
     setGenre("All genres");
     setVerificationFilter("All verification statuses");
     setAiType("All AI types");
-    setPriceFilter("All prices");
     setSort("Featured");
     setPage(1);
   }
 
   function openGame(game: CatalogueGame) {
+    if (game.isImportedSteam) {
+      if (game.gameLink) {
+        window.open(game.gameLink, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+
     if (game.isSubmission) {
       router.push(`/submissions/${game.key}`);
     } else {
@@ -463,70 +523,25 @@ export default function GameCatalogue() {
     }
   }
 
-  function addToCart(game: CatalogueGame) {
-    // Only verified real submissions can be added to the cart.
-    if (!game.isSubmission || game.verificationStatus !== "Verified") {
-      return;
-    }
-
-    setCart((current) => {
-      const existing = current.find((item) => item.game.key === game.key);
-
-      if (existing) {
-        return current.map((item) =>
-          item.game.key === game.key
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-
-      return [...current, { game, quantity: 1 }];
-    });
-
-    setCartMessage(`${game.title} added to your demo cart.`);
-    setCheckoutMessage("");
-  }
-
-  function buyNow(game: CatalogueGame) {
-    // Prevent unverified listings from entering the purchase flow.
-    if (!game.isSubmission || game.verificationStatus !== "Verified") {
-      return;
-    }
-
-    addToCart(game);
-    setShowCart(true);
-  }
-
-  function removeFromCart(key: string) {
-    setCart((current) => current.filter((item) => item.game.key !== key));
-    setCartMessage("");
-  }
-
-  const cartTotal = cart.reduce(
-    (total, item) => total + parsePrice(item.game.price) * item.quantity,
-    0
-  );
-
-  function checkout() {
-    setCheckoutMessage(
-      "Checkout is not connected yet. No payment has been taken."
-    );
-  }
+  const fieldClass =
+    "min-w-0 w-full rounded-lg border border-white/25 bg-[#151815] px-4 py-3.5 text-base font-medium text-white shadow-sm outline-none transition placeholder:text-white/45 hover:border-emerald-400/45 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/40";
 
   return (
-    <div className="w-full space-y-10 pt-12 text-white">
-      <section className="space-y-5">
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">
-            Discover games
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            The Playtested Store
-          </h1>
-          <p className="mt-3 max-w-2xl text-white/65">
-            Explore games with clearer AI disclosures and evidence-based
-            verification. A listing is not the same as a completed assessment.
-          </p>
+    <div className="w-full space-y-6 pt-2 text-white">
+      <section className="rounded-xl border border-white/15 bg-[#101310] p-4 shadow-lg shadow-black/20 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.2em] text-emerald-300">
+              Game discovery
+            </p>
+            <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl">
+              Find games worth your time
+            </h2>
+          </div>
+          <span className="text-sm text-white/55">
+            {filtered.length.toLocaleString()}{" "}
+            {filtered.length === 1 ? "game" : "games"} listed
+          </span>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -539,7 +554,7 @@ export default function GameCatalogue() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white placeholder:text-white/40"
+            className={fieldClass}
           />
 
           <select
@@ -549,7 +564,7 @@ export default function GameCatalogue() {
               setGenre(event.target.value);
               setPage(1);
             }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white"
+            className={fieldClass}
           >
             {genres.map((item) => (
               <option key={item} value={item}>
@@ -565,7 +580,7 @@ export default function GameCatalogue() {
               setVerificationFilter(event.target.value);
               setPage(1);
             }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white"
+            className={fieldClass}
           >
             {verificationOptions.map((item) => (
               <option key={item} value={item}>
@@ -581,7 +596,7 @@ export default function GameCatalogue() {
               setAiType(event.target.value);
               setPage(1);
             }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white"
+            className={fieldClass}
           >
             {Array.from(new Set([...aiTypes, ...availableAiTypes])).map(
               (item) => (
@@ -593,29 +608,13 @@ export default function GameCatalogue() {
           </select>
 
           <select
-            aria-label="Filter by price"
-            value={priceFilter}
-            onChange={(event) => {
-              setPriceFilter(event.target.value);
-              setPage(1);
-            }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white"
-          >
-            {priceOptions.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-
-          <select
             aria-label="Sort games"
             value={sort}
             onChange={(event) => {
               setSort(event.target.value);
               setPage(1);
             }}
-            className="min-w-0 rounded-md border border-white/15 bg-[#151815] px-3 py-3 text-sm text-white"
+            className={fieldClass}
           >
             {sortOptions.map((item) => (
               <option key={item} value={item}>
@@ -627,210 +626,50 @@ export default function GameCatalogue() {
           <button
             type="button"
             onClick={resetFilters}
-            className="rounded-md border border-white/20 px-4 py-3 text-sm text-white hover:bg-white/5"
+            className="rounded-lg border border-white/25 px-4 py-3.5 text-base font-semibold text-white transition hover:border-white/45 hover:bg-white/[0.06]"
           >
             Clear filters
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setShowCart(true);
-              setCheckoutMessage("");
-            }}
-            className="rounded-md border border-emerald-400/40 px-4 py-3 text-sm text-emerald-300 hover:bg-emerald-400/10"
-          >
-            Cart ({cart.reduce((total, item) => total + item.quantity, 0)})
           </button>
         </div>
       </section>
 
-      {recentlyAdded.length > 0 && (
-        <section className="relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-[#142119] via-[#101612] to-[#0c0f0d] p-4 shadow-[0_0_40px_rgba(119,242,155,0.04)] sm:p-6">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-emerald-400/[0.06] blur-3xl"
-          />
-
-          <div className="relative">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-300/10 text-2xl text-emerald-300">
-                  ✦
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-300">
-                    Fresh discoveries
-                  </p>
-                  <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-                    New to Playtested
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                    Recently submitted games and sample listings to explore.
-                    Demo examples are labelled so you know what is real.
-                  </p>
-                </div>
-              </div>
-
-              <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-                Recently added
-              </span>
-            </div>
-
-            <div className="my-5 h-px bg-gradient-to-r from-emerald-300/50 via-emerald-300/15 to-transparent" />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {recentlyAdded.map((game) => {
-                const isFree = parsePrice(game.price) === 0;
-                const canPurchase =
-                  game.isSubmission &&
-                  game.verificationStatus === "Verified";
-
-                return (
-                  <article
-                    key={game.key}
-                    className="group relative flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#111612] transition duration-200 hover:-translate-y-1 hover:border-emerald-300/50 hover:bg-[#172019]"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openGame(game)}
-                      className="relative block aspect-video w-full overflow-hidden bg-[#202520] text-left"
-                      aria-label={`View ${game.title} details`}
-                    >
-                      {game.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={game.image}
-                          alt={game.title}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-white/40">
-                          Game image
-                        </div>
-                      )}
-
-                      <span
-                        className={`absolute left-3 top-3 rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${
-                          game.isSubmission
-                            ? "border-emerald-300/40 bg-[#0b1b10]/90 text-emerald-300"
-                            : "border-amber-300/40 bg-[#21180a]/90 text-amber-200"
-                        }`}
-                      >
-                        {game.isSubmission ? "New listing" : "Demo example"}
-                      </span>
-                    </button>
-
-                    <div className="flex flex-1 flex-col gap-3 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <GenreBadge genre={game.genre} />
-                        <VerificationBadge status={game.verificationStatus} />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => openGame(game)}
-                        className="text-left"
-                      >
-                        <h3 className="font-semibold text-white transition hover:text-emerald-300">
-                          {game.title}
-                        </h3>
-                      </button>
-
-                      <p className="text-sm text-white/55">
-                        by {game.developer}
-                      </p>
-
-                      <div className="mt-auto space-y-3 pt-2">
-                        <div className="flex items-center justify-between gap-2 border-t border-white/[0.08] pt-3">
-                          <span className="text-xs text-white/50">
-                            {game.isSubmission
-                              ? "Community submission"
-                              : "Sample catalogue entry"}
-                          </span>
-                          <span className="font-semibold text-white">
-                            {formatPrice(game.price)}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {isFree ? (
-                            <button
-                              type="button"
-                              onClick={() => setInstallGame(game)}
-                              className="flex-1 rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
-                            >
-                              Install
-                            </button>
-                          ) : canPurchase ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => buyNow(game)}
-                                className="flex-1 rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
-                              >
-                                Buy now
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => addToCart(game)}
-                                className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/5"
-                              >
-                                Add to cart
-                              </button>
-                            </>
-                          ) : (
-                            <span className="flex-1 rounded-md border border-white/10 px-3 py-2 text-center text-sm text-white/50">
-                              {game.verificationStatus === "Verified"
-                                ? "Purchase unavailable"
-                                : "Awaiting verification"}
-                            </span>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => openGame(game)}
-                            className="rounded-md border border-white/20 px-3 py-2 text-sm text-white hover:bg-white/5"
-                          >
-                            Details
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-5 border-t border-white/10 pt-8">
+      <section className="space-y-5 border-t border-white/10 pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+            <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
               Explore the catalogue
             </p>
-            <h2 className="text-2xl font-bold tracking-tight">
-              Browse all games
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              Browse games and feedback
             </h2>
-            <p className="mt-1 text-sm text-white/55">
-              {filtered.length} {filtered.length === 1 ? "game" : "games"} found
+            <p className="mt-2 text-base text-white/60">
+              {filtered.length.toLocaleString()}{" "}
+              {filtered.length === 1 ? "game" : "games"} found
             </p>
           </div>
 
           {!loaded && (
-            <p className="text-sm text-white/50">
-              Loading approved listings...
+            <p className="text-sm text-white/55">
+              {loadingProgress || "Loading catalogue listings..."}
             </p>
+          )}
+
+          {loaded && loadingProgress && (
+            <p className="text-sm text-white/55">{loadingProgress}</p>
           )}
         </div>
 
         {loadError && (
           <p className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-100">
-            Approved listings could not be loaded. Demo listings may still be
-            available. Check the browser console for details.
+            Approved listings could not be loaded. Imported Steam listings may
+            still be available. Check the browser console for details.
+          </p>
+        )}
+
+        {importError && (
+          <p className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-100">
+            Some eligible imported Steam listings could not be loaded. The
+            catalogue may be incomplete. Check the browser console for details.
           </p>
         )}
 
@@ -841,18 +680,16 @@ export default function GameCatalogue() {
                 key={game.key}
                 game={game}
                 onOpen={() => openGame(game)}
-                onBuy={() => buyNow(game)}
-                onAddToCart={() => addToCart(game)}
-                onInstall={() => setInstallGame(game)}
               />
             ))}
           </div>
         ) : (
           <div className="rounded-xl border border-white/10 bg-[#151815] px-5 py-12 text-center">
             <h3 className="text-lg font-semibold">No games found</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
-              Try another verification status or clear your filters. Verified
-              only shows listings that meet the published verification criteria.
+            <p className="mx-auto mt-2 max-w-md text-sm text-white/60">
+              Try another verification status or clear your filters. Steam
+              listings only appear after they meet the preliminary catalogue
+              eligibility and metadata requirements.
             </p>
             <button
               type="button"
@@ -873,30 +710,32 @@ export default function GameCatalogue() {
               type="button"
               disabled={currentPage === 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className="rounded-md border border-white/20 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
+              className="rounded-md border border-white/25 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
             >
               Previous
             </button>
 
-            {Array.from({ length: pageCount }, (_, index) => index + 1).map(
-              (pageNumber) => (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  aria-current={
-                    currentPage === pageNumber ? "page" : undefined
-                  }
-                  onClick={() => setPage(pageNumber)}
-                  className={`rounded-md border px-3 py-2 text-sm ${
-                    currentPage === pageNumber
-                      ? "border-emerald-400 bg-emerald-400 text-black"
-                      : "border-white/20 text-white hover:bg-white/5"
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              )
-            )}
+            {Array.from({ length: Math.min(pageCount, 7) }, (_, index) => {
+              const startPage = Math.max(
+                1,
+                Math.min(currentPage - 3, pageCount - 6)
+              );
+              return startPage + index;
+            }).map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                aria-current={currentPage === pageNumber ? "page" : undefined}
+                onClick={() => setPage(pageNumber)}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  currentPage === pageNumber
+                    ? "border-emerald-400 bg-emerald-400 font-bold text-black"
+                    : "border-white/25 text-white hover:bg-white/5"
+                }`}
+              >
+                {pageNumber}
+              </button>
+            ))}
 
             <button
               type="button"
@@ -904,140 +743,13 @@ export default function GameCatalogue() {
               onClick={() =>
                 setPage((current) => Math.min(pageCount, current + 1))
               }
-              className="rounded-md border border-white/20 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
+              className="rounded-md border border-white/25 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
             >
               Next
             </button>
           </nav>
         )}
       </section>
-
-      {showCart && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-          role="presentation"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setShowCart(false);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cart-heading"
-            className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-white/15 bg-[#151815] p-6"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <h2 id="cart-heading" className="text-xl font-semibold">
-                Your cart
-              </h2>
-              <button
-                type="button"
-                onClick={() => setShowCart(false)}
-                className="rounded-md border border-white/20 px-3 py-1 text-sm"
-              >
-                Close
-              </button>
-            </div>
-
-            {cart.length === 0 ? (
-              <p className="py-8 text-sm text-white/60">
-                Your cart is empty.
-              </p>
-            ) : (
-              <div className="mt-5 space-y-4">
-                {cart.map((item) => (
-                  <div
-                    key={item.game.key}
-                    className="flex items-center justify-between gap-4 border-b border-white/10 pb-4"
-                  >
-                    <div>
-                      <p className="font-medium">{item.game.title}</p>
-                      <p className="mt-1 text-sm text-white/55">
-                        {item.quantity} × {formatPrice(item.game.price)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(item.game.key)}
-                      className="text-sm text-red-300 hover:text-red-200"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-
-                <div className="flex justify-between font-semibold">
-                  <span>Demo total</span>
-                  <span>£{cartTotal.toFixed(2)}</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={checkout}
-                  className="w-full rounded-md bg-emerald-400 px-4 py-3 text-sm font-semibold text-black hover:bg-emerald-300"
-                >
-                  Continue to checkout
-                </button>
-              </div>
-            )}
-
-            {cartMessage && (
-              <p className="mt-4 text-sm text-emerald-300">{cartMessage}</p>
-            )}
-
-            {checkoutMessage && (
-              <p className="mt-4 rounded-md border border-amber-400/30 p-3 text-sm text-amber-100">
-                {checkoutMessage}
-              </p>
-            )}
-
-            <p className="mt-4 text-xs text-white/40">
-              Cart and checkout are currently a prototype. No payment is taken.
-            </p>
-          </section>
-        </div>
-      )}
-
-      {installGame && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="install-heading"
-            className="w-full max-w-md rounded-xl border border-white/15 bg-[#151815] p-6"
-          >
-            <h2 id="install-heading" className="text-xl font-semibold">
-              {installGame.title}
-            </h2>
-
-            <p className="mt-3 text-sm leading-6 text-white/65">
-              Direct game downloads and installation are not available yet on
-              Playtested.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {installGame.gameLink && (
-                <a
-                  href={installGame.gameLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md bg-emerald-400 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
-                >
-                  Visit game website
-                </a>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setInstallGame(null)}
-                className="rounded-md border border-white/20 px-4 py-2 text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }
