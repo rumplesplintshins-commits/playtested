@@ -29,7 +29,7 @@ type ClaimFilter =
   | "Needs attention"
   | ClaimStatus;
 
-type ReviewTab = "submissions" | "claims";
+type ReviewTab = "submissions" | "claims" | "playtests";
 
 type AIStatus =
   | "Not Reviewed"
@@ -74,6 +74,23 @@ type GameClaim = {
   createdAt: string;
   reviewedAt: string;
   reviewedBy: string;
+};
+
+type TestReview = {
+  test_id: string;
+  submission_id: string;
+  tester_id: string;
+  tester_name: string;
+  game_title: string;
+  status: string;
+  gameplay_score: number | null;
+  performance_score: number | null;
+  bugs_found: string | null;
+  feedback: string | null;
+  hours_played: number | null;
+  submitted_at: string | null;
+  review_outcome: string;
+  xp_awarded: boolean;
 };
 
 type Verification = {
@@ -319,6 +336,11 @@ export default function AdminSubmissionsPage() {
 
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [claims, setClaims] = useState<GameClaim[]>([]);
+  const [testReviews, setTestReviews] = useState<TestReview[]>([]);
+  const [testReviewsLoaded, setTestReviewsLoaded] = useState(false);
+  const [testReviewError, setTestReviewError] = useState("");
+  const [testReviewMessage, setTestReviewMessage] = useState("");
+  const [busyTestReviewId, setBusyTestReviewId] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedClaimId, setSelectedClaimId] =
@@ -688,6 +710,111 @@ export default function AdminSubmissionsPage() {
   }, [isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) return;
+
+    let mounted = true;
+    const supabase = createClient();
+
+    async function loadTestReviews() {
+      setTestReviewsLoaded(false);
+      setTestReviewError("");
+
+      const { data, error } = await supabase.rpc(
+        "get_admin_community_test_reviews"
+      );
+
+      if (!mounted) return;
+
+      if (error) {
+        setTestReviewError(
+          `Could not load playtest reviews: ${error.message}`
+        );
+        setTestReviewsLoaded(true);
+        return;
+      }
+
+      setTestReviews((data ?? []) as TestReview[]);
+      setTestReviewsLoaded(true);
+    }
+
+    void loadTestReviews();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAdmin]);
+
+  async function refreshTestReviews() {
+    setTestReviewsLoaded(false);
+    setTestReviewError("");
+
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc(
+      "get_admin_community_test_reviews"
+    );
+
+    if (error) {
+      setTestReviewError(
+        `Could not load playtest reviews: ${error.message}`
+      );
+      setTestReviewsLoaded(true);
+      return;
+    }
+
+    setTestReviews((data ?? []) as TestReview[]);
+    setTestReviewsLoaded(true);
+  }
+
+  async function reviewTest(
+    testId: string,
+    outcome: "accepted" | "rejected"
+  ) {
+    const action = outcome === "accepted" ? "accept" : "reject";
+
+    if (
+      !window.confirm(
+        outcome === "accepted"
+          ? "Accept this test? The tester will receive 100 XP."
+          : "Reject this test? No XP will be awarded."
+      )
+    ) {
+      return;
+    }
+
+    setBusyTestReviewId(testId);
+    setTestReviewError("");
+    setTestReviewMessage("");
+
+    const supabase = createClient();
+    const { error } = await supabase.rpc(
+      "review_community_game_test",
+      {
+        p_test_id: testId,
+        p_outcome: outcome,
+      }
+    );
+
+    if (error) {
+      setTestReviewError(
+        `Could not ${action} the test: ${error.message}`
+      );
+      setBusyTestReviewId(null);
+      return;
+    }
+
+    setTestReviews((current) =>
+      current.filter((review) => review.test_id !== testId)
+    );
+
+    setTestReviewMessage(
+      outcome === "accepted"
+        ? "Test accepted. 100 XP awarded."
+        : "Test rejected. No XP awarded."
+    );
+    setBusyTestReviewId(null);
+  }
+
+  useEffect(() => {
     if (!selectedSubmission) {
       setDraftStatus("Pending Review");
       setReviewReasonDraft("");
@@ -875,42 +1002,27 @@ export default function AdminSubmissionsPage() {
 
     const supabase = createClient();
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const { error } = await supabase.rpc("review_game_claim", {
+      p_claim_id: selectedClaim.id,
+      p_status: claimStatusDraft,
+      p_admin_notes: claimAdminNotesDraft.trim() || null,
+    });
 
-    if (userError || !user) {
-      setSavingClaimId(null);
-      setClaimError("Your session has expired. Please log in again.");
+    setSavingClaimId(null);
+
+    if (error) {
+      console.error("Could not review game claim:", error);
+
+      setClaimError(
+        `The claim decision could not be saved: ${error.message}`
+      );
+
       return;
     }
 
     const reviewed =
       claimStatusDraft === "Approved" ||
       claimStatusDraft === "Rejected";
-
-    const { error } = await supabase
-      .from("game_claims")
-      .update({
-        status: claimStatusDraft,
-        admin_notes: claimAdminNotesDraft.trim() || null,
-        reviewed_at: reviewed
-          ? new Date().toISOString()
-          : null,
-        reviewed_by: reviewed ? user.id : null,
-      })
-      .eq("id", selectedClaim.id);
-
-    setSavingClaimId(null);
-
-    if (error) {
-      console.error("Could not update game claim:", error);
-      setClaimError(
-        `The claim decision could not be saved: ${error.message}`
-      );
-      return;
-    }
 
     const reviewedAt = reviewed
       ? new Date().toISOString()
@@ -924,7 +1036,6 @@ export default function AdminSubmissionsPage() {
               status: claimStatusDraft,
               adminNotes: claimAdminNotesDraft.trim(),
               reviewedAt,
-              reviewedBy: reviewed ? user.id : "",
             }
           : claim
       )
@@ -932,7 +1043,7 @@ export default function AdminSubmissionsPage() {
 
     setClaimMessage(
       claimStatusDraft === "Approved"
-        ? "Developer claim approved."
+        ? "Developer claim approved and the game has been linked to the developer account."
         : claimStatusDraft === "Rejected"
           ? "Developer claim rejected."
           : claimStatusDraft === "Needs More Information"
@@ -1181,8 +1292,12 @@ export default function AdminSubmissionsPage() {
   const claimNeedsAttentionCount =
     pendingClaimCount + claimNeedsInfoCount;
 
+  const playtestReviewCount = testReviews.length;
+
   const totalNeedsAttention =
-    submissionNeedsAttentionCount + claimNeedsAttentionCount;
+    submissionNeedsAttentionCount +
+    claimNeedsAttentionCount +
+    playtestReviewCount;
 
   async function saveVerification() {
     if (!selectedSubmission) return;
@@ -1454,9 +1569,9 @@ export default function AdminSubmissionsPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Review developer submissions and ownership
-            claims, then manage Playtested assessments
-            separately.
+            Review developer submissions, ownership claims
+            and independent playtest reports, then manage
+            Playtested assessments separately.
           </p>
         </div>
 
@@ -1475,9 +1590,8 @@ export default function AdminSubmissionsPage() {
               value: pendingClaimCount,
             },
             {
-              label: "Needs more info",
-              value:
-                needsInfoCount + claimNeedsInfoCount,
+              label: "Playtest reviews",
+              value: playtestReviewCount,
             },
           ].map((stat) => (
             <div
@@ -1605,6 +1719,23 @@ export default function AdminSubmissionsPage() {
             {claimNeedsAttentionCount > 0 && (
               <span className="ml-2 rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-200">
                 {claimNeedsAttentionCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReviewTab("playtests")}
+            className={`border-b-2 px-5 py-4 text-sm font-semibold transition ${
+              reviewTab === "playtests"
+                ? "border-emerald-400 text-emerald-300"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Playtest reviews
+            {playtestReviewCount > 0 && (
+              <span className="ml-2 rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-200">
+                {playtestReviewCount}
               </span>
             )}
           </button>
@@ -2973,6 +3104,155 @@ export default function AdminSubmissionsPage() {
                     </div>
                   )}
                 </section>
+              </div>
+            )}
+          </>
+        )}
+
+        {reviewTab === "playtests" && (
+          <>
+            {testReviewMessage && (
+              <div className="mb-6 rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-300">
+                {testReviewMessage}
+              </div>
+            )}
+
+            {testReviewError && (
+              <div className="mb-6 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">
+                {testReviewError}
+              </div>
+            )}
+
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Independent playtest reviews
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Review submitted Tester Hub reports. Accepted tests award 100 XP and can contribute to Playtested assessment evidence.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void refreshTestReviews()}
+                disabled={!testReviewsLoaded || busyTestReviewId !== null}
+                className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {!testReviewsLoaded ? (
+              <div className={`${panelClass} p-8 text-sm text-zinc-400`}>
+                Loading submitted tests...
+              </div>
+            ) : testReviews.length === 0 && !testReviewError ? (
+              <div className={`${panelClass} p-8`}>
+                <h3 className="text-lg font-semibold">All caught up</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  There are no independent playtests awaiting review.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {testReviews.map((review) => (
+                  <article
+                    key={review.test_id}
+                    className={`${panelClass} p-5 sm:p-6`}
+                  >
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                          Independent Tester Hub report
+                        </p>
+                        <h3 className="mt-2 text-xl font-bold">
+                          {review.game_title}
+                        </h3>
+                        <p className="mt-1 text-sm text-zinc-400">
+                          Tester: {review.tester_name}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Submitted: {review.submitted_at ? formatDate(review.submitted_at) : "Date unavailable"}
+                        </p>
+                      </div>
+
+                      <span className="h-fit w-fit rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200">
+                        Awaiting review
+                      </span>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                        <p className={labelClass}>Gameplay score</p>
+                        <p className="text-2xl font-bold">
+                          {review.gameplay_score ?? "N/A"}
+                          {review.gameplay_score !== null && (
+                            <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                        <p className={labelClass}>Performance score</p>
+                        <p className="text-2xl font-bold">
+                          {review.performance_score ?? "N/A"}
+                          {review.performance_score !== null && (
+                            <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                        <p className={labelClass}>Time played</p>
+                        <p className="text-2xl font-bold">
+                          {review.hours_played ?? "N/A"}
+                          {review.hours_played !== null && (
+                            <span className="ml-1 text-sm font-normal text-zinc-500"> hours</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                      <div>
+                        <p className={labelClass}>Tester feedback</p>
+                        <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
+                          {review.feedback || "No feedback provided."}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className={labelClass}>Bugs reported</p>
+                        <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
+                          {review.bugs_found || "No bugs reported."}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap gap-3 border-t border-zinc-800 pt-5">
+                      <button
+                        type="button"
+                        onClick={() => void reviewTest(review.test_id, "accepted")}
+                        disabled={busyTestReviewId !== null}
+                        className="rounded-lg bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {busyTestReviewId === review.test_id
+                          ? "Processing..."
+                          : "Accept · Award 100 XP"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => void reviewTest(review.test_id, "rejected")}
+                        disabled={busyTestReviewId !== null}
+                        className="rounded-lg border border-red-400/30 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Reject · No XP
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </>

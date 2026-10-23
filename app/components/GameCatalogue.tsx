@@ -20,6 +20,7 @@ type CatalogueGame = {
   steamAppId?: string;
   isSubmission: boolean;
   isImportedSteam?: boolean;
+  isNsfw: boolean;
   verificationStatus: VerificationStatus | null;
   submittedAt?: string;
 };
@@ -118,7 +119,8 @@ function VerificationBadge({
   }
 
   const styles: Record<VerificationStatus, string> = {
-    Verified: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
+    Verified:
+      "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
     Assessed: "border-amber-400/40 bg-amber-400/10 text-amber-200",
     "Not yet verified": "border-white/20 bg-white/5 text-white/65",
   };
@@ -215,6 +217,7 @@ export default function GameCatalogue() {
     "All verification statuses"
   );
   const [aiType, setAiType] = useState("All AI types");
+  const [includeNsfw, setIncludeNsfw] = useState(false);
   const [sort, setSort] = useState("Featured");
   const [page, setPage] = useState(1);
 
@@ -280,6 +283,7 @@ export default function GameCatalogue() {
             gameLink: row.game_link ?? "",
             steamAppId: normalizeSteamAppId(row.steam_app_id),
             isSubmission: true,
+            isNsfw: false,
             verificationStatus: getVerificationStatus(verification),
             submittedAt: row.submitted_at ?? "",
           };
@@ -299,7 +303,7 @@ export default function GameCatalogue() {
           const { data, error } = await supabase
             .from("imported_games")
             .select(
-              "id, steam_app_id, title, developer_name, genre, description, steam_url, image_url, imported_at, catalogue_eligible"
+              "id, steam_app_id, title, developer_name, genre, description, steam_url, image_url, imported_at, catalogue_eligible, is_nsfw"
             )
             .eq("catalogue_eligible", true)
             .eq("metadata_backfill_status", "complete")
@@ -355,6 +359,7 @@ export default function GameCatalogue() {
             steamAppId: normalizeSteamAppId(row.steam_app_id),
             isSubmission: false,
             isImportedSteam: true,
+            isNsfw: row.is_nsfw === true,
             verificationStatus: "Not yet verified",
             submittedAt: row.imported_at ?? "",
           })
@@ -436,11 +441,14 @@ export default function GameCatalogue() {
         (verificationFilter === "Not yet verified" &&
           game.verificationStatus === "Not yet verified");
 
+      const matchesNsfw = includeNsfw || !game.isNsfw;
+
       return (
         searchableText.includes(term) &&
         (genre === "All genres" || game.genre === genre) &&
         (aiType === "All AI types" || game.aiType === aiType) &&
-        matchesVerification
+        matchesVerification &&
+        matchesNsfw
       );
     });
 
@@ -490,7 +498,15 @@ export default function GameCatalogue() {
     }
 
     return result;
-  }, [catalogueGames, search, genre, aiType, sort, verificationFilter]);
+  }, [
+    catalogueGames,
+    search,
+    genre,
+    aiType,
+    includeNsfw,
+    sort,
+    verificationFilter,
+  ]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -504,6 +520,7 @@ export default function GameCatalogue() {
     setGenre("All genres");
     setVerificationFilter("All verification statuses");
     setAiType("All AI types");
+    setIncludeNsfw(false);
     setSort("Featured");
     setPage(1);
   }
@@ -623,6 +640,31 @@ export default function GameCatalogue() {
             ))}
           </select>
 
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-white/25 bg-[#151815] px-4 py-3.5 transition hover:border-emerald-400/45">
+            <span>
+              <span className="block text-base font-semibold text-white">
+                Include NSFW
+              </span>
+              <span className="mt-0.5 block text-xs text-white/50">
+                Show explicit adult-content games
+              </span>
+            </span>
+
+            <span className="relative inline-flex shrink-0">
+              <input
+                type="checkbox"
+                checked={includeNsfw}
+                onChange={(event) => {
+                  setIncludeNsfw(event.target.checked);
+                  setPage(1);
+                }}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-white/20 transition peer-checked:bg-emerald-400" />
+              <span className="pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5 peer-checked:bg-black" />
+            </span>
+          </label>
+
           <button
             type="button"
             onClick={resetFilters}
@@ -720,6 +762,7 @@ export default function GameCatalogue() {
                 1,
                 Math.min(currentPage - 3, pageCount - 6)
               );
+
               return startPage + index;
             }).map((pageNumber) => (
               <button

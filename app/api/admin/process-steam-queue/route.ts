@@ -25,6 +25,11 @@ type SteamAppDetails = {
     is_free?: boolean;
     price_overview?: { final_formatted?: string };
     release_date?: { date?: string };
+    required_age?: number | string;
+    content_descriptors?: {
+      ids?: number[];
+      notes?: string;
+    };
   };
 };
 
@@ -101,6 +106,32 @@ const NON_GAME_GENRES = new Set([
   "audio production",
 ]);
 
+/**
+ * Playtested deliberately uses a conservative NSFW classification.
+ *
+ * Mature games are not automatically NSFW. An 18+ age rating, violence,
+ * gore, nudity, sexual themes, or revealing outfits alone do not cause a
+ * listing to be hidden.
+ *
+ * We only classify a Steam listing as NSFW when Steam's own content notes
+ * contain language strongly indicating explicit adult sexual content.
+ */
+const EXPLICIT_ADULT_CONTENT_PATTERNS = [
+  /\badult[\s-]*only sexual content\b/i,
+  /\bexplicit sexual content\b/i,
+  /\bsexually explicit content\b/i,
+  /\bexplicit sex\b/i,
+  /\bexplicit sexual activity\b/i,
+  /\bexplicit sexual acts?\b/i,
+  /\bsexual intercourse\b/i,
+  /\bgraphic sexual content\b/i,
+  /\bgraphic sex\b/i,
+  /\bpornographic\b/i,
+  /\bpornography\b/i,
+  /\bhardcore sexual\b/i,
+  /\bhardcore sex\b/i,
+];
+
 function getObviousNonGameReason(title: string): string | null {
   const patterns: [RegExp, string][] = [
     [
@@ -114,7 +145,10 @@ function getObviousNonGameReason(title: string): string | null {
     [/\bdedicated server\b|\bgame server\b/i, "Server software"],
     [/\bsoftware development kit\b|\bSDK\b/i, "Development tool"],
     [/\blevel editor\b|\bmap editor\b|\bmodding tools\b/i, "Development tool"],
-    [/\bwallpaper pack\b|\bdigital art collection\b/i, "Supplementary content"],
+    [
+      /\bwallpaper pack\b|\bdigital art collection\b/i,
+      "Supplementary content",
+    ],
   ];
 
   for (const [pattern, reason] of patterns) {
@@ -134,6 +168,53 @@ function parseReleaseDate(value?: string): string | null {
   return Number.isNaN(parsed.getTime())
     ? null
     : parsed.toISOString().slice(0, 10);
+}
+
+function parseRequiredAge(value?: number | string): number | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return Math.floor(parsed);
+}
+
+function getContentDescriptorIds(
+  contentDescriptors?: SteamAppDetails["data"] extends infer T
+    ? T extends { content_descriptors?: infer C }
+      ? C
+      : never
+    : never
+): number[] {
+  if (!contentDescriptors || !Array.isArray(contentDescriptors.ids)) {
+    return [];
+  }
+
+  return contentDescriptors.ids.filter(
+    (value): value is number =>
+      typeof value === "number" && Number.isFinite(value)
+  );
+}
+
+function isExplicitAdultContent(notes?: string): boolean {
+  if (!notes) {
+    return false;
+  }
+
+  const normalizedNotes = notes.trim();
+
+  if (!normalizedNotes) {
+    return false;
+  }
+
+  return EXPLICIT_ADULT_CONTENT_PATTERNS.some((pattern) =>
+    pattern.test(normalizedNotes)
+  );
 }
 
 function normalizedName(value: string): string {
@@ -791,6 +872,19 @@ export async function POST(request: Request) {
           ? "Free"
           : game.price_overview?.final_formatted ?? null;
 
+        const requiredAge = parseRequiredAge(game.required_age);
+
+        const contentDescriptorIds = getContentDescriptorIds(
+          game.content_descriptors
+        );
+
+        const contentDescriptorNotes =
+          game.content_descriptors?.notes?.trim() || null;
+
+        const isNsfw = isExplicitAdultContent(
+          contentDescriptorNotes ?? undefined
+        );
+
         const { data: existing, error: existingError } =
           await adminSupabase
             .from("imported_games")
@@ -843,6 +937,10 @@ export async function POST(request: Request) {
                 parseReleaseDate(game.release_date?.date) ??
                 existingGame?.release_date ??
                 null,
+              required_age: requiredAge,
+              content_descriptor_ids: contentDescriptorIds,
+              content_descriptor_notes: contentDescriptorNotes,
+              is_nsfw: isNsfw,
               last_synced_at: now,
               metadata_backfill_status: "complete",
               catalogue_eligible:

@@ -67,6 +67,9 @@ type CommunityPlaytestRow = {
   approved_game_id: string | null;
   submission_id: string | null;
   title: string;
+  share_token: string;
+  access_link: string;
+  instructions: string;
   focus_areas: string[] | null;
   audience: PlaytestAudience;
   target_testers: number;
@@ -80,6 +83,9 @@ type CommunityPlaytestRow = {
 type LinkedPlaytest = {
   id: string;
   status: PlaytestStatus;
+  shareToken: string;
+  accessLink: string;
+  instructions: string;
   focusAreas: string[];
   audience: PlaytestAudience;
   targetTesters: number;
@@ -109,6 +115,7 @@ type LinkedGame = {
     | "Not yet verified";
   linkedAt: string;
   latestPlaytest: LinkedPlaytest | null;
+  playtests: LinkedPlaytest[];
 };
 
 function LoadingDashboard() {
@@ -178,63 +185,64 @@ function verificationStatusClasses(
   return "border-white/10 bg-white/[0.04] text-zinc-300";
 }
 
-function findLatestPlaytest(
+function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
+  return {
+    id: playtest.id,
+    status: playtest.status,
+    shareToken: playtest.share_token,
+    accessLink: playtest.access_link,
+    instructions: playtest.instructions,
+    focusAreas: playtest.focus_areas ?? [],
+    audience: playtest.audience,
+    targetTesters: playtest.target_testers,
+    estimatedMinutes: playtest.estimated_minutes,
+    releaseLabel: playtest.release_label,
+    createdAt: playtest.created_at,
+    publishedAt: playtest.published_at,
+  };
+}
+
+function findPlaytestsForGame(
   game: {
     importedGameId: string | null;
     approvedGameId: string | null;
     submissionId: string | null;
   },
   playtests: CommunityPlaytestRow[]
-): LinkedPlaytest | null {
-  const matches = playtests.filter((playtest) => {
-    if (
-      game.importedGameId &&
-      playtest.imported_game_id === game.importedGameId
-    ) {
-      return true;
-    }
+): LinkedPlaytest[] {
+  return playtests
+    .filter((playtest) => {
+      if (
+        game.importedGameId &&
+        playtest.imported_game_id === game.importedGameId
+      ) {
+        return true;
+      }
 
-    if (
-      game.approvedGameId &&
-      playtest.approved_game_id === game.approvedGameId
-    ) {
-      return true;
-    }
+      if (
+        game.approvedGameId &&
+        playtest.approved_game_id === game.approvedGameId
+      ) {
+        return true;
+      }
 
-    if (
-      game.submissionId &&
-      playtest.submission_id === game.submissionId
-    ) {
-      return true;
-    }
+      if (
+        game.submissionId &&
+        playtest.submission_id === game.submissionId
+      ) {
+        return true;
+      }
 
-    return false;
-  });
-
-  if (matches.length === 0) {
-    return null;
-  }
-
-  const sorted = [...matches].sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() -
-      new Date(a.created_at).getTime()
-  );
-
-  const latest = sorted[0];
-
-  return {
-    id: latest.id,
-    status: latest.status,
-    focusAreas: latest.focus_areas ?? [],
-    audience: latest.audience,
-    targetTesters: latest.target_testers,
-    estimatedMinutes: latest.estimated_minutes,
-    releaseLabel: latest.release_label,
-    createdAt: latest.created_at,
-    publishedAt: latest.published_at,
-  };
+      return false;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() -
+        new Date(a.created_at).getTime()
+    )
+    .map(toLinkedPlaytest);
 }
+
 
 async function DeveloperDashboard() {
   await connection();
@@ -323,6 +331,9 @@ async function DeveloperDashboard() {
           approved_game_id,
           submission_id,
           title,
+          share_token,
+          access_link,
+          instructions,
           focus_areas,
           audience,
           target_testers,
@@ -633,13 +644,15 @@ async function DeveloperDashboard() {
   );
 
   const linkedGames: LinkedGame[] =
-    linkedGamesWithoutPlaytests.map((game) => ({
-      ...game,
-      latestPlaytest: findLatestPlaytest(
-        game,
-        rawPlaytests
-      ),
-    }));
+    linkedGamesWithoutPlaytests.map((game) => {
+      const playtests = findPlaytestsForGame(game, rawPlaytests);
+
+      return {
+        ...game,
+        latestPlaytest: playtests[0] ?? null,
+        playtests,
+      };
+    });
 
   const openPlaytests = rawPlaytests.filter(
     (playtest) => playtest.status === "open"
@@ -733,7 +746,7 @@ async function DeveloperDashboard() {
             </p>
           </div>
         ) : (
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <div className="mt-6 space-y-5">
             {linkedGames.map((game) => (
               <article
                 key={game.linkId}
@@ -763,7 +776,7 @@ async function DeveloperDashboard() {
                   </span>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
                   <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                       Relationship
@@ -785,7 +798,7 @@ async function DeveloperDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] p-4">
+                <div className="mt-5 max-w-2xl rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] p-4">
                   <p className="font-semibold text-[#77f29b]">
                     Developer access active
                   </p>
@@ -805,6 +818,7 @@ async function DeveloperDashboard() {
                     submissionId: game.submissionId,
                   }}
                   existingPlaytest={game.latestPlaytest}
+                  playtests={game.playtests}
                 />
               </article>
             ))}

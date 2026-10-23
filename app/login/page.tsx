@@ -28,17 +28,46 @@ const roleOptions: {
   },
 ];
 
+function getSafeNextPath(value: string | null) {
+  if (!value) {
+    return "/";
+  }
+
+  if (!value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+
+  return value;
+}
+
+function isSignupRole(value: string | null): value is SignupRole {
+  return value === "player" || value === "tester" || value === "developer";
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signupRoles, setSignupRoles] = useState<SignupRole[]>(["player"]);
+  const [nextPath, setNextPath] = useState("/");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setMode(params.get("mode") === "signup" ? "signup" : "login");
+
+    const requestedMode =
+      params.get("mode") === "signup" ? "signup" : "login";
+
+    const requestedRole = params.get("role");
+    const requestedNext = getSafeNextPath(params.get("next"));
+
+    setMode(requestedMode);
+    setNextPath(requestedNext);
+
+    if (requestedMode === "signup" && isSignupRole(requestedRole)) {
+      setSignupRoles([requestedRole]);
+    }
   }, []);
 
   function toggleRole(role: SignupRole) {
@@ -46,6 +75,35 @@ export default function LoginPage() {
       current.includes(role)
         ? current.filter((item) => item !== role)
         : [...current, role]
+    );
+  }
+
+  function switchMode() {
+    const nextMode = mode === "login" ? "signup" : "login";
+
+    setMode(nextMode);
+    setMessage("");
+
+    const params = new URLSearchParams();
+
+    if (nextMode === "signup") {
+      params.set("mode", "signup");
+
+      if (signupRoles.length === 1) {
+        params.set("role", signupRoles[0]);
+      }
+    }
+
+    if (nextPath !== "/") {
+      params.set("next", nextPath);
+    }
+
+    const query = params.toString();
+
+    window.history.replaceState(
+      null,
+      "",
+      query ? `/login?${query}` : "/login"
     );
   }
 
@@ -73,35 +131,51 @@ export default function LoginPage() {
       const supabase = createClient();
 
       if (mode === "signup") {
+        const callbackUrl = new URL(
+          "/auth/callback",
+          window.location.origin
+        );
+
+        if (nextPath !== "/") {
+          callbackUrl.searchParams.set("next", nextPath);
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: callbackUrl.toString(),
             data: {
               signup_roles: signupRoles,
             },
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         if (data.session) {
-          window.location.href = "/";
-        } else {
-          setMessage(
-            "Registration received. Check your email to confirm your account."
-          );
+          window.location.href = nextPath;
+          return;
         }
+
+        setMessage(
+          nextPath !== "/"
+            ? "Registration received. Check your email to confirm your account. After confirmation, you'll return to the playtest."
+            : "Registration received. Check your email to confirm your account."
+        );
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
-        window.location.href = "/";
+        window.location.href = nextPath;
       }
     } catch (error) {
       setMessage(
@@ -128,9 +202,26 @@ export default function LoginPage() {
 
           <p className="mt-2 text-sm text-slate-400">
             {mode === "login"
-              ? "Sign in to your Playtested account."
-              : "Choose all the ways you want to use Playtested."}
+              ? nextPath.startsWith("/playtest/")
+                ? "Sign in to continue to this community playtest."
+                : "Sign in to your Playtested account."
+              : nextPath.startsWith("/playtest/")
+                ? "Create your account to join this community playtest."
+                : "Choose all the ways you want to use Playtested."}
           </p>
+
+          {nextPath.startsWith("/playtest/") && (
+            <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4">
+              <p className="text-sm font-semibold text-emerald-300">
+                Community playtest invitation
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                After you sign in or confirm your new account, you'll return
+                directly to the playtest.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             {mode === "signup" && (
@@ -240,8 +331,12 @@ export default function LoginPage() {
               {loading
                 ? "Please wait..."
                 : mode === "login"
-                  ? "Sign in"
-                  : "Create account"}
+                  ? nextPath.startsWith("/playtest/")
+                    ? "Sign in and continue"
+                    : "Sign in"
+                  : nextPath.startsWith("/playtest/")
+                    ? "Create account and join"
+                    : "Create account"}
             </button>
           </form>
 
@@ -251,10 +346,7 @@ export default function LoginPage() {
               : "Already have an account?"}{" "}
             <button
               type="button"
-              onClick={() => {
-                setMode(mode === "login" ? "signup" : "login");
-                setMessage("");
-              }}
+              onClick={switchMode}
               className="font-semibold text-emerald-400 hover:text-emerald-300"
             >
               {mode === "login" ? "Create an account" : "Sign in"}

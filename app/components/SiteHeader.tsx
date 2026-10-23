@@ -10,9 +10,26 @@ const navLinks = [
 
 type SignupRole = "player" | "tester" | "developer";
 
+function getTesterLevel(totalXp: number) {
+  let level = 1;
+  let remainingXp = Math.max(0, totalXp);
+
+  while (true) {
+    const requiredForNextLevel = 100 + (level - 1) * 50;
+
+    if (remainingXp < requiredForNextLevel) {
+      return level;
+    }
+
+    remainingXp -= requiredForNextLevel;
+    level += 1;
+  }
+}
+
 export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState("user");
   const [roles, setRoles] = useState<SignupRole[]>(["player"]);
   const [testerXp, setTesterXp] = useState(0);
@@ -62,11 +79,13 @@ export default function SiteHeader() {
       if (!mounted) return;
 
       setLoggedIn(!!session);
+      setEmail(session?.user?.email ?? "");
       setCheckingSession(false);
 
       if (session?.user) {
         void loadProfile(session.user.id);
       } else {
+        setEmail("");
         setRole("user");
         setRoles(["player"]);
         setTesterXp(0);
@@ -82,6 +101,7 @@ export default function SiteHeader() {
       if (!mounted) return;
 
       setLoggedIn(!!session);
+      setEmail(session?.user?.email ?? "");
 
       if (
         event === "INITIAL_SESSION" ||
@@ -96,6 +116,7 @@ export default function SiteHeader() {
       if (session?.user) {
         void loadProfile(session.user.id);
       } else {
+        setEmail("");
         setRole("user");
         setRoles(["player"]);
         setTesterXp(0);
@@ -121,7 +142,7 @@ export default function SiteHeader() {
     window.location.href = "/";
   }
 
-  const testerLevel = Math.floor(Math.max(0, testerXp) / 100) + 1;
+  const testerLevel = getTesterLevel(testerXp);
   const showRoleLinks = loggedIn && profileLoaded;
 
   const allNavLinks = [
@@ -160,15 +181,13 @@ export default function SiteHeader() {
           {!checkingSession &&
             (loggedIn ? (
               <>
-                <a
-                  href="/account"
-                  className="hidden rounded-md px-2 py-2 text-sm text-zinc-300 transition hover:text-white sm:inline-flex sm:items-center"
-                >
-                  <span>Account</span>
-                  <span className="ml-2 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
+                <div className="hidden max-w-[320px] items-center gap-3 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">
+                  <span className="truncate">{email}</span>
+
+                  <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
                     {profileLoaded ? `Lv. ${testerLevel}` : "Lv. …"}
                   </span>
-                </a>
+                </div>
 
                 <button
                   type="button"
@@ -243,8 +262,13 @@ export default function SiteHeader() {
             ))}
 
             {loggedIn && (
-              <div className="mt-2 border-t border-white/10 px-3 pt-3 text-xs text-zinc-500">
-                Tester level: {profileLoaded ? testerLevel : "Loading…"}
+              <div className="mt-2 border-t border-white/10 px-3 pt-3">
+                <p className="truncate text-xs text-zinc-400">{email}</p>
+
+                <p className="mt-2 text-xs text-[#77f29b]">
+                  Tester level:{" "}
+                  {profileLoaded ? testerLevel : "Loading…"}
+                </p>
               </div>
             )}
           </div>
