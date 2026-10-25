@@ -1,0 +1,5828 @@
+{
+  "schemaVersion": 4,
+  "generatedAt": "2026-10-24T00:57:09.178Z",
+  "databaseRunId": "68681e5c-72d4-4afe-b07d-cd0a5d089bae",
+  "workerVersion": "v4",
+  "game": {
+    "title": "Neon Dodge",
+    "sourceType": "submission",
+    "id": "3dc1adfe-8e19-4c37-aef7-b9c16ad5433f",
+    "steamAppId": null
+  },
+  "build": {
+    "label": "V4 Repeatability B02 Run 08 [2026-10-24T00-53-09-563Z]",
+    "zipPath": "C:\\Users\\OWNER\\playtested\\benchmarks\\02-launch-fault.zip",
+    "fileName": "02-launch-fault.zip"
+  },
+  "configuration": {
+    "profile": "quick",
+    "concurrency": 10,
+    "testPlan": {
+      "launch": 50,
+      "restart": 50,
+      "interaction": 10,
+      "stability": 5,
+      "soak": 1
+    },
+    "totalChecks": 116,
+    "timings": {
+      "launchSettleMs": 250,
+      "restartSettleMs": 250,
+      "interactionObservationMs": 1200,
+      "stabilityObservationMs": 3000,
+      "soakObservationMs": 10000,
+      "sampleIntervalMs": 100,
+      "stallThresholdMs": 550
+    }
+  },
+  "durationMs": 12568,
+  "summary": {
+    "profile": "quick",
+    "totalChecks": 116,
+    "plannedChecks": {
+      "launch": 50,
+      "restart": 50,
+      "interaction": 10,
+      "stability": 5,
+      "soak": 1
+    },
+    "successfulBuildLoads": 116,
+    "buildLoadSuccessRate": 100,
+    "launchReliability": {
+      "checks": 50,
+      "successful": 45,
+      "failed": 5,
+      "successRate": 90
+    },
+    "restartReliability": {
+      "checks": 50,
+      "successful": 50,
+      "failed": 0,
+      "successRate": 100
+    },
+    "interaction": {
+      "checks": 10,
+      "successful": 10,
+      "failed": 0,
+      "successRate": 100
+    },
+    "genericDetection": {
+      "sessionsWithErrors": 0,
+      "sessionsWithFailedRequests": 0,
+      "sessionsWithStalls": 0,
+      "sessionsWithWorkerErrors": 0
+    },
+    "benchmarkGroundTruth": {
+      "sessionsWithStartupFailure": 5,
+      "sessionsWithRestartFailure": 0,
+      "sessionsWithStall": 0,
+      "sessionsWithRuntimeError": 0,
+      "startupFailureEvents": 5,
+      "restartFailureEvents": 0,
+      "simulationStallEvents": 0,
+      "runtimeErrorEvents": 0
+    },
+    "medianLoadMs": 31,
+    "familySummaries": {
+      "launch": {
+        "family": "launch",
+        "checks": 50,
+        "successfulLoads": 50,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 45,
+        "startSuccessRate": 90,
+        "restartAttempted": 45,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 31,
+        "medianDurationMs": 457,
+        "benchmark": {
+          "sessionsWithStartupFailure": 5,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 5,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "restart": {
+        "family": "restart",
+        "checks": 50,
+        "successfulLoads": 50,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 50,
+        "startSuccessRate": 100,
+        "restartAttempted": 50,
+        "successfulRestarts": 50,
+        "restartSuccessRate": 100,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 32,
+        "medianDurationMs": 743,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "interaction": {
+        "family": "interaction",
+        "checks": 10,
+        "successfulLoads": 10,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 10,
+        "startSuccessRate": 100,
+        "restartAttempted": 10,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 10,
+        "successfulInteractions": 10,
+        "interactionSuccessRate": 100,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 27,
+        "medianDurationMs": 2037,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "stability": {
+        "family": "stability",
+        "checks": 5,
+        "successfulLoads": 5,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 5,
+        "startSuccessRate": 100,
+        "restartAttempted": 5,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 22,
+        "medianDurationMs": 3418,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "soak": {
+        "family": "soak",
+        "checks": 1,
+        "successfulLoads": 1,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 1,
+        "startSuccessRate": 100,
+        "restartAttempted": 1,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 22,
+        "medianDurationMs": 3213,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      }
+    },
+    "result": "ISSUES DETECTED",
+    "issueReasons": [
+      "5 of 50 dedicated launch checks failed"
+    ]
+  },
+  "sessions": [
+    {
+      "testFamily": "launch",
+      "familyIndex": 1,
+      "globalSessionNumber": 1,
+      "seed": 107919,
+      "durationMs": 506,
+      "loadMs": 71,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417700
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417853,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 2,
+      "globalSessionNumber": 2,
+      "seed": 115838,
+      "durationMs": 508,
+      "loadMs": 63,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417707
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417853,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 3,
+      "globalSessionNumber": 3,
+      "seed": 123757,
+      "durationMs": 509,
+      "loadMs": 55,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417713
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417853,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 4,
+      "globalSessionNumber": 4,
+      "seed": 131676,
+      "durationMs": 506,
+      "loadMs": 36,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417723
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417853,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 5,
+      "globalSessionNumber": 5,
+      "seed": 139595,
+      "durationMs": 503,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417731
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417853,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 6,
+      "globalSessionNumber": 6,
+      "seed": 147514,
+      "durationMs": 525,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417759
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417866,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 7,
+      "globalSessionNumber": 7,
+      "seed": 155433,
+      "durationMs": 531,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417792
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417884,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 8,
+      "globalSessionNumber": 8,
+      "seed": 163352,
+      "durationMs": 533,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417792
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417884,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 9,
+      "globalSessionNumber": 9,
+      "seed": 171271,
+      "durationMs": 534,
+      "loadMs": 41,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417817
+        },
+        {
+          "type": "run_started",
+          "time": 1792803417884,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 10,
+      "globalSessionNumber": 10,
+      "seed": 179190,
+      "durationMs": 535,
+      "loadMs": 36,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Start failed",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 1,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803417830
+        },
+        {
+          "type": "startup_failure",
+          "time": 1792803417884,
+          "deliberate": true,
+          "seed": 179190
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 11,
+      "globalSessionNumber": 11,
+      "seed": 187109,
+      "durationMs": 444,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418203
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418294,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 12,
+      "globalSessionNumber": 12,
+      "seed": 195028,
+      "durationMs": 450,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418210
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418307,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 13,
+      "globalSessionNumber": 13,
+      "seed": 202947,
+      "durationMs": 461,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418224
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418324,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 14,
+      "globalSessionNumber": 14,
+      "seed": 210866,
+      "durationMs": 447,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418240
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418307,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 15,
+      "globalSessionNumber": 15,
+      "seed": 218785,
+      "durationMs": 481,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418253
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418350,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 16,
+      "globalSessionNumber": 16,
+      "seed": 226704,
+      "durationMs": 454,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418270
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418334,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 17,
+      "globalSessionNumber": 17,
+      "seed": 234623,
+      "durationMs": 475,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418282
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418367,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 18,
+      "globalSessionNumber": 18,
+      "seed": 242542,
+      "durationMs": 455,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418303
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418350,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 19,
+      "globalSessionNumber": 19,
+      "seed": 250461,
+      "durationMs": 491,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418312
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418384,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 20,
+      "globalSessionNumber": 20,
+      "seed": 258380,
+      "durationMs": 489,
+      "loadMs": 21,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Start failed",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 1,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418320
+        },
+        {
+          "type": "startup_failure",
+          "time": 1792803418384,
+          "deliberate": true,
+          "seed": 258380
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 21,
+      "globalSessionNumber": 21,
+      "seed": 266299,
+      "durationMs": 471,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418646
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418761,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 22,
+      "globalSessionNumber": 22,
+      "seed": 274218,
+      "durationMs": 461,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418660
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418761,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 23,
+      "globalSessionNumber": 23,
+      "seed": 282137,
+      "durationMs": 462,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418680
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418772,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 24,
+      "globalSessionNumber": 24,
+      "seed": 290056,
+      "durationMs": 452,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418697
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418772,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 25,
+      "globalSessionNumber": 25,
+      "seed": 297975,
+      "durationMs": 457,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418698
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418785,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 26,
+      "globalSessionNumber": 26,
+      "seed": 305894,
+      "durationMs": 449,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418719
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418785,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 27,
+      "globalSessionNumber": 27,
+      "seed": 313813,
+      "durationMs": 459,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418737
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418801,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 28,
+      "globalSessionNumber": 28,
+      "seed": 321732,
+      "durationMs": 442,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418748
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418801,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 29,
+      "globalSessionNumber": 29,
+      "seed": 329651,
+      "durationMs": 435,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418756
+        },
+        {
+          "type": "run_started",
+          "time": 1792803418817,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 30,
+      "globalSessionNumber": 30,
+      "seed": 337570,
+      "durationMs": 436,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Start failed",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 1,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803418771
+        },
+        {
+          "type": "startup_failure",
+          "time": 1792803418817,
+          "deliberate": true,
+          "seed": 337570
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 31,
+      "globalSessionNumber": 31,
+      "seed": 345489,
+      "durationMs": 450,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419113
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419214,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 32,
+      "globalSessionNumber": 32,
+      "seed": 353408,
+      "durationMs": 446,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419121
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419214,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 33,
+      "globalSessionNumber": 33,
+      "seed": 361327,
+      "durationMs": 454,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419135
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419224,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 34,
+      "globalSessionNumber": 34,
+      "seed": 369246,
+      "durationMs": 483,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419155
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419251,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 35,
+      "globalSessionNumber": 35,
+      "seed": 377165,
+      "durationMs": 463,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419167
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419251,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 36,
+      "globalSessionNumber": 36,
+      "seed": 385084,
+      "durationMs": 464,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419184
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419251,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 37,
+      "globalSessionNumber": 37,
+      "seed": 393003,
+      "durationMs": 456,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419193
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419250,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 38,
+      "globalSessionNumber": 38,
+      "seed": 400922,
+      "durationMs": 465,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419205
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419266,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 39,
+      "globalSessionNumber": 39,
+      "seed": 408841,
+      "durationMs": 454,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419221
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419266,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 40,
+      "globalSessionNumber": 40,
+      "seed": 416760,
+      "durationMs": 481,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Start failed",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 1,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419225
+        },
+        {
+          "type": "startup_failure",
+          "time": 1792803419285,
+          "deliberate": true,
+          "seed": 416760
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 41,
+      "globalSessionNumber": 41,
+      "seed": 424679,
+      "durationMs": 437,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419559
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419655,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 42,
+      "globalSessionNumber": 42,
+      "seed": 432598,
+      "durationMs": 434,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419579
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419656,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 43,
+      "globalSessionNumber": 43,
+      "seed": 440517,
+      "durationMs": 446,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419586
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419679,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 44,
+      "globalSessionNumber": 44,
+      "seed": 448436,
+      "durationMs": 415,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419603
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419676,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 45,
+      "globalSessionNumber": 45,
+      "seed": 456355,
+      "durationMs": 454,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419622
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419700,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 46,
+      "globalSessionNumber": 46,
+      "seed": 464274,
+      "durationMs": 452,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419633
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419700,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 47,
+      "globalSessionNumber": 47,
+      "seed": 472193,
+      "durationMs": 449,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419653
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419700,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 48,
+      "globalSessionNumber": 48,
+      "seed": 480112,
+      "durationMs": 454,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419660
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419717,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 49,
+      "globalSessionNumber": 49,
+      "seed": 488031,
+      "durationMs": 451,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419672
+        },
+        {
+          "type": "run_started",
+          "time": 1792803419717,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 50,
+      "globalSessionNumber": 50,
+      "seed": 495950,
+      "durationMs": 454,
+      "loadMs": 19,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Start failed",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 1,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419675
+        },
+        {
+          "type": "startup_failure",
+          "time": 1792803419734,
+          "deliberate": true,
+          "seed": 495950
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 1,
+      "globalSessionNumber": 51,
+      "seed": 207919,
+      "durationMs": 747,
+      "loadMs": 37,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803419990
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420096,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420401,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420401,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 2,
+      "globalSessionNumber": 52,
+      "seed": 215838,
+      "durationMs": 745,
+      "loadMs": 42,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420005
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420096,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420401,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420401,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 3,
+      "globalSessionNumber": 53,
+      "seed": 223757,
+      "durationMs": 743,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420029
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420125,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420417,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420417,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 4,
+      "globalSessionNumber": 54,
+      "seed": 231676,
+      "durationMs": 739,
+      "loadMs": 41,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420039
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420125,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420417,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420417,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 5,
+      "globalSessionNumber": 55,
+      "seed": 239595,
+      "durationMs": 759,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420067
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420168,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420467,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420468,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 6,
+      "globalSessionNumber": 56,
+      "seed": 247514,
+      "durationMs": 759,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420086
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420168,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420467,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420467,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 7,
+      "globalSessionNumber": 57,
+      "seed": 255433,
+      "durationMs": 737,
+      "loadMs": 36,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420097
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420152,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420451,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420451,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 8,
+      "globalSessionNumber": 58,
+      "seed": 263352,
+      "durationMs": 746,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420103
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420168,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420467,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420467,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 9,
+      "globalSessionNumber": 59,
+      "seed": 271271,
+      "durationMs": 748,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420121
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420168,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420467,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420467,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 10,
+      "globalSessionNumber": 60,
+      "seed": 279190,
+      "durationMs": 750,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420140
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420183,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803420484,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420484,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 11,
+      "globalSessionNumber": 61,
+      "seed": 287109,
+      "durationMs": 729,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420725
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420826,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421134,
+          "run": 1,
+          "reason": "restart",
+          "score": 3
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421134,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 12,
+      "globalSessionNumber": 62,
+      "seed": 295028,
+      "durationMs": 746,
+      "loadMs": 36,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420749
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420856,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421151,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421151,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 13,
+      "globalSessionNumber": 63,
+      "seed": 302947,
+      "durationMs": 739,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420773
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420856,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421151,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421151,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 14,
+      "globalSessionNumber": 64,
+      "seed": 310866,
+      "durationMs": 736,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420792
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420873,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421151,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421151,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 15,
+      "globalSessionNumber": 65,
+      "seed": 318785,
+      "durationMs": 718,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420799
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420885,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421166,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421166,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 16,
+      "globalSessionNumber": 66,
+      "seed": 326704,
+      "durationMs": 713,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420825
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420900,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421183,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421183,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 17,
+      "globalSessionNumber": 67,
+      "seed": 334623,
+      "durationMs": 710,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420834
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420900,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421183,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421183,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 18,
+      "globalSessionNumber": 68,
+      "seed": 342542,
+      "durationMs": 712,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420846
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420900,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421183,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421183,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 19,
+      "globalSessionNumber": 69,
+      "seed": 350461,
+      "durationMs": 734,
+      "loadMs": 20,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420858
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420918,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421200,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421200,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 20,
+      "globalSessionNumber": 70,
+      "seed": 358380,
+      "durationMs": 716,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803420876
+        },
+        {
+          "type": "run_started",
+          "time": 1792803420935,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421217,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421217,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 21,
+      "globalSessionNumber": 71,
+      "seed": 366299,
+      "durationMs": 747,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421475
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421581,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421884,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421884,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 22,
+      "globalSessionNumber": 72,
+      "seed": 374218,
+      "durationMs": 728,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421496
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421601,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421884,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421884,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 23,
+      "globalSessionNumber": 73,
+      "seed": 382137,
+      "durationMs": 771,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421515
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421625,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421917,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421917,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 24,
+      "globalSessionNumber": 74,
+      "seed": 390056,
+      "durationMs": 766,
+      "loadMs": 38,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421520
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421627,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421917,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421917,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 25,
+      "globalSessionNumber": 75,
+      "seed": 397975,
+      "durationMs": 753,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421542
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421627,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421917,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421917,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 26,
+      "globalSessionNumber": 76,
+      "seed": 405894,
+      "durationMs": 766,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421559
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421650,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421935,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421935,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 27,
+      "globalSessionNumber": 77,
+      "seed": 413813,
+      "durationMs": 765,
+      "loadMs": 38,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421576
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421650,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421935,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421935,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 28,
+      "globalSessionNumber": 78,
+      "seed": 421732,
+      "durationMs": 762,
+      "loadMs": 36,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421587
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421650,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421935,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421935,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 29,
+      "globalSessionNumber": 79,
+      "seed": 429651,
+      "durationMs": 753,
+      "loadMs": 40,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421614
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421667,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421950,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421950,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 30,
+      "globalSessionNumber": 80,
+      "seed": 437570,
+      "durationMs": 761,
+      "loadMs": 37,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803421624
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421684,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803421967,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803421967,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 31,
+      "globalSessionNumber": 81,
+      "seed": 445489,
+      "durationMs": 717,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422213
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422313,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422601,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422601,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 32,
+      "globalSessionNumber": 82,
+      "seed": 453408,
+      "durationMs": 757,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422231
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422328,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422634,
+          "run": 1,
+          "reason": "restart",
+          "score": 3
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422634,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 33,
+      "globalSessionNumber": 83,
+      "seed": 461327,
+      "durationMs": 727,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422267
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422356,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422652,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422652,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 34,
+      "globalSessionNumber": 84,
+      "seed": 469246,
+      "durationMs": 746,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422283
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422373,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422668,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422668,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 35,
+      "globalSessionNumber": 85,
+      "seed": 477165,
+      "durationMs": 746,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422298
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422373,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422668,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422668,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 36,
+      "globalSessionNumber": 86,
+      "seed": 485084,
+      "durationMs": 746,
+      "loadMs": 40,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422318
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422385,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422686,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422686,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 37,
+      "globalSessionNumber": 87,
+      "seed": 493003,
+      "durationMs": 746,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422327
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422385,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422686,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422686,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 38,
+      "globalSessionNumber": 88,
+      "seed": 500922,
+      "durationMs": 743,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422337
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422400,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422686,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422686,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 39,
+      "globalSessionNumber": 89,
+      "seed": 508841,
+      "durationMs": 751,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422347
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422418,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422701,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422701,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 40,
+      "globalSessionNumber": 90,
+      "seed": 516760,
+      "durationMs": 732,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422361
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422418,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803422701,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803422701,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 41,
+      "globalSessionNumber": 91,
+      "seed": 524679,
+      "durationMs": 700,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422908
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423006,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423301,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423301,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 42,
+      "globalSessionNumber": 92,
+      "seed": 532598,
+      "durationMs": 690,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422974
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423042,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423333,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423333,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 43,
+      "globalSessionNumber": 93,
+      "seed": 540517,
+      "durationMs": 730,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803422994
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423088,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423384,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423384,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 44,
+      "globalSessionNumber": 94,
+      "seed": 548436,
+      "durationMs": 738,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423019
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423101,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423402,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423402,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 45,
+      "globalSessionNumber": 95,
+      "seed": 556355,
+      "durationMs": 733,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423026
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423117,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423402,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423402,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 46,
+      "globalSessionNumber": 96,
+      "seed": 564274,
+      "durationMs": 748,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423039
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423134,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423437,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423437,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 47,
+      "globalSessionNumber": 97,
+      "seed": 572193,
+      "durationMs": 713,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423057
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423117,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423401,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423401,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 48,
+      "globalSessionNumber": 98,
+      "seed": 580112,
+      "durationMs": 743,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423069
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423134,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423434,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423434,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 49,
+      "globalSessionNumber": 99,
+      "seed": 588031,
+      "durationMs": 726,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423088
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423134,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423434,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423434,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 50,
+      "globalSessionNumber": 100,
+      "seed": 595950,
+      "durationMs": 726,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "Running",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 2,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423089
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423151,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803423437,
+          "run": 1,
+          "reason": "restart",
+          "score": 2
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423437,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 1,
+      "globalSessionNumber": 101,
+      "seed": 307919,
+      "durationMs": 2008,
+      "loadMs": 13,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423607
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423687,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 2,
+      "globalSessionNumber": 102,
+      "seed": 315838,
+      "durationMs": 2022,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423642
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423727,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 3,
+      "globalSessionNumber": 103,
+      "seed": 323757,
+      "durationMs": 2023,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423707
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423771,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 4,
+      "globalSessionNumber": 104,
+      "seed": 331676,
+      "durationMs": 2039,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423736
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423811,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 5,
+      "globalSessionNumber": 105,
+      "seed": 339595,
+      "durationMs": 2034,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423757
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423820,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 6,
+      "globalSessionNumber": 106,
+      "seed": 347514,
+      "durationMs": 2055,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423769
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423838,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 7,
+      "globalSessionNumber": 107,
+      "seed": 355433,
+      "durationMs": 2037,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423777
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423850,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 8,
+      "globalSessionNumber": 108,
+      "seed": 363352,
+      "durationMs": 2036,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423801
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423850,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 9,
+      "globalSessionNumber": 109,
+      "seed": 371271,
+      "durationMs": 2044,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423811
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423867,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 10,
+      "globalSessionNumber": 110,
+      "seed": 379190,
+      "durationMs": 2045,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": true,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "interactionEvidence": {
+          "inputMethod": "api",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 2,
+          "scoreAfter": 18,
+          "scoreChanged": true
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803423826
+        },
+        {
+          "type": "run_started",
+          "time": 1792803423867,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 1,
+      "globalSessionNumber": 111,
+      "seed": 407919,
+      "durationMs": 3418,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 28,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425620
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425674,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 2,
+      "globalSessionNumber": 112,
+      "seed": 415838,
+      "durationMs": 1382,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": true,
+          "samples": 10,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425671
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425753,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803426963,
+          "run": 1,
+          "reason": "collision",
+          "score": 11
+        }
+      ]
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 3,
+      "globalSessionNumber": 113,
+      "seed": 423757,
+      "durationMs": 3428,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 28,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425729
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425785,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 4,
+      "globalSessionNumber": 114,
+      "seed": 431676,
+      "durationMs": 1368,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": true,
+          "samples": 10,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425767
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425833,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803427029,
+          "run": 1,
+          "reason": "collision",
+          "score": 11
+        }
+      ]
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 5,
+      "globalSessionNumber": 115,
+      "seed": 439595,
+      "durationMs": 3433,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": false,
+          "samples": 28,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 0
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425788
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425833,
+          "run": 1
+        }
+      ]
+    },
+    {
+      "testFamily": "soak",
+      "familyIndex": 1,
+      "globalSessionNumber": 116,
+      "seed": 507919,
+      "durationMs": 3213,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Running",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": true,
+          "ended": true,
+          "samples": 27,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 1,
+        "runEnds": 1
+      },
+      "telemetryEvents": [
+        {
+          "type": "build_loaded",
+          "time": 1792803425799
+        },
+        {
+          "type": "run_started",
+          "time": 1792803425850,
+          "run": 1
+        },
+        {
+          "type": "run_ended",
+          "time": 1792803428897,
+          "run": 1,
+          "reason": "collision",
+          "score": 30
+        }
+      ]
+    }
+  ]
+}

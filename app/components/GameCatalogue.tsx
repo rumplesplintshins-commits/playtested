@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
@@ -20,6 +20,7 @@ type CatalogueGame = {
   steamAppId?: string;
   isSubmission: boolean;
   isImportedSteam?: boolean;
+  hasPlaytestedProfile?: boolean;
   isNsfw: boolean;
   verificationStatus: VerificationStatus | null;
   submittedAt?: string;
@@ -31,12 +32,43 @@ type VerificationRow = {
   quality_score: number | null;
 };
 
+type CatalogueRpcRow = {
+  source_type: "approved" | "steam";
+  game_id: string;
+  steam_app_id: string | null;
+  title: string;
+  developer_name: string;
+  genre: string;
+  description: string;
+  image_url: string;
+  game_link: string;
+  ai_type: string;
+  verification_status: VerificationStatus;
+  quality_score: number | string | null;
+  submitted_at: string | null;
+  is_nsfw: boolean;
+  has_playtested_profile: boolean;
+  total_count: number | string;
+};
+
 const aiTypes = [
   "All AI types",
   "AI-generated",
   "AI-assisted",
   "No AI disclosed",
   "AI use unknown",
+];
+
+const genres = [
+  "All genres",
+  "Action",
+  "Adventure",
+  "Casual",
+  "RPG",
+  "Strategy",
+  "Simulation",
+  "Racing",
+  "Sports",
 ];
 
 const sortOptions = [
@@ -55,58 +87,9 @@ const verificationOptions = [
 ];
 
 const PAGE_SIZE = 12;
-const DATABASE_BATCH_SIZE = 1000;
-
-function getVerificationStatus(
-  verification?: VerificationRow
-): VerificationStatus {
-  if (
-    verification?.verification_status === "Verified" ||
-    verification?.verification_status === "Assessed" ||
-    verification?.verification_status === "Not yet verified"
-  ) {
-    return verification.verification_status;
-  }
-
-  return "Not yet verified";
-}
 
 function normalizeSteamAppId(value: unknown): string {
   return String(value ?? "").trim();
-}
-
-function getFeaturedTier(game: CatalogueGame): number {
-  if (game.verificationStatus === "Verified") {
-    return 0;
-  }
-
-  if (game.verificationStatus === "Assessed") {
-    return 1;
-  }
-
-  if (game.isSubmission) {
-    return 2;
-  }
-
-  return 3;
-}
-
-function getSearchRelevance(game: CatalogueGame, term: string): number {
-  const title = game.title.toLowerCase();
-  const developer = game.developer.toLowerCase();
-  const genre = game.genre.toLowerCase();
-  const description = game.description.toLowerCase();
-
-  if (title === term) return 100;
-  if (title.startsWith(term)) return 90;
-  if (title.includes(term)) return 80;
-  if (developer === term) return 70;
-  if (developer.startsWith(term)) return 60;
-  if (developer.includes(term)) return 50;
-  if (genre.includes(term)) return 30;
-  if (description.includes(term)) return 10;
-
-  return 0;
 }
 
 function VerificationBadge({
@@ -198,9 +181,9 @@ function GameCardContent({
             onClick={onOpen}
             className="w-full rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
           >
-            {game.isImportedSteam
+            {game.isImportedSteam && !game.hasPlaytestedProfile
               ? "View Steam page ↗"
-              : "View game and feedback"}
+              : "View game details"}
           </button>
         </div>
       </div>
@@ -221,12 +204,10 @@ export default function GameCatalogue() {
   const [sort, setSort] = useState("Featured");
   const [page, setPage] = useState(1);
 
-  const [approvedGames, setApprovedGames] = useState<CatalogueGame[]>([]);
-  const [importedGames, setImportedGames] = useState<CatalogueGame[]>([]);
+  const [games, setGames] = useState<CatalogueGame[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [importError, setImportError] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -234,286 +215,90 @@ export default function GameCatalogue() {
     async function loadGames() {
       const supabase = createClient();
 
-      try {
-        const [
-          { data: approvedData, error: approvedError },
-          { data: verificationData, error: verificationError },
-        ] = await Promise.all([
-          supabase
-            .from("approved_games")
-            .select("*")
-            .order("submitted_at", { ascending: false }),
-          supabase.from("published_game_verifications").select("*"),
-        ]);
+      setLoaded(false);
+      setLoadError(false);
 
-        if (cancelled) return;
+      const { data, error } = await supabase.rpc("get_public_catalogue", {
+        p_page: page,
+        p_page_size: PAGE_SIZE,
+        p_search: search.trim(),
+        p_genre: genre,
+        p_verification: verificationFilter,
+        p_ai_type: aiType,
+        p_include_nsfw: includeNsfw,
+        p_sort: sort,
+      });
 
-        if (approvedError) {
-          console.error("Could not load approved games:", approvedError);
-          setLoadError(true);
-        }
+      if (cancelled) return;
 
-        if (verificationError) {
-          console.error(
-            "Could not load published verifications:",
-            verificationError
-          );
-        }
-
-        const verifications = (verificationData ?? []) as VerificationRow[];
-
-        const mappedApprovedGames: CatalogueGame[] = (
-          approvedData ?? []
-        ).map((row: any) => {
-          const verification = verifications.find(
-            (item) => item.game_id === row.id
-          );
-
-          return {
-            key: row.id,
-            slug: `submission-${row.id}`,
-            title: row.title ?? "Untitled game",
-            developer:
-              row.developer_name ?? row.developer ?? "Unknown developer",
-            genre: row.genre ?? "Uncategorised",
-            description: row.description ?? "",
-            image: row.image_url ?? "",
-            aiType: row.ai_type ?? "AI use unknown",
-            score: verification?.quality_score ?? 0,
-            gameLink: row.game_link ?? "",
-            steamAppId: normalizeSteamAppId(row.steam_app_id),
-            isSubmission: true,
-            isNsfw: false,
-            verificationStatus: getVerificationStatus(verification),
-            submittedAt: row.submitted_at ?? "",
-          };
-        });
-
-        setApprovedGames(mappedApprovedGames);
-
-        // Load only eligible Steam listings with complete core metadata.
-        // Demo/sample data is intentionally not included in the public catalogue.
-        const allImportedRows: any[] = [];
-        let from = 0;
-        let reachedEnd = false;
-
-        while (!reachedEnd) {
-          const to = from + DATABASE_BATCH_SIZE - 1;
-
-          const { data, error } = await supabase
-            .from("imported_games")
-            .select(
-              "id, steam_app_id, title, developer_name, genre, description, steam_url, image_url, imported_at, catalogue_eligible, is_nsfw"
-            )
-            .eq("catalogue_eligible", true)
-            .eq("metadata_backfill_status", "complete")
-            .not("title", "is", null)
-            .not("developer_name", "is", null)
-            .not("genre", "is", null)
-            .not("image_url", "is", null)
-            .order("imported_at", { ascending: false })
-            .order("steam_app_id", { ascending: true })
-            .range(from, to);
-
-          if (cancelled) return;
-
-          if (error) {
-            console.error(
-              `Could not load eligible Steam listings starting at ${from}:`,
-              error
-            );
-            setImportError(true);
-            break;
-          }
-
-          const batch = data ?? [];
-          allImportedRows.push(...batch);
-
-          setLoadingProgress(
-            `Loaded ${allImportedRows.length.toLocaleString()} eligible Steam listings...`
-          );
-
-          if (batch.length < DATABASE_BATCH_SIZE) {
-            reachedEnd = true;
-          } else {
-            from += DATABASE_BATCH_SIZE;
-          }
-        }
-
-        if (cancelled) return;
-
-        const mappedImportedGames: CatalogueGame[] = allImportedRows.map(
-          (row: any) => ({
-            key: `steam-${row.steam_app_id}`,
-            slug: `steam-${row.steam_app_id}`,
-            title: row.title ?? "Untitled Steam game",
-            developer: row.developer_name ?? "Unknown developer",
-            genre: row.genre ?? "Uncategorised",
-            description: row.description ?? "",
-            image: row.image_url ?? "",
-            aiType: "AI use unknown",
-            score: 0,
-            gameLink:
-              row.steam_url ??
-              `https://store.steampowered.com/app/${row.steam_app_id}/`,
-            steamAppId: normalizeSteamAppId(row.steam_app_id),
-            isSubmission: false,
-            isImportedSteam: true,
-            isNsfw: row.is_nsfw === true,
-            verificationStatus: "Not yet verified",
-            submittedAt: row.imported_at ?? "",
-          })
-        );
-
-        const linkedSteamAppIds = new Set(
-          mappedApprovedGames
-            .map((game) => game.steamAppId)
-            .filter((appId): appId is string => Boolean(appId))
-        );
-
-        const uniqueImportedGames = mappedImportedGames.filter((game) => {
-          if (!game.steamAppId) return true;
-          return !linkedSteamAppIds.has(game.steamAppId);
-        });
-
-        setImportedGames(uniqueImportedGames);
-        setLoadingProgress("");
+      if (error) {
+        console.error("Could not load public catalogue:", error);
+        setGames([]);
+        setTotalCount(0);
+        setLoadError(true);
         setLoaded(true);
-      } catch (error) {
-        console.error("Unexpected catalogue loading error:", error);
-
-        if (!cancelled) {
-          setLoadError(true);
-          setImportError(true);
-          setLoaded(true);
-          setLoadingProgress("");
-        }
+        return;
       }
+
+      const rows = (data ?? []) as CatalogueRpcRow[];
+
+      const mappedGames: CatalogueGame[] = rows.map((row) => {
+        const isImportedSteam = row.source_type === "steam";
+        const steamAppId = normalizeSteamAppId(row.steam_app_id);
+
+        return {
+          key: row.game_id,
+          slug: isImportedSteam
+            ? `steam-${steamAppId}`
+            : `submission-${row.game_id}`,
+          title: row.title ?? "Untitled game",
+          developer: row.developer_name ?? "Unknown developer",
+          genre: row.genre ?? "Uncategorised",
+          description: row.description ?? "",
+          image: row.image_url ?? "",
+          aiType: row.ai_type ?? "AI use unknown",
+          score: Number(row.quality_score ?? 0),
+          gameLink: row.game_link ?? "",
+          steamAppId,
+          isSubmission: !isImportedSteam,
+          isImportedSteam,
+          hasPlaytestedProfile: row.has_playtested_profile === true,
+          isNsfw: row.is_nsfw === true,
+          verificationStatus: row.verification_status ?? "Not yet verified",
+          submittedAt: row.submitted_at ?? "",
+        };
+      });
+
+      setGames(mappedGames);
+      setTotalCount(
+        rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0
+      );
+      setLoaded(true);
     }
 
-    void loadGames();
+    const timer = window.setTimeout(
+      () => {
+        void loadGames();
+      },
+      search.trim() ? 250 : 0
+    );
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, []);
-
-  const catalogueGames = useMemo(
-    () => [...approvedGames, ...importedGames],
-    [approvedGames, importedGames]
-  );
-
-  const genres = useMemo(
-    () => [
-      "All genres",
-      ...Array.from(new Set(catalogueGames.map((game) => game.genre)))
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b)),
-    ],
-    [catalogueGames]
-  );
-
-  const availableAiTypes = useMemo(
-    () => [
-      "All AI types",
-      ...Array.from(new Set(catalogueGames.map((game) => game.aiType)))
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b)),
-    ],
-    [catalogueGames]
-  );
-
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
-    const result = catalogueGames.filter((game) => {
-      const searchableText =
-        `${game.title} ${game.developer} ${game.genre} ${game.description}`.toLowerCase();
-
-      const matchesVerification =
-        verificationFilter === "All verification statuses" ||
-        (verificationFilter === "Steam listings" &&
-          game.isImportedSteam === true) ||
-        (verificationFilter === "Verified" &&
-          game.verificationStatus === "Verified") ||
-        (verificationFilter === "Assessed" &&
-          game.verificationStatus === "Assessed") ||
-        (verificationFilter === "Not yet verified" &&
-          game.verificationStatus === "Not yet verified");
-
-      const matchesNsfw = includeNsfw || !game.isNsfw;
-
-      return (
-        searchableText.includes(term) &&
-        (genre === "All genres" || game.genre === genre) &&
-        (aiType === "All AI types" || game.aiType === aiType) &&
-        matchesVerification &&
-        matchesNsfw
-      );
-    });
-
-    if (sort === "Recently added") {
-      result.sort((a, b) =>
-        (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "")
-      );
-    } else if (sort === "Highest rated") {
-      result.sort((a, b) => {
-        const scoreDifference = b.score - a.score;
-
-        if (scoreDifference !== 0) return scoreDifference;
-
-        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
-      });
-    } else if (sort === "Title A-Z") {
-      result.sort((a, b) => a.title.localeCompare(b.title));
-    } else if (term) {
-      result.sort((a, b) => {
-        const relevanceDifference =
-          getSearchRelevance(b, term) - getSearchRelevance(a, term);
-
-        if (relevanceDifference !== 0) return relevanceDifference;
-
-        const tierDifference = getFeaturedTier(a) - getFeaturedTier(b);
-
-        if (tierDifference !== 0) return tierDifference;
-
-        const scoreDifference = b.score - a.score;
-
-        if (scoreDifference !== 0) return scoreDifference;
-
-        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
-      });
-    } else {
-      result.sort((a, b) => {
-        const tierDifference = getFeaturedTier(a) - getFeaturedTier(b);
-
-        if (tierDifference !== 0) return tierDifference;
-
-        const scoreDifference = b.score - a.score;
-
-        if (scoreDifference !== 0) return scoreDifference;
-
-        return (b.submittedAt ?? "").localeCompare(a.submittedAt ?? "");
-      });
-    }
-
-    return result;
   }, [
-    catalogueGames,
+    page,
     search,
     genre,
+    verificationFilter,
     aiType,
     includeNsfw,
     sort,
-    verificationFilter,
   ]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const visible = filtered.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
 
   function resetFilters() {
     setSearch("");
@@ -527,6 +312,11 @@ export default function GameCatalogue() {
 
   function openGame(game: CatalogueGame) {
     if (game.isImportedSteam) {
+      if (game.hasPlaytestedProfile) {
+        router.push(`/games/${game.slug}`);
+        return;
+      }
+
       if (game.gameLink) {
         window.open(game.gameLink, "_blank", "noopener,noreferrer");
       }
@@ -556,8 +346,8 @@ export default function GameCatalogue() {
             </h2>
           </div>
           <span className="text-sm text-white/55">
-            {filtered.length.toLocaleString()}{" "}
-            {filtered.length === 1 ? "game" : "games"} listed
+            {totalCount.toLocaleString()}{" "}
+            {totalCount === 1 ? "game" : "games"} listed
           </span>
         </div>
 
@@ -615,13 +405,11 @@ export default function GameCatalogue() {
             }}
             className={fieldClass}
           >
-            {Array.from(new Set([...aiTypes, ...availableAiTypes])).map(
-              (item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              )
-            )}
+            {aiTypes.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
           </select>
 
           <select
@@ -685,39 +473,28 @@ export default function GameCatalogue() {
               Browse games and feedback
             </h2>
             <p className="mt-2 text-base text-white/60">
-              {filtered.length.toLocaleString()}{" "}
-              {filtered.length === 1 ? "game" : "games"} found
+              {totalCount.toLocaleString()}{" "}
+              {totalCount === 1 ? "game" : "games"} found
             </p>
           </div>
 
           {!loaded && (
             <p className="text-sm text-white/55">
-              {loadingProgress || "Loading catalogue listings..."}
+              Loading catalogue listings...
             </p>
-          )}
-
-          {loaded && loadingProgress && (
-            <p className="text-sm text-white/55">{loadingProgress}</p>
           )}
         </div>
 
         {loadError && (
           <p className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-100">
-            Approved listings could not be loaded. Imported Steam listings may
-            still be available. Check the browser console for details.
+            The catalogue could not be loaded. Please try again. Check the
+            browser console for details if the problem continues.
           </p>
         )}
 
-        {importError && (
-          <p className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-100">
-            Some eligible imported Steam listings could not be loaded. The
-            catalogue may be incomplete. Check the browser console for details.
-          </p>
-        )}
-
-        {visible.length > 0 ? (
+        {games.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {visible.map((game) => (
+            {games.map((game) => (
               <GameCardContent
                 key={game.key}
                 game={game}
@@ -743,7 +520,7 @@ export default function GameCatalogue() {
           </div>
         )}
 
-        {pageCount > 1 && (
+        {loaded && !loadError && pageCount > 1 && (
           <nav
             aria-label="Game catalogue pages"
             className="flex flex-wrap items-center justify-center gap-2 pt-4"

@@ -27,6 +27,26 @@ const availableRoles = [
 
 type UserRole = (typeof availableRoles)[number]["id"];
 
+function getLevelProgress(totalXp: number) {
+  let level = 1;
+  let remainingXp = Math.max(0, totalXp);
+
+  while (true) {
+    const requiredForNextLevel = 100 + (level - 1) * 50;
+
+    if (remainingXp < requiredForNextLevel) {
+      return {
+        level,
+        currentLevelXp: remainingXp,
+        requiredForNextLevel,
+      };
+    }
+
+    remainingXp -= requiredForNextLevel;
+    level += 1;
+  }
+}
+
 function AccountIcon() {
   return (
     <svg
@@ -80,6 +100,8 @@ export default function AccountPage() {
   const [email, setEmail] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [roles, setRoles] = useState<UserRole[]>(["player"]);
+  const [testerXp, setTesterXp] = useState(0);
+  const [developerXp, setDeveloperXp] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -102,7 +124,7 @@ export default function AccountPage() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("roles")
+        .select("roles, tester_xp, developer_xp")
         .eq("id", userData.user.id)
         .single();
 
@@ -115,6 +137,8 @@ export default function AccountPage() {
         );
 
         setRoles(savedRoles.length > 0 ? savedRoles : ["player"]);
+        setTesterXp(profile?.tester_xp ?? 0);
+        setDeveloperXp(profile?.developer_xp ?? 0);
       }
 
       setLoading(false);
@@ -173,6 +197,9 @@ export default function AccountPage() {
 
     window.dispatchEvent(new Event("playtested-roles-updated"));
   }
+
+  const testerProgress = getLevelProgress(testerXp);
+  const developerProgress = getLevelProgress(developerXp);
 
   return (
     <main className="min-h-screen bg-[#090b0a] text-white">
@@ -257,10 +284,24 @@ export default function AccountPage() {
                     {availableRoles.map((role) => {
                       const selected = roles.includes(role.id);
 
+                      const progression =
+                        role.id === "tester"
+                          ? testerProgress
+                          : role.id === "developer"
+                            ? developerProgress
+                            : null;
+
+                      const totalXp =
+                        role.id === "tester"
+                          ? testerXp
+                          : role.id === "developer"
+                            ? developerXp
+                            : null;
+
                       return (
                         <label
                           key={role.id}
-                          className={`group relative flex min-h-[112px] cursor-pointer items-center overflow-hidden rounded-xl border transition ${
+                          className={`group relative flex min-h-[126px] cursor-pointer items-center overflow-hidden rounded-xl border transition ${
                             selected
                               ? "border-[#77f29b]/35"
                               : "border-white/10 hover:border-white/20"
@@ -309,6 +350,24 @@ export default function AccountPage() {
                               <span className="mt-1 block max-w-md text-sm leading-5 text-zinc-400">
                                 {role.description}
                               </span>
+
+                              {progression && totalXp !== null && (
+                                <span className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">
+                                    Level {progression.level}
+                                  </span>
+
+                                  <span className="text-xs font-medium text-zinc-300">
+                                    {totalXp} XP
+                                  </span>
+
+                                  <span className="text-xs text-zinc-500">
+                                    {progression.currentLevelXp}/
+                                    {progression.requiredForNextLevel} XP to
+                                    next level
+                                  </span>
+                                </span>
+                              )}
                             </span>
                           </div>
                         </label>

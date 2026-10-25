@@ -1,0 +1,27 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Skybound</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#0b1020;color:white;font-family:Arial}
+body{display:flex;align-items:center;justify-content:center}
+#game-container{position:relative;width:960px}
+canvas{display:block;background:#111827;border:1px solid #334155}
+#menu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,10,25,.82)}
+#menu.hidden{display:none}
+button{padding:14px 28px;font-size:18px;font-weight:bold;background:#77f29b;border:0;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="game-container">
+<canvas id="game" width="960" height="540"></canvas>
+<div id="menu">
+<h1>SKYBOUND</h1>
+<p>A/D or arrows to move. Space to jump.</p>
+<button id="start">Start Game</button>
+</div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

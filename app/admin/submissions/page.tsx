@@ -942,13 +942,14 @@ export default function AdminSubmissionsPage() {
     const supabase = createClient();
     const savedReason = requiresReason ? reason.trim() : "";
 
-    const { error } = await supabase
-      .from("game_submissions")
-      .update({
-        status,
-        review_reason: savedReason || null,
-      })
-      .eq("id", id);
+    const { error } = await supabase.rpc(
+      "review_game_submission",
+      {
+        p_submission_id: id,
+        p_status: status,
+        p_review_reason: savedReason || null,
+      }
+    );
 
     setSavingId(null);
 

@@ -10,7 +10,7 @@ const navLinks = [
 
 type SignupRole = "player" | "tester" | "developer";
 
-function getTesterLevel(totalXp: number) {
+function getLevel(totalXp: number) {
   let level = 1;
   let remainingXp = Math.max(0, totalXp);
 
@@ -33,6 +33,7 @@ export default function SiteHeader() {
   const [role, setRole] = useState("user");
   const [roles, setRoles] = useState<SignupRole[]>(["player"]);
   const [testerXp, setTesterXp] = useState(0);
+  const [developerXp, setDeveloperXp] = useState(0);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,7 +46,7 @@ export default function SiteHeader() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("role, roles, tester_xp")
+        .select("role, roles, tester_xp, developer_xp")
         .eq("id", userId)
         .maybeSingle();
 
@@ -55,8 +56,10 @@ export default function SiteHeader() {
         setRole("user");
         setRoles(["player"]);
         setTesterXp(0);
+        setDeveloperXp(0);
       } else {
         setRole(data?.role ?? "user");
+
         setRoles(
           Array.isArray(data?.roles)
             ? data.roles.filter(
@@ -65,7 +68,9 @@ export default function SiteHeader() {
               )
             : ["player"]
         );
+
         setTesterXp(data?.tester_xp ?? 0);
+        setDeveloperXp(data?.developer_xp ?? 0);
       }
 
       setProfileLoaded(true);
@@ -89,6 +94,7 @@ export default function SiteHeader() {
         setRole("user");
         setRoles(["player"]);
         setTesterXp(0);
+        setDeveloperXp(0);
         setProfileLoaded(true);
       }
     }
@@ -120,13 +126,25 @@ export default function SiteHeader() {
         setRole("user");
         setRoles(["player"]);
         setTesterXp(0);
+        setDeveloperXp(0);
         setProfileLoaded(true);
       }
     });
 
+    function handleRolesUpdated() {
+      void checkSession();
+    }
+
+    window.addEventListener("playtested-roles-updated", handleRolesUpdated);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+
+      window.removeEventListener(
+        "playtested-roles-updated",
+        handleRolesUpdated
+      );
     };
   }, []);
 
@@ -142,23 +160,35 @@ export default function SiteHeader() {
     window.location.href = "/";
   }
 
-  const testerLevel = getTesterLevel(testerXp);
+  const testerLevel = getLevel(testerXp);
+  const developerLevel = getLevel(developerXp);
+
   const showRoleLinks = loggedIn && profileLoaded;
+
+  const showTesterLevel =
+    loggedIn && profileLoaded && roles.includes("tester");
+
+  const showDeveloperLevel =
+    loggedIn && profileLoaded && roles.includes("developer");
 
   const allNavLinks = [
     ...navLinks,
+
     ...(showRoleLinks && roles.includes("developer")
       ? [
           { label: "Submit a Game", href: "/submit" },
           { label: "My Games", href: "/my-submissions" },
         ]
       : []),
+
     ...(showRoleLinks && roles.includes("tester")
       ? [{ label: "Tester Hub", href: "/tester" }]
       : []),
+
     ...(!checkingSession && loggedIn && role === "admin"
       ? [{ label: "Admin Review", href: "/admin/submissions" }]
       : []),
+
     ...(!checkingSession && loggedIn
       ? [{ label: "Account", href: "/account" }]
       : []),
@@ -181,12 +211,20 @@ export default function SiteHeader() {
           {!checkingSession &&
             (loggedIn ? (
               <>
-                <div className="hidden max-w-[320px] items-center gap-3 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">
-                  <span className="truncate">{email}</span>
+                <div className="hidden max-w-[520px] items-center gap-2 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">
+                  <span className="mr-1 truncate">{email}</span>
 
-                  <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
-                    {profileLoaded ? `Lv. ${testerLevel}` : "Lv. …"}
-                  </span>
+                  {showTesterLevel && (
+                    <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
+                      Tester Lv. {testerLevel}
+                    </span>
+                  )}
+
+                  {showDeveloperLevel && (
+                    <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
+                      Developer Lv. {developerLevel}
+                    </span>
+                  )}
                 </div>
 
                 <button
@@ -265,10 +303,19 @@ export default function SiteHeader() {
               <div className="mt-2 border-t border-white/10 px-3 pt-3">
                 <p className="truncate text-xs text-zinc-400">{email}</p>
 
-                <p className="mt-2 text-xs text-[#77f29b]">
-                  Tester level:{" "}
-                  {profileLoaded ? testerLevel : "Loading…"}
-                </p>
+                <div className="mt-2 flex flex-col gap-1">
+                  {showTesterLevel && (
+                    <p className="text-xs text-[#77f29b]">
+                      Tester level: {testerLevel}
+                    </p>
+                  )}
+
+                  {showDeveloperLevel && (
+                    <p className="text-xs text-[#77f29b]">
+                      Developer level: {developerLevel}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>

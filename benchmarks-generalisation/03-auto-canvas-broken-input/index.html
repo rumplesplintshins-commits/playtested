@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Drift Signal</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #090b0a;
+      color: #f5f7f5;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .game {
+      width: min(900px, 94vw);
+      padding: 28px;
+      border: 1px solid #29312c;
+      border-radius: 18px;
+      background: #111512;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 38px;
+    }
+
+    p {
+      color: #a9b5ad;
+    }
+
+    #menu {
+      margin-bottom: 18px;
+    }
+
+    #start {
+      padding: 14px 28px;
+      border: 0;
+      border-radius: 10px;
+      background: #77f29b;
+      color: #071009;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #status {
+      color: #77f29b;
+      font-weight: 700;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #29312c;
+      border-radius: 14px;
+      background: #070a08;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="game">
+    <h1>Drift Signal</h1>
+
+    <p>
+      Use the arrow keys or A/D to steer the ship through the signal field.
+    </p>
+
+    <p>
+      Status: <span id="status">Ready</span>
+    </p>
+
+    <div id="menu">
+      <button id="start" type="button">Launch</button>
+    </div>
+
+    <canvas id="game" width="840" height="460"></canvas>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import SiteHeader from "../components/SiteHeader";
 
+type TestAccessType =
+  | "steam_demo"
+  | "steam_game"
+  | "browser_game"
+  | "download_build"
+  | "other";
+
 type TestGame = {
   submission_id: string;
   title: string;
@@ -12,6 +19,7 @@ type TestGame = {
   genre: string;
   description: string;
   game_link: string | null;
+  access_type: TestAccessType;
   image_url: string | null;
   ai_type: string | null;
 };
@@ -74,6 +82,51 @@ function calculateTesterProgress(totalXp: number): TesterProgress {
         ? Math.min(100, (remainingXp / xpNeededForLevel) * 100)
         : 0,
   };
+}
+
+function getAccessLabel(accessType: TestAccessType) {
+  switch (accessType) {
+    case "steam_demo":
+      return "Steam demo";
+    case "steam_game":
+      return "Steam game";
+    case "browser_game":
+      return "Browser game";
+    case "download_build":
+      return "Downloadable build";
+    default:
+      return "External game access";
+  }
+}
+
+function getAccessButtonLabel(accessType: TestAccessType) {
+  switch (accessType) {
+    case "steam_demo":
+      return "Open Steam demo ↗";
+    case "steam_game":
+      return "Open on Steam ↗";
+    case "browser_game":
+      return "Play in browser ↗";
+    case "download_build":
+      return "Download / access build ↗";
+    default:
+      return "Open game access ↗";
+  }
+}
+
+function getAccessInstructions(accessType: TestAccessType) {
+  switch (accessType) {
+    case "steam_demo":
+      return "This playtest uses the free Steam demo. Open the Steam page and select Download or Add to Library to install it.";
+    case "steam_game":
+      return "This playtest uses the game's Steam version. You may need to install, purchase or otherwise have access to the game through Steam.";
+    case "browser_game":
+      return "This playtest uses a browser build. Open the link below to launch the game in your browser.";
+    case "download_build":
+      return "Use the developer-provided link below to download or access the build for this playtest.";
+    default:
+      return "Use the developer-provided link below to access the game or build for this playtest.";
+  }
 }
 
 export default function TesterPage() {
@@ -750,14 +803,28 @@ export default function TesterPage() {
                             </p>
 
                             {game.game_link && (
-                              <a
-                                href={game.game_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full rounded-lg border border-white/15 px-4 py-3 text-center text-sm font-semibold hover:bg-white/5"
-                              >
-                                Open game
-                              </a>
+                              <div className="rounded-xl border border-[#77f29b]/25 bg-[#77f29b]/5 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                  Game access
+                                </p>
+
+                                <p className="mt-2 text-sm font-semibold text-white">
+                                  {getAccessLabel(game.access_type)}
+                                </p>
+
+                                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                                  {getAccessInstructions(game.access_type)}
+                                </p>
+
+                                <a
+                                  href={game.game_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-4 block w-full rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-3 text-center text-sm font-semibold text-[#b9f9ca] hover:bg-[#77f29b]/15"
+                                >
+                                  {getAccessButtonLabel(game.access_type)}
+                                </a>
+                              </div>
                             )}
 
                             <button

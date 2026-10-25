@@ -1,0 +1,5826 @@
+{
+  "schemaVersion": 5,
+  "generatedAt": "2026-10-24T15:22:49.244Z",
+  "databaseRunId": "037b57a0-6936-4f43-83e7-0d1a0b0933de",
+  "workerVersion": "v5",
+  "game": {
+    "title": "Playtested Skybound Benchmark",
+    "sourceType": "submission",
+    "id": "82cb0fe3-9399-4f33-bdf3-e8ecb35ee77b",
+    "steamAppId": null
+  },
+  "build": {
+    "label": "Generalisation DOM Clean 02 - V5",
+    "zipPath": "C:\\Users\\OWNER\\playtested\\benchmarks-generalisation\\02-dom-reaction.zip",
+    "fileName": "02-dom-reaction.zip"
+  },
+  "configuration": {
+    "profile": "quick",
+    "concurrency": 10,
+    "testPlan": {
+      "launch": 50,
+      "restart": 50,
+      "interaction": 10,
+      "stability": 5,
+      "soak": 1
+    },
+    "totalChecks": 116,
+    "timings": {
+      "launchSettleMs": 250,
+      "restartSettleMs": 250,
+      "interactionObservationMs": 1200,
+      "stabilityObservationMs": 3000,
+      "soakObservationMs": 10000,
+      "sampleIntervalMs": 100,
+      "stallThresholdMs": 550
+    }
+  },
+  "durationMs": 10342,
+  "summary": {
+    "profile": "quick",
+    "totalChecks": 116,
+    "plannedChecks": {
+      "launch": 50,
+      "restart": 50,
+      "interaction": 10,
+      "stability": 5,
+      "soak": 1
+    },
+    "successfulBuildLoads": 116,
+    "buildLoadSuccessRate": 100,
+    "launchReliability": {
+      "checks": 50,
+      "successful": 50,
+      "failed": 0,
+      "successRate": 100
+    },
+    "restartReliability": {
+      "checks": 50,
+      "successful": 50,
+      "failed": 0,
+      "successRate": 100
+    },
+    "interaction": {
+      "checks": 10,
+      "successful": 0,
+      "failed": 10,
+      "successRate": 0
+    },
+    "genericDetection": {
+      "sessionsWithErrors": 0,
+      "sessionsWithFailedRequests": 0,
+      "sessionsWithStalls": 0,
+      "sessionsWithWorkerErrors": 0
+    },
+    "benchmarkGroundTruth": {
+      "sessionsWithStartupFailure": 0,
+      "sessionsWithRestartFailure": 0,
+      "sessionsWithStall": 0,
+      "sessionsWithRuntimeError": 0,
+      "startupFailureEvents": 0,
+      "restartFailureEvents": 0,
+      "simulationStallEvents": 0,
+      "runtimeErrorEvents": 0
+    },
+    "medianLoadMs": 27,
+    "familySummaries": {
+      "launch": {
+        "family": "launch",
+        "checks": 50,
+        "successfulLoads": 50,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 50,
+        "startSuccessRate": 100,
+        "restartAttempted": 50,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 29,
+        "medianDurationMs": 450,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "restart": {
+        "family": "restart",
+        "checks": 50,
+        "successfulLoads": 50,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 50,
+        "startSuccessRate": 100,
+        "restartAttempted": 50,
+        "successfulRestarts": 50,
+        "restartSuccessRate": 100,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 25,
+        "medianDurationMs": 774,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "interaction": {
+        "family": "interaction",
+        "checks": 10,
+        "successfulLoads": 10,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 10,
+        "startSuccessRate": 100,
+        "restartAttempted": 10,
+        "successfulRestarts": 0,
+        "restartSuccessRate": 0,
+        "interactionAttempted": 10,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": 0,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 25,
+        "medianDurationMs": 2015,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "stability": {
+        "family": "stability",
+        "checks": 5,
+        "successfulLoads": 5,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 0,
+        "startSuccessRate": 0,
+        "restartAttempted": 0,
+        "successfulRestarts": 0,
+        "restartSuccessRate": null,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 19,
+        "medianDurationMs": 381,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      },
+      "soak": {
+        "family": "soak",
+        "checks": 1,
+        "successfulLoads": 1,
+        "buildLoadSuccessRate": 100,
+        "successfulStarts": 0,
+        "startSuccessRate": 0,
+        "restartAttempted": 0,
+        "successfulRestarts": 0,
+        "restartSuccessRate": null,
+        "interactionAttempted": 0,
+        "successfulInteractions": 0,
+        "interactionSuccessRate": null,
+        "sessionsWithErrors": 0,
+        "sessionsWithStalls": 0,
+        "sessionsWithWorkerErrors": 0,
+        "medianLoadMs": 18,
+        "medianDurationMs": 381,
+        "benchmark": {
+          "sessionsWithStartupFailure": 0,
+          "sessionsWithRestartFailure": 0,
+          "sessionsWithStall": 0,
+          "sessionsWithRuntimeError": 0,
+          "startupFailureEvents": 0,
+          "restartFailureEvents": 0,
+          "stallEvents": 0,
+          "runtimeErrorEvents": 0
+        }
+      }
+    },
+    "result": "ISSUES DETECTED",
+    "issueReasons": [
+      "10 of 10 interaction checks failed"
+    ]
+  },
+  "sessions": [
+    {
+      "testFamily": "launch",
+      "familyIndex": 1,
+      "globalSessionNumber": 1,
+      "seed": 107919,
+      "durationMs": 699,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 2,
+      "globalSessionNumber": 2,
+      "seed": 115838,
+      "durationMs": 701,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 3,
+      "globalSessionNumber": 3,
+      "seed": 123757,
+      "durationMs": 701,
+      "loadMs": 44,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 4,
+      "globalSessionNumber": 4,
+      "seed": 131676,
+      "durationMs": 700,
+      "loadMs": 37,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 5,
+      "globalSessionNumber": 5,
+      "seed": 139595,
+      "durationMs": 705,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 6,
+      "globalSessionNumber": 6,
+      "seed": 147514,
+      "durationMs": 704,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 7,
+      "globalSessionNumber": 7,
+      "seed": 155433,
+      "durationMs": 703,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 8,
+      "globalSessionNumber": 8,
+      "seed": 163352,
+      "durationMs": 696,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 9,
+      "globalSessionNumber": 9,
+      "seed": 171271,
+      "durationMs": 698,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 10,
+      "globalSessionNumber": 10,
+      "seed": 179190,
+      "durationMs": 697,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 11,
+      "globalSessionNumber": 11,
+      "seed": 187109,
+      "durationMs": 440,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 12,
+      "globalSessionNumber": 12,
+      "seed": 195028,
+      "durationMs": 444,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 13,
+      "globalSessionNumber": 13,
+      "seed": 202947,
+      "durationMs": 450,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 14,
+      "globalSessionNumber": 14,
+      "seed": 210866,
+      "durationMs": 472,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 15,
+      "globalSessionNumber": 15,
+      "seed": 218785,
+      "durationMs": 470,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 16,
+      "globalSessionNumber": 16,
+      "seed": 226704,
+      "durationMs": 482,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 17,
+      "globalSessionNumber": 17,
+      "seed": 234623,
+      "durationMs": 517,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 18,
+      "globalSessionNumber": 18,
+      "seed": 242542,
+      "durationMs": 483,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 19,
+      "globalSessionNumber": 19,
+      "seed": 250461,
+      "durationMs": 480,
+      "loadMs": 20,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 20,
+      "globalSessionNumber": 20,
+      "seed": 258380,
+      "durationMs": 511,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 21,
+      "globalSessionNumber": 21,
+      "seed": 266299,
+      "durationMs": 435,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 22,
+      "globalSessionNumber": 22,
+      "seed": 274218,
+      "durationMs": 437,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 23,
+      "globalSessionNumber": 23,
+      "seed": 282137,
+      "durationMs": 456,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 24,
+      "globalSessionNumber": 24,
+      "seed": 290056,
+      "durationMs": 444,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 25,
+      "globalSessionNumber": 25,
+      "seed": 297975,
+      "durationMs": 441,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 26,
+      "globalSessionNumber": 26,
+      "seed": 305894,
+      "durationMs": 451,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 27,
+      "globalSessionNumber": 27,
+      "seed": 313813,
+      "durationMs": 446,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 28,
+      "globalSessionNumber": 28,
+      "seed": 321732,
+      "durationMs": 477,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 29,
+      "globalSessionNumber": 29,
+      "seed": 329651,
+      "durationMs": 416,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 30,
+      "globalSessionNumber": 30,
+      "seed": 337570,
+      "durationMs": 418,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 31,
+      "globalSessionNumber": 31,
+      "seed": 345489,
+      "durationMs": 421,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 32,
+      "globalSessionNumber": 32,
+      "seed": 353408,
+      "durationMs": 446,
+      "loadMs": 20,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 33,
+      "globalSessionNumber": 33,
+      "seed": 361327,
+      "durationMs": 431,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 34,
+      "globalSessionNumber": 34,
+      "seed": 369246,
+      "durationMs": 434,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 35,
+      "globalSessionNumber": 35,
+      "seed": 377165,
+      "durationMs": 431,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 36,
+      "globalSessionNumber": 36,
+      "seed": 385084,
+      "durationMs": 433,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 37,
+      "globalSessionNumber": 37,
+      "seed": 393003,
+      "durationMs": 455,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 38,
+      "globalSessionNumber": 38,
+      "seed": 400922,
+      "durationMs": 428,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 39,
+      "globalSessionNumber": 39,
+      "seed": 408841,
+      "durationMs": 450,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 40,
+      "globalSessionNumber": 40,
+      "seed": 416760,
+      "durationMs": 421,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 41,
+      "globalSessionNumber": 41,
+      "seed": 424679,
+      "durationMs": 419,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 42,
+      "globalSessionNumber": 42,
+      "seed": 432598,
+      "durationMs": 442,
+      "loadMs": 34,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 43,
+      "globalSessionNumber": 43,
+      "seed": 440517,
+      "durationMs": 438,
+      "loadMs": 33,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 44,
+      "globalSessionNumber": 44,
+      "seed": 448436,
+      "durationMs": 438,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 45,
+      "globalSessionNumber": 45,
+      "seed": 456355,
+      "durationMs": 446,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 46,
+      "globalSessionNumber": 46,
+      "seed": 464274,
+      "durationMs": 450,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 47,
+      "globalSessionNumber": 47,
+      "seed": 472193,
+      "durationMs": 446,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 48,
+      "globalSessionNumber": 48,
+      "seed": 480112,
+      "durationMs": 455,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 49,
+      "globalSessionNumber": 49,
+      "seed": 488031,
+      "durationMs": 422,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "launch",
+      "familyIndex": 50,
+      "globalSessionNumber": 50,
+      "seed": 495950,
+      "durationMs": 453,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 1,
+      "globalSessionNumber": 51,
+      "seed": 207919,
+      "durationMs": 716,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 2,
+      "globalSessionNumber": 52,
+      "seed": 215838,
+      "durationMs": 770,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 3,
+      "globalSessionNumber": 53,
+      "seed": 223757,
+      "durationMs": 797,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 4,
+      "globalSessionNumber": 54,
+      "seed": 231676,
+      "durationMs": 788,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 5,
+      "globalSessionNumber": 55,
+      "seed": 239595,
+      "durationMs": 790,
+      "loadMs": 32,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 6,
+      "globalSessionNumber": 56,
+      "seed": 247514,
+      "durationMs": 771,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 7,
+      "globalSessionNumber": 57,
+      "seed": 255433,
+      "durationMs": 778,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 8,
+      "globalSessionNumber": 58,
+      "seed": 263352,
+      "durationMs": 769,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 9,
+      "globalSessionNumber": 59,
+      "seed": 271271,
+      "durationMs": 749,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 10,
+      "globalSessionNumber": 60,
+      "seed": 279190,
+      "durationMs": 778,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 11,
+      "globalSessionNumber": 61,
+      "seed": 287109,
+      "durationMs": 677,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 12,
+      "globalSessionNumber": 62,
+      "seed": 295028,
+      "durationMs": 746,
+      "loadMs": 35,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 13,
+      "globalSessionNumber": 63,
+      "seed": 302947,
+      "durationMs": 792,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 14,
+      "globalSessionNumber": 64,
+      "seed": 310866,
+      "durationMs": 789,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 15,
+      "globalSessionNumber": 65,
+      "seed": 318785,
+      "durationMs": 780,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 16,
+      "globalSessionNumber": 66,
+      "seed": 326704,
+      "durationMs": 777,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 17,
+      "globalSessionNumber": 67,
+      "seed": 334623,
+      "durationMs": 807,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 18,
+      "globalSessionNumber": 68,
+      "seed": 342542,
+      "durationMs": 804,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 19,
+      "globalSessionNumber": 69,
+      "seed": 350461,
+      "durationMs": 789,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 20,
+      "globalSessionNumber": 70,
+      "seed": 358380,
+      "durationMs": 773,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 21,
+      "globalSessionNumber": 71,
+      "seed": 366299,
+      "durationMs": 722,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 22,
+      "globalSessionNumber": 72,
+      "seed": 374218,
+      "durationMs": 700,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 23,
+      "globalSessionNumber": 73,
+      "seed": 382137,
+      "durationMs": 728,
+      "loadMs": 19,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 24,
+      "globalSessionNumber": 74,
+      "seed": 390056,
+      "durationMs": 765,
+      "loadMs": 21,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 25,
+      "globalSessionNumber": 75,
+      "seed": 397975,
+      "durationMs": 785,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 26,
+      "globalSessionNumber": 76,
+      "seed": 405894,
+      "durationMs": 793,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 27,
+      "globalSessionNumber": 77,
+      "seed": 413813,
+      "durationMs": 800,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 28,
+      "globalSessionNumber": 78,
+      "seed": 421732,
+      "durationMs": 767,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 29,
+      "globalSessionNumber": 79,
+      "seed": 429651,
+      "durationMs": 788,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 30,
+      "globalSessionNumber": 80,
+      "seed": 437570,
+      "durationMs": 788,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 31,
+      "globalSessionNumber": 81,
+      "seed": 445489,
+      "durationMs": 730,
+      "loadMs": 19,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 32,
+      "globalSessionNumber": 82,
+      "seed": 453408,
+      "durationMs": 671,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 33,
+      "globalSessionNumber": 83,
+      "seed": 461327,
+      "durationMs": 751,
+      "loadMs": 20,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 34,
+      "globalSessionNumber": 84,
+      "seed": 469246,
+      "durationMs": 775,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 35,
+      "globalSessionNumber": 85,
+      "seed": 477165,
+      "durationMs": 774,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 36,
+      "globalSessionNumber": 86,
+      "seed": 485084,
+      "durationMs": 764,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 37,
+      "globalSessionNumber": 87,
+      "seed": 493003,
+      "durationMs": 758,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 38,
+      "globalSessionNumber": 88,
+      "seed": 500922,
+      "durationMs": 740,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 39,
+      "globalSessionNumber": 89,
+      "seed": 508841,
+      "durationMs": 732,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 40,
+      "globalSessionNumber": 90,
+      "seed": 516760,
+      "durationMs": 758,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 41,
+      "globalSessionNumber": 91,
+      "seed": 524679,
+      "durationMs": 761,
+      "loadMs": 23,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 42,
+      "globalSessionNumber": 92,
+      "seed": 532598,
+      "durationMs": 710,
+      "loadMs": 19,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 43,
+      "globalSessionNumber": 93,
+      "seed": 540517,
+      "durationMs": 729,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 44,
+      "globalSessionNumber": 94,
+      "seed": 548436,
+      "durationMs": 770,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 45,
+      "globalSessionNumber": 95,
+      "seed": 556355,
+      "durationMs": 782,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 46,
+      "globalSessionNumber": 96,
+      "seed": 564274,
+      "durationMs": 776,
+      "loadMs": 29,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 47,
+      "globalSessionNumber": 97,
+      "seed": 572193,
+      "durationMs": 807,
+      "loadMs": 30,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 48,
+      "globalSessionNumber": 98,
+      "seed": 580112,
+      "durationMs": 789,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 49,
+      "globalSessionNumber": 99,
+      "seed": 588031,
+      "durationMs": 805,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "restart",
+      "familyIndex": 50,
+      "globalSessionNumber": 100,
+      "seed": 595950,
+      "durationMs": 789,
+      "loadMs": 21,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": true,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "Active",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "restartMethod": "reload-relaunch"
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 1,
+      "globalSessionNumber": 101,
+      "seed": 307919,
+      "durationMs": 2020,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 2,
+      "globalSessionNumber": 102,
+      "seed": 315838,
+      "durationMs": 2014,
+      "loadMs": 21,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 3,
+      "globalSessionNumber": 103,
+      "seed": 323757,
+      "durationMs": 1961,
+      "loadMs": 16,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 4,
+      "globalSessionNumber": 104,
+      "seed": 331676,
+      "durationMs": 2012,
+      "loadMs": 26,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 5,
+      "globalSessionNumber": 105,
+      "seed": 339595,
+      "durationMs": 2031,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 6,
+      "globalSessionNumber": 106,
+      "seed": 347514,
+      "durationMs": 2050,
+      "loadMs": 31,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 7,
+      "globalSessionNumber": 107,
+      "seed": 355433,
+      "durationMs": 2015,
+      "loadMs": 28,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 8,
+      "globalSessionNumber": 108,
+      "seed": 363352,
+      "durationMs": 2003,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 9,
+      "globalSessionNumber": 109,
+      "seed": 371271,
+      "durationMs": 2020,
+      "loadMs": 24,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "interaction",
+      "familyIndex": 10,
+      "globalSessionNumber": 110,
+      "seed": 379190,
+      "durationMs": 2015,
+      "loadMs": 22,
+      "buildLoaded": true,
+      "startSucceeded": true,
+      "restartSucceeded": false,
+      "interactionSucceeded": false,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": {
+          "sawRunning": false,
+          "ended": false,
+          "samples": 12,
+          "longestNoProgressMs": 0,
+          "genericStallDetected": false
+        },
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null,
+        "launchEvidence": {
+          "before": {
+            "startExists": true,
+            "startVisible": true,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Ready\n\nClick the nodes as quickly as you can.\n\nBegin Circuit"
+          },
+          "after": {
+            "startExists": true,
+            "startVisible": false,
+            "canvasExists": false,
+            "canvasSignature": null,
+            "bodyText": "Circuit Breaker\n\nHit the moving circuit nodes before the timer expires.\n\nScore: 0\nTime: 20\nStatus: Active\nHIT"
+          }
+        },
+        "interactionEvidence": {
+          "inputMethod": "keyboard",
+          "positionBefore": null,
+          "positionAfterRight": null,
+          "positionFinal": null,
+          "hasPositionEvidence": false,
+          "positionChanged": false,
+          "scoreBefore": 0,
+          "scoreAfter": 0,
+          "scoreChanged": false,
+          "canvasChangedAfterInput": false
+        }
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 1,
+      "globalSessionNumber": 111,
+      "seed": 407919,
+      "durationMs": 374,
+      "loadMs": 17,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 2,
+      "globalSessionNumber": 112,
+      "seed": 415838,
+      "durationMs": 381,
+      "loadMs": 25,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 3,
+      "globalSessionNumber": 113,
+      "seed": 423757,
+      "durationMs": 374,
+      "loadMs": 18,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 4,
+      "globalSessionNumber": 114,
+      "seed": 431676,
+      "durationMs": 388,
+      "loadMs": 27,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "stability",
+      "familyIndex": 5,
+      "globalSessionNumber": 115,
+      "seed": 439595,
+      "durationMs": 387,
+      "loadMs": 19,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    },
+    {
+      "testFamily": "soak",
+      "familyIndex": 1,
+      "globalSessionNumber": 116,
+      "seed": 507919,
+      "durationMs": 381,
+      "loadMs": 18,
+      "buildLoaded": true,
+      "startSucceeded": false,
+      "restartSucceeded": false,
+      "interactionSucceeded": null,
+      "startStatus": "Active",
+      "restartStatus": "",
+      "genericObservations": {
+        "stallDetected": false,
+        "runtimeObservation": null,
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": [],
+        "fatalError": null
+      },
+      "benchmarkGroundTruth": {
+        "startupFailures": 0,
+        "restartFailures": 0,
+        "simulationStalls": 0,
+        "runtimeErrors": 0,
+        "runStarts": 0,
+        "runEnds": 0
+      },
+      "telemetryEvents": []
+    }
+  ]
+}

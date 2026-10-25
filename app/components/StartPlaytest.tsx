@@ -11,6 +11,12 @@ type GameSource = {
 };
 
 type PlaytestStatus = "draft" | "open" | "paused" | "closed";
+type PlaytestAccessType =
+  | "steam_demo"
+  | "steam_game"
+  | "browser_game"
+  | "download_build"
+  | "other";
 type PlaytestAudience =
   | "playtested_testers"
   | "own_community"
@@ -21,6 +27,7 @@ type ExistingPlaytest = {
   status: PlaytestStatus;
   shareToken: string;
   accessLink: string;
+  accessType?: PlaytestAccessType;
   instructions: string;
   focusAreas: string[];
   audience: PlaytestAudience;
@@ -606,6 +613,259 @@ function HistoricalPlaytestCard({
   );
 }
 
+function averageScore(values: Array<number | null>) {
+  const rated = values.filter((value): value is number => value !== null);
+
+  if (rated.length === 0) {
+    return null;
+  }
+
+  return Math.round((rated.reduce((total, value) => total + value, 0) / rated.length) * 10) / 10;
+}
+
+function ResultsDashboard({
+  playtest,
+  communityResults,
+  independentProgress,
+  acceptedFeedback,
+}: {
+  playtest: ExistingPlaytest;
+  communityResults: CommunityPlaytestResults | null;
+  independentProgress: PlaytestedTestProgress | null;
+  acceptedFeedback: AcceptedIndependentFeedback[];
+}) {
+  const communityResponses = communityResults?.responses ?? [];
+  const independentCount = acceptedFeedback.length;
+  const communityCount = communityResponses.length;
+  const totalResponses = independentCount + communityCount;
+
+  const averageGameplay = averageScore([
+    ...acceptedFeedback.map((response) => response.gameplay_score),
+    ...communityResponses.map((response) => response.gameplay_score),
+  ]);
+  const averagePerformance = averageScore([
+    ...acceptedFeedback.map((response) => response.performance_score),
+    ...communityResponses.map((response) => response.performance_score),
+  ]);
+  const averageOverall = averageScore(
+    communityResponses.map((response) => response.overall_score)
+  );
+  const averageControls = averageScore(
+    communityResponses.map((response) => response.controls_score)
+  );
+
+  const communityBugs = communityResponses.filter(
+    (response) => response.bugs?.trim()
+  );
+  const independentBugs = acceptedFeedback.filter(
+    (response) => response.bugs_found?.trim()
+  );
+  const bugReportCount = communityBugs.length + independentBugs.length;
+
+  const recommendYes = communityResults?.summary.recommend_yes ?? 0;
+  const recommendMaybe = communityResults?.summary.recommend_maybe ?? 0;
+  const recommendNo = communityResults?.summary.recommend_no ?? 0;
+
+  function score(value: number | null) {
+    return value === null ? "Not rated" : `${value}/10`;
+  }
+
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#77f29b]">
+              Results snapshot
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              {playtest.releaseLabel
+                ? `Release / build ${playtest.releaseLabel}`
+                : "Current playtest round"}
+            </p>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-zinc-400">
+            {totalResponses} {totalResponses === 1 ? "response" : "responses"}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
+          {[
+            ["Overall", score(averageOverall), "Community score"],
+            ["Gameplay", score(averageGameplay), "All rated responses"],
+            ["Controls", score(averageControls), "Community score"],
+            ["Performance", score(averagePerformance), "All rated responses"],
+          ].map(([label, value, note]) => (
+            <div key={label} className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
+              <p className="text-xs text-zinc-500">{label}</p>
+              <p className={`mt-1 text-xl font-semibold ${label === "Gameplay" ? "text-[#77f29b]" : "text-zinc-100"}`}>
+                {value}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-600">{note}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
+          <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.035] p-3">
+            <p className="text-xs text-zinc-500">Playtested testers</p>
+            <p className="mt-1 text-lg font-semibold text-[#77f29b]">{independentCount}</p>
+            <p className="mt-1 text-[11px] text-zinc-600">Accepted independent responses</p>
+          </div>
+          <div className="rounded-lg border border-violet-300/15 bg-violet-300/[0.035] p-3">
+            <p className="text-xs text-zinc-500">Community testers</p>
+            <p className="mt-1 text-lg font-semibold text-violet-200">{communityCount}</p>
+            <p className="mt-1 text-[11px] text-zinc-600">Completed community responses</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
+            <p className="text-xs text-zinc-500">Bug reports</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">{bugReportCount}</p>
+            <p className="mt-1 text-[11px] text-zinc-600">Responses reporting an issue</p>
+          </div>
+        </div>
+
+        {independentProgress && includesPlaytestedTesters(playtest.audience) && (
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+              <span className="font-semibold text-zinc-300">Tester Hub progress</span>
+              <span className="text-zinc-500">Target {playtest.targetTesters}</span>
+              <span className="text-zinc-500">Participating {independentProgress.total_testers}</span>
+              <span className="text-zinc-500">Testing {independentProgress.in_progress_count}</span>
+              <span className="text-amber-200">Submitted {independentProgress.submitted_count}</span>
+              <span className="text-[#77f29b]">Accepted {independentProgress.accepted_count}</span>
+              <span className="text-red-200">Not accepted {independentProgress.rejected_count}</span>
+            </div>
+          </div>
+        )}
+
+        {communityCount > 0 && (
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">
+              Would keep playing / recommend
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-2.5 py-1 text-[#b9f9ca]">Yes {recommendYes}</span>
+              <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.05] px-2.5 py-1 text-amber-200">Maybe {recommendMaybe}</span>
+              <span className="rounded-full border border-red-300/20 bg-red-300/[0.05] px-2.5 py-1 text-red-200">No {recommendNo}</span>
+              <span className="px-1 py-1 text-zinc-600">Community responses only</span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Player feedback</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">
+            Structured community feedback is grouped here. Independent tester feedback stays visible in the individual responses below.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#77f29b]">What players enjoyed</p>
+            <div className="mt-3 space-y-3">
+              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
+                <div key={`enjoyed-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.enjoyed}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-amber-300/15 bg-amber-300/[0.025] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">Where players struggled</p>
+            <div className="mt-3 space-y-3">
+              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
+                <div key={`struggled-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.struggled}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-sky-300/15 bg-sky-300/[0.025] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-200">Suggested improvements</p>
+            <div className="mt-3 space-y-3">
+              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
+                <div key={`improvements-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.improvements}</div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-red-300/15 bg-red-300/[0.025] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-red-200">Bugs & technical issues</p>
+            <div className="mt-3 space-y-3">
+              {bugReportCount === 0 ? <p className="text-sm text-zinc-500">No bugs reported in completed responses.</p> : <>
+                {independentBugs.map((response, index) => <div key={`independent-bug-${response.test_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-[#77f29b]">Playtested {index + 1}</span>{response.bugs_found}</div>)}
+                {communityBugs.map((response, index) => <div key={`community-bug-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.bugs}</div>)}
+              </>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Individual responses</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Raw tester reports remain available beneath the summary so no feedback is hidden.</p>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {acceptedFeedback.map((response, index) => (
+            <details key={response.test_id} className="rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.025]">
+              <summary className="cursor-pointer list-none p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><p className="text-sm font-semibold text-zinc-100">Playtested tester {index + 1}</p><p className="mt-1 text-xs text-zinc-500">{response.submitted_at ? historyFormatDate(response.submitted_at) : "Submission date unavailable"}</p></div>
+                  <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">Independent · Accepted</span>
+                </div>
+              </summary>
+              <div className="border-t border-white/10 p-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div><p className="text-xs text-zinc-500">Gameplay</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.gameplay_score)}</p></div>
+                  <div><p className="text-xs text-zinc-500">Performance</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.performance_score)}</p></div>
+                  <div><p className="text-xs text-zinc-500">Time played</p><p className="mt-1 text-sm font-semibold text-zinc-200">{response.hours_played === null ? "Not provided" : `${response.hours_played} ${response.hours_played === 1 ? "hour" : "hours"}`}</p></div>
+                </div>
+                <div className="mt-4 grid gap-4">
+                  <div><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Tester feedback</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{response.feedback || "No feedback provided."}</p></div>
+                  <div><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Bugs reported</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{response.bugs_found || "No bugs reported."}</p></div>
+                </div>
+              </div>
+            </details>
+          ))}
+
+          {communityResponses.map((response, index) => (
+            <details key={response.feedback_id} className="rounded-xl border border-violet-300/15 bg-violet-300/[0.025]">
+              <summary className="cursor-pointer list-none p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><p className="text-sm font-semibold text-zinc-100">Community tester {index + 1}</p><p className="mt-1 text-xs text-zinc-500">{historyFormatDate(response.submitted_at)}</p></div>
+                  <span className="rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-2.5 py-1 text-xs font-semibold text-violet-200">Community · {response.overall_score}/10</span>
+                </div>
+              </summary>
+              <div className="border-t border-white/10 p-4">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
+                  <div><p className="text-xs text-zinc-500">Overall</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.overall_score)}</p></div>
+                  <div><p className="text-xs text-zinc-500">Gameplay</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.gameplay_score)}</p></div>
+                  <div><p className="text-xs text-zinc-500">Controls</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.controls_score)}</p></div>
+                  <div><p className="text-xs text-zinc-500">Performance</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.performance_score)}</p></div>
+                </div>
+                <div className="mt-4 grid gap-3 text-sm leading-6 text-zinc-300">
+                  <p><span className="text-zinc-500">Enjoyed: </span>{response.enjoyed}</p>
+                  <p><span className="text-zinc-500">Struggled: </span>{response.struggled}</p>
+                  <p><span className="text-zinc-500">Improvements: </span>{response.improvements}</p>
+                  <p><span className="text-zinc-500">Bugs: </span>{response.bugs?.trim() || "No bugs or technical issues reported."}</p>
+                  <p><span className="text-zinc-500">Would keep playing / recommend: </span>{response.recommendation === "yes" ? "Yes" : response.recommendation === "maybe" ? "Maybe" : "No"}</p>
+                  {response.additional_comments?.trim() && <p><span className="text-zinc-500">Additional comments: </span>{response.additional_comments}</p>}
+                </div>
+              </div>
+            </details>
+          ))}
+
+          {totalResponses === 0 && (
+            <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-zinc-500">No accepted or completed responses yet.</div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function StartPlaytest({
   gameTitle,
   gameSource,
@@ -627,6 +887,7 @@ export default function StartPlaytest({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [accessLink, setAccessLink] = useState("");
+  const [accessType, setAccessType] = useState<PlaytestAccessType>("steam_demo");
   const [instructions, setInstructions] = useState("");
   const [focusAreas, setFocusAreas] = useState<string[]>([
     "Overall experience",
@@ -650,12 +911,9 @@ export default function StartPlaytest({
     useState<PlaytestedTestProgress | null>(null);
   const [acceptedIndependentFeedback, setAcceptedIndependentFeedback] =
     useState<AcceptedIndependentFeedback[]>([]);
-  const [independentResponsesExpanded, setIndependentResponsesExpanded] =
-    useState(false);
   const [setupExpanded, setSetupExpanded] = useState(true);
   const [sharingExpanded, setSharingExpanded] = useState(true);
   const [resultsExpanded, setResultsExpanded] = useState(true);
-  const [responsesExpanded, setResponsesExpanded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -670,6 +928,7 @@ export default function StartPlaytest({
             id,
             share_token,
             access_link,
+            access_type,
             instructions,
             focus_areas,
             audience,
@@ -721,6 +980,7 @@ export default function StartPlaytest({
         id: string;
         share_token: string;
         access_link: string;
+        access_type: PlaytestAccessType | null;
         instructions: string;
         focus_areas: string[] | null;
         audience: PlaytestAudience;
@@ -740,6 +1000,7 @@ export default function StartPlaytest({
             status: row.status,
             shareToken: row.share_token,
             accessLink: row.access_link,
+            accessType: row.access_type ?? "other",
             instructions: row.instructions,
             focusAreas: row.focus_areas ?? [],
             audience: row.audience,
@@ -770,6 +1031,7 @@ export default function StartPlaytest({
     }
 
     setAccessLink(existingPlaytest.accessLink);
+    setAccessType(existingPlaytest.accessType ?? "other");
     setInstructions(existingPlaytest.instructions);
     setFocusAreas(
       existingPlaytest.focusAreas.length > 0
@@ -801,6 +1063,7 @@ export default function StartPlaytest({
 
   function resetNewPlaytestForm() {
     setAccessLink("");
+    setAccessType("steam_demo");
     setInstructions("");
     setFocusAreas(["Overall experience"]);
     setAudience("playtested_testers");
@@ -951,34 +1214,6 @@ export default function StartPlaytest({
     }
   }
 
-  function formatScore(score: number | null) {
-    return score === null ? "Not rated" : `${score}/10`;
-  }
-
-  function recommendationLabel(
-    recommendation: CommunityFeedbackResponse["recommendation"]
-  ) {
-    if (recommendation === "yes") {
-      return "Yes";
-    }
-
-    if (recommendation === "maybe") {
-      return "Maybe";
-    }
-
-    return "No";
-  }
-
-  function formatSubmittedAt(value: string) {
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(value));
-  }
-
   async function loadPlaytestResults(playtestId: string) {
     setResultsLoading(true);
     setResultsError("");
@@ -1052,6 +1287,7 @@ export default function StartPlaytest({
         p_approved_game_id: gameSource.approvedGameId,
         p_submission_id: gameSource.submissionId,
         p_access_link: validated.accessLink,
+        p_access_type: accessType,
         p_instructions: validated.instructions,
         p_focus_areas: focusAreas,
         p_audience: audience,
@@ -1102,6 +1338,7 @@ export default function StartPlaytest({
       {
         p_playtest_id: existingPlaytest.id,
         p_access_link: validated.accessLink,
+        p_access_type: accessType,
         p_instructions: validated.instructions,
         p_focus_areas: focusAreas,
         p_audience: audience,
@@ -1234,14 +1471,35 @@ export default function StartPlaytest({
                 >
                   <label className="block">
                     <span className="text-sm font-medium text-zinc-200">
-                      Game build or playtest link
+                      How will testers access this build?
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                      This controls the action testers see when they start testing.
+                    </span>
+                    <select
+                      value={accessType}
+                      onChange={(event) =>
+                        setAccessType(event.target.value as PlaytestAccessType)
+                      }
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
+                    >
+                      <option value="steam_demo">Steam demo</option>
+                      <option value="steam_game">Steam game</option>
+                      <option value="browser_game">Browser game</option>
+                      <option value="download_build">Downloadable build</option>
+                      <option value="other">Other external access</option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-zinc-200">
+                      Tester access link
                     </span>
 
                     <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                      The location testers use to access this build. Do not
-                      replace this with a materially different build once
-                      results have been collected. Start a new playtest for a
-                      new release instead.
+                      The exact page or download location testers should use for this round.
+                      Do not replace it with a materially different build once results have
+                      been collected. Start a new playtest for a new release instead.
                     </span>
 
                     <input
@@ -1597,534 +1855,43 @@ export default function StartPlaytest({
                   Playtest results
                 </p>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Community feedback and response progress.
+                  Snapshot, player feedback and individual responses.
                 </p>
               </div>
-
-              <span className="text-lg text-zinc-400">
-                {resultsExpanded ? "−" : "+"}
-              </span>
+              <span className="text-lg text-zinc-400">{resultsExpanded ? "−" : "+"}</span>
             </button>
 
             {resultsExpanded && (
               <div className="border-t border-white/10 p-5">
-                {includesPlaytestedTesters(existingPlaytest.audience) && (
-                  <div className="mb-5 rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.04] p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-                          Playtested testers
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-zinc-500">
-                          Independent Tester Hub participation for this playtest.
-                        </p>
-                      </div>
-
-                      <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                        Target {existingPlaytest.targetTesters}
-                      </span>
-                    </div>
-
-                    {playtestedProgress ? (
-                      <>
-                        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Participating</p>
-                            <p className="mt-1 text-xl font-semibold text-zinc-100">
-                              {playtestedProgress.total_testers}
-                            </p>
-                          </div>
-
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Claimed</p>
-                            <p className="mt-1 text-xl font-semibold text-zinc-100">
-                              {playtestedProgress.claimed_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Testing</p>
-                            <p className="mt-1 text-xl font-semibold text-zinc-100">
-                              {playtestedProgress.in_progress_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Submitted</p>
-                            <p className="mt-1 text-xl font-semibold text-amber-200">
-                              {playtestedProgress.submitted_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Accepted</p>
-                            <p className="mt-1 text-xl font-semibold text-[#77f29b]">
-                              {playtestedProgress.accepted_count}
-                            </p>
-                          </div>
-
-                          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                            <p className="text-xs text-zinc-500">Not accepted</p>
-                            <p className="mt-1 text-xl font-semibold text-red-200">
-                              {playtestedProgress.rejected_count}
-                            </p>
-                          </div>
-                        </div>
-
-                        <p className="mt-3 text-xs leading-5 text-zinc-500">
-                          Submitted tests are awaiting admin review. Accepted
-                          tests are the independent results that can contribute
-                          to Playtested assessment evidence.
-                        </p>
-
-                        <div className="mt-5 border-t border-white/10 pt-4">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setIndependentResponsesExpanded(
-                                (current) => !current
-                              )
-                            }
-                            className="flex w-full items-center justify-between gap-4 text-left"
-                          >
-                            <div>
-                              <h5 className="font-semibold text-zinc-100">
-                                Independent responses
-                              </h5>
-                              <p className="mt-1 text-xs text-zinc-500">
-                                {acceptedIndependentFeedback.length}{" "}
-                                {acceptedIndependentFeedback.length === 1
-                                  ? "accepted response"
-                                  : "accepted responses"}
-                              </p>
-                            </div>
-
-                            <span className="text-lg text-zinc-400">
-                              {independentResponsesExpanded ? "−" : "+"}
-                            </span>
-                          </button>
-
-                          {independentResponsesExpanded && (
-                            <div className="mt-4 space-y-3">
-                              {acceptedIndependentFeedback.length === 0 ? (
-                                <div className="rounded-lg border border-dashed border-white/10 p-4">
-                                  <p className="text-sm text-zinc-400">
-                                    No accepted independent responses yet.
-                                  </p>
-                                  <p className="mt-1 text-xs leading-5 text-zinc-500">
-                                    Submitted reports appear here only after
-                                    Playtested admin review and acceptance.
-                                  </p>
-                                </div>
-                              ) : (
-                                acceptedIndependentFeedback.map(
-                                  (response, index) => (
-                                    <details
-                                      key={response.test_id}
-                                      className="rounded-xl border border-white/10 bg-black/20"
-                                    >
-                                      <summary className="cursor-pointer list-none p-4">
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                          <div>
-                                            <p className="text-sm font-semibold text-zinc-100">
-                                              Playtested tester {index + 1}
-                                            </p>
-                                            <p className="mt-1 text-xs text-zinc-500">
-                                              {response.submitted_at
-                                                ? formatSubmittedAt(
-                                                    response.submitted_at
-                                                  )
-                                                : "Submission date unavailable"}
-                                            </p>
-                                          </div>
-
-                                          <div className="flex items-center gap-2">
-                                            <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
-                                              Accepted
-                                            </span>
-                                            <span className="text-xs text-zinc-500">
-                                              View
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </summary>
-
-                                      <div className="border-t border-white/10 p-4">
-                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                          <div>
-                                            <p className="text-xs text-zinc-500">
-                                              Gameplay
-                                            </p>
-                                            <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                              {formatScore(
-                                                response.gameplay_score
-                                              )}
-                                            </p>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-xs text-zinc-500">
-                                              Performance
-                                            </p>
-                                            <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                              {formatScore(
-                                                response.performance_score
-                                              )}
-                                            </p>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-xs text-zinc-500">
-                                              Time played
-                                            </p>
-                                            <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                              {response.hours_played === null
-                                                ? "Not provided"
-                                                : `${response.hours_played} ${
-                                                    response.hours_played === 1
-                                                      ? "hour"
-                                                      : "hours"
-                                                  }`}
-                                            </p>
-                                          </div>
-                                        </div>
-
-                                        <div className="mt-5 grid gap-4">
-                                          <div>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                                              Tester feedback
-                                            </p>
-                                            <div className="mt-2 whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/20 p-3 text-sm leading-6 text-zinc-300">
-                                              {response.feedback ||
-                                                "No feedback provided."}
-                                            </div>
-                                          </div>
-
-                                          <div>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                                              Bugs reported
-                                            </p>
-                                            <div className="mt-2 whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/20 p-3 text-sm leading-6 text-zinc-300">
-                                              {response.bugs_found ||
-                                                "No bugs reported."}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </details>
-                                  )
-                                )
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : resultsLoading ? (
-                      <p className="mt-4 text-sm text-zinc-400">
-                        Loading Tester Hub progress...
-                      </p>
-                    ) : (
-                      <p className="mt-4 text-sm text-zinc-500">
-                        No Tester Hub progress available yet.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h5 className="font-semibold text-zinc-100">
-                      Community feedback
-                    </h5>
-                    <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-500">
-                      Kept separate from independent Tester Hub results and
-                      verification evidence.
-                    </p>
-                  </div>
-
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs leading-5 text-zinc-500">
+                    Community feedback remains separate from independent Playtested verification evidence.
+                  </p>
                   <button
                     type="button"
                     disabled={resultsLoading}
-                    onClick={() =>
-                      void loadPlaytestResults(existingPlaytest.id)
-                    }
+                    onClick={() => void loadPlaytestResults(existingPlaytest.id)}
                     className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
                   >
-                    {resultsLoading ? "Refreshing..." : "Refresh"}
+                    {resultsLoading ? "Refreshing..." : "Refresh results"}
                   </button>
                 </div>
 
-                {resultsLoading && !playtestResults && (
-                  <p className="mt-5 text-sm text-zinc-400">
-                    Loading community results...
-                  </p>
-                )}
-
                 {resultsError && (
-                  <div className="mt-5 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
+                  <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
                     {resultsError}
                   </div>
                 )}
 
-                {playtestResults && (
-                  <>
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          Community
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-zinc-100">
-                          {playtestResults.summary.community_total}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {playtestResults.summary.community_testing} testing ·{" "}
-                          {playtestResults.summary.community_completed} done
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          Completed
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-zinc-100">
-                          {playtestResults.summary.community_completed}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          Responses
-                        </p>
-                      </div>
-
-                      <div className="col-span-2 rounded-lg border border-white/10 bg-black/20 p-4 sm:col-span-1">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          Overall
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-[#77f29b]">
-                          {formatScore(
-                            playtestResults.summary.average_overall
-                          )}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          Average score
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-3 gap-3">
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs text-zinc-500">Gameplay</p>
-                        <p className="mt-1 font-semibold text-zinc-200">
-                          {formatScore(
-                            playtestResults.summary.average_gameplay
-                          )}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs text-zinc-500">Controls</p>
-                        <p className="mt-1 font-semibold text-zinc-200">
-                          {formatScore(
-                            playtestResults.summary.average_controls
-                          )}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                        <p className="text-xs text-zinc-500">Performance</p>
-                        <p className="mt-1 font-semibold text-zinc-200">
-                          {formatScore(
-                            playtestResults.summary.average_performance
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                        Would keep playing / recommend
-                      </p>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs text-[#b9f9ca]">
-                          Yes {playtestResults.summary.recommend_yes}
-                        </span>
-                        <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.06] px-3 py-1.5 text-xs text-amber-200">
-                          Maybe {playtestResults.summary.recommend_maybe}
-                        </span>
-                        <span className="rounded-full border border-red-300/20 bg-red-300/[0.06] px-3 py-1.5 text-xs text-red-200">
-                          No {playtestResults.summary.recommend_no}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 border-t border-white/10 pt-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setResponsesExpanded((current) => !current)
-                        }
-                        className="flex w-full items-center justify-between gap-4 text-left"
-                      >
-                        <div>
-                          <h5 className="font-semibold text-zinc-100">
-                            Community responses
-                          </h5>
-                          <p className="mt-1 text-xs text-zinc-500">
-                            {playtestResults.responses.length}{" "}
-                            {playtestResults.responses.length === 1
-                              ? "completed response"
-                              : "completed responses"}
-                          </p>
-                        </div>
-
-                        <span className="text-lg text-zinc-400">
-                          {responsesExpanded ? "−" : "+"}
-                        </span>
-                      </button>
-
-                      {responsesExpanded && (
-                        <div className="mt-4 space-y-3">
-                          {playtestResults.responses.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-white/10 p-4">
-                              <p className="text-sm text-zinc-400">
-                                No completed community feedback yet.
-                              </p>
-                            </div>
-                          ) : (
-                            playtestResults.responses.map((response, index) => (
-                              <details
-                                key={response.feedback_id}
-                                className="rounded-xl border border-white/10 bg-black/20"
-                              >
-                                <summary className="cursor-pointer list-none p-4">
-                                  <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                      <p className="text-sm font-semibold text-zinc-100">
-                                        Community tester {index + 1}
-                                      </p>
-                                      <p className="mt-1 text-xs text-zinc-500">
-                                        {formatSubmittedAt(
-                                          response.submitted_at
-                                        )}
-                                      </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
-                                        {response.overall_score}/10
-                                      </span>
-                                      <span className="text-xs text-zinc-500">
-                                        View
-                                      </span>
-                                    </div>
-                                  </div>
-                                </summary>
-
-                                <div className="border-t border-white/10 p-4">
-                                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <div>
-                                      <p className="text-xs text-zinc-500">
-                                        Overall
-                                      </p>
-                                      <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                        {formatScore(response.overall_score)}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-zinc-500">
-                                        Gameplay
-                                      </p>
-                                      <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                        {formatScore(response.gameplay_score)}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-zinc-500">
-                                        Controls
-                                      </p>
-                                      <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                        {formatScore(response.controls_score)}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-zinc-500">
-                                        Performance
-                                      </p>
-                                      <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                        {formatScore(
-                                          response.performance_score
-                                        )}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="mt-5 grid gap-4">
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Enjoyed
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.enjoyed}
-                                      </p>
-                                    </div>
-
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Struggled
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.struggled}
-                                      </p>
-                                    </div>
-
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Improvements
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.improvements}
-                                      </p>
-                                    </div>
-
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Bugs / technical issues
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.bugs?.trim() ||
-                                          "No bugs or technical issues reported."}
-                                      </p>
-                                    </div>
-
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Would keep playing / recommend
-                                      </p>
-                                      <p className="mt-2 text-sm font-semibold text-zinc-200">
-                                        {recommendationLabel(
-                                          response.recommendation
-                                        )}
-                                      </p>
-                                    </div>
-
-                                    {response.additional_comments?.trim() && (
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Additional comments
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                          {response.additional_comments}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </details>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </>
+                {resultsLoading && !playtestResults && !playtestedProgress ? (
+                  <p className="text-sm text-zinc-400">Loading playtest results...</p>
+                ) : (
+                  <ResultsDashboard
+                    playtest={existingPlaytest}
+                    communityResults={playtestResults}
+                    independentProgress={playtestedProgress}
+                    acceptedFeedback={acceptedIndependentFeedback}
+                  />
                 )}
               </div>
             )}
@@ -2369,388 +2136,15 @@ export default function StartPlaytest({
               </p>
             )}
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-2">
-              {includesPlaytestedTesters(existingPlaytest.audience) && (
-                <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#77f29b]">
-                      Playtested testers
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-zinc-500">
-                      Independent Tester Hub participation and accepted
-                      feedback for this round.
-                    </p>
-                  </div>
-
-                  {playtestedProgress ? (
-                    <>
-                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Participating</p>
-                          <p className="mt-1 text-lg font-semibold text-zinc-100">
-                            {playtestedProgress.total_testers}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Submitted</p>
-                          <p className="mt-1 text-lg font-semibold text-amber-200">
-                            {playtestedProgress.submitted_count}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Accepted</p>
-                          <p className="mt-1 text-lg font-semibold text-[#77f29b]">
-                            {playtestedProgress.accepted_count}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Not accepted</p>
-                          <p className="mt-1 text-lg font-semibold text-zinc-100">
-                            {playtestedProgress.rejected_count}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 border-t border-white/10 pt-4">
-                        <p className="font-semibold text-zinc-100">
-                          Accepted independent responses
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {acceptedIndependentFeedback.length}{" "}
-                          {acceptedIndependentFeedback.length === 1
-                            ? "accepted response"
-                            : "accepted responses"}
-                        </p>
-
-                        <div className="mt-3 space-y-3">
-                          {acceptedIndependentFeedback.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-white/10 p-4">
-                              <p className="text-sm text-zinc-400">
-                                No accepted independent responses for this
-                                playtest.
-                              </p>
-                            </div>
-                          ) : (
-                            acceptedIndependentFeedback.map(
-                              (response, index) => (
-                                <details
-                                  key={response.test_id}
-                                  className="rounded-lg border border-white/10 bg-black/20"
-                                >
-                                  <summary className="cursor-pointer list-none p-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                      <div>
-                                        <p className="text-sm font-semibold text-zinc-100">
-                                          Playtested tester {index + 1}
-                                        </p>
-                                        <p className="mt-1 text-xs text-zinc-500">
-                                          {response.submitted_at
-                                            ? formatSubmittedAt(
-                                                response.submitted_at
-                                              )
-                                            : "Submission date unavailable"}
-                                        </p>
-                                      </div>
-                                      <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
-                                        Accepted
-                                      </span>
-                                    </div>
-                                  </summary>
-
-                                  <div className="border-t border-white/10 p-3">
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Gameplay
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.gameplay_score
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Performance
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.performance_score
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Time played
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {response.hours_played === null
-                                            ? "Not provided"
-                                            : `${response.hours_played} ${
-                                                response.hours_played === 1
-                                                  ? "hour"
-                                                  : "hours"
-                                              }`}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <div className="mt-4">
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Tester feedback
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.feedback ||
-                                          "No feedback provided."}
-                                      </p>
-                                    </div>
-
-                                    <div className="mt-4">
-                                      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                        Bugs reported
-                                      </p>
-                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                        {response.bugs_found ||
-                                          "No bugs reported."}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </details>
-                              )
-                            )
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-4 text-sm text-zinc-500">
-                      No Tester Hub participation recorded for this round.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {includesOwnCommunity(existingPlaytest.audience) && (
-                <div className="rounded-xl border border-violet-300/20 bg-violet-300/[0.035] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-200">
-                    Community feedback
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    Community responses remain separate from independent
-                    Playtested verification evidence.
-                  </p>
-
-                  {playtestResults ? (
-                    <>
-                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Joined</p>
-                          <p className="mt-1 text-lg font-semibold text-zinc-100">
-                            {playtestResults.summary.community_total}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Completed</p>
-                          <p className="mt-1 text-lg font-semibold text-zinc-100">
-                            {playtestResults.summary.community_completed}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Overall</p>
-                          <p className="mt-1 text-lg font-semibold text-[#77f29b]">
-                            {formatScore(
-                              playtestResults.summary.average_overall
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Gameplay</p>
-                          <p className="mt-1 text-sm font-semibold text-zinc-200">
-                            {formatScore(
-                              playtestResults.summary.average_gameplay
-                            )}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Controls</p>
-                          <p className="mt-1 text-sm font-semibold text-zinc-200">
-                            {formatScore(
-                              playtestResults.summary.average_controls
-                            )}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-                          <p className="text-xs text-zinc-500">Performance</p>
-                          <p className="mt-1 text-sm font-semibold text-zinc-200">
-                            {formatScore(
-                              playtestResults.summary.average_performance
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 border-t border-white/10 pt-4">
-                        <p className="font-semibold text-zinc-100">
-                          Community responses
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {playtestResults.responses.length} completed{" "}
-                          {playtestResults.responses.length === 1
-                            ? "response"
-                            : "responses"}
-                        </p>
-
-                        <div className="mt-3 space-y-3">
-                          {playtestResults.responses.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-white/10 p-4">
-                              <p className="text-sm text-zinc-400">
-                                No completed community responses for this
-                                playtest.
-                              </p>
-                            </div>
-                          ) : (
-                            playtestResults.responses.map(
-                              (response, index) => (
-                                <details
-                                  key={response.feedback_id}
-                                  className="rounded-lg border border-white/10 bg-black/20"
-                                >
-                                  <summary className="cursor-pointer list-none p-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                      <div>
-                                        <p className="text-sm font-semibold text-zinc-100">
-                                          Community tester {index + 1}
-                                        </p>
-                                        <p className="mt-1 text-xs text-zinc-500">
-                                          {formatSubmittedAt(
-                                            response.submitted_at
-                                          )}
-                                        </p>
-                                      </div>
-                                      <span className="rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-2.5 py-1 text-xs font-semibold text-violet-200">
-                                        {response.overall_score}/10
-                                      </span>
-                                    </div>
-                                  </summary>
-
-                                  <div className="border-t border-white/10 p-3">
-                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Overall
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.overall_score
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Gameplay
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.gameplay_score
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Controls
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.controls_score
-                                          )}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-zinc-500">
-                                          Performance
-                                        </p>
-                                        <p className="mt-1 text-sm font-semibold text-zinc-200">
-                                          {formatScore(
-                                            response.performance_score
-                                          )}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <div className="mt-4 space-y-4">
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Enjoyed
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                          {response.enjoyed}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Struggled
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                          {response.struggled}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Improvements
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                          {response.improvements}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Bugs / technical issues
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                          {response.bugs?.trim() ||
-                                            "No bugs or technical issues reported."}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                          Would keep playing / recommend
-                                        </p>
-                                        <p className="mt-2 text-sm font-semibold text-zinc-200">
-                                          {recommendationLabel(
-                                            response.recommendation
-                                          )}
-                                        </p>
-                                      </div>
-                                      {response.additional_comments?.trim() && (
-                                        <div>
-                                          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                            Additional comments
-                                          </p>
-                                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
-                                            {response.additional_comments}
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </details>
-                              )
-                            )
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-4 text-sm text-zinc-500">
-                      No community results recorded for this round.
-                    </p>
-                  )}
-                </div>
-              )}
+            <div className="mt-5">
+              <ResultsDashboard
+                playtest={existingPlaytest}
+                communityResults={playtestResults}
+                independentProgress={playtestedProgress}
+                acceptedFeedback={acceptedIndependentFeedback}
+              />
             </div>
+
           </div>
         )}
 
@@ -2857,12 +2251,34 @@ export default function StartPlaytest({
       >
         <label className="block">
           <span className="text-sm font-medium text-zinc-200">
-            Game build or playtest link
+            How will testers access this build?
+          </span>
+          <span className="mt-1 block text-xs leading-5 text-zinc-500">
+            Choose the access method so Playtested can show testers the right action.
+          </span>
+          <select
+            value={accessType}
+            onChange={(event) =>
+              setAccessType(event.target.value as PlaytestAccessType)
+            }
+            className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
+          >
+            <option value="steam_demo">Steam demo</option>
+            <option value="steam_game">Steam game</option>
+            <option value="browser_game">Browser game</option>
+            <option value="download_build">Downloadable build</option>
+            <option value="other">Other external access</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-medium text-zinc-200">
+            Tester access link
           </span>
 
           <span className="mt-1 block text-xs leading-5 text-zinc-500">
-            Steam page, private build link, itch.io page or another
-            location where the tester can access the game.
+            Paste the exact Steam page, browser game, private build or download
+            location testers should use for this playtest round.
           </span>
 
           <input

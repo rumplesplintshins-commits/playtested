@@ -23,6 +23,13 @@ type PlaytestAudience =
   | "own_community"
   | "both";
 
+type PlaytestAccessType =
+  | "steam_demo"
+  | "steam_game"
+  | "browser_game"
+  | "download_build"
+  | "other";
+
 type SubmissionRow = {
   id: string;
   title: string;
@@ -69,6 +76,7 @@ type CommunityPlaytestRow = {
   title: string;
   share_token: string;
   access_link: string;
+  access_type: PlaytestAccessType;
   instructions: string;
   focus_areas: string[] | null;
   audience: PlaytestAudience;
@@ -85,6 +93,7 @@ type LinkedPlaytest = {
   status: PlaytestStatus;
   shareToken: string;
   accessLink: string;
+  accessType: PlaytestAccessType;
   instructions: string;
   focusAreas: string[];
   audience: PlaytestAudience;
@@ -114,6 +123,7 @@ type LinkedGame = {
     | "Assessed"
     | "Not yet verified";
   linkedAt: string;
+  imageUrl: string | null;
   latestPlaytest: LinkedPlaytest | null;
   playtests: LinkedPlaytest[];
 };
@@ -191,6 +201,7 @@ function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
     status: playtest.status,
     shareToken: playtest.share_token,
     accessLink: playtest.access_link,
+    accessType: playtest.access_type ?? "other",
     instructions: playtest.instructions,
     focusAreas: playtest.focus_areas ?? [],
     audience: playtest.audience,
@@ -244,6 +255,45 @@ function findPlaytestsForGame(
 }
 
 
+function xpRequiredForNextLevel(level: number) {
+  return 100 + (level - 1) * 50;
+}
+
+function getDeveloperProgress(totalXp: number) {
+  let level = 1;
+  let xpIntoLevel = Math.max(0, totalXp);
+
+  while (xpIntoLevel >= xpRequiredForNextLevel(level)) {
+    xpIntoLevel -= xpRequiredForNextLevel(level);
+    level += 1;
+  }
+
+  const xpForNextLevel = xpRequiredForNextLevel(level);
+
+  return {
+    level,
+    xpIntoLevel,
+    xpForNextLevel,
+    progressPercent: Math.min(
+      100,
+      Math.round((xpIntoLevel / xpForNextLevel) * 100)
+    ),
+  };
+}
+
+function getDeveloperTitle(level: number) {
+  if (level >= 50) return "Playtested Creator";
+  if (level >= 40) return "Veteran Developer";
+  if (level >= 30) return "Master Developer";
+  if (level >= 25) return "Accomplished Developer";
+  if (level >= 20) return "Proven Developer";
+  if (level >= 15) return "Experienced Developer";
+  if (level >= 10) return "Established Developer";
+  if (level >= 5) return "Indie Developer";
+  return "New Developer";
+}
+
+
 async function DeveloperDashboard() {
   await connection();
 
@@ -260,7 +310,7 @@ async function DeveloperDashboard() {
   const { data: profile, error: profileError } =
     await supabase
       .from("profiles")
-      .select("roles")
+      .select("roles, developer_xp")
       .eq("id", user.id)
       .single();
 
@@ -333,6 +383,7 @@ async function DeveloperDashboard() {
           title,
           share_token,
           access_link,
+          access_type,
           instructions,
           focus_areas,
           audience,
@@ -439,7 +490,7 @@ async function DeveloperDashboard() {
     importedIds.length > 0
       ? supabase
           .from("imported_games")
-          .select("id, title, developer_name, genre")
+          .select("id, title, developer_name, genre, image_url")
           .in("id", importedIds)
       : Promise.resolve({
           data: [] as {
@@ -447,6 +498,7 @@ async function DeveloperDashboard() {
             title: string;
             developer_name: string | null;
             genre: string | null;
+            image_url: string | null;
           }[],
           error: null,
         }),
@@ -454,7 +506,7 @@ async function DeveloperDashboard() {
     approvedIds.length > 0
       ? supabase
           .from("approved_games")
-          .select("id, title, developer_name, genre")
+          .select("id, title, developer_name, genre, image_url")
           .in("id", approvedIds)
       : Promise.resolve({
           data: [] as {
@@ -462,6 +514,7 @@ async function DeveloperDashboard() {
             title: string | null;
             developer_name: string | null;
             genre: string | null;
+            image_url: string | null;
           }[],
           error: null,
         }),
@@ -469,7 +522,7 @@ async function DeveloperDashboard() {
     submissionIds.length > 0
       ? supabase
           .from("game_submissions")
-          .select("id, title, developer_name, genre")
+          .select("id, title, developer_name, genre, image_url")
           .in("id", submissionIds)
       : Promise.resolve({
           data: [] as {
@@ -477,6 +530,7 @@ async function DeveloperDashboard() {
             title: string;
             developer_name: string | null;
             genre: string | null;
+            image_url: string | null;
           }[],
           error: null,
         }),
@@ -511,6 +565,7 @@ async function DeveloperDashboard() {
         developerName:
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
+        imageUrl: game.image_url ?? null,
       },
     ])
   );
@@ -523,6 +578,7 @@ async function DeveloperDashboard() {
         developerName:
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
+        imageUrl: game.image_url ?? null,
       },
     ])
   );
@@ -535,6 +591,7 @@ async function DeveloperDashboard() {
         developerName:
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
+        imageUrl: game.image_url ?? null,
       },
     ])
   );
@@ -592,6 +649,7 @@ async function DeveloperDashboard() {
           developerName:
             target?.developerName ?? "Unknown developer",
           genre: target?.genre ?? "Genre not listed",
+          imageUrl: target?.imageUrl ?? null,
           relationship: link.relationship,
           sourceType: "Imported Steam game" as const,
           verificationStatus: "Not yet verified" as const,
@@ -614,6 +672,7 @@ async function DeveloperDashboard() {
           developerName:
             target?.developerName ?? "Unknown developer",
           genre: target?.genre ?? "Genre not listed",
+          imageUrl: target?.imageUrl ?? null,
           relationship: link.relationship,
           sourceType: "Approved game" as const,
           verificationStatus: "Not yet verified" as const,
@@ -635,6 +694,7 @@ async function DeveloperDashboard() {
         developerName:
           target?.developerName ?? "Unknown developer",
         genre: target?.genre ?? "Genre not listed",
+        imageUrl: target?.imageUrl ?? null,
         relationship: link.relationship,
         sourceType: "Submitted game" as const,
         verificationStatus: "Not yet verified" as const,
@@ -644,15 +704,44 @@ async function DeveloperDashboard() {
   );
 
   const linkedGames: LinkedGame[] =
-    linkedGamesWithoutPlaytests.map((game) => {
-      const playtests = findPlaytestsForGame(game, rawPlaytests);
+    linkedGamesWithoutPlaytests
+      .map((game) => {
+        const playtests = findPlaytestsForGame(game, rawPlaytests);
 
-      return {
-        ...game,
-        latestPlaytest: playtests[0] ?? null,
-        playtests,
-      };
-    });
+        return {
+          ...game,
+          latestPlaytest: playtests[0] ?? null,
+          playtests,
+        };
+      })
+      .sort((a, b) => {
+        const aHasOpenPlaytest = a.playtests.some(
+          (playtest) => playtest.status === "open"
+        );
+        const bHasOpenPlaytest = b.playtests.some(
+          (playtest) => playtest.status === "open"
+        );
+
+        if (aHasOpenPlaytest !== bHasOpenPlaytest) {
+          return aHasOpenPlaytest ? -1 : 1;
+        }
+
+        const aLatestPlaytestTime = a.latestPlaytest
+          ? new Date(a.latestPlaytest.createdAt).getTime()
+          : 0;
+        const bLatestPlaytestTime = b.latestPlaytest
+          ? new Date(b.latestPlaytest.createdAt).getTime()
+          : 0;
+
+        if (aLatestPlaytestTime !== bLatestPlaytestTime) {
+          return bLatestPlaytestTime - aLatestPlaytestTime;
+        }
+
+        return (
+          new Date(b.linkedAt).getTime() -
+          new Date(a.linkedAt).getTime()
+        );
+      });
 
   const openPlaytests = rawPlaytests.filter(
     (playtest) => playtest.status === "open"
@@ -664,9 +753,80 @@ async function DeveloperDashboard() {
       claim.status === "Needs More Information"
   );
 
+  const developerXp =
+    typeof profile.developer_xp === "number"
+      ? profile.developer_xp
+      : 0;
+
+  const developerProgress =
+    getDeveloperProgress(developerXp);
+
+  const developerTitle =
+    getDeveloperTitle(developerProgress.level);
+
   return (
     <>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.05]">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                Developer progression
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h2 className="text-2xl font-bold">
+                  Developer Level {developerProgress.level}
+                </h2>
+
+                <span className="text-sm font-semibold text-[#77f29b]">
+                  {developerTitle}
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm text-zinc-400">
+                Build your Playtested developer reputation through
+                validated milestones and meaningful participation.
+              </p>
+            </div>
+
+            <div className="text-left sm:text-right">
+              <p className="text-2xl font-bold text-[#77f29b]">
+                {developerXp} XP
+              </p>
+
+              <p className="mt-1 text-xs text-zinc-500">
+                Total developer XP
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between gap-4 text-xs">
+              <span className="font-medium text-zinc-300">
+                Level {developerProgress.level}
+              </span>
+
+              <span className="text-zinc-500">
+                {developerProgress.xpIntoLevel} /{" "}
+                {developerProgress.xpForNextLevel} XP to Level{" "}
+                {developerProgress.level + 1}
+              </span>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#77f29b] transition-all"
+                style={{
+                  width: `${developerProgress.progressPercent}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-zinc-400">
             My games
@@ -753,18 +913,35 @@ async function DeveloperDashboard() {
                 className="rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      {game.gameTitle}
-                    </h3>
+                  <div className="flex min-w-0 items-start gap-4">
+                    <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                      {game.imageUrl ? (
+                        <img
+                          src={game.imageUrl}
+                          alt={`${game.gameTitle} thumbnail`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-zinc-600">
+                          No image
+                        </div>
+                      )}
+                    </div>
 
-                    <p className="mt-1 text-sm text-zinc-400">
-                      {game.developerName}
-                    </p>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold">
+                        {game.gameTitle}
+                      </h3>
 
-                    <p className="mt-2 text-sm text-zinc-500">
-                      {game.genre}
-                    </p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {game.developerName}
+                      </p>
+
+                      <p className="mt-2 text-sm text-zinc-500">
+                        {game.genre}
+                      </p>
+                    </div>
                   </div>
 
                   <span
