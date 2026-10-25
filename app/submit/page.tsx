@@ -1934,9 +1934,7 @@ export default function SubmitGamePage() {
           );
         }
 
-        setPulseStage("running");
-
-        const pulseResponse = await fetch("/api/pulse/preflight", {
+        const jobResponse = await fetch("/api/pulse/runs", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1947,24 +1945,111 @@ export default function SubmitGamePage() {
           }),
         });
 
-        const pulsePayload = (await pulseResponse.json().catch(() => null)) as
+        const jobPayload = (await jobResponse.json().catch(() => null)) as
           | {
               success?: boolean;
-              pulse?: PulseReport;
+              job?: {
+                id?: string;
+                status?: string;
+              };
               error?: string;
             }
           | null;
 
-        if (!pulseResponse.ok || !pulsePayload?.success || !pulsePayload.pulse) {
+        if (!jobResponse.ok || !jobPayload?.success || !jobPayload.job?.id) {
           throw new Error(
-            pulsePayload?.error ||
-              "Your submission was saved, but PULSE Worker could not complete this technical run."
+            jobPayload?.error ||
+              "Your submission was saved, but PULSE could not create the V9 diagnostic job."
           );
         }
 
-        setPulseReport(pulsePayload.pulse);
-        setPulseProgress(100);
-        setPulseStage("complete");
+        console.info("PULSE V9 job created:", {
+          jobId: jobPayload.job.id,
+          status: jobPayload.job.status,
+        });
+
+        setPulseStage("running");
+
+        const jobId = jobPayload.job.id;
+        const pollStartedAt = Date.now();
+        const pollTimeoutMs = 15 * 60 * 1000;
+
+        while (true) {
+          if (Date.now() - pollStartedAt > pollTimeoutMs) {
+            throw new Error(
+              "Your submission was saved, but PULSE did not finish within 15 minutes."
+            );
+          }
+
+          const statusResponse = await fetch(
+            `/api/pulse/runs/${encodeURIComponent(jobId)}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              cache: "no-store",
+            }
+          );
+
+          const statusPayload = (await statusResponse.json().catch(() => null)) as
+            | {
+                success?: boolean;
+                job?: {
+                  id?: string;
+                  status?: string;
+                  errorMessage?: string | null;
+                  pulse?: PulseReport | null;
+                };
+                error?: string;
+              }
+            | null;
+
+          if (!statusResponse.ok || !statusPayload?.success || !statusPayload.job) {
+            throw new Error(
+              statusPayload?.error ||
+                "PULSE could not read the status of this diagnostic job."
+            );
+          }
+
+          const jobStatus = statusPayload.job.status ?? "QUEUED";
+
+          if (jobStatus === "QUEUED") {
+            setPulseProgress((current) => Math.max(current, 8));
+          } else if (jobStatus === "ACQUIRING_BUILD") {
+            setPulseProgress((current) => Math.max(current, 18));
+          } else if (jobStatus === "SECURITY_SCAN") {
+            setPulseProgress((current) => Math.max(current, 28));
+          } else if (jobStatus === "TESTING") {
+            setPulseProgress((current) => Math.max(current, 40));
+          } else if (jobStatus === "PROCESSING_RESULTS") {
+            setPulseProgress((current) => Math.max(current, 92));
+          }
+
+          if (jobStatus === "COMPLETE") {
+            if (!statusPayload.job.pulse) {
+              throw new Error(
+                "PULSE completed, but its saved diagnostic report could not be loaded."
+              );
+            }
+
+            setPulseReport(statusPayload.job.pulse);
+            setPulseProgress(100);
+            setPulseStage("complete");
+            break;
+          }
+
+          if (jobStatus === "BLOCKED" || jobStatus === "FAILED") {
+            throw new Error(
+              statusPayload.job.errorMessage ||
+                (jobStatus === "BLOCKED"
+                  ? "PULSE blocked this build during the security gate."
+                  : "PULSE Worker could not complete this technical run.")
+            );
+          }
+
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        }
       } catch (pulseRunError) {
         console.error("PULSE Worker run failed:", pulseRunError);
         setPulseError(

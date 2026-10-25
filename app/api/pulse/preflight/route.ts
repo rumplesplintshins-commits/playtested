@@ -11,6 +11,7 @@ const execFileAsync = promisify(execFile);
 
 type PulseRequest = {
   submissionId?: string;
+  jobId?: string;
 };
 
 type JsonObject = Record<string, unknown>;
@@ -798,17 +799,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const authorization = request.headers.get("authorization");
-
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, error: "You must be signed in to run PULSE." },
-        { status: 401 }
-      );
-    }
-
-    const token = authorization.slice("Bearer ".length).trim();
-
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -816,27 +806,75 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: "Your session could not be verified." },
-        { status: 401 }
-      );
-    }
-
     const body = (await request.json().catch(() => null)) as PulseRequest | null;
     const submissionId =
       typeof body?.submissionId === "string" ? body.submissionId.trim() : "";
+    const jobId =
+      typeof body?.jobId === "string" ? body.jobId.trim() : "";
 
     if (!submissionId) {
       return NextResponse.json(
         { success: false, error: "PULSE requires a submission ID." },
         { status: 400 }
       );
+    }
+
+    const runnerSecret = process.env.PULSE_RUNNER_SECRET?.trim() ?? "";
+    const suppliedRunnerSecret =
+      request.headers.get("x-pulse-runner-secret")?.trim() ?? "";
+    const isTrustedRunner =
+      Boolean(runnerSecret) && suppliedRunnerSecret === runnerSecret;
+
+    let authenticatedUserId = "";
+
+    if (isTrustedRunner) {
+      if (!jobId) {
+        return NextResponse.json(
+          { success: false, error: "The PULSE runner requires a job ID." },
+          { status: 400 }
+        );
+      }
+
+      const { data: runnerJob, error: runnerJobError } = await supabase
+        .from("pulse_jobs")
+        .select("id, submission_id, developer_id, status")
+        .eq("id", jobId)
+        .eq("submission_id", submissionId)
+        .maybeSingle();
+
+      if (runnerJobError || !runnerJob) {
+        return NextResponse.json(
+          { success: false, error: "PULSE runner could not load this queued job." },
+          { status: runnerJobError ? 500 : 404 }
+        );
+      }
+
+      authenticatedUserId = String(runnerJob.developer_id || "");
+    } else {
+      const authorization = request.headers.get("authorization");
+
+      if (!authorization?.startsWith("Bearer ")) {
+        return NextResponse.json(
+          { success: false, error: "You must be signed in to run PULSE." },
+          { status: 401 }
+        );
+      }
+
+      const token = authorization.slice("Bearer ".length).trim();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser(token);
+
+      if (userError || !user) {
+        return NextResponse.json(
+          { success: false, error: "Your session could not be verified." },
+          { status: 401 }
+        );
+      }
+
+      authenticatedUserId = user.id;
     }
 
     const { data: submission, error: submissionError } = await supabase
@@ -852,11 +890,93 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (submission.developer_id !== user.id) {
+    if (submission.developer_id !== authenticatedUserId) {
       return NextResponse.json(
         { success: false, error: "You cannot run PULSE for this submission." },
         { status: 403 }
       );
+    }
+
+    if (jobId) {
+      const { data: pulseJob, error: pulseJobError } = await supabase
+        .from("pulse_jobs")
+        .select("id, submission_id, developer_id, status")
+        .eq("id", jobId)
+        .maybeSingle();
+
+      if (pulseJobError || !pulseJob) {
+        return NextResponse.json(
+          { success: false, error: "PULSE could not load this V9 job." },
+          { status: pulseJobError ? 500 : 404 }
+        );
+      }
+
+      if (
+        pulseJob.submission_id !== submissionId ||
+        pulseJob.developer_id !== authenticatedUserId
+      ) {
+        return NextResponse.json(
+          { success: false, error: "This PULSE job does not belong to this submission." },
+          { status: 403 }
+        );
+      }
+
+      const allowedStartStatuses = isTrustedRunner
+        ? ["ACQUIRING_BUILD"]
+        : ["QUEUED"];
+
+      if (!allowedStartStatuses.includes(pulseJob.status)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `This PULSE job cannot start because its current status is ${pulseJob.status}.`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    async function updatePulseJob(
+      status:
+        | "ACQUIRING_BUILD"
+        | "SECURITY_SCAN"
+        | "TESTING"
+        | "PROCESSING_RESULTS"
+        | "COMPLETE"
+        | "BLOCKED"
+        | "FAILED",
+      values: Record<string, unknown> = {}
+    ) {
+      if (!jobId) return;
+
+      const now = new Date().toISOString();
+      const payload: Record<string, unknown> = {
+        status,
+        updated_at: now,
+        ...values,
+      };
+
+      if (status === "ACQUIRING_BUILD") {
+        payload.started_at = now;
+        payload.error_message = null;
+      }
+
+      if (status === "COMPLETE" || status === "BLOCKED" || status === "FAILED") {
+        payload.completed_at = now;
+      }
+
+      const { error: updateError } = await supabase
+        .from("pulse_jobs")
+        .update(payload)
+        .eq("id", jobId)
+        .eq("submission_id", submissionId)
+        .eq("developer_id", authenticatedUserId);
+
+      if (updateError) {
+        throw new Error(
+          `PULSE could not update V9 job ${jobId} to ${status}: ${updateError.message}`
+        );
+      }
     }
 
     const sourceUrl = String(
@@ -874,9 +994,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await updatePulseJob("ACQUIRING_BUILD");
+
     temporaryDirectory = await mkdtemp(join(tmpdir(), "playtested-pulse-"));
     const zipPath = join(temporaryDirectory, "submitted-build.zip");
     const download = await downloadZip(sourceUrl, zipPath);
+
+    await updatePulseJob("SECURITY_SCAN");
 
     /*
       PULSE SECURITY GATE
@@ -884,6 +1008,14 @@ export async function POST(request: NextRequest) {
       is allowed to extract or execute it. Security failures are fail-closed.
     */
     const buildSha256 = await sha256File(zipPath);
+
+    if (jobId) {
+      await updatePulseJob("SECURITY_SCAN", {
+        build_sha256: buildSha256,
+        build_url: download.finalUrl || sourceUrl,
+      });
+    }
+
     const securityScan = await runClamAvScan(zipPath);
 
     const { error: securityScanInsertError } = await supabase
@@ -904,6 +1036,10 @@ export async function POST(request: NextRequest) {
 
     if (securityScanInsertError) {
       console.error("PULSE security scan result could not be recorded:", securityScanInsertError);
+      await updatePulseJob("FAILED", {
+        error_message:
+          "PULSE completed the malware scan but could not save its security audit record.",
+      });
       return NextResponse.json(
         {
           success: false,
@@ -915,6 +1051,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (securityScan.status === "THREAT DETECTED") {
+      await updatePulseJob("BLOCKED", {
+        build_sha256: buildSha256,
+        error_message: securityScan.detectionName
+          ? `ClamAV detected ${securityScan.detectionName}.`
+          : "A known malware signature was detected.",
+      });
       return NextResponse.json(
         {
           success: false,
@@ -941,6 +1083,11 @@ export async function POST(request: NextRequest) {
         buildSha256,
         stderr: securityScan.stderr.slice(-4000),
       });
+      await updatePulseJob("BLOCKED", {
+        build_sha256: buildSha256,
+        error_message:
+          "The malware scanner was unavailable or returned an error. The build was not executed.",
+      });
       return NextResponse.json(
         {
           success: false,
@@ -959,6 +1106,8 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
+
+    await updatePulseJob("TESTING");
 
     /*
       IMPORTANT:
@@ -988,6 +1137,10 @@ export async function POST(request: NextRequest) {
       console.error("PULSE worker file resolution failed:", {
         cwd: process.cwd(),
         candidates: workerCandidates,
+      });
+
+      await updatePulseJob("FAILED", {
+        error_message: "The PULSE worker file could not be resolved.",
       });
 
       return NextResponse.json(
@@ -1041,6 +1194,10 @@ export async function POST(request: NextRequest) {
         stderr: stderr.slice(-6000),
       });
 
+      await updatePulseJob("FAILED", {
+        error_message: `PULSE Worker could not complete this run: ${failure.message}`,
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -1059,6 +1216,12 @@ export async function POST(request: NextRequest) {
       old preflight can never be substituted for this execution.
     */
     const technicalRunId = extractTechnicalRunId(stdout);
+
+    if (technicalRunId) {
+      await updatePulseJob("PROCESSING_RESULTS", {
+        technical_run_id: technicalRunId,
+      });
+    }
 
     if (technicalRunId) {
       const { error: securityLinkError } = await supabase
@@ -1083,6 +1246,11 @@ export async function POST(request: NextRequest) {
         stderr: stderr.slice(-8000),
       });
 
+      await updatePulseJob("FAILED", {
+        error_message:
+          "The worker finished but PULSE could not identify this run's unique technical-test ID.",
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -1102,6 +1270,12 @@ export async function POST(request: NextRequest) {
 
     if (technicalRunError || !technicalRun) {
       console.error("PULSE technical run lookup failed:", technicalRunError);
+
+      await updatePulseJob("FAILED", {
+        technical_run_id: technicalRunId,
+        error_message:
+          "Worker completed, but PULSE could not load its saved technical-test result.",
+      });
 
       return NextResponse.json(
         {
@@ -1124,6 +1298,12 @@ export async function POST(request: NextRequest) {
         "PULSE technical session evidence lookup failed:",
         technicalSessionsError
       );
+
+      await updatePulseJob("FAILED", {
+        technical_run_id: technicalRunId,
+        error_message:
+          "Worker completed, but PULSE could not load the saved session-level diagnostic evidence.",
+      });
 
       return NextResponse.json(
         {
@@ -1162,6 +1342,11 @@ export async function POST(request: NextRequest) {
         totalChecks: pulse.totalChecks,
       });
 
+      await updatePulseJob("FAILED", {
+        technical_run_id: technicalRunId,
+        error_message: `PULSE received only ${pulse.totalChecks} checks instead of the full Worker quick suite.`,
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -1171,21 +1356,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const completedPulse = {
+      ...pulse,
+      securityScan: {
+        status: securityScan.status,
+        blocked: securityScan.blocked,
+        scanner: securityScan.scanner,
+        scannerVersion: securityScan.scannerVersion,
+        signatureVersion: securityScan.signatureVersion,
+        detectionName: securityScan.detectionName,
+        buildSha256,
+        scanDurationMs: securityScan.durationMs,
+      },
+    };
+
+    await updatePulseJob("COMPLETE", {
+      technical_run_id: technicalRunId,
+      build_sha256: buildSha256,
+      build_url: download.finalUrl || sourceUrl,
+      error_message: null,
+      report_json: completedPulse,
+    });
+
     return NextResponse.json({
       success: true,
-      pulse: {
-        ...pulse,
-        securityScan: {
-          status: securityScan.status,
-          blocked: securityScan.blocked,
-          scanner: securityScan.scanner,
-          scannerVersion: securityScan.scannerVersion,
-          signatureVersion: securityScan.signatureVersion,
-          detectionName: securityScan.detectionName,
-          buildSha256,
-          scanDurationMs: securityScan.durationMs,
-        },
-      },
+      pulse: completedPulse,
     });
   } catch (error) {
     console.error("Unexpected PULSE worker route error:", error);

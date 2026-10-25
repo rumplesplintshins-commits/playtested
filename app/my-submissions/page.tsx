@@ -38,6 +38,93 @@ type SubmissionRow = {
   submitted_at: string;
 };
 
+type PulseJobRow = {
+  id: string;
+  submission_id: string;
+  technical_run_id: string | null;
+  status: string;
+  engine_version: string;
+  worker_version: string;
+  test_suite_version: string;
+  build_sha256: string | null;
+  error_message: string | null;
+  report_json: unknown | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+type JsonRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): JsonRecord {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : {};
+}
+
+function asNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallback;
+}
+
+function asString(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function getPulseReportSummary(reportJson: unknown) {
+  const report = asRecord(reportJson);
+  const build = asRecord(report.build);
+  const security = asRecord(report.securityScan);
+
+  const totalChecks = asNumber(report.totalChecks);
+  const successfulLoads = asNumber(build.successfulLoads);
+  const launchPassed = asNumber(report.launchPassed);
+  const launchTotal = asNumber(report.launchTotal);
+  const restartPassed = asNumber(report.restartPassed);
+  const restartTotal = asNumber(report.restartTotal);
+  const runtimeErrors = asNumber(report.sessionsWithErrors);
+  const failedRequests = asNumber(report.sessionsWithFailedRequests);
+  const stalls = asNumber(report.sessionsWithStalls);
+  const workerErrors = asNumber(report.workerSessionErrors);
+  const immediateCrashes = asNumber(report.immediateCrashes);
+  const issueCount = asNumber(report.issueCount);
+  const durationMs = asNumber(report.durationMs);
+  const medianLoadMs = asNumber(build.medianLoadMs);
+  const interactionConfirmed = asNumber(report.interactionConfirmed);
+  const interactionFailed = asNumber(report.interactionFailed);
+  const interactionInconclusive = asNumber(report.interactionInconclusive);
+
+  return {
+    available: Object.keys(report).length > 0,
+    summary: asString(
+      report.summary,
+      issueCount === 0 ? "No technical issues detected." : "PULSE run completed."
+    ),
+    totalChecks,
+    successfulLoads,
+    launchPassed,
+    launchTotal,
+    restartPassed,
+    restartTotal,
+    runtimeErrors,
+    failedRequests,
+    stalls,
+    workerErrors,
+    immediateCrashes,
+    issueCount,
+    durationMs,
+    medianLoadMs,
+    interactionConfirmed,
+    interactionFailed,
+    interactionInconclusive,
+    securityStatus: asString(security.status),
+    securityBlocked: security.blocked === true,
+    packageValid: build.packageValid === true,
+    entryPointFound: build.entryPointFound === true,
+  };
+}
+
 type GameClaimRow = {
   id: string;
   imported_game_id: string | null;
@@ -179,6 +266,22 @@ function submissionStatusClasses(status: string) {
   }
 
   return "border-white/10 bg-white/[0.04] text-zinc-300";
+}
+
+function pulseStatusClasses(status: string) {
+  if (status === "COMPLETE") {
+    return "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]";
+  }
+
+  if (status === "FAILED" || status === "BLOCKED") {
+    return "border-red-400/30 bg-red-400/10 text-red-300";
+  }
+
+  if (status === "QUEUED") {
+    return "border-white/10 bg-white/[0.04] text-zinc-300";
+  }
+
+  return "border-sky-300/30 bg-sky-300/10 text-sky-200";
 }
 
 function verificationStatusClasses(
@@ -328,6 +431,7 @@ async function DeveloperDashboard() {
     { data: claimRows, error: claimsError },
     { data: linkRows, error: linksError },
     { data: playtestRows, error: playtestsError },
+    { data: pulseJobRows, error: pulseJobsError },
   ] = await Promise.all([
     supabase
       .from("game_submissions")
@@ -397,6 +501,29 @@ async function DeveloperDashboard() {
       )
       .eq("developer_id", user.id)
       .order("created_at", { ascending: false }),
+
+    supabase
+      .from("pulse_jobs")
+      .select(
+        `
+          id,
+          submission_id,
+          technical_run_id,
+          status,
+          engine_version,
+          worker_version,
+          test_suite_version,
+          build_sha256,
+          error_message,
+          report_json,
+          created_at,
+          started_at,
+          completed_at
+        `
+      )
+      .eq("developer_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
   ]);
 
   if (submissionsError) {
@@ -451,12 +578,27 @@ async function DeveloperDashboard() {
     );
   }
 
+  if (pulseJobsError) {
+    console.error(
+      "Could not load PULSE diagnostic history:",
+      pulseJobsError
+    );
+
+    return (
+      <p className="mt-8 text-red-400">
+        Could not load your PULSE diagnostic history. Please try again.
+      </p>
+    );
+  }
+
   const games = (submissions ?? []) as SubmissionRow[];
   const rawClaims = (claimRows ?? []) as GameClaimRow[];
   const rawLinks =
     (linkRows ?? []) as GameDeveloperLinkRow[];
   const rawPlaytests =
     (playtestRows ?? []) as CommunityPlaytestRow[];
+  const pulseJobs =
+    (pulseJobRows ?? []) as PulseJobRow[];
 
   const importedIds = Array.from(
     new Set(
@@ -764,68 +906,22 @@ async function DeveloperDashboard() {
   const developerTitle =
     getDeveloperTitle(developerProgress.level);
 
+  const submissionTitleById = new Map(
+    games.map((game) => [game.id, game.title])
+  );
+
+  const completedPulseRuns = pulseJobs.filter(
+    (job) => job.status === "COMPLETE"
+  );
+
+  const latestPulseRun = completedPulseRuns[0] ?? null;
+  const latestPulseSummary = getPulseReportSummary(latestPulseRun?.report_json);
+  const previousPulseJobs = latestPulseRun
+    ? pulseJobs.filter((job) => job.id !== latestPulseRun.id)
+    : pulseJobs;
+
   return (
     <>
-      <section className="mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.05]">
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-                Developer progression
-              </p>
-
-              <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h2 className="text-2xl font-bold">
-                  Developer Level {developerProgress.level}
-                </h2>
-
-                <span className="text-sm font-semibold text-[#77f29b]">
-                  {developerTitle}
-                </span>
-              </div>
-
-              <p className="mt-2 text-sm text-zinc-400">
-                Build your Playtested developer reputation through
-                validated milestones and meaningful participation.
-              </p>
-            </div>
-
-            <div className="text-left sm:text-right">
-              <p className="text-2xl font-bold text-[#77f29b]">
-                {developerXp} XP
-              </p>
-
-              <p className="mt-1 text-xs text-zinc-500">
-                Total developer XP
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between gap-4 text-xs">
-              <span className="font-medium text-zinc-300">
-                Level {developerProgress.level}
-              </span>
-
-              <span className="text-zinc-500">
-                {developerProgress.xpIntoLevel} /{" "}
-                {developerProgress.xpForNextLevel} XP to Level{" "}
-                {developerProgress.level + 1}
-              </span>
-            </div>
-
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-[#77f29b] transition-all"
-                style={{
-                  width: `${developerProgress.progressPercent}%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-zinc-400">
@@ -849,11 +945,11 @@ async function DeveloperDashboard() {
 
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-sm text-zinc-400">
-            Games submitted
+            PULSE runs
           </p>
 
           <p className="mt-2 text-3xl font-bold">
-            {games.length}
+            {completedPulseRuns.length}
           </p>
         </div>
 
@@ -908,11 +1004,12 @@ async function DeveloperDashboard() {
         ) : (
           <div className="mt-6 space-y-5">
             {linkedGames.map((game) => (
-              <article
+              <details
                 key={game.linkId}
-                className="rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
+                className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
+                <summary className="cursor-pointer list-none p-5 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex min-w-0 items-start gap-4">
                     <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30">
                       {game.imageUrl ? (
@@ -944,16 +1041,39 @@ async function DeveloperDashboard() {
                     </div>
                   </div>
 
-                  <span
-                    className={`rounded-md border px-3 py-2 text-xs font-medium ${verificationStatusClasses(
-                      game.verificationStatus
-                    )}`}
-                  >
-                    {game.verificationStatus}
-                  </span>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`rounded-md border px-3 py-2 text-xs font-medium ${verificationStatusClasses(
+                          game.verificationStatus
+                        )}`}
+                      >
+                        {game.verificationStatus}
+                      </span>
+                      <span className="text-sm text-zinc-500 transition group-open:rotate-180">
+                        ▼
+                      </span>
+                    </div>
+                  </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
+                    <span>
+                      {game.latestPlaytest
+                        ? `Playtest: ${game.latestPlaytest.status}`
+                        : "No playtest"}
+                    </span>
+                    <span>·</span>
+                    <span>
+                      {completedPulseRuns.some(
+                        (run) => run.submission_id === game.submissionId
+                      )
+                        ? "PULSE complete"
+                        : "No PULSE run"}
+                    </span>
+                  </div>
+                </summary>
+
+                <div className="border-t border-white/10 p-5 sm:p-6">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
                   <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                     <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                       Relationship
@@ -987,40 +1107,434 @@ async function DeveloperDashboard() {
                   </p>
                 </div>
 
-                <StartPlaytest
-                  gameTitle={game.gameTitle}
-                  gameSource={{
-                    importedGameId: game.importedGameId,
-                    approvedGameId: game.approvedGameId,
-                    submissionId: game.submissionId,
-                  }}
-                  existingPlaytest={game.latestPlaytest}
-                  playtests={game.playtests}
-                />
-              </article>
+                  <StartPlaytest
+                    gameTitle={game.gameTitle}
+                    gameSource={{
+                      importedGameId: game.importedGameId,
+                      approvedGameId: game.approvedGameId,
+                      submissionId: game.submissionId,
+                    }}
+                    existingPlaytest={game.latestPlaytest}
+                    playtests={game.playtests}
+                  />
+                </div>
+              </details>
             ))}
           </div>
         )}
       </section>
 
-      {claims.length > 0 && (
-        <section className="mt-12 border-t border-white/10 pt-10">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              Ownership & representation
-            </p>
-
-            <h2 className="mt-2 text-2xl font-bold">
-              Developer claims
-            </h2>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-              Track the review history of claims for games that
-              already existed in the Playtested catalogue.
+      <details className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                PULSE diagnostics
+              </p>
+              {latestPulseRun && (
+                <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/10 px-2 py-0.5 text-[11px] font-semibold text-[#77f29b]">
+                  Latest complete
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-zinc-400">
+              {latestPulseRun
+                ? `${completedPulseRuns.length} completed run${completedPulseRuns.length === 1 ? "" : "s"} · ${latestPulseSummary.available ? latestPulseSummary.summary : "Latest report stored"}`
+                : "Automated build, launch, stability and security diagnostics."}
             </p>
           </div>
 
-          <div className="mt-6 space-y-5">
+          <div className="flex shrink-0 items-center gap-3 text-sm text-zinc-500">
+            <span>{pulseJobs.length} total</span>
+            <span className="transition group-open:rotate-180">▼</span>
+          </div>
+        </summary>
+
+        <div className="border-t border-white/10 px-5 py-5 sm:px-6">
+          {latestPulseRun ? (
+            <>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Latest run
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-zinc-100">
+                    {submissionTitleById.get(latestPulseRun.submission_id) ?? "Submitted game"}
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {latestPulseRun.completed_at
+                      ? formatDate(latestPulseRun.completed_at)
+                      : "Completion time not recorded"}
+                    {latestPulseRun.worker_version
+                      ? ` · Worker ${latestPulseRun.worker_version}`
+                      : ""}
+                  </p>
+                </div>
+
+                <span className="rounded-md border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-1.5 text-xs font-semibold text-[#77f29b]">
+                  COMPLETE
+                </span>
+              </div>
+
+              {latestPulseSummary.available ? (
+                <>
+                  <div className="mt-5 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] px-4 py-3">
+                    <p className="font-medium text-zinc-100">
+                      {latestPulseSummary.summary}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {latestPulseSummary.issueCount === 0
+                        ? "PULSE found no repeatable technical failures in this run."
+                        : `${latestPulseSummary.issueCount} technical warning${latestPulseSummary.issueCount === 1 ? "" : "s"} recorded.`}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Checks</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.successfulLoads}/{latestPulseSummary.totalChecks}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Build loads completed</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Launch</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.launchPassed}/{latestPulseSummary.launchTotal}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Successful starts</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Restart</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.restartPassed}/{latestPulseSummary.restartTotal}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Successful restarts</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Runtime issues</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.runtimeErrors +
+                          latestPulseSummary.failedRequests +
+                          latestPulseSummary.stalls +
+                          latestPulseSummary.workerErrors}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Errors, requests, stalls</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className={`rounded-lg border p-3 ${
+                      latestPulseSummary.securityBlocked
+                        ? "border-red-400/30 bg-red-400/[0.07]"
+                        : "border-[#77f29b]/25 bg-[#77f29b]/[0.055]"
+                    }`}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Malware scan
+                      </p>
+                      <p className={`mt-1 text-xs font-semibold ${
+                        latestPulseSummary.securityBlocked ? "text-red-300" : "text-[#77f29b]"
+                      }`}>
+                        {latestPulseSummary.securityBlocked
+                          ? "Blocked"
+                          : latestPulseSummary.securityStatus || "No known threats detected"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Package
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.packageValid ? "Valid" : "Not confirmed"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Entry point
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.entryPointFound ? "Found" : "Not confirmed"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Immediate crashes
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.immediateCrashes}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Median load
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.medianLoadMs
+                          ? `${latestPulseSummary.medianLoadMs} ms`
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-[11px] text-zinc-600">
+                    PULSE run duration:{" "}
+                    {latestPulseSummary.durationMs
+                      ? `${(latestPulseSummary.durationMs / 1000).toFixed(1)} seconds`
+                      : "—"}
+                  </p>
+                </>
+              ) : (
+                <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
+                  This is a legacy PULSE run. The technical run was completed, but the full report was not stored with the job.
+                </div>
+              )}
+
+              {previousPulseJobs.length > 0 && (
+                <details className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-black/10">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-300">
+                    <span>Previous runs</span>
+                    <span className="rounded-md border border-orange-400/40 bg-orange-400/10 px-2.5 py-1 text-xs font-bold text-orange-200">
+                      {previousPulseJobs.length}
+                    </span>
+                  </summary>
+                  <div className="space-y-3 border-t border-white/10 p-3">
+                    {previousPulseJobs.slice(0, 10).map((job) => {
+                      const summary = getPulseReportSummary(job.report_json);
+                      const runtimeIssues =
+                        summary.runtimeErrors +
+                        summary.failedRequests +
+                        summary.stalls +
+                        summary.workerErrors;
+
+                      return (
+                        <div
+                          key={job.id}
+                          className="rounded-lg border border-white/10 bg-black/20 p-4"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium text-zinc-200">
+                                {submissionTitleById.get(job.submission_id) ?? "Submitted game"}
+                              </p>
+                              <p className="mt-1 text-xs text-zinc-600">
+                                {job.completed_at
+                                  ? formatDate(job.completed_at)
+                                  : formatDate(job.created_at)}
+                                {job.worker_version ? ` · ${job.worker_version}` : ""}
+                                {job.technical_run_id
+                                  ? ` · Run ${job.technical_run_id.slice(0, 8).toUpperCase()}`
+                                  : ""}
+                              </p>
+                            </div>
+
+                            <span
+                              className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${pulseStatusClasses(
+                                job.status
+                              )}`}
+                            >
+                              {job.status}
+                            </span>
+                          </div>
+
+                          {summary.available ? (
+                            <>
+                              <p className="mt-3 text-sm font-medium text-zinc-300">
+                                {summary.summary}
+                              </p>
+
+                              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
+                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Checks</p>
+                                  <p className="mt-1 font-semibold text-zinc-100">
+                                    {summary.successfulLoads}/{summary.totalChecks}
+                                  </p>
+                                </div>
+                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
+                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Launch</p>
+                                  <p className="mt-1 font-semibold text-zinc-100">
+                                    {summary.launchPassed}/{summary.launchTotal}
+                                  </p>
+                                </div>
+                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
+                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Restart</p>
+                                  <p className="mt-1 font-semibold text-zinc-100">
+                                    {summary.restartPassed}/{summary.restartTotal}
+                                  </p>
+                                </div>
+                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
+                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Runtime issues</p>
+                                  <p className="mt-1 font-semibold text-zinc-100">{runtimeIssues}</p>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
+                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
+                                  Malware: {summary.securityBlocked ? "Blocked" : summary.securityStatus || "No known threats detected"}
+                                </span>
+                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
+                                  Package: {summary.packageValid ? "Valid" : "Not confirmed"}
+                                </span>
+                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
+                                  Entry: {summary.entryPointFound ? "Found" : "Not confirmed"}
+                                </span>
+                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
+                                  Crashes: {summary.immediateCrashes}
+                                </span>
+                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
+                                  {summary.durationMs ? `${(summary.durationMs / 1000).toFixed(1)}s` : "Duration —"}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="mt-3 text-xs text-zinc-600">
+                              Full technical report was not stored for this legacy run.
+                            </p>
+                          )}
+
+                          {job.error_message && (
+                            <p className="mt-3 text-xs text-red-300">
+                              {job.error_message}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              )}
+            </>
+          ) : (
+            <div className="rounded-lg border border-white/10 bg-black/20 p-5">
+              <p className="font-semibold text-zinc-200">No PULSE diagnostics yet</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">
+                PULSE runs will appear here after you submit a build for technical diagnostics.
+              </p>
+            </div>
+          )}
+        </div>
+      </details>
+
+      <details className="group mt-5 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-r from-white/[0.025] to-[#77f29b]/[0.025]">
+        <summary className="cursor-pointer list-none px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                Developer progression
+              </p>
+
+              <div className="mt-3 grid w-fit grid-cols-[auto_auto_auto] items-center gap-x-6 gap-y-2">
+                <span className="whitespace-nowrap text-lg font-semibold text-zinc-100">
+                  Level {developerProgress.level}
+                </span>
+
+                <span className="whitespace-nowrap rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-1.5 text-xs font-semibold text-[#77f29b]">
+                  {developerTitle}
+                </span>
+
+                <span className="whitespace-nowrap text-xs text-zinc-500">
+                  {developerXp} XP total
+                </span>
+              </div>
+            </div>
+
+            <span className="shrink-0 text-sm text-zinc-600 transition group-open:rotate-180">
+              ▼
+            </span>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-white/[0.07] bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold text-zinc-300">
+                  XP to Level {developerProgress.level + 1}
+                </p>
+                <p className="mt-1 text-[11px] text-zinc-600">
+                  Keep building experience to unlock the next developer level.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-md border border-[#77f29b]/20 bg-[#77f29b]/[0.07] px-2.5 py-1 text-xs font-semibold text-[#77f29b]">
+                {developerProgress.xpIntoLevel} / {developerProgress.xpForNextLevel} XP
+              </span>
+            </div>
+
+            <div className="mt-4 h-3 w-full overflow-hidden rounded-full border border-white/[0.08] bg-[#151a17]">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${developerProgress.progressPercent}%`,
+                  backgroundColor: "#77f29b",
+                  boxShadow: "0 0 14px rgba(119, 242, 155, 0.35)",
+                }}
+              />
+            </div>
+
+            <div className="mt-2 flex justify-between text-[10px] text-zinc-600">
+              <span>Level {developerProgress.level}</span>
+              <span>{developerProgress.progressPercent}%</span>
+              <span>Level {developerProgress.level + 1}</span>
+            </div>
+          </div>
+        </summary>
+
+        <div className="grid gap-3 border-t border-white/10 px-5 py-5 sm:grid-cols-3 sm:px-6">
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Current level
+            </p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">
+              Level {developerProgress.level}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Total experience
+            </p>
+            <p className="mt-1 text-lg font-semibold text-[#77f29b]">
+              {developerXp} XP
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
+              Next milestone
+            </p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">
+              Level {developerProgress.level + 1}
+            </p>
+          </div>
+
+          <p className="text-xs leading-5 text-zinc-600 sm:col-span-3">
+            Build your Playtested developer experience through validated milestones and meaningful participation.
+          </p>
+        </div>
+      </details>
+
+      {claims.length > 0 && (
+        <details className="group mt-8 rounded-xl border border-white/10 bg-white/[0.025]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                Ownership & representation
+              </p>
+              <h2 className="mt-1 text-lg font-semibold">
+                Developer claims
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                {claims.length} claim{claims.length === 1 ? "" : "s"} · {attentionClaims.length} need attention
+              </p>
+            </div>
+            <span className="text-sm text-zinc-500 transition group-open:rotate-180">
+              ▼
+            </span>
+          </summary>
+
+          <div className="space-y-5 border-t border-white/10 p-5">
             {claims.map((claim) => (
               <article
                 key={claim.id}
@@ -1158,23 +1672,33 @@ async function DeveloperDashboard() {
               </article>
             ))}
           </div>
-        </section>
+        </details>
       )}
 
-      <section className="mt-12 border-t border-white/10 pt-10">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Submitted games
-          </p>
+      <details open className="group mt-8 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.015]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 sm:px-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+              Submitted games
+            </p>
+            <h2 className="mt-1 text-lg font-semibold">
+              Submission history
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Review status and recent developer submissions.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="rounded-md border border-orange-400/40 bg-orange-400/10 px-2.5 py-1 text-xs font-bold text-orange-200">
+              {games.length}
+            </span>
+            <span className="text-sm text-zinc-500 transition group-open:rotate-180">
+              ▼
+            </span>
+          </div>
+        </summary>
 
-          <h2 className="mt-2 text-2xl font-bold">
-            Submission history
-          </h2>
-
-          <p className="mt-2 text-sm text-zinc-400">
-            Track new game submissions and their review progress.
-          </p>
-        </div>
+        <div className="border-t border-white/10 p-5">
 
         {games.length === 0 ? (
           <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-8">
@@ -1188,11 +1712,11 @@ async function DeveloperDashboard() {
             </p>
           </div>
         ) : (
-          <div className="mt-6 space-y-5">
+          <div className="space-y-3">
             {games.map((game) => (
               <article
                 key={game.id}
-                className="rounded-xl border border-white/10 bg-white/[0.03] p-5"
+                className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -1222,7 +1746,8 @@ async function DeveloperDashboard() {
             ))}
           </div>
         )}
-      </section>
+        </div>
+      </details>
     </>
   );
 }
