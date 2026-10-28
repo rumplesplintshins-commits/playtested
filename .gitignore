@@ -5,6 +5,28 @@ node_modules
 
 # Local environment variables
 .env.local
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Private database/Storage recovery artifacts; migrations remain trackable.
+/backups/
+/database-backups/
+/storage-backups/
+*.dump
+*.backup
+*.pgpass
+.pgpass
+pgpass.conf
+pg_service.conf
+.pg_service.conf
+*.sql.gz
+roles.sql
+schema.sql
+data.sql
+history_schema.sql
+history_data.sql
 
 # Next.js generated files
 .next/
