@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase";
 
 type GameSource = {
@@ -49,11 +49,18 @@ type PlaytestedTestProgress = {
 
 type AcceptedIndependentFeedback = {
   test_id: string;
+  overall_score: number | null;
   gameplay_score: number | null;
   performance_score: number | null;
+  continue_playing: string | null;
+  recommend_game: string | null;
+  enjoyed_most: string | null;
+  frustrations: string | null;
   bugs_found: string | null;
+  biggest_improvement: string | null;
   feedback: string | null;
   hours_played: number | null;
+  focus_responses: Record<string, unknown> | null;
   submitted_at: string | null;
 };
 
@@ -99,6 +106,123 @@ type StartPlaytestProps = {
   existingPlaytest: ExistingPlaytest | null;
   playtests: ExistingPlaytest[];
 };
+
+type PlaytestEligibility = {
+  has_active_playtest: boolean;
+  active_playtest_id: string | null;
+  active_playtest_status: string | null;
+  tester_hub_eligible: boolean;
+  tester_hub_reason: string;
+  next_tester_hub_at: string | null;
+  tester_hub_rounds_last_30_days: number;
+};
+
+function CampaignAllowancePanel({
+  eligibility,
+  loading,
+  error,
+  currentPlaytest,
+}: {
+  eligibility: PlaytestEligibility | null;
+  loading: boolean;
+  error: string;
+  currentPlaytest: ExistingPlaytest | null;
+}) {
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const available = !loading && !error && eligibility !== null;
+  const used = available ? eligibility.tester_hub_rounds_last_30_days : null;
+  const active = available && (
+    eligibility.has_active_playtest ||
+    currentPlaytest?.status === "open" ||
+    currentPlaytest?.status === "paused"
+  );
+  const nextAt = available && eligibility.next_tester_hub_at
+    ? Date.parse(eligibility.next_tester_hub_at)
+    : NaN;
+  const remaining = now !== null && Number.isFinite(nextAt)
+    ? Math.max(0, nextAt - now)
+    : null;
+  const days = remaining === null ? 0 : Math.floor(remaining / 86_400_000);
+  const hours = remaining === null ? 0 : Math.floor((remaining % 86_400_000) / 3_600_000);
+  const minutes = remaining === null ? 0 : Math.floor((remaining % 3_600_000) / 60_000);
+  const countdown = days > 0
+    ? `${days} ${days === 1 ? "day" : "days"}${hours > 0 ? ` ${hours}h` : ""}`
+    : hours > 0
+      ? `${hours} ${hours === 1 ? "hour" : "hours"}`
+      : `${Math.max(1, minutes)} ${minutes === 1 ? "minute" : "minutes"}`;
+  const eligible = available && eligibility.tester_hub_eligible && !active &&
+    (remaining === null || remaining === 0);
+
+  return (
+    <section
+      aria-label="Tester Hub campaign allowance"
+      className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Tester Hub allowance · This game
+          </p>
+          <p className="mt-1 text-sm font-semibold text-zinc-100">
+            {loading ? "Checking launch allowance…" : !available
+              ? "Launch allowance unavailable"
+              : <>{used} of 2 launches used <span className="font-normal text-zinc-500">· Last 30 days</span></>}
+          </p>
+        </div>
+        {available && (
+          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+            eligible
+              ? "border-[#77f29b]/25 bg-[#77f29b]/[0.07] text-[#b9f9ca]"
+              : "border-amber-300/25 bg-amber-300/[0.07] text-amber-200"
+          }`}>
+            {active ? "Campaign in progress" : eligible ? "Launch available" : "Launch restricted"}
+          </span>
+        )}
+      </div>
+      {available ? (
+        <div className="mt-2 space-y-1 text-xs leading-5">
+          {remaining !== null && remaining > 0 && (
+            <p className="text-zinc-300">
+              Next launch date in <span className="font-semibold text-zinc-100">{countdown}</span>
+              {" · "}<span className="text-zinc-500">{historyFormatDate(eligibility.next_tester_hub_at!)} (local time)</span>
+            </p>
+          )}
+          {active && (
+            <p className="text-amber-200">Your current campaign must be closed before another can launch.</p>
+          )}
+          {!active && !eligible && remaining === null && (
+            <p className="text-zinc-400">{eligibility.tester_hub_reason || "Your launch allowance is currently restricted."}</p>
+          )}
+          {!eligible && remaining === 0 && (
+            <p className="text-zinc-400">The scheduled wait has ended. Reload to confirm your latest eligibility.</p>
+          )}
+          {eligible && <p className="text-[#b9f9ca]">You can launch a new Tester Hub campaign.</p>}
+          <details className="pt-1 text-zinc-500">
+            <summary className="w-fit cursor-pointer text-xs transition hover:text-zinc-200">How limits work</summary>
+            <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
+              <p>Maximum two Tester Hub launches per game in a rolling 30-day window, with at least 14 days between launches. Drafts and community-only campaigns do not consume this allowance.</p>
+              <p>Only one draft, open or paused campaign can occupy this game’s active slot. Pausing keeps the slot; closing a campaign does not remove its launch from your allowance.</p>
+              <p>The date shown is supplied by your eligibility check. An active campaign must also be closed before another can launch.</p>
+              {!eligible && eligibility.tester_hub_reason && (
+                <p>Eligibility check: {eligibility.tester_hub_reason}</p>
+              )}
+            </div>
+          </details>
+        </div>
+      ) : !loading ? (
+        <p className="mt-2 text-xs leading-5 text-amber-200">We couldn’t confirm your allowance. Reload before launching a campaign.</p>
+      ) : null}
+    </section>
+  );
+}
+
 
 const focusOptions = [
   "Overall experience",
@@ -623,6 +747,136 @@ function averageScore(values: Array<number | null>) {
   return Math.round((rated.reduce((total, value) => total + value, 0) / rated.length) * 10) / 10;
 }
 
+
+const FEEDBACK_STRESS_TEST_PLAYTEST_ID =
+  "a2fe9b0b-f556-4517-86c5-9687c33c8f40";
+
+const feedbackStressTestReviews: AcceptedIndependentFeedback[] = [
+  {
+    test_id: "preview-negative-1",
+    overall_score: 3,
+    gameplay_score: 4,
+    performance_score: 5,
+    continue_playing: "definitely_not",
+    recommend_game: "probably_not",
+    enjoyed_most:
+      "Some of the environments have a nice atmosphere and the basic idea has potential.",
+    frustrations:
+      "I spent too much time trying to work out what I was meant to do. The opening gives very little direction and I never felt properly introduced to the mechanics.",
+    bugs_found:
+      "The game froze when changing areas and there was noticeable stuttering during movement.",
+    biggest_improvement:
+      "Add a proper introduction or tutorial that explains the objective and basic mechanics before leaving the player on their own.",
+    feedback: null,
+    hours_played: 0.8,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-20T18:00:00.000Z",
+  },
+  {
+    test_id: "preview-negative-2",
+    overall_score: 2,
+    gameplay_score: 3,
+    performance_score: 4,
+    continue_playing: "definitely_not",
+    recommend_game: "definitely_not",
+    enjoyed_most:
+      "The premise sounded interesting and a few individual scenes looked good.",
+    frustrations:
+      "The dialogue felt generic and disconnected from what was happening. Characters often sounded like they were delivering filler rather than reacting to the situation.",
+    bugs_found:
+      "I had two crashes in the first hour and one loading screen hung until I restarted.",
+    biggest_improvement:
+      "The writing needs a substantial pass. Give the characters clearer personalities and make conversations feel connected to what the player is doing.",
+    feedback:
+      "At the moment the different parts do not feel connected into a finished game with a consistent identity.",
+    hours_played: 1.1,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-21T18:00:00.000Z",
+  },
+  {
+    test_id: "preview-negative-3",
+    overall_score: 3,
+    gameplay_score: 3,
+    performance_score: 6,
+    continue_playing: "probably_not",
+    recommend_game: "probably_not",
+    enjoyed_most:
+      "Some of the artwork looks good individually and performance was reasonable once I was actually playing.",
+    frustrations:
+      "The gameplay became repetitive quickly. I kept doing similar actions without enough progression or new mechanics being introduced.",
+    bugs_found:
+      "There were several short freezes and some animation glitches, although I did not have a full crash.",
+    biggest_improvement:
+      "Add more gameplay depth and a stronger sense of progression so there is a reason to keep playing beyond seeing the next environment.",
+    feedback: null,
+    hours_played: 1.4,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-22T18:00:00.000Z",
+  },
+  {
+    test_id: "preview-negative-4",
+    overall_score: 4,
+    gameplay_score: 5,
+    performance_score: 5,
+    continue_playing: "maybe",
+    recommend_game: "probably_not",
+    enjoyed_most:
+      "I liked the colour palette and there were a few moments where exploring was enjoyable.",
+    frustrations:
+      "The presentation feels inconsistent. Some areas look polished while others have a noticeably different visual style, so the world does not feel cohesive.",
+    bugs_found:
+      "Performance dipped badly in one larger area and objects sometimes popped into view close to the player.",
+    biggest_improvement:
+      "Make the visual direction more consistent so the assets feel like they belong to the same game.",
+    feedback: null,
+    hours_played: 0.9,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-23T18:00:00.000Z",
+  },
+  {
+    test_id: "preview-negative-5",
+    overall_score: 2,
+    gameplay_score: 2,
+    performance_score: 3,
+    continue_playing: "definitely_not",
+    recommend_game: "definitely_not",
+    enjoyed_most:
+      "There are some decent ideas underneath the current build.",
+    frustrations:
+      "Technical problems kept interrupting the session. After several restarts I stopped trusting that I could make progress without losing it.",
+    bugs_found:
+      "Three crashes, one failed startup and a section where the game stopped responding completely.",
+    biggest_improvement:
+      "Stability should be the priority. Fix the crashes and startup reliability before adding more content.",
+    feedback:
+      "I would not recommend the current build because the technical problems interfere with actually playing it.",
+    hours_played: 0.7,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-24T18:00:00.000Z",
+  },
+  {
+    test_id: "preview-negative-6",
+    overall_score: 4,
+    gameplay_score: 4,
+    performance_score: 6,
+    continue_playing: "probably_not",
+    recommend_game: "maybe",
+    enjoyed_most:
+      "The environments can look striking and I can see the type of experience the developer is aiming for.",
+    frustrations:
+      "The story did not give me enough reason to care about what was happening. Objectives were vague and several conversations felt unnatural.",
+    bugs_found:
+      "There was stuttering and a couple of interactions did not respond on the first attempt.",
+    biggest_improvement:
+      "Give the game a clearer opening, stronger objectives and more deliberate writing so the player understands why they should care.",
+    feedback:
+      "There are promising pieces here, but they do not yet feel connected into a convincing complete experience.",
+    hours_played: 1.2,
+    focus_responses: { preview_stress_test: true },
+    submitted_at: "2026-10-25T18:00:00.000Z",
+  },
+];
+
 function ResultsDashboard({
   playtest,
   communityResults,
@@ -634,235 +888,926 @@ function ResultsDashboard({
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
 }) {
+  const writtenFeedbackRef = useRef<HTMLDetailsElement>(null);
+  const individualResponsesRef = useRef<HTMLDetailsElement>(null);
+  const issueResponsesRef = useRef<HTMLDivElement>(null);
+  const issueResponsesId = useId();
+  const individualResponsesId = useId();
+
+  function revealFeedback(section: "issues" | "individual") {
+    const details = section === "issues"
+      ? writtenFeedbackRef.current
+      : individualResponsesRef.current;
+    if (!details) return;
+    details.open = true;
+    window.requestAnimationFrame(() => {
+      const target = section === "issues" ? issueResponsesRef.current : details;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }
+
+  const isFeedbackStressTest =
+    playtest.id === FEEDBACK_STRESS_TEST_PLAYTEST_ID;
+
+  const displayedAcceptedFeedback = isFeedbackStressTest
+    ? [...acceptedFeedback, ...feedbackStressTestReviews]
+    : acceptedFeedback;
+
   const communityResponses = communityResults?.responses ?? [];
-  const independentCount = acceptedFeedback.length;
+  const independentCount = displayedAcceptedFeedback.length;
   const communityCount = communityResponses.length;
   const totalResponses = independentCount + communityCount;
+  // Real accepted evidence only: preview fixtures never complete a target.
+  const acceptedForTarget = independentProgress?.accepted_count ?? acceptedFeedback.length;
+  const targetReached = acceptedForTarget >= playtest.targetTesters;
+
 
   const averageGameplay = averageScore([
-    ...acceptedFeedback.map((response) => response.gameplay_score),
+    ...displayedAcceptedFeedback.map((response) => response.gameplay_score),
     ...communityResponses.map((response) => response.gameplay_score),
   ]);
+
   const averagePerformance = averageScore([
-    ...acceptedFeedback.map((response) => response.performance_score),
+    ...displayedAcceptedFeedback.map((response) => response.performance_score),
     ...communityResponses.map((response) => response.performance_score),
   ]);
-  const averageOverall = averageScore(
-    communityResponses.map((response) => response.overall_score)
-  );
-  const averageControls = averageScore(
-    communityResponses.map((response) => response.controls_score)
-  );
 
+  const averageOverall = averageScore([
+    ...displayedAcceptedFeedback.map((response) => response.overall_score),
+    ...communityResponses.map((response) => response.overall_score),
+  ]);
+
+  const playedHours = displayedAcceptedFeedback
+    .map((response) => response.hours_played)
+    .filter((value): value is number => value !== null);
+
+  const averageHours =
+    playedHours.length === 0
+      ? null
+      : Math.round(
+          (playedHours.reduce((total, value) => total + value, 0) /
+            playedHours.length) *
+            10
+        ) / 10;
+
+  const independentBugs = displayedAcceptedFeedback.filter(
+    (response) => response.bugs_found?.trim()
+  );
   const communityBugs = communityResponses.filter(
     (response) => response.bugs?.trim()
   );
-  const independentBugs = acceptedFeedback.filter(
-    (response) => response.bugs_found?.trim()
-  );
-  const bugReportCount = communityBugs.length + independentBugs.length;
+  const bugReportCount = independentBugs.length + communityBugs.length;
 
-  const recommendYes = communityResults?.summary.recommend_yes ?? 0;
-  const recommendMaybe = communityResults?.summary.recommend_maybe ?? 0;
-  const recommendNo = communityResults?.summary.recommend_no ?? 0;
+  const continueAnswers = displayedAcceptedFeedback
+    .map((response) => response.continue_playing?.trim().toLowerCase())
+    .filter((value): value is string => Boolean(value));
 
-  function score(value: number | null) {
-    return value === null ? "Not rated" : `${value}/10`;
+  const recommendAnswers = displayedAcceptedFeedback
+    .map((response) => response.recommend_game?.trim().toLowerCase())
+    .filter((value): value is string => Boolean(value));
+
+  function positiveIntentPercent(values: string[]) {
+    if (values.length === 0) {
+      return null;
+    }
+
+    const positive = values.filter(
+      (value) => value === "definitely" || value === "probably"
+    ).length;
+
+    return Math.round((positive / values.length) * 100);
   }
 
+  const continuePercent = positiveIntentPercent(continueAnswers);
+  const recommendPercent = positiveIntentPercent(recommendAnswers);
+
+  const ratedOverallCount = displayedAcceptedFeedback.filter(
+    (response) => response.overall_score !== null
+  ).length;
+
+  const hasReliableReceptionSample = ratedOverallCount >= 5;
+  const poorReception =
+    hasReliableReceptionSample &&
+    averageOverall !== null &&
+    averageOverall < 5 &&
+    (continuePercent ?? 100) < 40 &&
+    (recommendPercent ?? 100) < 40;
+
+  function score(value: number | null) {
+    return value === null ? "—" : `${value}/10`;
+  }
+
+  function intent(value: string | null) {
+    if (!value) {
+      return "Not answered";
+    }
+
+    return value
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  const enjoyedResponses = [
+    ...displayedAcceptedFeedback
+      .filter((response) => response.enjoyed_most?.trim())
+      .map((response, index) => ({
+        id: `independent-enjoyed-${response.test_id}`,
+        source: `Playtested ${index + 1}`,
+        sourceClass: "text-[#77f29b]",
+        text: response.enjoyed_most as string,
+      })),
+    ...communityResponses
+      .filter((response) => response.enjoyed?.trim())
+      .map((response, index) => ({
+        id: `community-enjoyed-${response.feedback_id}`,
+        source: `Community ${index + 1}`,
+        sourceClass: "text-violet-200",
+        text: response.enjoyed,
+      })),
+  ];
+
+  const frustrationResponses = [
+    ...displayedAcceptedFeedback
+      .filter((response) => response.frustrations?.trim())
+      .map((response, index) => ({
+        id: `independent-frustration-${response.test_id}`,
+        source: `Playtested ${index + 1}`,
+        sourceClass: "text-[#77f29b]",
+        text: response.frustrations as string,
+      })),
+    ...communityResponses
+      .filter((response) => response.struggled?.trim())
+      .map((response, index) => ({
+        id: `community-frustration-${response.feedback_id}`,
+        source: `Community ${index + 1}`,
+        sourceClass: "text-violet-200",
+        text: response.struggled,
+      })),
+  ];
+
+  const improvementResponses = [
+    ...displayedAcceptedFeedback
+      .filter((response) => response.biggest_improvement?.trim())
+      .map((response, index) => ({
+        id: `independent-improvement-${response.test_id}`,
+        source: `Playtested ${index + 1}`,
+        sourceClass: "text-[#77f29b]",
+        text: response.biggest_improvement as string,
+      })),
+    ...communityResponses
+      .filter((response) => response.improvements?.trim())
+      .map((response, index) => ({
+        id: `community-improvement-${response.feedback_id}`,
+        source: `Community ${index + 1}`,
+        sourceClass: "text-violet-200",
+        text: response.improvements,
+      })),
+  ];
+
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#77f29b]">
-              Results snapshot
-            </p>
-            <p className="mt-1 text-sm text-zinc-400">
+    <div className="space-y-5">
+      <details open className="overflow-hidden rounded-2xl border border-[#77f29b]/20 bg-[#0c100e]">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#77f29b]/[0.035] px-5 py-4 text-left">
+          <div className="min-w-0">
+            <h5 className="text-sm font-semibold text-[#77f29b]">Results snapshot</h5>
+            <p className="mt-1 break-words text-xs text-zinc-400">
               {playtest.releaseLabel
-                ? `Release / build ${playtest.releaseLabel}`
+                ? `Build: ${playtest.releaseLabel}`
                 : "Current playtest round"}
             </p>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-zinc-400">
-            {totalResponses} {totalResponses === 1 ? "response" : "responses"}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
-          {[
-            ["Overall", score(averageOverall), "Community score"],
-            ["Gameplay", score(averageGameplay), "All rated responses"],
-            ["Controls", score(averageControls), "Community score"],
-            ["Performance", score(averagePerformance), "All rated responses"],
-          ].map(([label, value, note]) => (
-            <div key={label} className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
-              <p className="text-xs text-zinc-500">{label}</p>
-              <p className={`mt-1 text-xl font-semibold ${label === "Gameplay" ? "text-[#77f29b]" : "text-zinc-100"}`}>
-                {value}
-              </p>
-              <p className="mt-1 text-[11px] text-zinc-600">{note}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
-          <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.035] p-3">
-            <p className="text-xs text-zinc-500">Playtested testers</p>
-            <p className="mt-1 text-lg font-semibold text-[#77f29b]">{independentCount}</p>
-            <p className="mt-1 text-[11px] text-zinc-600">Accepted independent responses</p>
-          </div>
-          <div className="rounded-lg border border-violet-300/15 bg-violet-300/[0.035] p-3">
-            <p className="text-xs text-zinc-500">Community testers</p>
-            <p className="mt-1 text-lg font-semibold text-violet-200">{communityCount}</p>
-            <p className="mt-1 text-[11px] text-zinc-600">Completed community responses</p>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/[0.025] p-3">
-            <p className="text-xs text-zinc-500">Bug reports</p>
-            <p className="mt-1 text-lg font-semibold text-zinc-100">{bugReportCount}</p>
-            <p className="mt-1 text-[11px] text-zinc-600">Responses reporting an issue</p>
-          </div>
-        </div>
-
-        {independentProgress && includesPlaytestedTesters(playtest.audience) && (
-          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-              <span className="font-semibold text-zinc-300">Tester Hub progress</span>
-              <span className="text-zinc-500">Target {playtest.targetTesters}</span>
-              <span className="text-zinc-500">Participating {independentProgress.total_testers}</span>
-              <span className="text-zinc-500">Testing {independentProgress.in_progress_count}</span>
-              <span className="text-amber-200">Submitted {independentProgress.submitted_count}</span>
-              <span className="text-[#77f29b]">Accepted {independentProgress.accepted_count}</span>
-              <span className="text-red-200">Not accepted {independentProgress.rejected_count}</span>
-            </div>
-          </div>
-        )}
-
-        {communityCount > 0 && (
-          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">
-              Would keep playing / recommend
+            <p className="mt-1 text-[11px] text-zinc-500">
+              {independentCount} accepted independent · {communityCount} community
+              {isFeedbackStressTest ? " · Includes labelled preview responses" : ""}
             </p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-2.5 py-1 text-[#b9f9ca]">Yes {recommendYes}</span>
-              <span className="rounded-full border border-amber-300/20 bg-amber-300/[0.05] px-2.5 py-1 text-amber-200">Maybe {recommendMaybe}</span>
-              <span className="rounded-full border border-red-300/20 bg-red-300/[0.05] px-2.5 py-1 text-red-200">No {recommendNo}</span>
-              <span className="px-1 py-1 text-zinc-600">Community responses only</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs font-semibold text-[#b9f9ca]">
+                {totalResponses} {totalResponses === 1 ? "response" : "responses"}
+              </span>
+              {isFeedbackStressTest && (
+                <span className="rounded-full border border-amber-300/25 bg-amber-300/[0.07] px-3 py-1.5 text-xs font-semibold text-amber-200">
+                  Preview data
+                </span>
+              )}
+              {playtest.focusAreas.length > 0 && (
+                <span className="rounded-full border border-sky-300/20 bg-sky-300/[0.05] px-3 py-1.5 text-xs text-sky-200">
+                  {playtest.focusAreas.length} focus{" "}
+                  {playtest.focusAreas.length === 1 ? "area" : "areas"}
+                </span>
+              )}
+            </div>
+            <span aria-hidden="true" className="text-lg text-zinc-400">±</span>
+          </div>
+        </summary>
+
+        <div className="p-5">
+          {poorReception && (
+            <div className="mb-4 rounded-xl border border-red-400/25 bg-red-400/[0.06] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-red-300/25 bg-red-300/[0.08] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-red-200">
+                  Poor reception
+                </span>
+                <span className="text-xs text-zinc-500">
+                  Based on {ratedOverallCount} rated accepted responses
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-zinc-300">
+                Tester sentiment is currently negative across multiple independent responses.
+                Review the feedback below for the specific issues testers reported.
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-3">
+            <p className="text-xs text-zinc-500">
+              <span className="font-semibold text-amber-200">
+                {totalResponses < 10 ? "Early feedback" : "Feedback sample"}
+              </span>
+              {" · "}
+              {totalResponses} response{totalResponses === 1 ? "" : "s"}
+              {totalResponses < 10 && (
+                <>
+                  {" · "}
+                  Results are directional while the sample is small.
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4">
+              <p className="text-xs text-zinc-500">Overall experience</p>
+              <p className="mt-2 text-2xl font-semibold text-[#77f29b]">
+                {score(averageOverall)}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                {displayedAcceptedFeedback.filter((response) => response.overall_score !== null).length} rated response{displayedAcceptedFeedback.filter((response) => response.overall_score !== null).length === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.035] p-4">
+              <p className="text-xs text-zinc-500">Would continue playing</p>
+              <p className="mt-2 text-xl font-semibold text-cyan-200">
+                {continueAnswers.length === 0 ? "—" : `${continueAnswers.filter((value) => value === "definitely" || value === "probably").length} of ${continueAnswers.length} positive`}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                {continueAnswers.length === 0
+                  ? "No answers yet"
+                  : `${continueAnswers.filter((value) => value === "definitely").length} definitely · ${continueAnswers.filter((value) => value === "probably").length} probably`}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
+            </div>
+
+            <div className="rounded-xl border border-violet-300/20 bg-violet-300/[0.035] p-4">
+              <p className="text-xs text-zinc-500">Would recommend</p>
+              <p className="mt-2 text-xl font-semibold text-violet-200">
+                {recommendAnswers.length === 0 ? "—" : `${recommendAnswers.filter((value) => value === "definitely" || value === "probably").length} of ${recommendAnswers.length} positive`}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                {recommendAnswers.length === 0
+                  ? "No answers yet"
+                  : `${recommendAnswers.filter((value) => value === "definitely").length} definitely · ${recommendAnswers.filter((value) => value === "probably").length} probably`}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
+            </div>
+
+            <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.035] p-4">
+              <p className="text-xs text-zinc-500">Average play time</p>
+              <p className="mt-2 text-2xl font-semibold text-amber-200">
+                {averageHours === null ? "—" : `${averageHours}h`}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-600">
+                Playtested tester reports
+              </p>
             </div>
           </div>
-        )}
-      </section>
 
-      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+              <p className="text-xs text-zinc-500">Gameplay</p>
+              <p className="mt-1 text-lg font-semibold text-zinc-100">
+                {score(averageGameplay)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+              <p className="text-xs text-zinc-500">Performance</p>
+              <p className="mt-1 text-lg font-semibold text-zinc-100">
+                {score(averagePerformance)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-red-300/15 bg-red-300/[0.025] p-4">
+              <p className="text-xs text-zinc-500">Issue responses</p>
+              <p className="mt-1 text-lg font-semibold text-red-200">
+                {bugReportCount}
+              </p>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                {totalResponses === 0
+                  ? "No feedback yet"
+                  : `${bugReportCount} of ${totalResponses} reports include issue notes`}
+              </p>
+              {bugReportCount > 0 && (
+                <button
+                  type="button"
+                  aria-controls={issueResponsesId}
+                  onClick={() => revealFeedback("issues")}
+                  className="mt-2 text-xs font-semibold text-red-200 underline underline-offset-4 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  Read issue responses →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {playtest.focusAreas.length > 0 && (
+            <div className="mt-4 rounded-xl border border-sky-300/15 bg-sky-300/[0.025] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200">
+                  Developer focus
+                </span>
+                {playtest.focusAreas.map((focus) => (
+                  <span
+                    key={focus}
+                    className="rounded-full border border-sky-300/20 bg-sky-300/[0.05] px-2.5 py-1 text-xs text-sky-100"
+                  >
+                    {focus}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {includesPlaytestedTesters(playtest.audience) && (
+            <section className={`mt-4 rounded-xl border p-4 ${targetReached
+              ? "border-[#77f29b]/25 bg-[#77f29b]/[0.04]"
+              : "border-white/10 bg-black/20"}`} aria-label="Tester Hub feedback target">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-100">
+                    {targetReached ? "Feedback target reached" : "Tester Hub feedback progress"}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    {acceptedForTarget} accepted / {playtest.targetTesters} requested
+                    {independentProgress && ` · ${independentProgress.total_testers} participating`}
+                  </p>
+                </div>
+                {acceptedFeedback.length > 0 && (
+                  <button
+                    type="button"
+                    aria-controls={individualResponsesId}
+                    onClick={() => revealFeedback("individual")}
+                    className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-[#77f29b]/40 hover:text-[#77f29b]"
+                  >
+                    Review responses
+                  </button>
+                )}
+              </div>
+              {targetReached && (
+                <p className="mt-2 text-xs leading-5 text-zinc-400">
+                  {playtest.status === "closed"
+                    ? "This round is closed. Use the feedback to plan improvements for your next build."
+                    : "Review the feedback before deciding whether to close this round. Reaching the target does not close it automatically."}
+                </p>
+              )}
+              {independentProgress && (
+                <details className="mt-3 text-xs text-zinc-500">
+                  <summary className="w-fit cursor-pointer hover:text-zinc-200">View tester status breakdown</summary>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                    <span>Claimed: {independentProgress.claimed_count}</span>
+                    <span>In progress: {independentProgress.in_progress_count}</span>
+                    <span>Submitted status: {independentProgress.submitted_count}</span>
+                    <span className="text-[#77f29b]">Accepted: {independentProgress.accepted_count}</span>
+                    <span>Not accepted: {independentProgress.rejected_count}</span>
+                  </div>
+                  <p className="mt-2 leading-5">These are the statuses reported by the Tester Hub. The submitted-status count is shown separately from accepted and rejected responses.</p>
+                </details>
+              )}
+            </section>
+          )}
+        </div>
+      </details>
+
+      <details ref={writtenFeedbackRef} className="rounded-2xl border border-white/10 bg-black/20">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">What testers are saying</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">Open or hide the grouped written feedback for this build.</p>
+          </div>
+          <span className="text-lg text-zinc-400">±</span>
+        </summary>
+        <div className="border-t border-white/10 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+              What testers are saying
+            </p>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">
+              Direct tester responses are kept intact. Nothing here rewrites or
+              summarises what a tester submitted.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#77f29b]">
+              Enjoyed most
+            </p>
+            <div className="mt-3 space-y-3">
+              {enjoyedResponses.length === 0 ? (
+                <p className="text-sm text-zinc-500">No responses yet.</p>
+              ) : (
+                enjoyedResponses.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-white/10 bg-black/20 p-3"
+                  >
+                    <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
+                      {item.source}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {item.text}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.035] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.13em] text-amber-200">
+              Frustrations
+            </p>
+            <div className="mt-3 space-y-3">
+              {frustrationResponses.length === 0 ? (
+                <p className="text-sm text-zinc-500">No responses yet.</p>
+              ) : (
+                frustrationResponses.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-white/10 bg-black/20 p-3"
+                  >
+                    <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
+                      {item.source}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {item.text}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-sky-300/20 bg-sky-300/[0.035] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.13em] text-sky-200">
+              Suggested improvements
+            </p>
+            <div className="mt-3 space-y-3">
+              {improvementResponses.length === 0 ? (
+                <p className="text-sm text-zinc-500">No responses yet.</p>
+              ) : (
+                improvementResponses.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-white/10 bg-black/20 p-3"
+                  >
+                    <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
+                      {item.source}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {item.text}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div ref={issueResponsesRef} id={issueResponsesId} tabIndex={-1} className="scroll-mt-6 rounded-xl border border-red-300/20 bg-red-300/[0.035] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.13em] text-red-200">
+              Bugs & technical issues
+            </p>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">Verbatim issue notes. Different testers may describe the same issue; these are not counts of unique bugs.</p>
+            <div className="mt-3 space-y-3">
+              {bugReportCount === 0 ? (
+                <p className="text-sm text-zinc-500">
+                  No bugs or technical issues reported.
+                </p>
+              ) : (
+                <>
+                  {independentBugs.map((response, index) => (
+                    <div
+                      key={`independent-bug-${response.test_id}`}
+                      className="rounded-lg border border-white/10 bg-black/20 p-3"
+                    >
+                      <p className="text-[11px] font-semibold text-[#77f29b]">
+                        Playtested {index + 1}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                        {response.bugs_found}
+                      </p>
+                    </div>
+                  ))}
+                  {communityBugs.map((response, index) => (
+                    <div
+                      key={`community-bug-${response.feedback_id}`}
+                      className="rounded-lg border border-white/10 bg-black/20 p-3"
+                    >
+                      <p className="text-[11px] font-semibold text-violet-200">
+                        Community {index + 1}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                        {response.bugs}
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        </div>
+      </details>
+
+      <details ref={individualResponsesRef} id={individualResponsesId} tabIndex={-1} className="scroll-mt-6 rounded-2xl border border-white/10 bg-black/20">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Individual responses</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">Open or hide the complete raw tester reports for this build.</p>
+          </div>
+          <span className="text-lg text-zinc-400">±</span>
+        </summary>
+        <div className="border-t border-white/10 p-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Player feedback</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+            Individual responses
+          </p>
           <p className="mt-1 text-xs leading-5 text-zinc-500">
-            Structured community feedback is grouped here. Independent tester feedback stays visible in the individual responses below.
+            Open a response to see the tester&apos;s full report exactly as it
+            was submitted.
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#77f29b]">What players enjoyed</p>
-            <div className="mt-3 space-y-3">
-              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
-                <div key={`enjoyed-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.enjoyed}</div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-amber-300/15 bg-amber-300/[0.025] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">Where players struggled</p>
-            <div className="mt-3 space-y-3">
-              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
-                <div key={`struggled-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.struggled}</div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-sky-300/15 bg-sky-300/[0.025] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-200">Suggested improvements</p>
-            <div className="mt-3 space-y-3">
-              {communityCount === 0 ? <p className="text-sm text-zinc-500">No structured responses yet.</p> : communityResponses.map((response, index) => (
-                <div key={`improvements-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.improvements}</div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-red-300/15 bg-red-300/[0.025] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-red-200">Bugs & technical issues</p>
-            <div className="mt-3 space-y-3">
-              {bugReportCount === 0 ? <p className="text-sm text-zinc-500">No bugs reported in completed responses.</p> : <>
-                {independentBugs.map((response, index) => <div key={`independent-bug-${response.test_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-[#77f29b]">Playtested {index + 1}</span>{response.bugs_found}</div>)}
-                {communityBugs.map((response, index) => <div key={`community-bug-${response.feedback_id}`} className="text-sm leading-6 text-zinc-300"><span className="mr-2 text-xs font-semibold text-violet-200">Community {index + 1}</span>{response.bugs}</div>)}
-              </>}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-white/10 bg-black/20 p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Individual responses</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Raw tester reports remain available beneath the summary so no feedback is hidden.</p>
-        </div>
-
         <div className="mt-4 space-y-3">
-          {acceptedFeedback.map((response, index) => (
-            <details key={response.test_id} className="rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.025]">
+          {displayedAcceptedFeedback.map((response, index) => (
+            <details
+              key={response.test_id}
+              className="rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.025]"
+            >
               <summary className="cursor-pointer list-none p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-sm font-semibold text-zinc-100">Playtested tester {index + 1}</p><p className="mt-1 text-xs text-zinc-500">{response.submitted_at ? historyFormatDate(response.submitted_at) : "Submission date unavailable"}</p></div>
-                  <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">Independent · Accepted</span>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-100">
+                      Playtested tester {index + 1}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {response.submitted_at
+                        ? historyFormatDate(response.submitted_at)
+                        : "Submission date unavailable"}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
+                    Independent · Accepted
+                  </span>
                 </div>
               </summary>
+
               <div className="border-t border-white/10 p-4">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div><p className="text-xs text-zinc-500">Gameplay</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.gameplay_score)}</p></div>
-                  <div><p className="text-xs text-zinc-500">Performance</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.performance_score)}</p></div>
-                  <div><p className="text-xs text-zinc-500">Time played</p><p className="mt-1 text-sm font-semibold text-zinc-200">{response.hours_played === null ? "Not provided" : `${response.hours_played} ${response.hours_played === 1 ? "hour" : "hours"}`}</p></div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                  <div>
+                    <p className="text-xs text-zinc-500">Overall</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.overall_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Gameplay</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.gameplay_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Performance</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.performance_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Continue playing</p>
+                    <p className="mt-1 text-sm font-semibold text-cyan-200">
+                      {intent(response.continue_playing)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Recommend</p>
+                    <p className="mt-1 text-sm font-semibold text-violet-200">
+                      {intent(response.recommend_game)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Time played</p>
+                    <p className="mt-1 text-sm font-semibold text-amber-200">
+                      {response.hours_played === null
+                        ? "Not provided"
+                        : `${response.hours_played} ${
+                            response.hours_played === 1 ? "hour" : "hours"
+                          }`}
+                    </p>
+                  </div>
                 </div>
-                <div className="mt-4 grid gap-4">
-                  <div><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Tester feedback</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{response.feedback || "No feedback provided."}</p></div>
-                  <div><p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Bugs reported</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{response.bugs_found || "No bugs reported."}</p></div>
+
+                <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                  <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#77f29b]">
+                      Enjoyed most
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {response.enjoyed_most || "Not answered."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-amber-300/15 bg-amber-300/[0.025] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
+                      Frustrations
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {response.frustrations || "Not answered."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-red-300/15 bg-red-300/[0.025] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-red-200">
+                      Bugs & technical issues
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {response.bugs_found || "No bugs reported."}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-sky-300/15 bg-sky-300/[0.025] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-sky-200">
+                      Biggest improvement
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {response.biggest_improvement || "Not answered."}
+                    </p>
+                  </div>
                 </div>
+
+                {response.feedback?.trim() && (
+                  <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                      Anything else
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                      {response.feedback}
+                    </p>
+                  </div>
+                )}
               </div>
             </details>
           ))}
 
           {communityResponses.map((response, index) => (
-            <details key={response.feedback_id} className="rounded-xl border border-violet-300/15 bg-violet-300/[0.025]">
+            <details
+              key={response.feedback_id}
+              className="rounded-xl border border-violet-300/15 bg-violet-300/[0.025]"
+            >
               <summary className="cursor-pointer list-none p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-sm font-semibold text-zinc-100">Community tester {index + 1}</p><p className="mt-1 text-xs text-zinc-500">{historyFormatDate(response.submitted_at)}</p></div>
-                  <span className="rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-2.5 py-1 text-xs font-semibold text-violet-200">Community · {response.overall_score}/10</span>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-100">
+                      Community tester {index + 1}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {historyFormatDate(response.submitted_at)}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    Community · {response.overall_score}/10
+                  </span>
                 </div>
               </summary>
+
               <div className="border-t border-white/10 p-4">
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
-                  <div><p className="text-xs text-zinc-500">Overall</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.overall_score)}</p></div>
-                  <div><p className="text-xs text-zinc-500">Gameplay</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.gameplay_score)}</p></div>
-                  <div><p className="text-xs text-zinc-500">Controls</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.controls_score)}</p></div>
-                  <div><p className="text-xs text-zinc-500">Performance</p><p className="mt-1 text-sm font-semibold text-zinc-200">{score(response.performance_score)}</p></div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Overall</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.overall_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Gameplay</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.gameplay_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Controls</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.controls_score)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-500">Performance</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-200">
+                      {score(response.performance_score)}
+                    </p>
+                  </div>
                 </div>
+
                 <div className="mt-4 grid gap-3 text-sm leading-6 text-zinc-300">
-                  <p><span className="text-zinc-500">Enjoyed: </span>{response.enjoyed}</p>
-                  <p><span className="text-zinc-500">Struggled: </span>{response.struggled}</p>
-                  <p><span className="text-zinc-500">Improvements: </span>{response.improvements}</p>
-                  <p><span className="text-zinc-500">Bugs: </span>{response.bugs?.trim() || "No bugs or technical issues reported."}</p>
-                  <p><span className="text-zinc-500">Would keep playing / recommend: </span>{response.recommendation === "yes" ? "Yes" : response.recommendation === "maybe" ? "Maybe" : "No"}</p>
-                  {response.additional_comments?.trim() && <p><span className="text-zinc-500">Additional comments: </span>{response.additional_comments}</p>}
+                  <p>
+                    <span className="text-zinc-500">Enjoyed: </span>
+                    {response.enjoyed}
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Struggled: </span>
+                    {response.struggled}
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Improvements: </span>
+                    {response.improvements}
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Bugs: </span>
+                    {response.bugs?.trim() ||
+                      "No bugs or technical issues reported."}
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Would recommend: </span>
+                    {response.recommendation === "yes"
+                      ? "Yes"
+                      : response.recommendation === "maybe"
+                        ? "Maybe"
+                        : "No"}
+                  </p>
+                  {response.additional_comments?.trim() && (
+                    <p>
+                      <span className="text-zinc-500">
+                        Additional comments:{" "}
+                      </span>
+                      {response.additional_comments}
+                    </p>
+                  )}
                 </div>
               </div>
             </details>
           ))}
 
           {totalResponses === 0 && (
-            <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-zinc-500">No accepted or completed responses yet.</div>
+            <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-zinc-500">
+              No accepted or completed responses yet.
+            </div>
           )}
         </div>
-      </section>
+        </div>
+      </details>
     </div>
+  );
+}
+
+
+function BuildResultsPanel({
+  currentPlaytest,
+  playtests,
+}: {
+  currentPlaytest: ExistingPlaytest;
+  playtests: ExistingPlaytest[];
+}) {
+  const allBuilds = [currentPlaytest, ...playtests.filter((p) => p.id !== currentPlaytest.id)]
+    .filter((playtest, index, items) => items.findIndex((item) => item.id === playtest.id) === index)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const [selectedId, setSelectedId] = useState(currentPlaytest.id);
+  const [communityResults, setCommunityResults] = useState<CommunityPlaytestResults | null>(null);
+  const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
+  const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
+  const isCurrent = selectedPlaytest.id === currentPlaytest.id;
+
+  async function loadResults(playtestId: string) {
+    setLoading(true);
+    setError("");
+
+    const supabase = createClient();
+    const [communityResult, progressResult, feedbackResult] = await Promise.all([
+      supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
+      supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
+      supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
+    ]);
+
+    if (communityResult.error || progressResult.error || feedbackResult.error) {
+      setCommunityResults(null);
+      setIndependentProgress(null);
+      setAcceptedFeedback([]);
+      setError(
+        communityResult.error?.message ??
+          progressResult.error?.message ??
+          feedbackResult.error?.message ??
+          "Could not load results for this build."
+      );
+      setLoading(false);
+      return;
+    }
+
+    setCommunityResults((communityResult.data ?? null) as CommunityPlaytestResults | null);
+    const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
+    setIndependentProgress(progressRows[0] ?? null);
+    setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    void loadResults(selectedId);
+  }, [selectedId]);
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+      <div className="border-b border-white/10 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h4 className="text-base font-semibold text-zinc-100">
+              Feedback by build
+            </h4>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
+              Switch between tested builds to compare exactly what players reported in each round.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void loadResults(selectedPlaytest.id)}
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
+          >
+            {loading ? "Refreshing..." : "Refresh results"}
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {allBuilds.map((playtest) => {
+            const selected = playtest.id === selectedPlaytest.id;
+            const current = playtest.id === currentPlaytest.id;
+            return (
+              <button
+                key={playtest.id}
+                type="button"
+                onClick={() => setSelectedId(playtest.id)}
+                className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                  selected
+                    ? "border-[#77f29b]/45 bg-[#77f29b]/10 text-[#b9f9ca]"
+                    : "border-white/10 bg-black/20 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                }`}
+              >
+                <span className="font-semibold">
+                  {playtest.releaseLabel?.trim() || "Unlabelled build"}
+                </span>
+                {current && (
+                  <span className="ml-2 rounded-full border border-[#77f29b]/25 bg-[#77f29b]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#77f29b]">
+                    CURRENT
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <span>{isCurrent ? "Current build" : "Historical build"}</span>
+          <span>·</span>
+          <span>{playtestStatusLabel(selectedPlaytest.status)}</span>
+          <span>·</span>
+          <span>{historyFormatDate(selectedPlaytest.publishedAt ?? selectedPlaytest.createdAt)}</span>
+        </div>
+      </div>
+
+      <div className="p-5">
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <p className="text-sm text-zinc-400">Loading results for this build...</p>
+        ) : (
+          <ResultsDashboard
+            playtest={selectedPlaytest}
+            communityResults={communityResults}
+            independentProgress={independentProgress}
+            acceptedFeedback={acceptedFeedback}
+          />
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -911,9 +1856,65 @@ export default function StartPlaytest({
     useState<PlaytestedTestProgress | null>(null);
   const [acceptedIndependentFeedback, setAcceptedIndependentFeedback] =
     useState<AcceptedIndependentFeedback[]>([]);
-  const [setupExpanded, setSetupExpanded] = useState(true);
+  const [setupExpanded, setSetupExpanded] = useState(false);
   const [sharingExpanded, setSharingExpanded] = useState(true);
   const [resultsExpanded, setResultsExpanded] = useState(true);
+  const [eligibility, setEligibility] = useState<PlaytestEligibility | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
+  const [eligibilityError, setEligibilityError] = useState("");
+
+  const buildLocked = acceptedIndependentFeedback.length > 0;
+  const testerHubSelected = includesPlaytestedTesters(audience);
+  const testerHubBlocked =
+    testerHubSelected && (
+      eligibilityLoading ||
+      Boolean(eligibilityError) ||
+      eligibility === null ||
+      !eligibility.tester_hub_eligible
+    );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadEligibility() {
+      setEligibilityLoading(true);
+      setEligibilityError("");
+
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("get_playtest_eligibility", {
+        p_imported_game_id: gameSource.importedGameId,
+        p_approved_game_id: gameSource.approvedGameId,
+        p_submission_id: gameSource.submissionId,
+      });
+
+      if (!active) {
+        return;
+      }
+
+      if (error) {
+        setEligibility(null);
+        setEligibilityError(error.message);
+        setEligibilityLoading(false);
+        return;
+      }
+
+      const rows = (data ?? []) as PlaytestEligibility[];
+      setEligibility(rows[0] ?? null);
+      setEligibilityLoading(false);
+    }
+
+    void loadEligibility();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    gameSource.importedGameId,
+    gameSource.approvedGameId,
+    gameSource.submissionId,
+    existingPlaytest?.id,
+    existingPlaytest?.status,
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -1276,6 +2277,19 @@ export default function StartPlaytest({
       return;
     }
 
+    if (publish && includesPlaytestedTesters(audience)) {
+      if (eligibilityLoading || eligibilityError || !eligibility) {
+        setMessage("Your launch allowance could not be confirmed. Reload the page and try again.");
+        setMessageType("error");
+        return;
+      }
+      if (!eligibility.tester_hub_eligible) {
+        setMessage(eligibility.tester_hub_reason);
+        setMessageType("error");
+        return;
+      }
+    }
+
     setSaving(true);
 
     const supabase = createClient();
@@ -1402,6 +2416,8 @@ export default function StartPlaytest({
   function startManaging() {
     clearMessage();
     setCommunityLinkCopied(false);
+    setSetupExpanded(false);
+    setResultsExpanded(true);
     setEditing(true);
 
     if (existingPlaytest) {
@@ -1442,7 +2458,14 @@ export default function StartPlaytest({
           </button>
         </div>
 
-        <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
+        <CampaignAllowancePanel
+          eligibility={eligibility}
+          loading={eligibilityLoading}
+          error={eligibilityError}
+          currentPlaytest={existingPlaytest}
+        />
+
+        <div className="mt-6 grid items-start gap-5">
           <div className="space-y-4">
             <section className="rounded-xl border border-white/10 bg-white/[0.02]">
               <button
@@ -1478,10 +2501,11 @@ export default function StartPlaytest({
                     </span>
                     <select
                       value={accessType}
+                      disabled={buildLocked}
                       onChange={(event) =>
                         setAccessType(event.target.value as PlaytestAccessType)
                       }
-                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <option value="steam_demo">Steam demo</option>
                       <option value="steam_game">Steam game</option>
@@ -1506,9 +2530,10 @@ export default function StartPlaytest({
                       type="url"
                       required
                       value={accessLink}
+                      disabled={buildLocked}
                       onChange={(event) => setAccessLink(event.target.value)}
                       placeholder="https://..."
-                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   </label>
 
@@ -1713,14 +2738,31 @@ export default function StartPlaytest({
                         type="text"
                         maxLength={100}
                         value={releaseLabel}
+                        disabled={buildLocked}
                         onChange={(event) =>
                           setReleaseLabel(event.target.value)
                         }
                         placeholder="Demo 0.3"
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </label>
                   </div>
+
+                  {buildLocked && (
+                    <div className="rounded-lg border border-amber-300/25 bg-amber-300/[0.06] p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-amber-300/25 bg-amber-300/[0.08] px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
+                          Build locked
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          Accepted tester evidence has been collected
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-zinc-300">
+                        The access method, build link and release label are now fixed for this round so its feedback always remains tied to the exact build testers played. Instructions, focus areas and other management settings can still be updated.
+                      </p>
+                    </div>
+                  )}
 
                   {message && (
                     <div
@@ -1855,74 +2897,25 @@ export default function StartPlaytest({
                   Playtest results
                 </p>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Snapshot, player feedback and individual responses.
+                  Feedback, scores and individual responses for each tested build.
                 </p>
               </div>
-              <span className="text-lg text-zinc-400">{resultsExpanded ? "−" : "+"}</span>
+
+              <span className="text-lg text-zinc-400">
+                {resultsExpanded ? "−" : "+"}
+              </span>
             </button>
 
             {resultsExpanded && (
               <div className="border-t border-white/10 p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs leading-5 text-zinc-500">
-                    Community feedback remains separate from independent Playtested verification evidence.
-                  </p>
-                  <button
-                    type="button"
-                    disabled={resultsLoading}
-                    onClick={() => void loadPlaytestResults(existingPlaytest.id)}
-                    className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
-                  >
-                    {resultsLoading ? "Refreshing..." : "Refresh results"}
-                  </button>
-                </div>
-
-                {resultsError && (
-                  <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
-                    {resultsError}
-                  </div>
-                )}
-
-                {resultsLoading && !playtestResults && !playtestedProgress ? (
-                  <p className="text-sm text-zinc-400">Loading playtest results...</p>
-                ) : (
-                  <ResultsDashboard
-                    playtest={existingPlaytest}
-                    communityResults={playtestResults}
-                    independentProgress={playtestedProgress}
-                    acceptedFeedback={acceptedIndependentFeedback}
-                  />
-                )}
+                <BuildResultsPanel
+                  currentPlaytest={existingPlaytest}
+                  playtests={[existingPlaytest, ...historicalPlaytests]}
+                />
               </div>
             )}
           </section>
         </div>
-
-        {historicalPlaytests.length > 0 && (
-          <section className="mt-6 border-t border-white/10 pt-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Playtest history
-            </p>
-
-            <h5 className="mt-2 text-base font-semibold text-zinc-100">
-              Previous rounds
-            </h5>
-
-            <p className="mt-1 text-sm leading-6 text-zinc-500">
-              Closed playtests and their results stay attached to this game.
-              Starting a new round does not overwrite earlier feedback.
-            </p>
-
-            <div className="mt-4 space-y-3">
-              {historicalPlaytests.map((playtest) => (
-                <HistoricalPlaytestCard
-                  key={playtest.id}
-                  playtest={playtest}
-                />
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     );
   }
@@ -1983,6 +2976,13 @@ export default function StartPlaytest({
             </button>
           )}
         </div>
+
+        <CampaignAllowancePanel
+          eligibility={eligibility}
+          loading={eligibilityLoading}
+          error={eligibilityError}
+          currentPlaytest={existingPlaytest}
+        />
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
@@ -2098,80 +3098,12 @@ export default function StartPlaytest({
           </div>
         )}
 
-        {existingPlaytest.status === "closed" && (
-          <div className="mt-6 border-t border-white/10 pt-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#77f29b]">
-                  Results
-                </p>
-                <h5 className="mt-2 text-base font-semibold text-zinc-100">
-                  Final playtest results
-                </h5>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
-                  These results belong to this closed playtest and remain
-                  attached to this release when you start another round.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                disabled={resultsLoading}
-                onClick={() => void loadPlaytestResults(existingPlaytest.id)}
-                className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-white/30 hover:text-white disabled:opacity-50"
-              >
-                {resultsLoading ? "Refreshing..." : "Refresh results"}
-              </button>
-            </div>
-
-            {resultsError && (
-              <div className="mt-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
-                {resultsError}
-              </div>
-            )}
-
-            {resultsLoading && !playtestResults && !playtestedProgress && (
-              <p className="mt-4 text-sm text-zinc-400">
-                Loading final results...
-              </p>
-            )}
-
-            <div className="mt-5">
-              <ResultsDashboard
-                playtest={existingPlaytest}
-                communityResults={playtestResults}
-                independentProgress={playtestedProgress}
-                acceptedFeedback={acceptedIndependentFeedback}
-              />
-            </div>
-
-          </div>
-        )}
-
-        {historicalPlaytests.length > 0 && (
-          <section className="mt-6 border-t border-white/10 pt-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Playtest history
-            </p>
-            <h5 className="mt-2 text-base font-semibold text-zinc-100">
-              Previous rounds
-            </h5>
-            <p className="mt-1 text-sm leading-6 text-zinc-500">
-              Closed playtests and their results stay attached to this
-              game. Starting a new round does not overwrite earlier
-              feedback.
-            </p>
-
-            <div className="mt-4 space-y-3">
-              {historicalPlaytests.map((playtest) => (
-                <HistoricalPlaytestCard
-                  key={playtest.id}
-                  playtest={playtest}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        <div className="mt-6 border-t border-white/10 pt-6">
+          <BuildResultsPanel
+            currentPlaytest={existingPlaytest}
+            playtests={[existingPlaytest, ...historicalPlaytests]}
+          />
+        </div>
 
         {existingPlaytest.status === "closed" && (
           <div className="mt-5 border-t border-white/10 pt-5">
@@ -2249,6 +3181,13 @@ export default function StartPlaytest({
         className="mt-6 space-y-6"
         onSubmit={handlePublish}
       >
+        <CampaignAllowancePanel
+          eligibility={eligibility}
+          loading={eligibilityLoading}
+          error={eligibilityError}
+          currentPlaytest={existingPlaytest}
+        />
+
         <label className="block">
           <span className="text-sm font-medium text-zinc-200">
             How will testers access this build?
@@ -2459,7 +3398,7 @@ export default function StartPlaytest({
         <div className="flex flex-wrap gap-3 border-t border-white/10 pt-5">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || testerHubBlocked}
             className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving

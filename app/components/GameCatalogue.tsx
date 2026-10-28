@@ -24,6 +24,7 @@ type CatalogueGame = {
   isNsfw: boolean;
   verificationStatus: VerificationStatus | null;
   submittedAt?: string;
+  communityReception: CommunityReception | null;
 };
 
 type VerificationRow = {
@@ -49,6 +50,43 @@ type CatalogueRpcRow = {
   is_nsfw: boolean;
   has_playtested_profile: boolean;
   total_count: number | string;
+};
+
+type ReceptionStatus =
+  | "Early results"
+  | "Excellent reception"
+  | "Positive reception"
+  | "Mixed reception"
+  | "Poor reception";
+
+type CommunityReceptionRow = {
+  imported_game_id: string | null;
+  approved_game_id: string | null;
+  submission_id: string | null;
+  game_title: string;
+  accepted_test_count: number | string;
+  rated_test_count: number | string;
+  average_overall_score: number | string | null;
+  average_gameplay_score: number | string | null;
+  average_performance_score: number | string | null;
+  recommend_positive_count: number | string;
+  recommend_answered_count: number | string;
+  recommend_positive_percent: number | string | null;
+  continue_positive_count: number | string;
+  continue_answered_count: number | string;
+  continue_positive_percent: number | string | null;
+  bug_report_count: number | string;
+  average_hours_played: number | string | null;
+  reception_status: ReceptionStatus;
+};
+
+type CommunityReception = {
+  acceptedTestCount: number;
+  ratedTestCount: number;
+  averageOverallScore: number | null;
+  recommendPositivePercent: number | null;
+  continuePositivePercent: number | null;
+  receptionStatus: ReceptionStatus;
 };
 
 const aiTypes = [
@@ -117,6 +155,26 @@ function VerificationBadge({
   );
 }
 
+function ReceptionBadge({ status }: { status: ReceptionStatus }) {
+  const styles: Record<ReceptionStatus, string> = {
+    "Early results": "border-amber-400/35 bg-amber-400/10 text-amber-200",
+    "Excellent reception":
+      "border-emerald-300/50 bg-emerald-300/15 text-emerald-200",
+    "Positive reception":
+      "border-emerald-400/35 bg-emerald-400/10 text-emerald-300",
+    "Mixed reception": "border-sky-400/35 bg-sky-400/10 text-sky-200",
+    "Poor reception": "border-red-400/35 bg-red-400/10 text-red-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex w-fit rounded-full border px-2.5 py-1 text-[11px] font-bold ${styles[status]}`}
+    >
+      {status}
+    </span>
+  );
+}
+
 function GenreBadge({ genre }: { genre: string }) {
   return (
     <span className="inline-flex w-fit rounded-md border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300 sm:text-sm">
@@ -173,6 +231,48 @@ function GameCardContent({
           {game.description}
         </p>
 
+        <div className="rounded-lg border border-white/10 bg-black/15 p-3">
+          {game.communityReception &&
+          game.communityReception.ratedTestCount > 0 &&
+          game.communityReception.averageOverallScore !== null ? (
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                    Community reception
+                  </p>
+                  <p className="mt-1 text-lg font-extrabold text-white">
+                    {game.communityReception.averageOverallScore.toFixed(1)}
+                    <span className="text-sm font-semibold text-white/45">/10</span>
+                  </p>
+                </div>
+                <ReceptionBadge status={game.communityReception.receptionStatus} />
+              </div>
+
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/55">
+                <span>
+                  {game.communityReception.ratedTestCount.toLocaleString()}{" "}
+                  {game.communityReception.ratedTestCount === 1 ? "rating" : "ratings"}
+                </span>
+                {game.communityReception.recommendPositivePercent !== null && (
+                  <span>
+                    {Math.round(game.communityReception.recommendPositivePercent)}% recommend
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                Community reception
+              </p>
+              <p className="mt-1 text-sm font-semibold text-white/60">
+                Not community tested yet
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="mt-auto space-y-3 pt-2">
           <span className="text-sm text-white/65">{game.aiType}</span>
 
@@ -218,21 +318,24 @@ export default function GameCatalogue() {
       setLoaded(false);
       setLoadError(false);
 
-      const { data, error } = await supabase.rpc("get_public_catalogue", {
-        p_page: page,
-        p_page_size: PAGE_SIZE,
-        p_search: search.trim(),
-        p_genre: genre,
-        p_verification: verificationFilter,
-        p_ai_type: aiType,
-        p_include_nsfw: includeNsfw,
-        p_sort: sort,
-      });
+      const [catalogueResult, receptionResult] = await Promise.all([
+        supabase.rpc("get_public_catalogue", {
+          p_page: page,
+          p_page_size: PAGE_SIZE,
+          p_search: search.trim(),
+          p_genre: genre,
+          p_verification: verificationFilter,
+          p_ai_type: aiType,
+          p_include_nsfw: includeNsfw,
+          p_sort: sort,
+        }),
+        supabase.rpc("get_game_community_reception"),
+      ]);
 
       if (cancelled) return;
 
-      if (error) {
-        console.error("Could not load public catalogue:", error);
+      if (catalogueResult.error) {
+        console.error("Could not load public catalogue:", catalogueResult.error);
         setGames([]);
         setTotalCount(0);
         setLoadError(true);
@@ -240,11 +343,48 @@ export default function GameCatalogue() {
         return;
       }
 
-      const rows = (data ?? []) as CatalogueRpcRow[];
+      if (receptionResult.error) {
+        console.error("Could not load community reception:", receptionResult.error);
+      }
+
+      const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
+      const receptionRows = (receptionResult.data ?? []) as CommunityReceptionRow[];
+
+      const receptionByImportedGame = new Map<string, CommunityReception>();
+      const receptionByApprovedGame = new Map<string, CommunityReception>();
+      const receptionBySubmission = new Map<string, CommunityReception>();
+
+      for (const row of receptionRows) {
+        const reception: CommunityReception = {
+          acceptedTestCount: Number(row.accepted_test_count ?? 0),
+          ratedTestCount: Number(row.rated_test_count ?? 0),
+          averageOverallScore:
+            row.average_overall_score === null ? null : Number(row.average_overall_score),
+          recommendPositivePercent:
+            row.recommend_positive_percent === null
+              ? null
+              : Number(row.recommend_positive_percent),
+          continuePositivePercent:
+            row.continue_positive_percent === null
+              ? null
+              : Number(row.continue_positive_percent),
+          receptionStatus: row.reception_status,
+        };
+
+        if (row.imported_game_id) receptionByImportedGame.set(row.imported_game_id, reception);
+        if (row.approved_game_id) receptionByApprovedGame.set(row.approved_game_id, reception);
+        if (row.submission_id) receptionBySubmission.set(row.submission_id, reception);
+      }
 
       const mappedGames: CatalogueGame[] = rows.map((row) => {
         const isImportedSteam = row.source_type === "steam";
         const steamAppId = normalizeSteamAppId(row.steam_app_id);
+
+        const communityReception = isImportedSteam
+          ? receptionByImportedGame.get(row.game_id) ?? null
+          : receptionBySubmission.get(row.game_id) ??
+            receptionByApprovedGame.get(row.game_id) ??
+            null;
 
         return {
           key: row.game_id,
@@ -266,6 +406,7 @@ export default function GameCatalogue() {
           isNsfw: row.is_nsfw === true,
           verificationStatus: row.verification_status ?? "Not yet verified",
           submittedAt: row.submitted_at ?? "",
+          communityReception,
         };
       });
 

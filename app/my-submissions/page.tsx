@@ -191,6 +191,42 @@ type LinkedPlaytest = {
   publishedAt: string | null;
 };
 
+type DeveloperReceptionRow = {
+  playtest_id: string;
+  imported_game_id: string | null;
+  approved_game_id: string | null;
+  submission_id: string | null;
+  release_label: string;
+  playtest_status: string;
+  target_testers: number;
+  accepted_test_count: number | string;
+  rated_test_count: number | string;
+  average_overall_score: number | string | null;
+  average_gameplay_score: number | string | null;
+  average_performance_score: number | string | null;
+  recommend_positive_percent: number | string | null;
+  continue_positive_percent: number | string | null;
+  technical_feedback_count: number | string;
+  average_hours_played: number | string | null;
+  created_at: string;
+};
+
+type DeveloperReception = {
+  playtestId: string;
+  releaseLabel: string;
+  playtestStatus: string;
+  targetTesters: number;
+  acceptedTests: number;
+  ratedTests: number;
+  overallScore: number | null;
+  gameplayScore: number | null;
+  performanceScore: number | null;
+  recommendPercent: number | null;
+  continuePercent: number | null;
+  technicalFeedbackCount: number;
+  averageHoursPlayed: number | null;
+};
+
 type LinkedGame = {
   linkId: string;
   gameId: string;
@@ -213,6 +249,7 @@ type LinkedGame = {
   imageUrl: string | null;
   latestPlaytest: LinkedPlaytest | null;
   playtests: LinkedPlaytest[];
+  currentReception: DeveloperReception | null;
 };
 
 function LoadingDashboard() {
@@ -358,6 +395,94 @@ function findPlaytestsForGame(
 }
 
 
+function nullableNumber(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function requiredNumber(value: number | string | null | undefined) {
+  return nullableNumber(value) ?? 0;
+}
+
+function receptionStatus(reception: DeveloperReception) {
+  if (reception.acceptedTests < 5 || reception.ratedTests < 5) {
+    return "Early results";
+  }
+
+  const overall = reception.overallScore ?? 0;
+  const recommend = reception.recommendPercent ?? 0;
+  const continued = reception.continuePercent ?? 0;
+
+  if (overall >= 8 && recommend >= 70 && continued >= 70) {
+    return "Excellent reception";
+  }
+
+  if (overall >= 6.5 && recommend >= 60 && continued >= 60) {
+    return "Positive reception";
+  }
+
+  if (overall < 5 && recommend < 40 && continued < 40) {
+    return "Poor reception";
+  }
+
+  return "Mixed reception";
+}
+
+function receptionStatusClasses(status: string) {
+  if (status === "Excellent reception") {
+    return "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]";
+  }
+
+  if (status === "Positive reception") {
+    return "border-emerald-300/25 bg-emerald-300/[0.08] text-emerald-200";
+  }
+
+  if (status === "Poor reception") {
+    return "border-red-400/30 bg-red-400/10 text-red-300";
+  }
+
+  if (status === "Mixed reception") {
+    return "border-amber-300/30 bg-amber-300/10 text-amber-200";
+  }
+
+  return "border-sky-300/25 bg-sky-300/[0.08] text-sky-200";
+}
+
+function receptionForGame(
+  game: {
+    importedGameId: string | null;
+    approvedGameId: string | null;
+    submissionId: string | null;
+  },
+  receptions: DeveloperReceptionRow[]
+): DeveloperReception | null {
+  const row = receptions.find((item) => {
+    if (game.submissionId && item.submission_id === game.submissionId) return true;
+    if (game.approvedGameId && item.approved_game_id === game.approvedGameId) return true;
+    if (game.importedGameId && item.imported_game_id === game.importedGameId) return true;
+    return false;
+  });
+
+  if (!row) return null;
+
+  return {
+    playtestId: row.playtest_id,
+    releaseLabel: row.release_label || "Unlabelled build",
+    playtestStatus: row.playtest_status,
+    targetTesters: row.target_testers ?? 0,
+    acceptedTests: requiredNumber(row.accepted_test_count),
+    ratedTests: requiredNumber(row.rated_test_count),
+    overallScore: nullableNumber(row.average_overall_score),
+    gameplayScore: nullableNumber(row.average_gameplay_score),
+    performanceScore: nullableNumber(row.average_performance_score),
+    recommendPercent: nullableNumber(row.recommend_positive_percent),
+    continuePercent: nullableNumber(row.continue_positive_percent),
+    technicalFeedbackCount: requiredNumber(row.technical_feedback_count),
+    averageHoursPlayed: nullableNumber(row.average_hours_played),
+  };
+}
+
 function xpRequiredForNextLevel(level: number) {
   return 100 + (level - 1) * 50;
 }
@@ -432,6 +557,7 @@ async function DeveloperDashboard() {
     { data: linkRows, error: linksError },
     { data: playtestRows, error: playtestsError },
     { data: pulseJobRows, error: pulseJobsError },
+    { data: receptionRows, error: receptionError },
   ] = await Promise.all([
     supabase
       .from("game_submissions")
@@ -524,6 +650,8 @@ async function DeveloperDashboard() {
       .eq("developer_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
+
+    supabase.rpc("get_developer_current_reception"),
   ]);
 
   if (submissionsError) {
@@ -591,6 +719,13 @@ async function DeveloperDashboard() {
     );
   }
 
+  if (receptionError) {
+    console.error(
+      "Could not load current community reception:",
+      receptionError
+    );
+  }
+
   const games = (submissions ?? []) as SubmissionRow[];
   const rawClaims = (claimRows ?? []) as GameClaimRow[];
   const rawLinks =
@@ -599,6 +734,8 @@ async function DeveloperDashboard() {
     (playtestRows ?? []) as CommunityPlaytestRow[];
   const pulseJobs =
     (pulseJobRows ?? []) as PulseJobRow[];
+  const rawReceptions =
+    (receptionRows ?? []) as DeveloperReceptionRow[];
 
   const importedIds = Array.from(
     new Set(
@@ -854,6 +991,7 @@ async function DeveloperDashboard() {
           ...game,
           latestPlaytest: playtests[0] ?? null,
           playtests,
+          currentReception: receptionForGame(game, rawReceptions),
         };
       })
       .sort((a, b) => {
@@ -1003,7 +1141,14 @@ async function DeveloperDashboard() {
           </div>
         ) : (
           <div className="mt-6 space-y-5">
-            {linkedGames.map((game) => (
+            {linkedGames.map((game) => {
+              const reception = game.currentReception;
+              const status = reception ? receptionStatus(reception) : null;
+              const hasPulse = completedPulseRuns.some(
+                (run) => run.submission_id === game.submissionId
+              );
+
+              return (
               <details
                 key={game.linkId}
                 className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
@@ -1055,20 +1200,49 @@ async function DeveloperDashboard() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
+                  {reception ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className="rounded-md border border-white/10 bg-black/20 px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                        {reception.releaseLabel}
+                      </span>
+                      <span
+                        className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${receptionStatusClasses(
+                          status ?? "Early results"
+                        )}`}
+                      >
+                        {status}
+                      </span>
+                      <span className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                        {reception.overallScore !== null
+                          ? `${reception.overallScore.toFixed(1)}/10`
+                          : "No score yet"}
+                      </span>
+                      <span className="text-xs text-zinc-500">
+                        {reception.acceptedTests} accepted
+                        {reception.targetTesters > 0
+                          ? ` / ${reception.targetTesters} target`
+                          : ""}
+                      </span>
+                      {reception.recommendPercent !== null && (
+                        <span className="text-xs text-zinc-500">
+                          · {Math.round(reception.recommendPercent)}% recommend
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-3 text-xs text-zinc-500">
+                      No community reception yet
+                    </div>
+                  )}
+
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500">
                     <span>
                       {game.latestPlaytest
                         ? `Playtest: ${game.latestPlaytest.status}`
                         : "No playtest"}
                     </span>
                     <span>·</span>
-                    <span>
-                      {completedPulseRuns.some(
-                        (run) => run.submission_id === game.submissionId
-                      )
-                        ? "PULSE complete"
-                        : "No PULSE run"}
-                    </span>
+                    <span>{hasPulse ? "PULSE complete" : "No PULSE run"}</span>
                   </div>
                 </summary>
 
@@ -1119,7 +1293,8 @@ async function DeveloperDashboard() {
                   />
                 </div>
               </details>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

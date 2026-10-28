@@ -83,11 +83,18 @@ type TestReview = {
   tester_name: string;
   game_title: string;
   status: string;
+  overall_score: number | null;
   gameplay_score: number | null;
   performance_score: number | null;
+  continue_playing: string | null;
+  recommend_game: string | null;
+  enjoyed_most: string | null;
+  frustrations: string | null;
   bugs_found: string | null;
+  biggest_improvement: string | null;
   feedback: string | null;
   hours_played: number | null;
+  focus_responses: Record<string, unknown> | null;
   submitted_at: string | null;
   review_outcome: string;
   xp_awarded: boolean;
@@ -326,6 +333,20 @@ function ReadinessItem({
       </div>
     </div>
   );
+}
+
+function formatIntent(value: string | null) {
+  if (!value) return "Not answered";
+
+  const labels: Record<string, string> = {
+    definitely: "Definitely",
+    probably: "Probably",
+    maybe: "Maybe",
+    probably_not: "Probably not",
+    definitely_not: "Definitely not",
+  };
+
+  return labels[value] ?? value;
 }
 
 export default function AdminSubmissionsPage() {
@@ -3183,53 +3204,190 @@ export default function AdminSubmissionsPage() {
                       </span>
                     </div>
 
-                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
-                        <p className={labelClass}>Gameplay score</p>
-                        <p className="text-2xl font-bold">
-                          {review.gameplay_score ?? "N/A"}
-                          {review.gameplay_score !== null && (
-                            <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
-                          )}
-                        </p>
-                      </div>
+                    {review.overall_score !== null ? (
+                      <>
+                        <div className="mt-6">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                            Tester verdict
+                          </p>
 
-                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
-                        <p className={labelClass}>Performance score</p>
-                        <p className="text-2xl font-bold">
-                          {review.performance_score ?? "N/A"}
-                          {review.performance_score !== null && (
-                            <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
-                          )}
-                        </p>
-                      </div>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-lg border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Overall experience</p>
+                              <p className="text-2xl font-bold">
+                                {review.overall_score}
+                                <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                              </p>
+                            </div>
 
-                      <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
-                        <p className={labelClass}>Time played</p>
-                        <p className="text-2xl font-bold">
-                          {review.hours_played ?? "N/A"}
-                          {review.hours_played !== null && (
-                            <span className="ml-1 text-sm font-normal text-zinc-500"> hours</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
+                            <div className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/[0.06] p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-[#77f29b]">Would continue playing</p>
+                              <p className="mt-1 text-lg font-bold">
+                                {formatIntent(review.continue_playing)}
+                              </p>
+                            </div>
 
-                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                      <div>
-                        <p className={labelClass}>Tester feedback</p>
-                        <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
-                          {review.feedback || "No feedback provided."}
+                            <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/[0.06] p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Would recommend</p>
+                              <p className="mt-1 text-lg font-bold">
+                                {formatIntent(review.recommend_game)}
+                              </p>
+                            </div>
+
+                            <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Time played</p>
+                              <p className="text-2xl font-bold">
+                                {review.hours_played ?? "N/A"}
+                                {review.hours_played !== null && (
+                                  <span className="ml-1 text-sm font-normal text-zinc-500">
+                                    {review.hours_played === 1 ? " hour" : " hours"}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <p className={labelClass}>Bugs reported</p>
-                        <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
-                          {review.bugs_found || "No bugs reported."}
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-emerald-400/25 bg-emerald-400/[0.04] p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Gameplay</p>
+                            <p className="text-xl font-bold">
+                              {review.gameplay_score ?? "N/A"}
+                              {review.gameplay_score !== null && (
+                                <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="rounded-lg border border-sky-400/25 bg-sky-400/[0.04] p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">Performance</p>
+                            <p className="text-xl font-bold">
+                              {review.performance_score ?? "N/A"}
+                              {review.performance_score !== null && (
+                                <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+
+                        <div className="mt-6">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+                            Detailed feedback
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Direct feedback from the tester about their experience.
+                          </p>
+
+                          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                                What they enjoyed most
+                              </p>
+                              <div className="mt-2 min-h-28 whitespace-pre-wrap break-words rounded-lg border border-emerald-400/25 bg-emerald-400/[0.04] p-4 text-sm leading-6 text-zinc-200">
+                                {review.enjoyed_most || "No answer provided."}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                                What frustrated them
+                              </p>
+                              <div className="mt-2 min-h-28 whitespace-pre-wrap break-words rounded-lg border border-amber-400/25 bg-amber-400/[0.04] p-4 text-sm leading-6 text-zinc-200">
+                                {review.frustrations || "No answer provided."}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-red-300">
+                                Bugs & technical issues
+                              </p>
+                              <div className="mt-2 min-h-28 whitespace-pre-wrap break-words rounded-lg border border-red-400/25 bg-red-400/[0.04] p-4 text-sm leading-6 text-zinc-200">
+                                {review.bugs_found || "No bugs reported."}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-sky-300">
+                                Single biggest improvement
+                              </p>
+                              <div className="mt-2 min-h-28 whitespace-pre-wrap break-words rounded-lg border border-sky-400/25 bg-sky-400/[0.04] p-4 text-sm leading-6 text-zinc-200">
+                                {review.biggest_improvement || "No answer provided."}
+                              </div>
+                            </div>
+                          </div>
+
+                          {review.feedback && (
+                            <div className="mt-4">
+                              <p className={labelClass}>Anything else</p>
+                              <div className="whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
+                                {review.feedback}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mt-6 rounded-lg border border-amber-400/20 bg-amber-400/5 p-4">
+                          <p className="text-sm font-semibold text-amber-200">
+                            Legacy playtest response
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-400">
+                            Submitted before the structured V10 questionnaire. Only the original response fields are available.
+                          </p>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                            <p className={labelClass}>Gameplay score</p>
+                            <p className="text-2xl font-bold">
+                              {review.gameplay_score ?? "N/A"}
+                              {review.gameplay_score !== null && (
+                                <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                            <p className={labelClass}>Performance score</p>
+                            <p className="text-2xl font-bold">
+                              {review.performance_score ?? "N/A"}
+                              {review.performance_score !== null && (
+                                <span className="ml-1 text-sm font-normal text-zinc-500">/ 10</span>
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
+                            <p className={labelClass}>Time played</p>
+                            <p className="text-2xl font-bold">
+                              {review.hours_played ?? "N/A"}
+                              {review.hours_played !== null && (
+                                <span className="ml-1 text-sm font-normal text-zinc-500">
+                                  {review.hours_played === 1 ? " hour" : " hours"}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                          <div>
+                            <p className={labelClass}>Tester feedback</p>
+                            <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
+                              {review.feedback || "No feedback provided."}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className={labelClass}>Bugs reported</p>
+                            <div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-[#090b0a] p-4 text-sm leading-6 text-zinc-300">
+                              {review.bugs_found || "No bugs reported."}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <div className="mt-6 flex flex-wrap gap-3 border-t border-zinc-800 pt-5">
                       <button

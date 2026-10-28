@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
 import { games } from "../../data/games";
 import { createClient } from "../../../lib/supabase-server";
@@ -30,6 +31,52 @@ type PlaytestedProgressRow = {
   total_testers?: number | string | null;
 };
 
+type CommunityReceptionRow = {
+  imported_game_id: string | null;
+  approved_game_id: string | null;
+  submission_id: string | null;
+  game_title: string | null;
+  accepted_test_count: number | string | null;
+  rated_test_count: number | string | null;
+  average_overall_score: number | string | null;
+  average_gameplay_score: number | string | null;
+  average_performance_score: number | string | null;
+  recommend_positive_count: number | string | null;
+  recommend_answered_count: number | string | null;
+  recommend_positive_percent: number | string | null;
+  continue_positive_count: number | string | null;
+  continue_answered_count: number | string | null;
+  continue_positive_percent: number | string | null;
+  bug_report_count: number | string | null;
+  average_hours_played: number | string | null;
+  reception_status: string | null;
+};
+
+type AcceptedCommunityFeedback = {
+  id: string;
+  playtest_id: string | null;
+  enjoyed_most: string | null;
+  frustrations: string | null;
+  bugs_found: string | null;
+  biggest_improvement: string | null;
+  feedback: string | null;
+};
+
+type PlaytestRoundSummary = {
+  id: string;
+  releaseLabel: string;
+  createdAt: string;
+  acceptedTests: number;
+  ratedTests: number;
+  averageOverall: number | null;
+  averageGameplay: number | null;
+  averagePerformance: number | null;
+  recommendPositivePercent: number | null;
+  continuePositivePercent: number | null;
+  bugReportCount: number;
+  averageHours: number | null;
+};
+
 function formatStatus(status: string) {
   if (status === "open") return "Testing in progress";
   if (status === "paused") return "Testing paused";
@@ -48,11 +95,39 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function toOptionalNumber(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function receptionBadgeClasses(status: string | null) {
+  if (status === "Excellent reception") {
+    return "border-[#77f29b]/40 bg-[#77f29b]/[0.08] text-[#8df5aa]";
+  }
+
+  if (status === "Positive reception") {
+    return "border-emerald-300/35 bg-emerald-300/[0.07] text-emerald-200";
+  }
+
+  if (status === "Mixed reception") {
+    return "border-sky-300/35 bg-sky-300/[0.07] text-sky-200";
+  }
+
+  if (status === "Poor reception") {
+    return "border-red-300/40 bg-red-300/[0.07] text-red-200";
+  }
+
+  return "border-amber-300/35 bg-amber-300/[0.07] text-amber-200";
+}
+
 export default async function GamePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await connection();
+
   const { slug } = await params;
 
   if (slug.startsWith("steam-")) {
@@ -186,6 +261,265 @@ export default async function GamePage({
       independentParticipants += toNumber(progress?.total_testers);
     }
 
+    const { data: receptionData, error: receptionError } = await supabase.rpc(
+      "get_game_community_reception"
+    );
+
+    if (receptionError) {
+      console.error("Could not load community reception:", receptionError);
+    }
+
+    const receptionRows = (receptionData ?? []) as CommunityReceptionRow[];
+    const communityReception =
+      receptionRows.find(
+        (row) => row.imported_game_id === importedGame.id
+      ) ?? null;
+
+    const lifetimeAcceptedReceptionCount = toNumber(
+      communityReception?.accepted_test_count
+    );
+    const lifetimeRatedReceptionCount = toNumber(communityReception?.rated_test_count);
+    const lifetimeOverallScore = toOptionalNumber(
+      communityReception?.average_overall_score
+    );
+    const lifetimeGameplayScore = toOptionalNumber(
+      communityReception?.average_gameplay_score
+    );
+    const lifetimePerformanceScore = toOptionalNumber(
+      communityReception?.average_performance_score
+    );
+    const lifetimeRecommendPercent = toOptionalNumber(
+      communityReception?.recommend_positive_percent
+    );
+    const lifetimeContinuePercent = toOptionalNumber(
+      communityReception?.continue_positive_percent
+    );
+    const lifetimeAverageHours = toOptionalNumber(
+      communityReception?.average_hours_played
+    );
+    const lifetimeBugReportCount = toNumber(communityReception?.bug_report_count);
+    const lifetimeReceptionStatus =
+      communityReception?.reception_status || "Early results";
+
+    const playtestIds = playtests
+      .map((playtest) => playtest.id)
+      .filter((playtestId): playtestId is string => Boolean(playtestId));
+
+    let acceptedFeedback: AcceptedCommunityFeedback[] = [];
+
+    if (playtestIds.length > 0) {
+      const { data: acceptedFeedbackData, error: acceptedFeedbackError } =
+        await supabase
+          .from("community_game_tests")
+          .select(
+            "id, playtest_id, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback"
+          )
+          .in("playtest_id", playtestIds)
+          .eq("review_outcome", "accepted")
+          .order("reviewed_at", { ascending: true });
+
+      if (acceptedFeedbackError) {
+        console.error(
+          "Could not load accepted community feedback:",
+          acceptedFeedbackError
+        );
+      }
+
+      acceptedFeedback =
+        (acceptedFeedbackData ?? []) as AcceptedCommunityFeedback[];
+    }
+
+    const detailedFeedback = acceptedFeedback.filter(
+      (response) =>
+        response.enjoyed_most ||
+        response.frustrations ||
+        response.bugs_found ||
+        response.biggest_improvement ||
+        response.feedback
+    );
+
+    let playtestRoundSummaries: PlaytestRoundSummary[] = [];
+
+    if (playtestIds.length > 0) {
+      const { data: roundTestsData, error: roundTestsError } = await supabase
+        .from("community_game_tests")
+        .select(
+          "playtest_id, overall_score, gameplay_score, performance_score, recommend_game, continue_playing, bugs_found, hours_played"
+        )
+        .in("playtest_id", playtestIds)
+        .eq("review_outcome", "accepted");
+
+      if (roundTestsError) {
+        console.error("Could not load playtest round history:", roundTestsError);
+      }
+
+      const positiveIntent = (value: string | null) =>
+        value === "definitely" || value === "probably";
+
+      playtestRoundSummaries = playtests
+        .map((playtest) => {
+          const tests = (roundTestsData ?? []).filter(
+            (test) => test.playtest_id === playtest.id
+          );
+          const rated = tests.filter((test) => test.overall_score !== null);
+          const recommendAnswered = tests.filter(
+            (test) => test.recommend_game !== null
+          );
+          const continueAnswered = tests.filter(
+            (test) => test.continue_playing !== null
+          );
+          const gameplayRated = tests.filter(
+            (test) => test.gameplay_score !== null
+          );
+          const performanceRated = tests.filter(
+            (test) => test.performance_score !== null
+          );
+          const hoursReported = tests.filter(
+            (test) => test.hours_played !== null
+          );
+          const bugsReported = tests.filter(
+            (test) => Boolean(test.bugs_found?.trim())
+          );
+
+          return {
+            id: playtest.id,
+            releaseLabel: formatReleaseLabel(playtest.release_label, 1),
+            createdAt: playtest.created_at,
+            acceptedTests: tests.length,
+            ratedTests: rated.length,
+            averageOverall:
+              rated.length > 0
+                ? rated.reduce(
+                    (sum, test) => sum + Number(test.overall_score ?? 0),
+                    0
+                  ) / rated.length
+                : null,
+            averageGameplay:
+              gameplayRated.length > 0
+                ? gameplayRated.reduce(
+                    (sum, test) => sum + Number(test.gameplay_score ?? 0),
+                    0
+                  ) / gameplayRated.length
+                : null,
+            averagePerformance:
+              performanceRated.length > 0
+                ? performanceRated.reduce(
+                    (sum, test) => sum + Number(test.performance_score ?? 0),
+                    0
+                  ) / performanceRated.length
+                : null,
+            recommendPositivePercent:
+              recommendAnswered.length > 0
+                ? Math.round(
+                    (recommendAnswered.filter((test) =>
+                      positiveIntent(test.recommend_game)
+                    ).length /
+                      recommendAnswered.length) *
+                      100
+                  )
+                : null,
+            continuePositivePercent:
+              continueAnswered.length > 0
+                ? Math.round(
+                    (continueAnswered.filter((test) =>
+                      positiveIntent(test.continue_playing)
+                    ).length /
+                      continueAnswered.length) *
+                      100
+                  )
+                : null,
+            bugReportCount: bugsReported.length,
+            averageHours:
+              hoursReported.length > 0
+                ? hoursReported.reduce(
+                    (sum, test) => sum + Number(test.hours_played ?? 0),
+                    0
+                  ) / hoursReported.length
+                : null,
+          };
+        })
+        .filter((round) => round.acceptedTests > 0)
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+    }
+
+    // A build needs 5 accepted tests before it can replace an established
+    // public reception. This gives developers a real redemption path without
+    // letting one or two fresh reviews erase a well-supported older result.
+    const qualifiedRounds = playtestRoundSummaries.filter(
+      (round) => round.acceptedTests >= 5 && round.ratedTests > 0
+    );
+
+    const currentQualifiedRound =
+      qualifiedRounds.length > 0
+        ? qualifiedRounds[qualifiedRounds.length - 1]
+        : null;
+
+    const latestRound =
+      playtestRoundSummaries.length > 0
+        ? playtestRoundSummaries[playtestRoundSummaries.length - 1]
+        : null;
+
+    const currentReceptionRound = currentQualifiedRound ?? latestRound;
+
+    const acceptedReceptionCount =
+      currentReceptionRound?.acceptedTests ?? lifetimeAcceptedReceptionCount;
+    const ratedReceptionCount =
+      currentReceptionRound?.ratedTests ?? lifetimeRatedReceptionCount;
+    const overallScore =
+      currentReceptionRound?.averageOverall ?? lifetimeOverallScore;
+    const gameplayScore =
+      currentReceptionRound?.averageGameplay ?? lifetimeGameplayScore;
+    const performanceScore =
+      currentReceptionRound?.averagePerformance ?? lifetimePerformanceScore;
+    const recommendPercent =
+      currentReceptionRound?.recommendPositivePercent ??
+      lifetimeRecommendPercent;
+    const continuePercent =
+      currentReceptionRound?.continuePositivePercent ??
+      lifetimeContinuePercent;
+    const averageHours =
+      currentReceptionRound?.averageHours ?? lifetimeAverageHours;
+    const bugReportCount =
+      currentReceptionRound?.bugReportCount ?? lifetimeBugReportCount;
+
+    const hasCommunityReception =
+      acceptedReceptionCount > 0 && ratedReceptionCount > 0;
+
+    const receptionStatus = (() => {
+      if (!currentReceptionRound) return lifetimeReceptionStatus;
+      if (currentReceptionRound.acceptedTests < 5) return "Early results";
+
+      const overall = currentReceptionRound.averageOverall ?? 0;
+      const recommend = currentReceptionRound.recommendPositivePercent ?? 0;
+      const continuing = currentReceptionRound.continuePositivePercent ?? 0;
+
+      if (overall >= 8 && recommend >= 70 && continuing >= 70) {
+        return "Excellent reception";
+      }
+      if (overall >= 6.5 && recommend >= 60 && continuing >= 60) {
+        return "Positive reception";
+      }
+      if (overall < 5 && recommend < 40 && continuing < 40) {
+        return "Poor reception";
+      }
+      return "Mixed reception";
+    })();
+
+    const latestRoundIsUnqualified =
+      latestRound !== null &&
+      currentQualifiedRound !== null &&
+      latestRound.id !== currentQualifiedRound.id &&
+      latestRound.acceptedTests < 5;
+
+    const currentDetailedFeedback = currentReceptionRound
+      ? detailedFeedback.filter(
+          (response) => response.playtest_id === currentReceptionRound.id
+        )
+      : detailedFeedback;
+
     const verificationStatus: VerificationStatus = "Not yet verified";
     const steamUrl =
       importedGame.steam_url ||
@@ -274,51 +608,408 @@ export default async function GamePage({
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-                    Playtested activity
+                    Community reception
                   </p>
                   <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold">
-                    {activePlaytest
-                      ? "Currently being playtested"
-                      : playtests.length > 0
-                        ? "Playtesting history"
-                        : "Developer claimed on Playtested"}
+                    {hasCommunityReception
+                      ? "What Playtested testers thought"
+                      : activePlaytest
+                        ? "Currently being playtested"
+                        : playtests.length > 0
+                          ? "Playtesting history"
+                          : "Developer claimed on Playtested"}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-                    Independent Playtested testing is kept separate from the
-                    developer&apos;s own community feedback and can contribute
-                    towards future assessment and verification.
+                    Community reception comes from accepted Playtested tester
+                    responses. It is separate from independent Playtested
+                    assessment and verification.
                   </p>
                 </div>
 
-                <span className="rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs font-semibold text-zinc-300">
-                  {verificationStatus}
-                </span>
-              </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {hasCommunityReception && (
+                    <span
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${receptionBadgeClasses(
+                        receptionStatus
+                      )}`}
+                    >
+                      {receptionStatus}
+                    </span>
+                  )}
 
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs text-zinc-500">Playtest rounds</p>
-                  <p className="mt-1 text-2xl font-bold text-zinc-100">
-                    {playtests.length}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs text-zinc-500">
-                    Independent testers
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-zinc-100">
-                    {independentParticipants}
-                  </p>
-                </div>
-
-                <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs text-zinc-500">Accepted tests</p>
-                  <p className="mt-1 text-2xl font-bold text-[#77f29b]">
-                    {acceptedIndependentTests}
-                  </p>
+                  <span className="rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs font-semibold text-zinc-300">
+                    {verificationStatus}
+                  </span>
                 </div>
               </div>
+
+              {hasCommunityReception ? (
+                <>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.05] p-4">
+                      <p className="text-xs text-zinc-500">Overall experience</p>
+                      <p className="mt-1 text-3xl font-bold text-[#77f29b]">
+                        {overallScore !== null ? overallScore.toFixed(1) : "—"}
+                        <span className="text-sm text-zinc-500">/10</span>
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {ratedReceptionCount}{" "}
+                        {ratedReceptionCount === 1 ? "rating" : "ratings"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">Would recommend</p>
+                      <p className="mt-1 text-2xl font-bold text-zinc-100">
+                        {recommendPercent !== null
+                          ? `${Math.round(recommendPercent)}%`
+                          : "—"}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        positive tester intent
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">
+                        Would continue playing
+                      </p>
+                      <p className="mt-1 text-2xl font-bold text-zinc-100">
+                        {continuePercent !== null
+                          ? `${Math.round(continuePercent)}%`
+                          : "—"}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        positive tester intent
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">Accepted tests</p>
+                      <p className="mt-1 text-2xl font-bold text-zinc-100">
+                        {acceptedReceptionCount}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        from current build
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">Gameplay</p>
+                      <p className="mt-1 text-xl font-bold text-zinc-100">
+                        {gameplayScore !== null
+                          ? `${gameplayScore.toFixed(1)}/10`
+                          : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">Performance</p>
+                      <p className="mt-1 text-xl font-bold text-zinc-100">
+                        {performanceScore !== null
+                          ? `${performanceScore.toFixed(1)}/10`
+                          : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <p className="text-xs text-zinc-500">Reported issues</p>
+                      <p className="mt-1 text-xl font-bold text-zinc-100">
+                        {bugReportCount}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {averageHours !== null
+                          ? `${averageHours.toFixed(1)}h average play time`
+                          : "No play-time average yet"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-xs leading-5 text-zinc-500">
+                      Current reception reflects{" "}
+                      <span className="font-medium text-zinc-400">
+                        {currentReceptionRound?.releaseLabel ||
+                          "the latest tested build"}
+                      </span>
+                      {currentQualifiedRound
+                        ? " after reaching the minimum evidence threshold of 5 accepted tests."
+                        : " and is still considered early evidence."}{" "}
+                      Older builds remain visible in Playtest history.
+                    </p>
+
+                    {latestRoundIsUnqualified && latestRound && (
+                      <div className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/[0.04] px-3 py-2">
+                        <p className="text-xs font-semibold text-amber-200">
+                          Retest in progress · {latestRound.releaseLabel}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          {latestRound.acceptedTests}/5 accepted tests. The
+                          previous qualified reception remains public until
+                          this build reaches 5 accepted responses.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs text-zinc-500">Playtest rounds</p>
+                    <p className="mt-1 text-2xl font-bold text-zinc-100">
+                      {playtests.length}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs text-zinc-500">
+                      Independent testers
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-zinc-100">
+                      {independentParticipants}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs text-zinc-500">Accepted tests</p>
+                    <p className="mt-1 text-2xl font-bold text-[#77f29b]">
+                      {acceptedIndependentTests}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {playtestRoundSummaries.length > 1 && (
+                <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#77f29b]">
+                        Playtest history
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-100">
+                        Reception by build
+                      </p>
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      Accepted tester responses only
+                    </p>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {playtestRoundSummaries.map((round, index) => {
+                      const previous =
+                        index > 0 ? playtestRoundSummaries[index - 1] : null;
+                      const delta =
+                        previous?.averageOverall != null &&
+                        round.averageOverall != null
+                          ? round.averageOverall - previous.averageOverall
+                          : null;
+
+                      return (
+                        <div
+                          key={round.id}
+                          className="grid gap-3 rounded-lg border border-white/10 bg-[#0b0e0c] p-3 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(72px,0.7fr))]"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-zinc-100">
+                              {round.releaseLabel}
+                              {currentReceptionRound?.id === round.id && (
+                                <span className="ml-2 rounded-full border border-[#77f29b]/25 bg-[#77f29b]/[0.06] px-2 py-0.5 text-[10px] font-semibold text-[#b9f9ca]">
+                                  Current
+                                </span>
+                              )}
+                            </p>
+                            <p className="mt-1 text-xs text-zinc-500">
+                              {round.acceptedTests} accepted{" "}
+                              {round.acceptedTests === 1 ? "test" : "tests"} ·{" "}
+                              {round.acceptedTests < 5
+                                ? "Early results"
+                                : (round.averageOverall ?? 0) >= 8 &&
+                                    (round.recommendPositivePercent ?? 0) >= 70 &&
+                                    (round.continuePositivePercent ?? 0) >= 70
+                                  ? "Excellent reception"
+                                  : (round.averageOverall ?? 0) >= 6.5 &&
+                                      (round.recommendPositivePercent ?? 0) >= 60 &&
+                                      (round.continuePositivePercent ?? 0) >= 60
+                                    ? "Positive reception"
+                                    : (round.averageOverall ?? 0) < 5 &&
+                                        (round.recommendPositivePercent ?? 0) < 40 &&
+                                        (round.continuePositivePercent ?? 0) < 40
+                                      ? "Poor reception"
+                                      : "Mixed reception"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                              Overall
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-100">
+                              {round.averageOverall != null
+                                ? `${round.averageOverall.toFixed(1)}/10`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                              Recommend
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-100">
+                              {round.recommendPositivePercent != null
+                                ? `${round.recommendPositivePercent}%`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                              Continue
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-100">
+                              {round.continuePositivePercent != null
+                                ? `${round.continuePositivePercent}%`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                              Change
+                            </p>
+                            <p
+                              className={`mt-1 text-sm font-semibold ${
+                                delta == null
+                                  ? "text-zinc-500"
+                                  : delta > 0
+                                    ? "text-[#77f29b]"
+                                    : delta < 0
+                                      ? "text-red-300"
+                                      : "text-zinc-300"
+                              }`}
+                            >
+                              {delta == null
+                                ? "Baseline"
+                                : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-3 text-xs leading-5 text-zinc-600">
+                    Build-to-build changes use accepted community responses.
+                    Different tester groups and sample sizes can affect comparisons.
+                  </p>
+                </div>
+              )}
+
+              {currentDetailedFeedback.length > 0 && (
+                <details className="group mt-5 rounded-lg border border-white/10 bg-black/20">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-100">
+                        View tester feedback
+                      </p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {currentDetailedFeedback.length} detailed{" "}
+                        {currentDetailedFeedback.length === 1 ? "response" : "responses"} ·{" "}
+                        {acceptedReceptionCount} accepted{" "}
+                        {acceptedReceptionCount === 1 ? "test" : "tests"} ·
+                        comments shown as submitted
+                      </p>
+                    </div>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 text-sm text-zinc-400 transition group-open:rotate-45 group-open:border-[#77f29b]/30 group-open:text-[#77f29b]">
+                      +
+                    </span>
+                  </summary>
+
+                  <div className="border-t border-white/10 p-4">
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {currentDetailedFeedback.map((response, index) => (
+                        <article
+                          key={response.id}
+                          className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-semibold text-[#77f29b]">
+                              Playtested tester {index + 1}
+                            </p>
+                            <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+                              Accepted
+                            </span>
+                          </div>
+
+                          <div className="mt-3 space-y-3 text-sm">
+                            {response.enjoyed_most && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                                  Enjoyed most
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap leading-6 text-zinc-300">
+                                  {response.enjoyed_most}
+                                </p>
+                              </div>
+                            )}
+
+                            {response.frustrations && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-300">
+                                  Frustrations
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap leading-6 text-zinc-300">
+                                  {response.frustrations}
+                                </p>
+                              </div>
+                            )}
+
+                            {response.biggest_improvement && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300">
+                                  Suggested improvement
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap leading-6 text-zinc-300">
+                                  {response.biggest_improvement}
+                                </p>
+                              </div>
+                            )}
+
+                            {response.bugs_found && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-red-300">
+                                  Bugs / technical feedback
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap leading-6 text-zinc-300">
+                                  {response.bugs_found}
+                                </p>
+                              </div>
+                            )}
+
+                            {response.feedback && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300">
+                                  Additional feedback
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap leading-6 text-zinc-300">
+                                  {response.feedback}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+
+                    <p className="mt-4 text-xs leading-5 text-zinc-600">
+                      These are accepted tester comments, not independently
+                      confirmed findings or a Playtested verification verdict.
+                    </p>
+                  </div>
+                </details>
+              )}
 
               {latestPlaytest ? (
                 <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4">
@@ -356,19 +1047,6 @@ export default async function GamePage({
                   </p>
                 </div>
               )}
-            </div>
-
-            <div className="rounded-xl border border-white/[0.09] bg-[#101311] p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                About
-              </p>
-              <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold">
-                About {importedGame.title || "this game"}
-              </h2>
-              <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-zinc-400">
-                {importedGame.description ||
-                  "No description is currently available for this game."}
-              </p>
             </div>
           </section>
 

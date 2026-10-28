@@ -22,6 +22,7 @@ type TestGame = {
   access_type: TestAccessType;
   image_url: string | null;
   ai_type: string | null;
+  focus_areas: string[];
 };
 
 type TestClaim = {
@@ -89,7 +90,7 @@ function getAccessLabel(accessType: TestAccessType) {
     case "steam_demo":
       return "Steam demo";
     case "steam_game":
-      return "Steam game";
+      return "Steam Store";
     case "browser_game":
       return "Browser game";
     case "download_build":
@@ -104,7 +105,7 @@ function getAccessButtonLabel(accessType: TestAccessType) {
     case "steam_demo":
       return "Open Steam demo ↗";
     case "steam_game":
-      return "Open on Steam ↗";
+      return "Open Steam Store ↗";
     case "browser_game":
       return "Play in browser ↗";
     case "download_build":
@@ -129,6 +130,540 @@ function getAccessInstructions(accessType: TestAccessType) {
   }
 }
 
+function resolveTestAccess(game: TestGame): { link: string | null; type: TestAccessType } {
+  const rawLink = game.game_link?.trim();
+  if (!rawLink) return { link: null, type: game.access_type };
+  try {
+    const url = new URL(rawLink);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return { link: null, type: game.access_type };
+    }
+    const steamStore = url.hostname.toLowerCase() === "store.steampowered.com";
+    return {
+      link: url.href,
+      type: steamStore
+        ? (game.access_type === "steam_demo" ? "steam_demo" : "steam_game")
+        : game.access_type,
+    };
+  } catch {
+    return { link: null, type: game.access_type };
+  }
+}
+
+function claimMatchesGame(claim: TestClaim, game: TestGame) {
+    return (
+      claim.submission_id === game.submission_id ||
+      claim.playtest_id === game.submission_id
+    );
+  }
+
+function getTesterGameGroups(games: TestGame[], claims: TestClaim[]) {
+  const activeClaims = claims.filter(
+    (claim) => claim.status === "claimed" || claim.status === "in_progress"
+  );
+  const activeGames = games.filter((game) =>
+    activeClaims.some((claim) => claimMatchesGame(claim, game))
+  );
+  const availableGames = games.filter((game) =>
+    !claims.some((claim) => claimMatchesGame(claim, game))
+  );
+  const unavailableActiveClaims = activeClaims.filter((claim) =>
+    !games.some((game) => claimMatchesGame(claim, game))
+  );
+  return { activeGames, availableGames, unavailableActiveClaims };
+}
+
+type FeedbackDraft = {
+  overallScore: string;
+  gameplayScore: string;
+  performanceScore: string;
+  continuePlaying: string;
+  recommendGame: string;
+  enjoyedMost: string;
+  frustrations: string;
+  bugsFound: string;
+  biggestImprovement: string;
+  feedback: string;
+  hoursPlayed: string;
+};
+
+type FeedbackDraftController = { canClose: () => boolean };
+
+function emptyFeedbackDraft(): FeedbackDraft {
+  return {
+    overallScore: "", gameplayScore: "", performanceScore: "",
+    continuePlaying: "", recommendGame: "", enjoyedMost: "",
+    frustrations: "", bugsFound: "", biggestImprovement: "",
+    feedback: "", hoursPlayed: "",
+  };
+}
+
+function feedbackDraftKey(accountId: string, testId: string) {
+  return `playtested:feedback-draft:v1:${accountId}:${testId}`;
+}
+
+function readFeedbackDraft(raw: string, accountId: string, testId: string): FeedbackDraft {
+  const saved = JSON.parse(raw);
+  if (!saved || saved.version !== 1 || saved.accountId !== accountId || saved.testId !== testId || !saved.values) {
+    throw new Error("Unrecognised draft");
+  }
+  const fields = emptyFeedbackDraft();
+  for (const field of Object.keys(fields) as (keyof FeedbackDraft)[]) {
+    const value = saved.values[field];
+    const maximum = field === "feedback" ? 10000 : ["enjoyedMost", "frustrations", "bugsFound", "biggestImprovement"].includes(field) ? 5000 : 100;
+    if (typeof value !== "string" || value.length > maximum) throw new Error("Invalid draft field");
+    fields[field] = value;
+  }
+  return fields;
+}
+
+function removeFeedbackDraft(accountId: string, testId: string) {
+  try {
+    const key = feedbackDraftKey(accountId, testId);
+    window.localStorage.removeItem(key);
+    return window.localStorage.getItem(key) === null;
+  } catch {
+    return false;
+  }
+}
+
+function feedbackRequiredAnswers(draft: FeedbackDraft) {
+  const scoreValid = (value: string) => /^(10|[1-9])$/.test(value);
+  const intentValid = (value: string) => ["definitely", "probably", "maybe", "probably_not", "definitely_not"].includes(value);
+  const hours = Number(draft.hoursPlayed);
+  const hoursValid = draft.hoursPlayed.trim() !== "" && Number.isFinite(hours) && hours >= 0 && hours <= 1000 && Math.abs(hours * 4 - Math.round(hours * 4)) < 0.000001;
+  const textValid = (value: string) => value.trim().length >= 10 && value.length <= 5000;
+  return [
+    scoreValid(draft.overallScore), intentValid(draft.continuePlaying), intentValid(draft.recommendGame),
+    scoreValid(draft.gameplayScore), scoreValid(draft.performanceScore), hoursValid,
+    textValid(draft.enjoyedMost), textValid(draft.frustrations), textValid(draft.biggestImprovement),
+  ];
+}
+
+function FeedbackForm({
+  accountId, game, claim, busy, serverError, onClearError, onClose, onSubmit, controllerRef,
+}: {
+  accountId: string;
+  game: TestGame;
+  claim: TestClaim;
+  busy: boolean;
+  serverError: string;
+  onClearError: () => void;
+  onClose: () => void;
+  onSubmit: (draft: FeedbackDraft) => Promise<boolean>;
+  controllerRef: { current: FeedbackDraftController | null };
+}) {
+  const [draft, setDraft] = useState<FeedbackDraft>(emptyFeedbackDraft);
+  const [ready, setReady] = useState(false);
+  const [draftStatus, setDraftStatus] = useState<"loading" | "empty" | "saved" | "unavailable" | "invalid">("loading");
+  const [validationError, setValidationError] = useState("");
+  const draftRef = useRef<FeedbackDraft>(emptyFeedbackDraft());
+  const unsavedRef = useRef(false);
+  const readyRef = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const submittingRef = useRef(false);
+  const { overallScore, gameplayScore, performanceScore, continuePlaying, recommendGame, enjoyedMost, frustrations, bugsFound, biggestImprovement, feedback, hoursPlayed } = draft;
+  const inputClass = "mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]";
+  const answers = feedbackRequiredAnswers(draft);
+  const completedAnswers = answers.filter(Boolean).length;
+  const errorMessage = validationError || serverError;
+
+  useEffect(() => {
+    let restored = emptyFeedbackDraft();
+    try {
+      const raw = window.localStorage.getItem(feedbackDraftKey(accountId, claim.id));
+      if (raw !== null) {
+        try {
+          restored = readFeedbackDraft(raw, accountId, claim.id);
+          setDraftStatus("saved");
+        } catch {
+          setDraftStatus("invalid");
+        }
+      } else {
+        setDraftStatus("empty");
+      }
+    } catch {
+      setDraftStatus("unavailable");
+    }
+    draftRef.current = restored;
+    setDraft(restored);
+    readyRef.current = true;
+    setReady(true);
+    const controller = {
+      canClose: () => !unsavedRef.current || window.confirm("Draft saving is unavailable. Closing will discard your unsaved answers. Close anyway?"),
+    };
+    controllerRef.current = controller;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (unsavedRef.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      if (controllerRef.current === controller) controllerRef.current = null;
+    };
+  }, [accountId, claim.id, controllerRef]);
+
+  useEffect(() => {
+    if (errorMessage) errorRef.current?.focus();
+  }, [errorMessage]);
+
+  function updateField(field: keyof FeedbackDraft, value: string) {
+    if (!readyRef.current || submittingRef.current || busy) return;
+    const next = { ...draftRef.current, [field]: value };
+    draftRef.current = next;
+    setDraft(next);
+    setValidationError("");
+    onClearError();
+    // Save synchronously on each edit: no pending debounce is lost on refresh.
+    try {
+      window.localStorage.setItem(feedbackDraftKey(accountId, claim.id), JSON.stringify({
+        version: 1, accountId, testId: claim.id,
+        updatedAt: new Date().toISOString(), values: next,
+      }));
+      unsavedRef.current = false;
+      setDraftStatus("saved");
+    } catch {
+      unsavedRef.current = true;
+      setDraftStatus("unavailable");
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!readyRef.current || submittingRef.current || busy) return;
+    const values = draftRef.current;
+    if (feedbackRequiredAnswers(values).some((answered) => !answered)) {
+      setValidationError("Please choose each rating and answer, enter your actual play time, and write at least 10 characters for each required written response.");
+      return;
+    }
+    if (values.bugsFound.length > 5000 || values.feedback.length > 10000) {
+      setValidationError("Please shorten the optional responses to fit the field limits.");
+      return;
+    }
+    submittingRef.current = true;
+    try {
+      const success = await onSubmit(values);
+      if (success) unsavedRef.current = false;
+    } catch {
+      setValidationError("Your feedback could not be submitted. Your answers are still here; please try again.");
+    } finally {
+      submittingRef.current = false;
+    }
+  }
+
+  return (
+    <form onSubmit={(event) => void handleSubmit(event)} className="w-full space-y-6 rounded-2xl border border-[#77f29b]/25 bg-[#0d100e] p-6 sm:p-8 lg:p-10">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                      Playtest feedback
+                                    </p>
+                                    <h4 className="mt-2 text-xl font-bold text-white">
+                                      {game.title}
+                                    </h4>
+                                    <p className="mt-1 text-sm text-zinc-400">
+                                      Four short sections · usually a few minutes
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={onClose}
+                                    disabled={busy}
+                                    className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold text-zinc-300 hover:border-white/20 hover:bg-white/5 hover:text-white"
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
+                                    <span>{completedAnswers} of {answers.length} required answers complete</span>
+                                    <span>{Math.round(completedAnswers / answers.length * 100)}%</span>
+                                  </div>
+                                  <div role="progressbar" aria-label="Feedback form completion" aria-valuemin={0} aria-valuemax={answers.length} aria-valuenow={completedAnswers} className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                                    <div className="h-full rounded-full bg-[#77f29b]" style={{ width: `${completedAnswers / answers.length * 100}%` }} />
+                                  </div>
+                                  <p role="status" className={`text-xs leading-5 ${draftStatus === "unavailable" || draftStatus === "invalid" ? "text-amber-200" : "text-zinc-500"}`}>
+                                    {draftStatus === "loading" ? "Checking for a saved draft…"
+                                      : draftStatus === "saved" ? "Draft saved on this device. You can close this form and return later."
+                                      : draftStatus === "unavailable" ? "Draft saving is unavailable in this browser. Keep this tab open so you don’t lose your answers."
+                                      : draftStatus === "invalid" ? "A saved draft could not be read. It has not been overwritten; new answers will replace it when you start typing."
+                                      : "Your answers will save automatically on this device as you type."}
+                                  </p>
+                                </div>
+
+                                <fieldset disabled={!ready || busy} className="min-w-0 space-y-6 border-0 p-0">
+                                <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/5 p-4">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                    Your playtest
+                                  </p>
+                                  <p className="mt-2 text-sm leading-6 text-zinc-300">
+                                    Answer from your actual experience. There are no
+                                    right answers — specific criticism is useful.
+                                  </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                                    1 · Overall experience
+                                  </p>
+
+                                  <label className="block text-sm font-medium">
+                                    Overall, how was your experience? (1 to 10)
+                                    <select
+                                      required
+                                      value={overallScore}
+                                      onChange={(event) =>
+                                        updateField("overallScore", event.target.value)
+                                      }
+                                      className={inputClass}
+                                    >
+                                      <option value="" disabled>Select an answer</option>
+                                      {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                                        (score) => (
+                                          <option key={score} value={score}>
+                                            {score}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    Would you continue playing this game?
+                                    <select
+                                      required
+                                      value={continuePlaying}
+                                      onChange={(event) =>
+                                        updateField("continuePlaying", event.target.value)
+                                      }
+                                      className={inputClass}
+                                    >
+                                      <option value="" disabled>Select an answer</option>
+                                      <option value="definitely">Definitely</option>
+                                      <option value="probably">Probably</option>
+                                      <option value="maybe">Maybe</option>
+                                      <option value="probably_not">Probably not</option>
+                                      <option value="definitely_not">Definitely not</option>
+                                    </select>
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    Would you recommend it to someone who likes this type of game?
+                                    <select
+                                      required
+                                      value={recommendGame}
+                                      onChange={(event) =>
+                                        updateField("recommendGame", event.target.value)
+                                      }
+                                      className={inputClass}
+                                    >
+                                      <option value="" disabled>Select an answer</option>
+                                      <option value="definitely">Definitely</option>
+                                      <option value="probably">Probably</option>
+                                      <option value="maybe">Maybe</option>
+                                      <option value="probably_not">Probably not</option>
+                                      <option value="definitely_not">Definitely not</option>
+                                    </select>
+                                  </label>
+                                </div>
+
+                                <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:col-span-2">
+                                    2 · How it played
+                                  </p>
+
+                                  <label className="block text-sm font-medium">
+                                    Gameplay score (1 to 10)
+                                    <select
+                                      required
+                                      value={gameplayScore}
+                                      onChange={(event) =>
+                                        updateField("gameplayScore", event.target.value)
+                                      }
+                                      className={inputClass}
+                                    >
+                                      <option value="" disabled>Select an answer</option>
+                                      {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                                        (score) => (
+                                          <option key={score} value={score}>
+                                            {score}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    Performance score (1 to 10)
+                                    <select
+                                      required
+                                      value={performanceScore}
+                                      onChange={(event) =>
+                                        updateField("performanceScore", event.target.value)
+                                      }
+                                      className={inputClass}
+                                    >
+                                      <option value="" disabled>Select an answer</option>
+                                      {Array.from({ length: 10 }, (_, i) => i + 1).map(
+                                        (score) => (
+                                          <option key={score} value={score}>
+                                            {score}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    How long did you actually play?
+                                    <div className="relative">
+                                      <input
+                                        type="number"
+                                        required
+                                        min="0"
+                                        max="1000"
+                                        step="0.25"
+                                        placeholder="Enter hours played"
+                                        value={hoursPlayed}
+                                        onChange={(event) =>
+                                          updateField("hoursPlayed", event.target.value)
+                                        }
+                                        className={`${inputClass} pr-20`}
+                                      />
+                                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-zinc-500">
+                                        hours
+                                      </span>
+                                    </div>
+                                    <span className="mt-1 block text-xs text-zinc-500">
+                                      Example: 0.5 = 30 minutes
+                                    </span>
+                                  </label>
+                                </div>
+
+                                <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:col-span-2">
+                                    3 · What stood out
+                                  </p>
+
+                                  <label className="block text-sm font-medium">
+                                    What did you enjoy most?
+                                    <textarea
+                                      required
+                                      minLength={10}
+                                      maxLength={5000}
+                                      value={enjoyedMost}
+                                      onChange={(event) => updateField("enjoyedMost", event.target.value)}
+                                      rows={3}
+                                      placeholder="What worked particularly well for you?"
+                                      className={inputClass}
+                                    />
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    What frustrated you or got in the way?
+                                    <textarea
+                                      required
+                                      minLength={10}
+                                      maxLength={5000}
+                                      value={frustrations}
+                                      onChange={(event) => updateField("frustrations", event.target.value)}
+                                      rows={3}
+                                      placeholder="Confusing moments, friction, difficulty spikes, awkward controls, or anything else."
+                                      className={inputClass}
+                                    />
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    Did you encounter bugs or technical problems?
+                                    <textarea
+                                      value={bugsFound}
+                                      onChange={(event) =>
+                                        updateField("bugsFound", event.target.value)
+                                      }
+                                      rows={3}
+                                      maxLength={5000}
+                                      placeholder="Describe crashes, glitches or technical issues. Leave blank if you found none."
+                                      className={inputClass}
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:col-span-2">
+                                    4 · Final thoughts
+                                  </p>
+
+                                  <label className="block text-sm font-medium">
+                                    What is the single biggest thing you would improve?
+                                    <textarea
+                                      required
+                                      minLength={10}
+                                      maxLength={5000}
+                                      value={biggestImprovement}
+                                      onChange={(event) => updateField("biggestImprovement", event.target.value)}
+                                      rows={3}
+                                      placeholder="If the developer changed one thing, what should it be?"
+                                      className={inputClass}
+                                    />
+                                  </label>
+
+                                  <label className="block text-sm font-medium">
+                                    Anything else? <span className="text-zinc-500">(optional)</span>
+                                    <textarea
+                                      maxLength={10000}
+                                      value={feedback}
+                                      onChange={(event) =>
+                                        updateField("feedback", event.target.value)
+                                      }
+                                      rows={4}
+                                      placeholder="Add anything important that the questions above did not cover."
+                                      className={inputClass}
+                                    />
+                                  </label>
+                                </div>
+
+                                {errorMessage && (
+                                  <div
+                                    id={`feedback-error-${claim.id}`}
+                                    ref={errorRef}
+                                    tabIndex={-1}
+                                    role="alert"
+                                    aria-live="assertive"
+                                    className="rounded-lg border border-red-400/40 bg-red-400/10 p-4 text-sm text-red-200"
+                                  >
+                                    <p className="font-semibold">
+                                      Your review could not be
+                                      submitted
+                                    </p>
+
+                                    <p className="mt-1 break-words">
+                                      {errorMessage}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <button
+                                  type="submit"
+                                  disabled={
+                                    busy
+                                  }
+                                  className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {busy
+                                    ? "Submitting..."
+                                    : "Submit review"}
+                                </button>
+
+                                </fieldset>
+    </form>
+  );
+}
+
 export default function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
   const [claims, setClaims] = useState<TestClaim[]>([]);
@@ -149,25 +684,28 @@ export default function TesterPage() {
 
   const alertRef = useRef<HTMLDivElement>(null);
 
-  const [gameplayScore, setGameplayScore] = useState("7");
-  const [performanceScore, setPerformanceScore] = useState("7");
-  const [bugsFound, setBugsFound] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [hoursPlayed, setHoursPlayed] = useState("1");
+  const [draftOwnerId, setDraftOwnerId] = useState<string | null>(null);
+  const loadedAccountRef = useRef<string | null>(null);
+  const feedbackDraftControllerRef = useRef<FeedbackDraftController | null>(null);
 
   const router = useRouter();
+  const activeClaimCount = claims.filter(
+    (claim) => claim.status === "claimed" || claim.status === "in_progress"
+  ).length;
+  const hasActiveTest = activeClaimCount > 0;
+
+
+  function closeFeedback() {
+    if (submittingId !== null) return;
+    if (feedbackDraftControllerRef.current && !feedbackDraftControllerRef.current.canClose()) return;
+    setActiveTestId(null);
+  }
 
   function showMessage(text: string, type: "success" | "error") {
     setMessage(text);
     setMessageType(type);
   }
 
-  function claimMatchesGame(claim: TestClaim, game: TestGame) {
-    return (
-      claim.submission_id === game.submission_id ||
-      claim.playtest_id === game.submission_id
-    );
-  }
 
   useEffect(() => {
     if (message && messageType === "error") {
@@ -180,6 +718,18 @@ export default function TesterPage() {
 
   useEffect(() => {
     let active = true;
+    const authClient = createClient();
+    const { data: authListener } = authClient.auth.onAuthStateChange((event: string, session: { user: { id: string } } | null) => {
+      if (event === "SIGNED_OUT" || (loadedAccountRef.current && session?.user.id !== loadedAccountRef.current)) {
+        active = false;
+        loadedAccountRef.current = null;
+        setActiveTestId(null);
+        setDraftOwnerId(null);
+        setGames([]);
+        setClaims([]);
+        router.replace("/login?next=/tester");
+      }
+    });
 
     async function loadGames() {
       const supabase = createClient();
@@ -211,6 +761,8 @@ export default function TesterPage() {
         router.replace("/account");
         return;
       }
+
+      loadedAccountRef.current = user.id;
 
       const [
         { data: gamesData, error: gamesError },
@@ -255,6 +807,7 @@ export default function TesterPage() {
 
       setGames((gamesData ?? []) as TestGame[]);
       setClaims((claimsData ?? []) as TestClaim[]);
+      setDraftOwnerId(user.id);
 
       if (progressError) {
         showMessage(
@@ -274,10 +827,16 @@ export default function TesterPage() {
 
     return () => {
       active = false;
+      authListener.subscription.unsubscribe();
     };
   }, [router]);
 
   async function claimGame(game: TestGame) {
+    if (hasActiveTest) {
+      showMessage("Finish or release your current test before choosing another.", "error");
+      return;
+    }
+    if (claimingId !== null) return;
     setMessage("");
     setClaimingId(game.submission_id);
 
@@ -360,7 +919,7 @@ export default function TesterPage() {
 
   async function releaseGame(game: TestGame, claim: TestClaim) {
     const confirmed = window.confirm(
-      `Release "${game.title}"? Your current testing progress will not be submitted, and another tester may claim this game.`
+      `Release "${game.title}"? Your saved feedback draft for this test will be discarded after release succeeds. No feedback will be submitted and there is no XP penalty.`
     );
 
     if (!confirmed) return;
@@ -370,12 +929,13 @@ export default function TesterPage() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.rpc(
-      "release_community_game_test",
-      {
-        p_submission_id: game.submission_id,
-      }
-    );
+    let error: { message: string } | null = null;
+    try {
+      const result = await supabase.rpc("release_community_game_test", { p_submission_id: game.submission_id });
+      error = result.error;
+    } catch {
+      error = { message: "Release could not be confirmed. Your draft has been kept. Refresh the page to check the test before trying again." };
+    }
 
     if (error) {
       showMessage(
@@ -383,6 +943,7 @@ export default function TesterPage() {
         "error"
       );
     } else {
+      const draftCleared = draftOwnerId ? removeFeedbackDraft(draftOwnerId, claim.id) : false;
       setClaims((previous) =>
         previous.filter((item) => item.id !== claim.id)
       );
@@ -398,7 +959,7 @@ export default function TesterPage() {
       });
 
       showMessage(
-        `You've released "${game.title}". You can claim it again later.`,
+        `You've released "${game.title}". You can claim it again later.${draftCleared ? "" : " The test was released, but this browser could not remove its local draft."}`,
         "success"
       );
     }
@@ -442,93 +1003,55 @@ export default function TesterPage() {
     setStartingId(null);
   }
 
-  async function submitTest(
-    event: FormEvent<HTMLFormElement>,
-    game: TestGame,
-    claim: TestClaim
-  ) {
-    event.preventDefault();
+  async function submitTest(game: TestGame, claim: TestClaim, values: FeedbackDraft): Promise<boolean> {
+    if (submittingId !== null) return false;
+    if (!draftOwnerId || feedbackRequiredAnswers(values).some((answered) => !answered) || values.bugsFound.length > 5000 || values.feedback.length > 10000) {
+      setFormErrors((previous) => ({ ...previous, [claim.id]: "Please complete all required answers before submitting." }));
+      return false;
+    }
     setMessage("");
-    setFormErrors((previous) => ({
-      ...previous,
-      [claim.id]: "",
-    }));
-
-    if (feedback.trim().length < 80) {
-      setFormErrors((previous) => ({
-        ...previous,
-        [claim.id]:
-          "Please provide at least 80 characters of feedback.",
-      }));
-      return;
-    }
-
+    setFormErrors((previous) => ({ ...previous, [claim.id]: "" }));
     setSubmittingId(claim.id);
-
-    const supabase = createClient();
-
-    const { error } = await supabase.rpc(
-      "submit_community_game_test",
-      {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("submit_community_game_test", {
         p_test_id: claim.id,
-        p_gameplay_score: Number(gameplayScore),
-        p_performance_score: Number(performanceScore),
-        p_bugs_found: bugsFound,
-        p_feedback: feedback,
-        p_hours_played: Number(hoursPlayed),
+        p_gameplay_score: Number(values.gameplayScore),
+        p_performance_score: Number(values.performanceScore),
+        p_bugs_found: values.bugsFound,
+        p_feedback: values.feedback,
+        p_hours_played: Number(values.hoursPlayed),
+        p_overall_score: Number(values.overallScore),
+        p_continue_playing: values.continuePlaying,
+        p_recommend_game: values.recommendGame,
+        p_enjoyed_most: values.enjoyedMost,
+        p_frustrations: values.frustrations,
+        p_biggest_improvement: values.biggestImprovement,
+        p_focus_responses: {},
+      });
+      if (error) {
+        setFormErrors((previous) => ({ ...previous, [claim.id]: error.message }));
+        return false;
       }
-    );
-
-    if (error) {
-      setFormErrors((previous) => ({
-        ...previous,
-        [claim.id]: error.message,
-      }));
-    } else {
-      setClaims((previous) =>
-        previous.map((item) =>
-          item.id === claim.id
-            ? {
-                ...item,
-                status: "submitted",
-                review_outcome: "pending",
-              }
-            : item
-        )
-      );
-
+      const draftCleared = removeFeedbackDraft(draftOwnerId, claim.id);
+      setClaims((previous) => previous.map((item) => item.id === claim.id
+        ? { ...item, status: "submitted", review_outcome: "pending" }
+        : item));
       setActiveTestId(null);
-      setBugsFound("");
-      setFeedback("");
-      setGameplayScore("7");
-      setPerformanceScore("7");
-      setHoursPlayed("1");
-
-      showMessage(
-        `Your test of "${game.title}" has been submitted for review. XP is awarded only if it is accepted.`,
-        "success"
-      );
+      showMessage(`Your test of "${game.title}" has been submitted for review. XP is awarded only if it is accepted.${draftCleared ? "" : " This browser could not remove its local draft."}`, "success");
+      return true;
+    } catch {
+      setFormErrors((previous) => ({ ...previous, [claim.id]: "Submission could not be confirmed. Your answers are still here. Refresh to check Testing activity before trying again." }));
+      return false;
+    } finally {
+      setSubmittingId(null);
     }
-
-    setSubmittingId(null);
   }
 
   const testerProgress = calculateTesterProgress(testerXp);
 
-  const inputClass =
-    "mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]";
-
-  const activeGames = games.filter((game) => {
-    const claim = claims.find((item) =>
-      claimMatchesGame(item, game)
-    );
-
-    return (
-      !claim ||
-      claim.status === "claimed" ||
-      claim.status === "in_progress"
-    );
-  });
+  const { activeGames, availableGames, unavailableActiveClaims } =
+    getTesterGameGroups(games, claims);
 
   const historyClaims = claims.filter(
     (claim) =>
@@ -550,6 +1073,293 @@ export default function TesterPage() {
     }
 
     return "Reviewed";
+  }
+
+  function renderGameCard(game: TestGame) {
+    const { link: accessLink, type: accessType } = resolveTestAccess(game);
+
+                const claim = claims.find(
+                  (item) =>
+                    claimMatchesGame(item, game) &&
+                    (item.status === "claimed" ||
+                      item.status === "in_progress")
+                );
+
+                return (
+                  <article
+                    key={game.submission_id}
+                    className={`flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${
+                      activeTestId
+                        ? claim?.id === activeTestId
+                          ? "w-full"
+                          : "hidden"
+                        : ""
+                    }`}
+                  >
+                    {game.image_url && activeTestId !== claim?.id && (
+                      <img
+                        src={game.image_url}
+                        alt=""
+                        className="h-48 w-full shrink-0 object-cover"
+                      />
+                    )}
+
+                    <div
+                      className={`flex flex-1 flex-col ${
+                        activeTestId === claim?.id
+                          ? "w-full p-6 sm:p-8"
+                          : "p-5"
+                      }`}
+                    >
+                      {activeTestId === claim?.id ? (
+                        <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
+                          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)] lg:items-start">
+                            <div className="flex min-w-0 gap-5">
+                              {game.image_url && (
+                                <img
+                                  src={game.image_url}
+                                  alt=""
+                                  className="h-24 w-40 shrink-0 rounded-xl border border-white/10 object-cover sm:h-28 sm:w-48"
+                                />
+                              )}
+
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                  {game.genre || "Uncategorised"}
+                                </p>
+
+                                <h3 className="mt-2 text-2xl font-bold text-white">
+                                  {game.title}
+                                </h3>
+
+                                <p className="mt-1 text-sm text-zinc-400">
+                                  By {game.developer_name}
+                                </p>
+
+                                {game.ai_type && (
+                                  <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
+                                    {game.ai_type}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/5 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                Developer wants feedback on
+                              </p>
+
+                              {game.focus_areas?.length ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {game.focus_areas.map((area) => (
+                                    <span
+                                      key={area}
+                                      className="rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-1.5 text-xs font-semibold text-[#b9f9ca]"
+                                    >
+                                      {area}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                                  No specific focus areas were selected. Give balanced feedback on your overall experience.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-5 border-t border-white/10 pt-5">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                              Developer instructions
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-zinc-300">
+                              {game.description}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs uppercase tracking-wider text-[#77f29b]">
+                            {game.genre || "Uncategorised"}
+                          </p>
+
+                          <h3 className="mt-2 text-xl font-semibold">
+                            {game.title}
+                          </h3>
+
+                          <p className="mt-1 text-sm text-zinc-400">
+                            By {game.developer_name}
+                          </p>
+
+                          <p className="mt-4 text-sm leading-6 text-zinc-300">
+                            {game.description}
+                          </p>
+
+                          {game.ai_type && (
+                            <div className="mt-4">
+                              <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
+                                {game.ai_type}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div className="mt-auto space-y-3 pt-6">
+                        {!claim ? (
+                          <button
+                            type="button"
+                            disabled={
+                              claimingId !== null || hasActiveTest
+                            }
+                            aria-describedby={hasActiveTest ? "one-active-test-note" : undefined}
+                            onClick={() => void claimGame(game)}
+                            className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {claimingId === game.submission_id
+                              ? "Starting..."
+                              : hasActiveTest
+                                ? "Finish or release current test"
+                                : "Test game"}
+                          </button>
+                        ) : claim.status === "claimed" ? (
+                          <>
+                            <p className="text-center text-sm font-medium text-[#77f29b]">
+                              Ready to test
+                            </p>
+
+                            <button
+                              type="button"
+                              disabled={
+                                startingId === game.submission_id
+                              }
+                              onClick={() =>
+                                void startTesting(game, claim)
+                              }
+                              className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:opacity-50"
+                            >
+                              {startingId === game.submission_id
+                                ? "Opening test..."
+                                : "Start testing"}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                releasingId === game.submission_id
+                              }
+                              onClick={() =>
+                                void releaseGame(game, claim)
+                              }
+                              className="w-full rounded-lg border border-red-400/40 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-400/10 disabled:opacity-50"
+                            >
+                              {releasingId === game.submission_id
+                                ? "Releasing..."
+                                : "Release game"}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-center text-sm font-medium text-amber-300">
+                              Testing in progress
+                            </p>
+
+                            {accessLink ? (
+                              <div className="rounded-xl border border-[#77f29b]/25 bg-[#77f29b]/5 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                                  Game access
+                                </p>
+
+                                <p className="mt-2 text-sm font-semibold text-white">
+                                  {getAccessLabel(accessType)}
+                                </p>
+
+                                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                                  {getAccessInstructions(accessType)}
+                                </p>
+
+                                <a
+                                  href={accessLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-4 block w-full rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-3 text-center text-sm font-semibold text-[#b9f9ca] hover:bg-[#77f29b]/15"
+                                >
+                                  {getAccessButtonLabel(accessType)}
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+                                <p className="text-sm font-semibold text-zinc-200">No game link added yet</p>
+                                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                                  A build or Steam Store link isn’t available for this test yet. If you already have the game, you can still play and finish your feedback. Otherwise, you can release this test and choose another.
+                                </p>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={submittingId === claim.id}
+                              onClick={() => {
+                                if (activeTestId === claim.id) closeFeedback();
+                                else setActiveTestId(claim.id);
+
+                                setFormErrors((previous) => ({
+                                  ...previous,
+                                  [claim.id]: "",
+                                }));
+                              }}
+                              className={`w-full rounded-lg px-4 py-3 text-sm font-semibold ${
+                                activeTestId === claim.id
+                                  ? "border border-white/10 text-zinc-300 hover:bg-white/5"
+                                  : "bg-[#77f29b] text-[#09100b] hover:bg-[#9af8b4]"
+                              }`}
+                            >
+                              {activeTestId === claim.id
+                                ? "Back to your active tests"
+                                : "Finish feedback"}
+                            </button>
+
+                            {activeTestId !== claim.id && (
+                              <button
+                                type="button"
+                                disabled={
+                                  releasingId === game.submission_id
+                                }
+                                onClick={() =>
+                                  void releaseGame(game, claim)
+                                }
+                                className="w-full rounded-lg border border-red-400/40 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-400/10 disabled:opacity-50"
+                              >
+                                {releasingId === game.submission_id
+                                  ? "Releasing..."
+                                  : "Release game"}
+                              </button>
+                            )}
+
+                            {activeTestId === claim.id && (
+                              <div className="mt-6">
+                                {draftOwnerId ? (
+                                  <FeedbackForm
+                                    key={`${draftOwnerId}:${claim.id}`}
+                                    accountId={draftOwnerId}
+                                    game={game}
+                                    claim={claim}
+                                    busy={submittingId === claim.id}
+                                    serverError={formErrors[claim.id] || ""}
+                                    onClearError={() => setFormErrors((previous) => ({ ...previous, [claim.id]: "" }))}
+                                    onClose={closeFeedback}
+                                    onSubmit={(values) => submitTest(game, claim, values)}
+                                    controllerRef={feedbackDraftControllerRef}
+                                  />
+                                ) : <p className="text-sm text-zinc-400">Checking your account before opening feedback…</p>}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
   }
 
   return (
@@ -657,16 +1467,6 @@ export default function TesterPage() {
           </div>
         </section>
 
-        <section className="mt-10">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold">Available games</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Games can be tested by multiple independent testers.
-              </p>
-            </div>
-          </div>
-
           {message && (
             <div
               ref={alertRef}
@@ -689,370 +1489,87 @@ export default function TesterPage() {
             </div>
           )}
 
-          {loading ? (
-            <p className="mt-6 text-zinc-400">
-              Loading available games...
-            </p>
-          ) : activeGames.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-white/10 p-6 text-zinc-400">
-              No new games are available for you to claim right now.
-              Your previous tests remain in your activity history below.
-            </p>
-          ) : (
-            <div className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {activeGames.map((game) => {
-                const claim = claims.find(
-                  (item) =>
-                    claimMatchesGame(item, game) &&
-                    (item.status === "claimed" ||
-                      item.status === "in_progress")
-                );
+        {loading ? (
+          <p className="mt-10 text-zinc-400">Loading your tests and available games...</p>
+        ) : (
+          <>
+            <section className="mt-10" aria-labelledby="active-tests-heading">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 id="active-tests-heading" className="text-2xl font-bold">Your active tests</h2>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    Pick up a claimed test, continue playing, or finish your feedback.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[#77f29b]/25 bg-[#77f29b]/[0.06] px-3 py-1 text-xs font-semibold text-[#b9f9ca]">
+                  {activeGames.length + unavailableActiveClaims.length} active
+                </span>
+              </div>
 
-                return (
-                  <article
-                    key={game.submission_id}
-                    className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
-                  >
-                    {game.image_url && (
-                      <img
-                        src={game.image_url}
-                        alt=""
-                        className="h-48 w-full shrink-0 object-cover"
-                      />
-                    )}
-
-                    <div className="flex flex-1 flex-col p-5">
-                      <p className="text-xs uppercase tracking-wider text-[#77f29b]">
-                        {game.genre || "Uncategorised"}
-                      </p>
-
-                      <h3 className="mt-2 text-xl font-semibold">
-                        {game.title}
-                      </h3>
-
-                      <p className="mt-1 text-sm text-zinc-400">
-                        By {game.developer_name}
-                      </p>
-
-                      <p className="mt-4 text-sm leading-6 text-zinc-300">
-                        {game.description}
-                      </p>
-
-                      {game.ai_type && (
-                        <div className="mt-4">
-                          <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                            {game.ai_type}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mt-auto space-y-3 pt-6">
-                        {!claim ? (
-                          <button
-                            type="button"
-                            disabled={
-                              claimingId === game.submission_id
-                            }
-                            onClick={() => void claimGame(game)}
-                            className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:opacity-50"
-                          >
-                            {claimingId === game.submission_id
-                              ? "Claiming..."
-                              : "Claim game"}
-                          </button>
-                        ) : claim.status === "claimed" ? (
-                          <>
-                            <p className="text-center text-sm font-medium text-[#77f29b]">
-                              Game claimed
-                            </p>
-
-                            <button
-                              type="button"
-                              disabled={
-                                startingId === game.submission_id
-                              }
-                              onClick={() =>
-                                void startTesting(game, claim)
-                              }
-                              className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:opacity-50"
-                            >
-                              {startingId === game.submission_id
-                                ? "Starting..."
-                                : "Start testing"}
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={
-                                releasingId === game.submission_id
-                              }
-                              onClick={() =>
-                                void releaseGame(game, claim)
-                              }
-                              className="w-full rounded-lg border border-red-400/40 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-400/10 disabled:opacity-50"
-                            >
-                              {releasingId === game.submission_id
-                                ? "Releasing..."
-                                : "Release game"}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-center text-sm font-medium text-amber-300">
-                              Testing in progress
-                            </p>
-
-                            {game.game_link && (
-                              <div className="rounded-xl border border-[#77f29b]/25 bg-[#77f29b]/5 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-                                  Game access
-                                </p>
-
-                                <p className="mt-2 text-sm font-semibold text-white">
-                                  {getAccessLabel(game.access_type)}
-                                </p>
-
-                                <p className="mt-2 text-sm leading-6 text-zinc-400">
-                                  {getAccessInstructions(game.access_type)}
-                                </p>
-
-                                <a
-                                  href={game.game_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="mt-4 block w-full rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-3 text-center text-sm font-semibold text-[#b9f9ca] hover:bg-[#77f29b]/15"
-                                >
-                                  {getAccessButtonLabel(game.access_type)}
-                                </a>
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveTestId(
-                                  activeTestId === claim.id
-                                    ? null
-                                    : claim.id
-                                );
-
-                                setFormErrors((previous) => ({
-                                  ...previous,
-                                  [claim.id]: "",
-                                }));
-                              }}
-                              className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4]"
-                            >
-                              {activeTestId === claim.id
-                                ? "Close feedback form"
-                                : "Submit test feedback"}
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={
-                                releasingId === game.submission_id
-                              }
-                              onClick={() =>
-                                void releaseGame(game, claim)
-                              }
-                              className="w-full rounded-lg border border-red-400/40 px-4 py-3 text-sm font-semibold text-red-300 hover:bg-red-400/10 disabled:opacity-50"
-                            >
-                              {releasingId === game.submission_id
-                                ? "Releasing..."
-                                : "Release game"}
-                            </button>
-
-                            {activeTestId === claim.id && (
-                              <form
-                                onSubmit={(event) =>
-                                  void submitTest(
-                                    event,
-                                    game,
-                                    claim
-                                  )
-                                }
-                                className="mt-4 space-y-4 border-t border-white/10 pt-5"
-                              >
-                                <p className="text-sm text-zinc-400">
-                                  Give an honest assessment. Scores
-                                  must be between 1 and 10. Feedback
-                                  must contain at least 80 characters
-                                  and describe your actual experience.
-                                </p>
-
-                                <label className="block text-sm font-medium">
-                                  Gameplay score (1 to 10)
-                                  <select
-                                    required
-                                    value={gameplayScore}
-                                    onChange={(event) =>
-                                      setGameplayScore(
-                                        event.target.value
-                                      )
-                                    }
-                                    className={inputClass}
-                                  >
-                                    {Array.from(
-                                      { length: 10 },
-                                      (_, i) => i + 1
-                                    ).map((score) => (
-                                      <option
-                                        key={score}
-                                        value={score}
-                                      >
-                                        {score}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
-
-                                <label className="block text-sm font-medium">
-                                  Performance score (1 to 10)
-                                  <select
-                                    required
-                                    value={performanceScore}
-                                    onChange={(event) =>
-                                      setPerformanceScore(
-                                        event.target.value
-                                      )
-                                    }
-                                    className={inputClass}
-                                  >
-                                    {Array.from(
-                                      { length: 10 },
-                                      (_, i) => i + 1
-                                    ).map((score) => (
-                                      <option
-                                        key={score}
-                                        value={score}
-                                      >
-                                        {score}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
-
-                                <label className="block text-sm font-medium">
-                                  Hours played
-                                  <input
-                                    type="number"
-                                    required
-                                    min="0"
-                                    max="1000"
-                                    step="0.25"
-                                    value={hoursPlayed}
-                                    onChange={(event) =>
-                                      setHoursPlayed(
-                                        event.target.value
-                                      )
-                                    }
-                                    className={inputClass}
-                                  />
-                                </label>
-
-                                <label className="block text-sm font-medium">
-                                  Bugs or problems found
-                                  <textarea
-                                    value={bugsFound}
-                                    onChange={(event) =>
-                                      setBugsFound(
-                                        event.target.value
-                                      )
-                                    }
-                                    rows={3}
-                                    maxLength={5000}
-                                    placeholder="Describe bugs, crashes, glitches, or enter None found."
-                                    className={inputClass}
-                                  />
-                                </label>
-
-                                <label className="block text-sm font-medium">
-                                  Your feedback
-                                  <textarea
-                                    required
-                                    minLength={80}
-                                    maxLength={10000}
-                                    value={feedback}
-                                    onChange={(event) => {
-                                      setFeedback(
-                                        event.target.value
-                                      );
-
-                                      setFormErrors(
-                                        (previous) => ({
-                                          ...previous,
-                                          [claim.id]: "",
-                                        })
-                                      );
-                                    }}
-                                    rows={5}
-                                    placeholder="What worked well? What needs improvement? Describe your experience."
-                                    aria-invalid={Boolean(
-                                      formErrors[claim.id]
-                                    )}
-                                    aria-describedby={
-                                      formErrors[claim.id]
-                                        ? `feedback-error-${claim.id}`
-                                        : `feedback-count-${claim.id}`
-                                    }
-                                    className={`${inputClass} ${
-                                      formErrors[claim.id]
-                                        ? "border-red-400 focus:border-red-400"
-                                        : ""
-                                    }`}
-                                  />
-
-                                  <span
-                                    id={`feedback-count-${claim.id}`}
-                                    className="mt-1 block text-xs text-zinc-500"
-                                  >
-                                    {feedback.trim().length}{" "}
-                                    characters. Minimum 80.
-                                  </span>
-                                </label>
-
-                                {formErrors[claim.id] && (
-                                  <div
-                                    id={`feedback-error-${claim.id}`}
-                                    role="alert"
-                                    aria-live="assertive"
-                                    className="rounded-lg border border-red-400/40 bg-red-400/10 p-4 text-sm text-red-200"
-                                  >
-                                    <p className="font-semibold">
-                                      Your review could not be
-                                      submitted
-                                    </p>
-
-                                    <p className="mt-1 break-words">
-                                      {formErrors[claim.id]}
-                                    </p>
-                                  </div>
-                                )}
-
-                                <button
-                                  type="submit"
-                                  disabled={
-                                    submittingId === claim.id
-                                  }
-                                  className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {submittingId === claim.id
-                                    ? "Submitting..."
-                                    : "Submit review"}
-                                </button>
-                              </form>
-                            )}
-                          </>
-                        )}
-                      </div>
+              {activeGames.length === 0 && unavailableActiveClaims.length === 0 ? (
+                <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-400">
+                  You have no active tests. Choose a game from Available to test below to get started.
+                </p>
+              ) : (
+                <>
+                  <div className={`mt-6 grid items-stretch gap-6 ${activeTestId ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+                    {activeGames.map(renderGameCard)}
+                  </div>
+                  {!activeTestId && unavailableActiveClaims.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {unavailableActiveClaims.map((claim) => (
+                        <article key={claim.id} className="rounded-xl border border-amber-300/20 bg-amber-300/[0.035] p-5">
+                          <h3 className="text-sm font-semibold text-zinc-100">Active test details unavailable</h3>
+                          <p className="mt-2 text-sm leading-6 text-zinc-400">
+                            This test is still recorded as {claim.status === "claimed" ? "claimed" : "in progress"}, but its game details were not returned by the catalogue. Reload the page to check again. It has not been released or submitted.
+                          </p>
+                        </article>
+                      ))}
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                  )}
+                </>
+              )}
+            </section>
+
+            {!activeTestId && (
+              <section className="mt-10" aria-labelledby="available-tests-heading">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h2 id="available-tests-heading" className="text-2xl font-bold">Available to test</h2>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      Choose your next game. Tests you have already claimed appear above.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
+                    {availableGames.length} available
+                  </span>
+                </div>
+
+                {hasActiveTest && (
+                  <div id="one-active-test-note" className="mt-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">
+                    <p className="font-semibold text-zinc-200">One test at a time</p>
+                    <p className="mt-1">
+                      {activeClaimCount > 1
+                        ? "You already have multiple active tests. You can finish or release them at your own pace; choose another once none remain active."
+                        : "Submit your feedback or release your current test to choose another. You can still browse the games below."}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">Submitting frees your slot immediately; you do not need to wait for admin review. Releasing a test has no XP penalty.</p>
+                  </div>
+                )}
+
+                {availableGames.length === 0 ? (
+                  <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-400">
+                    No new games are available for you to claim right now. You can continue any active tests above; submitted tests remain in Testing activity below.
+                  </p>
+                ) : (
+                  <div className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {availableGames.map(renderGameCard)}
+                  </div>
+                )}
+              </section>
+            )}
+          </>
+        )}
 
         <section className="mt-14">
           <div>
