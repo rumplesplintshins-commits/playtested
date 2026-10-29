@@ -59,6 +59,60 @@ async function visibilityChecks(){
  await run(`reset role;create or replace function public.beta_fixture_hidden(p_id uuid) returns boolean language sql immutable set search_path='' as $$select false$$;`);
  assert.equal((await one('select count(*) n from get_public_catalogue(1,100)')).n,5,'Reversible without changing game data');
  assert.deepEqual(await snapshot(),before);
+ // Exercise actual reservation RPCs after hiding, including paused campaigns.
+ const migration=fs.readFileSync('supabase/migrations/202610290020_hide_confirmed_beta_fixtures.sql','utf8');
+ await run(migration.slice(migration.indexOf('create function public.beta_fixture_hidden'),migration.indexOf('-- Filtering')).replace('create function','create or replace function'));
+ await run('set session_replication_role=replica');
+ for(const n of [3,4,5,6])await run(`insert into profiles(id,role,roles)values('${id(n)}','user',array['tester']);insert into community_game_tests(id,playtest_id,tester_id,status,reservation_expires_at)values('${id(n+300)}','${fixture(n===3?101:n===4?102:103)}','${id(n)}','claimed',${n===6?'null':n===5?"now()-interval '1 hour'":"now()+interval '24 hours'"})`);
+ await run('set session_replication_role=origin');
+ await as(3);await run('set role authenticated');
+ assert.ok((await one('select get_my_test_reservations() result')).result.claims.some(c=>c.id===id(303)));
+ assert.equal((await one(`select count(*) n from get_available_community_test_games() where submission_id='${fixture(101)}'`)).n,1,'Owned active fixture stays accessible');
+ assert.ok((await one(`select get_campaign_testing_details('${fixture(101)}') result`)).result);
+ await run(`select start_community_game_test('${id(303)}')`);
+ await run(`select submit_community_game_test('${id(303)}',8,8,'None','Useful observations',1,8,'probably','probably','Responsive movement','No difficulties','Improve guidance','{}')`);
+ assert.equal((await one(`select status from community_game_tests where id='${id(303)}'`)).status,'submitted');
+ await as(4);await run('set role authenticated');await run(`select release_community_game_test('${fixture(102)}')`);
+ assert.equal((await one(`select count(*) n from community_game_tests where id='${id(304)}'`)).n,0);
+ await as(5);await run('set role authenticated');
+ assert.ok((await one('select get_my_test_reservations() result')).result.claims.some(c=>c.id===id(305)),'Expired history retained');
+ await assert.rejects(run(`select start_community_game_test('${id(305)}')`),/Reservation expired/);
+ await assert.rejects(run(`select release_community_game_test('${fixture(103)}')`),/Reservation expired/);
+ await assert.rejects(run(`select submit_community_game_test('${id(305)}',8,8,'None','Feedback',1)`),/Reservation expired/);
+ await as(6);await run('set role authenticated');
+ await run(`select start_community_game_test('${id(306)}');select submit_community_game_test('${id(306)}',8,8,'None','Legacy reservation feedback',1)`);
+ assert.equal((await one(`select status from community_game_tests where id='${id(306)}'`)).status,'submitted','Legacy null-deadline claim can complete');
+ await run('reset role');
+ // Verify replacement against a genuinely invoker-secured view, not just defaults.
+ const viewDb=new PGlite();try{
+  await viewDb.exec(`create role anon;create role authenticated;create role service_role;create table public.game_submissions(id uuid,status text);create view public.approved_games with(security_invoker=true,security_barrier=true,check_option=local) as select id from public.game_submissions where status='Approved';grant usage on schema public to anon;grant select on public.approved_games to anon;`);
+  const viewMeta=async()=>(await viewDb.query(`select reloptions,relowner,relacl from pg_class where oid='public.approved_games'::regclass`)).rows[0];
+  const optionsBefore=await viewMeta();
+  await viewDb.exec(migration.slice(0,migration.indexOf('-- Amend only'))+'commit;');
+  assert.deepEqual(await viewMeta(),optionsBefore,'security_invoker, barrier, check option, owner and ACL preserved');
+  await viewDb.exec('set role anon');await assert.rejects(viewDb.query('select * from public.approved_games'),/permission denied for table game_submissions/,'Invoker security not silently weakened');
+ }finally{await viewDb.close();}
+ // Reproduce the exact supplied post-020 wrapper, then run only its view repair.
+ const originalView=fs.readFileSync('supabase/tests/public-visibility-fixture.sql','utf8').match(/create view public\.approved_games as ([\s\S]*?);/)[1];
+ const wrapper=`select * from (${originalView}) existing_listing where not public.beta_fixture_hidden(id)`;
+ await run(`create or replace view public.approved_games as ${wrapper};grant all on public.approved_games to service_role;`);
+ const meta=async()=>one(`select relowner,relacl,reloptions from pg_class where oid='public.approved_games'::regclass`);
+ const recordsBeforeRepair=await snapshot(),metaBeforeRepair=await meta();
+ const functionsBeforeRepair=(await db.query(`select oid,md5(prosrc) body from pg_proc where pronamespace='public'::regnamespace order by oid`)).rows;
+ assert.equal((await one(`select is_updatable from information_schema.views where table_schema='public' and table_name='approved_games'`)).is_updatable,'NO');
+ const repair=fs.readFileSync('supabase/migrations/202610290021_restore_approved_view_shape.sql','utf8');
+ await run(repair);
+ assert.deepEqual(await meta(),metaBeforeRepair);
+ assert.deepEqual(await snapshot(),recordsBeforeRepair);
+ assert.deepEqual((await db.query(`select oid,md5(prosrc) body from pg_proc where pronamespace='public'::regnamespace order by oid`)).rows,functionsBeforeRepair,'View repair leaves helper and all predicates untouched');
+ assert.equal((await one(`select is_updatable from information_schema.views where table_schema='public' and table_name='approved_games'`)).is_updatable,'YES');
+ await run('set role anon');assert.equal((await one('select count(*) n from public.approved_games')).n,1);await run('reset role');
+ await run(`create or replace view public.approved_games with(security_invoker=true,security_barrier=true) as ${wrapper}`);
+ const invokerMeta=await meta();await run(repair);assert.deepEqual(await meta(),invokerMeta);
+ await run('set role anon');await assert.rejects(run('select * from public.approved_games'),/permission denied for table game_submissions/);await run('reset role');
+ if(process.argv.includes('--qa-cleanup'))await qaActivityChecks();
+ console.log('PASS view-only 021: exact captured wrapper repaired, updatability restored, null/explicit security options and owner/ACL preserved, fixture filtering retained, records and function bodies unchanged.');
+ console.log('PASS existing fixture claims: owned access/history, start, structured/legacy completion and release; expired deadlines still enforced. View security_invoker/barrier/check_option, owner and grants preserved.');
  console.log('PASS isolated public visibility: exact IDs excluded before pagination/counts; real Steam and Test-named listing retained; public feedback/intents/share suppressed; own history and rows/XP preserved; visibility reversible. Supplied public SQL definitions used; no live application.');
 }
 async function ownershipClaimChecks(){
@@ -230,4 +284,37 @@ async function maintenanceChecks(){
  const counts=(await one(`select _intent_counts(array['definitely','probably','maybe','probably_not','definitely_not',null,'']) c`)).c;assert.deepEqual(counts,{definitely:1,probably:1,answered:5});
  const summaries=(await one('select get_public_intent_counts($1::jsonb) r',[JSON.stringify([{kind:'submission',id:id(10)}])])).r;assert.equal(summaries[0].lifetime.recommend.answered,3);assert.equal(summaries[0].lifetime.recommend.definitely,1);assert.equal(summaries[0].lifetime.recommend.probably,1);assert.equal(summaries[0].builds.find(b=>b.playtest_id===id(50)).recommend.answered,2);assert.equal(summaries[0].builds.find(b=>b.playtest_id===id(40)).recommend.answered,1);assert.deepEqual((await one("select _intent_counts(array[null,'']) c")).c,{definitely:0,probably:0,answered:0});assert(!JSON.stringify(summaries).includes('Specific feedback'));
  console.log('PASS maintenance policy: optional evidence, direct approved saves, admission retained, legacy omissions, conditional validation/failed-save status, protected fields/ownership, imported claim proof, initial routing, draft publication and allowance rollback, reviewed repair, actual intent denominators/build IDs, no record rewrites.');
+}
+
+async function qaActivityChecks(){
+ const fakeImports=[['b307eac5-4b9e-46fc-b673-178014c3fd9a','PLAYTESTED_TEST_STARFALL'],['052165b0-15b4-4b2e-a1cb-c3be363df97f','PLAYTESTED_TEST_TINY'],['f7f9808b-2d97-45ea-9bd5-428c42e4f018','PLAYTESTED_TEST_ASHEN']];
+ const realImports=[['00004d38-7672-473c-9628-b554c579d9e9','3762240'],['d11243eb-54fe-4d25-ab51-e48a9bba611f','3666410'],['aaa80937-4949-4d34-8826-93daa8e995a5','3008910']];
+ const neon='3dc1adfe-8e19-4c37-aef7-b9c16ad5433f',rail=realImports[0][0];
+ const campaigns=[["7e69d169-c79c-40e8-83e5-545f85736f31","b307eac5-4b9e-46fc-b673-178014c3fd9a","closed"],["04771f87-5f59-4cf8-9f35-07c80c77537f","052165b0-15b4-4b2e-a1cb-c3be363df97f","closed"],["b8754c76-2f38-42b8-9348-240ef5aaed7f","f7f9808b-2d97-45ea-9bd5-428c42e4f018","closed"],["3d09699f-f0b0-4d4e-bb06-1da7f1180778","00004d38-7672-473c-9628-b554c579d9e9","closed"],["41e47b6d-8f1c-4c06-b929-72169c7f0e6b","3dc1adfe-8e19-4c37-aef7-b9c16ad5433f","closed"],["5218a866-f597-4fc1-bfae-84e1dc172dfe","3dc1adfe-8e19-4c37-aef7-b9c16ad5433f","open"],["a2fe9b0b-f556-4517-86c5-9687c33c8f40","00004d38-7672-473c-9628-b554c579d9e9","open"],["2092dc5a-6404-42d1-a5db-544858565808","f7f9808b-2d97-45ea-9bd5-428c42e4f018","open"],["abc3ae2e-aea3-4293-af66-3130fbd6292a","b307eac5-4b9e-46fc-b673-178014c3fd9a","open"],["5b5a9d16-adf6-4cab-b67f-db393d00483f","052165b0-15b4-4b2e-a1cb-c3be363df97f","open"]];
+ const reports=[["9addefaf-24f0-4b31-a0ef-9eab8e290654","a2fe9b0b-f556-4517-86c5-9687c33c8f40","accepted",100],["d75d813f-056d-4522-bc34-64769daace13","a2fe9b0b-f556-4517-86c5-9687c33c8f40","accepted",100],["b4ec4994-a67e-4e5d-9b6a-fac3d692f6f3","abc3ae2e-aea3-4293-af66-3130fbd6292a","accepted",100],["adffbf46-e4ec-485c-aa97-0742cd3ba8e4","3d09699f-f0b0-4d4e-bb06-1da7f1180778","accepted",100],["b157a13c-d60a-4517-8d75-a16be538d2ee","abc3ae2e-aea3-4293-af66-3130fbd6292a","accepted",0],["82f43a02-04bf-44c6-aa59-69e947c3d0cd","5b5a9d16-adf6-4cab-b67f-db393d00483f","accepted",0],["16e76543-7781-4699-abac-f905ec310b2b","5b5a9d16-adf6-4cab-b67f-db393d00483f","accepted",0],["2444d895-882b-469b-b627-1335e5acf3f0","5b5a9d16-adf6-4cab-b67f-db393d00483f","accepted",0],["675c8857-0dab-4e3b-9289-2678d3523954","2092dc5a-6404-42d1-a5db-544858565808","accepted",0],["4ba7daeb-f7d3-4073-8d8a-34fc94dcc35e","2092dc5a-6404-42d1-a5db-544858565808","accepted",0],["4868be47-920e-4255-a64f-7947f62add01","2092dc5a-6404-42d1-a5db-544858565808","accepted",0],["0f5bbdcf-617c-496d-8f98-3474adb16a7e","41e47b6d-8f1c-4c06-b929-72169c7f0e6b","accepted",0],["568dbcad-9667-4719-9cd3-5b92319b95af","41e47b6d-8f1c-4c06-b929-72169c7f0e6b","accepted",0],["4a0a5c94-5a02-42be-ac28-67fe17b5073e","41e47b6d-8f1c-4c06-b929-72169c7f0e6b","accepted",0],["c34faacc-5877-4ec6-93b4-b0ff67b62e80","7e69d169-c79c-40e8-83e5-545f85736f31","accepted",0],["193a01b6-7781-4698-ae93-a8fb9742c6d8","7e69d169-c79c-40e8-83e5-545f85736f31","accepted",0],["78692812-ff9a-4499-b59f-2c7f7e6f4b93","7e69d169-c79c-40e8-83e5-545f85736f31","accepted",0],["a8d40708-9621-4062-ab51-c7740ed68aa2","04771f87-5f59-4cf8-9f35-07c80c77537f","accepted",0],["54e94ff9-41e3-4325-9b0f-15d4f61a1c9b","04771f87-5f59-4cf8-9f35-07c80c77537f","accepted",0],["cd5327db-fada-4e24-b4d8-8a5d3d97908d","04771f87-5f59-4cf8-9f35-07c80c77537f","accepted",0],["8297c6b4-233e-427e-96d4-eaf28016e2aa","b8754c76-2f38-42b8-9348-240ef5aaed7f","accepted",0],["cf92325c-2378-4c41-a0fc-8f09794b0806","b8754c76-2f38-42b8-9348-240ef5aaed7f","accepted",0],["088476a9-0609-41cb-aee4-a7496324e402","b8754c76-2f38-42b8-9348-240ef5aaed7f","accepted",0],["e74501d2-5876-47eb-88e2-bdecb53c8c8e","5218a866-f597-4fc1-bfae-84e1dc172dfe","accepted",0],["3d477355-2dfc-44c0-b618-8f85aa50058f","5218a866-f597-4fc1-bfae-84e1dc172dfe","accepted",0],["deda0e6b-0adf-40d7-8f04-19355c735ce1","5218a866-f597-4fc1-bfae-84e1dc172dfe","accepted",0],["957caceb-408a-4aad-ba4a-a1c22d14970e","5218a866-f597-4fc1-bfae-84e1dc172dfe","accepted",0],["7748d1cd-781f-4b8c-8ab4-66d50b4b3a00","5218a866-f597-4fc1-bfae-84e1dc172dfe","accepted",0],["d2ad9079-9e11-45b7-aaad-b6b1a7c325d1","abc3ae2e-aea3-4293-af66-3130fbd6292a","rejected",0]];
+ await run('alter view public.approved_games reset(security_invoker,security_barrier);set session_replication_role=replica');
+ for(const [gid,steam]of [...fakeImports,...realImports])await run(`insert into imported_games(id,steam_app_id,title,developer_name,genre,description,image_url,steam_url,catalogue_eligible,catalogue_review_status,catalogue_review_reason,metadata_backfill_status)values('${gid}','${steam}','Game ${steam}','Studio','Action','Description','https://example.test/image','https://example.test/game',true,'eligible',${steam.startsWith('PLAYTESTED_TEST_')?"'Playtested V10 controlled catalogue test game.'":"null"},'complete')`);
+ await run(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,status,ai_type,game_link)values('${neon}','${id(1)}','Neon QA','Studio','Action','QA build','Approved','No AI disclosed','https://example.test/qa');insert into profiles(id,role,roles,tester_xp)values('${id(50)}','user',array['tester'],400);`);
+ for(const [cid,gid,status]of campaigns)await run(`insert into community_playtests(id,developer_id,submission_id,imported_game_id,title,access_link,instructions,status,audience,published_at,tester_hub_started_at,release_label,testing_genre)values('${cid}','${id(1)}',${gid===neon?"'"+gid+"'":"null"},${gid!==neon?"'"+gid+"'":"null"},'QA round','https://example.test/qa','QA','${status}','both',now(),now(),'QA build',null)`);
+ for(const [index,[rid,cid,outcome,xp]]of reports.entries())await run(`insert into profiles(id,role,roles,tester_xp)values('${id(500+index)}','user',array['tester'],${xp});insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome,base_xp_amount,xp_awarded,overall_score,recommend_game,continue_playing)values('${rid}','${cid}','${id(500+index)}','reviewed','${outcome}',${xp},${xp>0},8,'definitely','probably')`);
+ await run(`create table public.community_playtest_feedback(id uuid,playtest_id uuid,tester_id uuid,overall_score integer);insert into community_playtest_feedback values('867fe05f-4ddc-472a-bf1d-7b1f12c4a229','3d09699f-f0b0-4d4e-bb06-1da7f1180778','${id(50)}',8);set session_replication_role=origin;`);
+ const state=async()=>(await one(`select jsonb_build_object('reports',(select jsonb_agg(to_jsonb(t)order by id)from community_game_tests t),'community',(select jsonb_agg(to_jsonb(t))from community_playtest_feedback t),'profiles',(select jsonb_agg(to_jsonb(p)order by id)from profiles p),'submissions',(select jsonb_agg(to_jsonb(s)order by id)from game_submissions s),'campaigns',(select jsonb_agg(to_jsonb(c) order by id)from community_playtests c),'imports',(select jsonb_agg(to_jsonb(i)-'catalogue_eligible'-'catalogue_review_status' order by id)from imported_games i)) data`)).data;
+ const before=await state();const viewBefore=await one(`select reloptions,relowner,relacl from pg_class where oid='public.approved_games'::regclass`);
+ const helperMeta=async()=>one(`select proowner,proacl,proconfig,provolatile,prosecdef from pg_proc where oid='public.beta_fixture_hidden(uuid)'::regprocedure`);
+ const helperBefore=await helperMeta();
+ const countBefore=Number((await one('select count(*) n from get_public_catalogue(1,100)')).n);
+ await run(fs.readFileSync('supabase/migrations/202610290022_exclude_approved_qa_activity.sql','utf8'));
+ assert.deepEqual(await state(),before,'Only approved visibility/status changes; all reports, history, XP, relationships and metadata preserved');
+ assert.deepEqual(await helperMeta(),helperBefore,'Existing helper owner/grants/security attributes preserved');
+ assert.deepEqual(await one(`select reloptions,relowner,relacl from pg_class where oid='public.approved_games'::regclass`),viewBefore);
+ assert.equal(Number((await one('select count(*) n from get_public_catalogue(1,100)')).n),countBefore-4);
+ for(const [gid]of realImports){assert.equal((await one(`select catalogue_eligible from imported_games where id='${gid}'`)).catalogue_eligible,true);assert.ok((await db.query('select * from get_public_catalogue(1,100)')).rows.some(r=>r.game_id===gid));}
+ for(const [gid]of fakeImports)assert.equal((await one(`select catalogue_eligible from imported_games where id='${gid}'`)).catalogue_eligible,false);
+ assert.equal((await one(`select count(*) n from get_game_community_reception()where imported_game_id='${rail}'`)).n,0);
+ const publicCounts=(await one('select get_public_intent_counts($1::jsonb) result',[JSON.stringify([{kind:'imported',id:rail}])])).result[0];
+ assert.deepEqual(publicCounts.builds,[]);assert.equal(publicCounts.lifetime.recommend.answered,0);assert.equal(publicCounts.lifetime.continue.answered,0);
+ assert.equal((await db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify([{source_type:'steam',game_id:rail}])])).rows[0].recruiting,false);
+ for(const[cid,,status]of campaigns){assert.equal((await one(`select status from community_playtests where id='${cid}'`)).status,status);assert.equal((await one(`select public.campaign_eligible('${cid}','${id(50)}') eligible`)).eligible,false);}
+ await as(500);await run('set role authenticated');assert.equal(Number((await one(`select count(*) n from community_game_tests where tester_id=auth.uid()`)).n),1);await run('reset role');
+ console.log('PASS 022 isolated exact-ID cleanup: four QA listings excluded; three genuine Steam entries retained; both Rail QA rounds, recommendations, rating/build reception and recruitment excluded; all 29 reports/community feedback/history/recorded XP preserved; view security unchanged. No live application.');
 }

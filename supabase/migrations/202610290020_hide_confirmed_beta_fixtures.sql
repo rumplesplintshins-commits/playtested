@@ -12,10 +12,18 @@ revoke all on function public.beta_fixture_hidden(uuid) from public;
 grant execute on function public.beta_fixture_hidden(uuid) to anon,authenticated,service_role;
 -- Filtering the existing approved view happens BEFORE catalogue search/count/pagination.
 -- Existing view columns, privileges and underlying private records are preserved.
-do $$declare definition text;begin
+do $$declare definition text;options text;begin
  if (select c.relkind from pg_class c where c.oid=to_regclass('public.approved_games')) is distinct from 'v' then raise exception 'Expected existing approved_games view; inspect before proceeding.';end if;
  definition:=rtrim(btrim(pg_get_viewdef('public.approved_games'::regclass,true)),';');
- execute 'create or replace view public.approved_games as select * from ('||definition||') existing_listing where not public.beta_fixture_hidden(existing_listing.id)';
+ if definition !~* 'FROM[[:space:]]+(public[.])?game_submissions[[:space:]]+WHERE[[:space:]]+[(]?status[[:space:]]*=[[:space:]]*''Approved''::text[)]?[[:space:]]*$' then raise exception 'Unexpected approved_games definition; inspect before proceeding.';end if;
+ -- CREATE OR REPLACE without WITH can clear reloptions. Preserve even explicit
+ -- false values, check_option and any other existing supported view options.
+ select string_agg(format('%I=%L',split_part(option,'=',1),substr(option,strpos(option,'=')+1)),', ')
+ into options from pg_class c cross join lateral unnest(c.reloptions) option
+ where c.oid='public.approved_games'::regclass;
+ -- Extend the inspected simple view directly: a subquery wrapper would remove
+ -- automatic updatability and cannot preserve an existing WITH CHECK OPTION.
+ execute 'create or replace view public.approved_games'||case when options is null then '' else ' with ('||options||')' end||' as '||definition||' and not public.beta_fixture_hidden(id)';
 end;$$;
 -- Amend only reviewed predicates. Abort atomically on unexpected deployed definitions.
 do $patch$declare entry record;source text;begin

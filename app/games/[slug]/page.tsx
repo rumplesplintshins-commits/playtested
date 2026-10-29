@@ -144,6 +144,7 @@ export default async function GamePage({
         "id, steam_app_id, title, developer_name, genre, description, steam_url, image_url"
       )
       .eq("steam_app_id", steamAppId)
+      .eq("catalogue_eligible", true)
       .maybeSingle();
 
     const originalImportedGame = importedGameData as ImportedGame | null;
@@ -224,11 +225,14 @@ export default async function GamePage({
       );
     }
 
-    const { data: playtestData, error: playtestError } = await supabase
+    const intentData=await publicIntentCounts(supabase,[{kind:"imported",id:importedGame.id}]);
+    const publicCampaignIds=intentData?.[0]?.builds.map(build=>build.playtest_id)??[];
+    const { data: playtestData, error: playtestError } = publicCampaignIds.length ? await supabase
       .from("community_playtests")
       .select("id, release_label, status, audience, created_at")
       .eq("imported_game_id", importedGame.id)
-      .order("created_at", { ascending: false });
+      .in("id", publicCampaignIds)
+      .order("created_at", { ascending: false }) : {data:[],error:null};
 
     if (playtestError) {
       console.error("Could not load public playtest activity:", playtestError);
@@ -518,7 +522,6 @@ export default async function GamePage({
         )
       : detailedFeedback;
 
-    const intentData=await publicIntentCounts(supabase,[{kind:"imported",id:importedGame.id}]);
     const intentGame=intentData?.[0];
     const selectedIntent=currentReceptionRound?intentGame?.builds.find(build=>build.playtest_id===currentReceptionRound.id):intentGame?.lifetime;
     const verificationStatus: VerificationStatus = "Not yet verified";
@@ -533,6 +536,7 @@ export default async function GamePage({
         <SiteHeader />
           <ShareJourneyBanner />
 
+        {intentData===null&&<p role="alert" className="mx-auto max-w-6xl px-6 py-4 text-sm text-amber-200">Public playtest reporting is unavailable. Please try again later.</p>}
         <section className="border-b border-white/[0.08] bg-gradient-to-br from-[#14251b] via-[#0c100d] to-[#090b0a]">
           <div className="mx-auto max-w-6xl px-6 py-12 md:py-16">
             <div className="flex flex-wrap gap-2">

@@ -1,6 +1,191 @@
 # Playtested rollout preparation
 
+## 022 applied - public QA exclusion verified 29 October 2026
+
+Owner reports successful 022 application with no error. Subsequent **read-only** API verification at **17:35:58 UTC** against `qtcmzckdhgahuqqilmzj.supabase.co` confirms the intended deployed results. This supersedes earlier 022 prepared/not-applied and HOLD statuses below. Do not rerun 019-022.
+
+- Anonymous catalogue searches exclude the four approved synthetic listing IDs. Rail Estate remains visible (one matching genuine result). The separate numeric-Steam Neon Dodge/Tiny Kingdoms records still exist with unchanged captured metadata; they are catalogue-ineligible, metadata-pending imports missing required fields, not newly excluded by 022. They were deliberately not published or repaired as part of this cleanup.
+- Rail Estate public intents: **0 recommendation answers, 0 continue-playing answers, empty public build list**. No public reception rows remain for the scoped QA listings/Rail Estate; no invented rating is substituted. Recruitment returns Rail Estate `false` and no hidden-fixture rows.
+- The three controlled imported fixtures are `catalogue_eligible=false`, `catalogue_review_status=excluded`. The Neon QA submission remains stored but is absent from the anonymous approved view.
+- Exact-ID comparisons against the pre-cleanup capture confirm **all 29 independent reports and their recorded XP awards unchanged**, the older Rail Estate community-feedback row unchanged, **all ten campaign records unchanged** (including statuses/links/genres), and three genuine Steam records' captured metadata unchanged. No profile/XP update exists in 022; account totals were not separately captured/re-read live. Isolated tests verified profile/history preservation. Signed-in history UI remains a manual smoke check.
+- No existing tracked links matched these newly approved QA sources/campaigns, so there was no live historical tracked-link URL to exercise. Exact-ID share/invitation guards are covered by the deployed definitions and isolated checks; no live link click is claimed.
+
+Verification details are stored privately in ignored `.backup-tools/approved-qa-cleanup-verification.json`, not staged. Only authenticated and anonymous reads were performed by this agent after the owner's SQL application; no synthetic live claims or extra writes. Existing production build/isolated tests are reused because source did not change afterward. Four pre-existing page lint errors remain unchanged.
+
+The authorised v11 commit/push includes the relevant SQL source, public detail-page filtering, tests and this checklist. Include the tested 020 security-option correction and view-only 021 source, but do not execute/replay them. Exclude the user's `app/layout.tsx` title edit, unrelated recovery work, credentials and private captures. No deployment/DNS/Auth changes.
+
+Manual verification after refreshing the updated local app / later authorised deployment:
+1. Search Rail Estate: genuine listing remains, with no QA rating/recommendation/build-history/recruitment. Search the four synthetic entries: none appears. Numeric Steam Neon/Tiny remain unpublished pending existing metadata requirements; do not confuse them with the excluded QA entries.
+2. Open a known excluded detail/invitation URL: no live public recruitment or QA feedback is presented. Genuine game detail and campaign eligibility continue to work.
+3. Sign in as an existing QA tester: past reports/reviews and recorded XP remain; check developer/admin private history as appropriate. Do not create synthetic production records.
+4. Confirm real analytics are the default and production has no sample-data toggle. Remaining beta setup is still Auth/SMTP, legal operator details and PULSE hosting/explicit exclusion; this cleanup does not deploy the app.
+
+## Approved additional QA cleanup ? migration 022 prepared, not applied
+
+Owner approved the exact-ID preview, including **both** Rail Estate QA rounds and the older independent/community feedback. The former HOLD is now confirmed QA, not genuine community testing. Genuine Rail Estate and the separate numeric-Steam Neon Dodge/Tiny Kingdoms records must remain.
+
+**Exact proposed SQL:** [202610290022_exclude_approved_qa_activity.sql](../supabase/migrations/202610290022_exclude_approved_qa_activity.sql). This new transaction is presented for review **before live application**; it has NOT run on Supabase. Do not replay 019?021. Required current state: the inspected original six-ID helper and reviewed public function predicates; 021's corrected view remains unchanged. Unexpected helper/provenance/function definitions abort the entire transaction.
+
+022 expands the existing exact-ID helper with the four approved synthetic listing IDs and all ten approved QA campaign IDs. It sets only the three explicit PLAYTESTED_TEST imported rows to catalogue_eligible=false / catalogue_review_status=excluded, and filters QA campaign inputs from public build history, feedback, intent counts and recruitment. Existing reception, invitation, discovery, eligibility and sharing gates reuse the helper. **No campaign row/status is updated:** scoped preflight read found null genres on the old campaigns; an ordinary pause would populate them through an existing trigger. Keeping statuses unchanged avoids that unrelated mutation while exact-ID gates still prevent recruitment/new participation. No deletion, report rejection, relationship change or XP adjustment.
+
+Confirmed pre-change flags on those three imported fixture rows: catalogue_eligible=true and catalogue_review_status=eligible. To reverse later, explicitly restore only those flags and replace the helper with its former six-ID body; do not rerun 020 or revert public function definitions blindly. Campaign statuses/genres need no reversal because they are untouched. View owner/grants/options are not changed by 022; helper owner/grants/security attributes are retained.
+
+Local app change: imported detail URLs now respect existing catalogue eligibility, and public build/history/report queries use only the campaign IDs returned by the existing authoritative public intent RPC. Thus an authorised owner visiting the public Rail Estate page does not accidentally reintroduce private QA campaigns into public results. Reporting failures get an explicit unavailable message; no sample/zero-data fallback was introduced. Private My Games/tester-history workflows are unchanged.
+
+**Passed:** production build (including TypeScript); `node tests/test-submission-corrections.mjs --visibility --qa-cleanup`; working diff whitespace checks. The isolated database uses the approved exact listing/campaign/report IDs but synthetic local accounts. Verifies four QA listings excluded before catalogue counting, numeric-Steam Neon/Tiny plus genuine Rail retained, Rail public recommendation/continue counts zero and build list empty, no Rail reception rating or recruiting badge, all **29 independent reports plus one community-feedback record** preserved with private history and recorded XP, complete campaign rows/relationships preserved, and unchanged view/helper security metadata. Existing 020/021 visibility, claim lifecycle and view-option checks pass in that isolated harness; they were not replayed live. Targeted page lint has the same **four pre-existing errors** as HEAD and no new findings. Browser/hosted QA cleanup checks are still pending; no live 022 verification is claimed.
+
+**Next action:** review the exact 022 file and, if accepted, run only that transaction in SQL Editor for project qtcmzckdhgahuqqilmzj (this session still has no authenticated arbitrary-SQL connection). Return the success/sanitised error. After successful application, read-only verify the affected public outputs and preserved flags/data, then commit/push the relevant migration/app/tests/checklist changes to v11 as requested. **Commit/push remains pending until successful cleanup verification.** The user's app/layout.tsx title edit and unrelated recovery files remain untouched/un-staged.
+
+Manual checks after application and coordinated app update:
+1. Catalogue/search: Starfall Circuit, Ashen Hollow, synthetic Tiny Kingdoms and QA Neon submission disappear. Steam Neon 3666410, Tiny 3008910 and Rail Estate 3762240 remain; pagination totals reflect the exclusions.
+2. Open Rail Estate: no QA build history, feedback/rating/recommendation totals or recruiting badge; show no community testing yet where no genuine activity remains. QA invitation links must be unavailable. No data/error state should be mistaken for fabricated zero traffic.
+3. Signed-in testers can still see their own past QA tests/reviews and unchanged XP; developer/admin private records remain. Do not create synthetic live claims to test this.
+4. Existing real campaigns retain normal eligibility/capacity and recruitment; real analytics remain the default. Production QA mini-game routes remain unavailable, and no deployment command seeds data.
+
+## Five-listing synthetic-content preview ? awaiting explicit approval
+
+Read-only inspection scoped to the five named titles, then exact IDs, captured 2026-10-29T16:55:44.838Z. No additional hiding, pausing, SQL application, XP or record changes performed. Titles were used to locate candidates only; classification below uses explicit fixture notes, build provenance and cross-game destination mismatch. One shared account is not classification evidence. A private raw preview is kept only under ignored .backup-tools, not committed. Approval must identify the rows to exclude; the HOLD row is outside the proposed cleanup.
+
+### Exact-ID approval preview
+
+| Listing / round | Exact listing ID | Exact campaign ID / status | Exact independent report IDs / community feedback IDs | Evidence | Proposed cleanup (not applied) | Tester history / XP effect |
+| --- | --- | --- | --- | --- | --- | --- |
+| Neon Dodge ? Fault Build 0.1 | `3dc1adfe-8e19-4c37-aef7-b9c16ad5433f` | `41e47b6d-8f1c-4c06-b929-72169c7f0e6b` (closed) | `0f5bbdcf-617c-496d-8f98-3474adb16a7e`<br>`568dbcad-9667-4719-9cd3-5b92319b95af`<br>`4a0a5c94-5a02-42be-ac28-67fe17b5073e` | Submission explicitly describes QA workflow; build URL is the repository neon-dodge-test-0.1 faulty-build release, matching tracked worker benchmark fixtures. | Hide only this synthetic submission and its public reception/history; pause the open round. Preserve separate Steam Neon Dodge. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Neon Dodge ? Redemption Build 0.2 | `3dc1adfe-8e19-4c37-aef7-b9c16ad5433f` | `5218a866-f597-4fc1-bfae-84e1dc172dfe` (open) | `e74501d2-5876-47eb-88e2-bdecb53c8c8e`<br>`3d477355-2dfc-44c0-b618-8f85aa50058f`<br>`deda0e6b-0adf-40d7-8f04-19355c735ce1`<br>`957caceb-408a-4aad-ba4a-a1c22d14970e`<br>`7748d1cd-781f-4b8c-8ab4-66d50b4b3a00` | Submission explicitly describes QA workflow; build URL is the repository neon-dodge-test-0.1 faulty-build release, matching tracked worker benchmark fixtures. | Hide only this synthetic submission and its public reception/history; pause the open round. Preserve separate Steam Neon Dodge. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Starfall Circuit ? Demo 0.9 - Reception Test | `b307eac5-4b9e-46fc-b673-178014c3fd9a` | `7e69d169-c79c-40e8-83e5-545f85736f31` (closed) | `c34faacc-5877-4ec6-93b4-b0ff67b62e80`<br>`193a01b6-7781-4698-ae93-a8fb9742c6d8`<br>`78692812-ff9a-4499-b59f-2c7f7e6f4b93` | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Starfall Circuit ? Demo 0.8 | `b307eac5-4b9e-46fc-b673-178014c3fd9a` | `abc3ae2e-aea3-4293-af66-3130fbd6292a` (open) | `b4ec4994-a67e-4e5d-9b6a-fac3d692f6f3`<br>`b157a13c-d60a-4517-8d75-a16be538d2ee`<br>`d2ad9079-9e11-45b7-aaad-b6b1a7c325d1` (rejected) | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **100 recorded base XP unchanged**. |
+| Tiny Kingdoms ? Demo 0.7 - Reception Test | `052165b0-15b4-4b2e-a1cb-c3be363df97f` | `04771f87-5f59-4cf8-9f35-07c80c77537f` (closed) | `a8d40708-9621-4062-ab51-c7740ed68aa2`<br>`54e94ff9-41e3-4325-9b0f-15d4f61a1c9b`<br>`cd5327db-fada-4e24-b4d8-8a5d3d97908d` | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Tiny Kingdoms ? Demo 0.6 | `052165b0-15b4-4b2e-a1cb-c3be363df97f` | `5b5a9d16-adf6-4cab-b67f-db393d00483f` (open) | `82f43a02-04bf-44c6-aa59-69e947c3d0cd`<br>`16e76543-7781-4699-abac-f905ec310b2b`<br>`2444d895-882b-469b-b627-1335e5acf3f0` | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Ashen Hollow ? Alpha 0.5 - Reception Test | `f7f9808b-2d97-45ea-9bd5-428c42e4f018` | `b8754c76-2f38-42b8-9348-240ef5aaed7f` (closed) | `8297c6b4-233e-427e-96d4-eaf28016e2aa`<br>`cf92325c-2378-4c41-a0fc-8f09794b0806`<br>`088476a9-0609-41cb-aee4-a7496324e402` | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Ashen Hollow ? Alpha 0.4 | `f7f9808b-2d97-45ea-9bd5-428c42e4f018` | `2092dc5a-6404-42d1-a5db-544858565808` (open) | `675c8857-0dab-4e3b-9289-2678d3523954`<br>`4ba7daeb-f7d3-4073-8d8a-34fc94dcc35e`<br>`4868be47-920e-4255-a64f-7947f62add01` | catalogue_review_reason explicitly says Playtested V10 controlled catalogue test game; non-Steam PLAYTESTED_TEST marker; campaign uses example.com/playtested-test-build. | Hide this synthetic imported row (existing eligibility/moderation flags), both test rounds and reception; pause the open round. Preserve numeric-Steam duplicates. | Private history/records retained; **0 recorded base XP unchanged**. |
+| Rail Estate ? 1 | `00004d38-7672-473c-9628-b554c579d9e9` | `3d09699f-f0b0-4d4e-bb06-1da7f1180778` (closed) | `adffbf46-e4ec-485c-aa97-0742cd3ba8e4`<br>Community: `867fe05f-4ddc-472a-bf1d-7b1f12c4a229` | Real Rail Estate Steam destination; placeholder instructions alone do not prove synthetic provenance. Manual-looking review and community feedback are not proof either. | HOLD: preserve campaign and all feedback; ask owner whether this was QA or genuine. No exclusion proposed without confirmation. | Private history/records retained; **100 recorded base XP unchanged**. |
+| Rail Estate ? Demo 0.3 | `00004d38-7672-473c-9628-b554c579d9e9` | `a2fe9b0b-f556-4517-86c5-9687c33c8f40` (open) | `9addefaf-24f0-4b31-a0ef-9eab8e290654`<br>`d75d813f-056d-4522-bc34-64769daace13` | Explicitly says Testing with Celestial Golf and links Steam app 3965730, not Rail Estate app 3762240: confirmed cross-game test/misattribution. Whether feedback was generated or manually entered is unverified. | Keep Rail Estate; exclude this campaign/reports from its public reception/counts/history/recruitment and pause it. | Private history/records retained; **200 recorded base XP unchanged**. |
+
+**Preserve separate Steam records:** Neon Dodge `d11243eb-54fe-4d25-ab51-e48a9bba611f` (Steam 3666410), Tiny Kingdoms `aaa80937-4949-4d34-8826-93daa8e995a5` (Steam 3008910), and Rail Estate `00004d38-7672-473c-9628-b554c579d9e9` (Steam 3762240). No fixture evidence was established for those imported catalogue identities; do not hide them because they share names with QA data. No campaigns/reports were found tied to the separate numeric-Steam Neon/Tiny IDs in this scoped read.
+
+The proposed scope covers four wholly synthetic listing IDs, eight QA rounds plus the one confirmed cross-game Rail Estate round, and **28 independent report records** (including one rejected report). Their overall scores/recommendations are report fields, not a separate rating system. The older Rail Estate round has one independent report and one community-feedback row: both remain unclassified/HOLD. No other rating records or synthetic accounts were established. Manual/generated origin of individual submissions is not proven merely by similar language or timestamps; they must nevertheless not count as reception for placeholder QA builds or for the wrong real game.
+
+After approval, use reversible exact-ID suppression and existing imported visibility controls, not deletions, report rejection/XP reversal or title heuristics. Extend public aggregation/history/recruitment predicates for excluded **campaigns** so Rail Estate remains listed with only retained genuine reception. Do not merely extend the game-ID helper: public build-history/intent calculations must filter the campaign inputs, and imported detail/catalogue visibility must be consistent. Current 019?021 definitions must not be replayed. Prepare the targeted SQL/code only for approved IDs and test public counts plus unchanged private history/XP before application. Preserve unknown feedback by default; if only the approved Rail Estate round is excluded, any surviving older reception must not be asserted genuine until the HOLD question is resolved.
+
+**Blocking decisions bundled:** approve exclusion of the confirmed synthetic/cross-game rows above, and confirm whether Rail Estate campaign `3d09699f-f0b0-4d4e-bb06-1da7f1180778` (including report `adffbf46-e4ec-485c-aa97-0742cd3ba8e4` and community feedback `867fe05f-4ddc-472a-bf1d-7b1f12c4a229`) was also a test. Nothing in that HOLD row will be modified without that evidence/approval.
+
+## 019–021 deployed definitions verified; view correction complete
+
+**Latest verified status:** after reporting successful application of **021**, the owner supplied the read-only view result: direct `FROM game_submissions WHERE status='Approved' AND NOT beta_fixture_hidden(id)`; `is_updatable=YES`; `check_option=NONE`; `reloptions=NULL`; owner `postgres`; identical owner/service-role full ACL and anon/authenticated SELECT ACL. The view correction is complete and its current definition/options/owner/grants match the intended result. Earlier 019 policy and 020 helper/ten-predicate outputs are also verified as recorded below. **Do not rerun 019, 020 or 021. No further corrective SQL or history reconstruction is needed for these findings.** Earlier pending/application instructions below are historical and superseded. Public UI/hosted smoke checks remain distinct from this definition verification; historical pre-020 reloptions remain unknown and were not guessed.
+
+Owner-supplied read-only state captured **2026-10-29 16:37:26 UTC** confirms the exact six-ID helper body, IMMUTABLE/invoker attributes, empty search_path, postgres owner and intended anon/authenticated/service-role execute grants. **All ten intended predicates are applied once. Do not rerun 020 or recreate/replace its helper/functions.** This supersedes the unknown-state diagnostic notes below.
+
+`approved_games` contains the intended fixture filter but uses the earlier subquery wrapper. Current owner: postgres; SELECT grants: anon/authenticated; service-role and owner full grants; `reloptions=NULL`. Captured pre-change evidence establishes the original simple Approved-submission view definition, but **does not include its reloptions**. Null now is not proof that options were lost or originally null. No guessed security_invoker/security_barrier setting will be enabled/disabled.
+
+Prepared **`supabase/migrations/202610290021_restore_approved_view_shape.sql`**, view-only, **NOT applied live**. It replaces only the exact inspected wrapper (definition MD5 `c91107d52bca5a0def3921da3049f552`) with the captured original explicit-column/simple WHERE form plus the existing fixture filter. This restores known original automatic updatability while preserving current security options, owner and ACL; it asserts those metadata remain unchanged and aborts otherwise. No helper/predicate changes, row updates, deletion or history repair. A different current definition aborts; do not weaken the guard to force it through. This does not claim to reconstruct unknown historical security settings.
+
+Extended existing `node tests/test-submission-corrections.mjs --visibility`: actual captured wrapper reproduced; 021 passes; `is_updatable` changes NO→YES; fixture remains excluded and real listing visible; owner/ACL/current null options unchanged; all public function bodies and underlying game/campaign/report/profile/XP/link records unchanged. Repeated the view correction from a wrapper explicitly configured with security_invoker=true/security_barrier=true: options/ACL preserved and anonymous underlying-table denial still enforced. Existing visibility/history/start/submit/release checks pass. These are isolated PostgreSQL checks, not live application.
+
+Next steps:
+1. Review and, if approved, run **only 021** in SQL Editor for project **qtcmzckdhgahuqqilmzj**. Do not run 020 again. No live SQL was applied by this task.
+2. Run the read-only view check below; compare current null options, owner/ACL and the direct filtered definition with the captured result. Confirm `is_updatable=YES`.
+3. Verify a genuine listing remains visible, each confirmed fixture remains hidden, and an existing tester can still see their own history. Do not create synthetic live claims or change records to test visibility.
+
+```sql
+begin read only;
+select pg_get_viewdef(c.oid,true) as definition,c.reloptions,
+       pg_get_userbyid(c.relowner) as owner,c.relacl,
+       v.is_updatable,v.check_option
+from pg_class c join pg_namespace n on n.oid=c.relnamespace
+join information_schema.views v on v.table_schema=n.nspname and v.table_name=c.relname
+where n.nspname='public' and c.relname='approved_games';
+commit;
+```
+
+## 020 duplicate-helper failure: inspection required before correction
+
+The owner reports SQLSTATE **42723** at `CREATE FUNCTION beta_fixture_hidden`. This confirms that signature already existed at the time of the attempt, **not** that all of 020 applied. The latest transaction fails before its view/function edits; any earlier successful/partial execution is still unknown. Do not change CREATE to CREATE OR REPLACE, drop the helper, or rerun 020. Supersedes earlier instructions to run the full corrected file.
+
+Existing service-role REST access does not expose function/view definitions or reloptions; no authenticated SQL connection is available. Reuse prior project verification and run this **one read-only query** in Dashboard SQL Editor for **qtcmzckdhgahuqqilmzj**. It does not call the helper/application RPCs, select user records, or alter objects. It returns one JSON row with the helper body/attributes/grants, current view definition/options/owner/ACL and each of the ten intended function modifications, including duplicate/partial indicators. Predicate classifications are diagnostic; complete definitions must still be reviewed before choosing correction.
+
+```sql
+begin read only;
+set local statement_timeout='15s';
+with expected(signature,needle,replacement) as (values
+('get_game_community_reception()','from public.community_playtests cp','from public.community_playtests cp where not public.beta_fixture_hidden(cp.id) and not public.beta_fixture_hidden(cp.submission_id) and not public.beta_fixture_hidden(cp.approved_game_id)'),
+ ('get_public_submission_playtest_history(uuid)','where cp.submission_id = p_submission_id','where cp.submission_id = p_submission_id and not public.beta_fixture_hidden(p_submission_id)'),
+ ('get_public_submission_playtest_feedback(uuid)','where cp.submission_id = p_submission_id','where cp.submission_id = p_submission_id and not public.beta_fixture_hidden(p_submission_id)'),
+ ('get_public_community_playtest(uuid)','where cp.share_token = p_share_token','where cp.share_token = p_share_token and not public.beta_fixture_hidden(cp.id) and not public.beta_fixture_hidden(cp.submission_id) and not public.beta_fixture_hidden(cp.approved_game_id)'),
+ ('_share_link_context(uuid)','if not found then return null;end if;','if not found or public.beta_fixture_hidden(l.source_id) or public.beta_fixture_hidden(l.campaign_id) then return null;end if;'),
+ ('get_public_listing_updates(jsonb)','if not visible then continue;end if;','if not visible or public.beta_fixture_hidden((r->>''id'')::uuid) then continue;end if;'),
+ ('get_public_intent_counts(jsonb)','if not visible then continue;end if;','if not visible or public.beta_fixture_hidden((g->>''id'')::uuid) then continue;end if;'),
+ ('get_public_recruitment(jsonb)','where r.source_type=''approved''','where not public.beta_fixture_hidden(r.game_id) and r.source_type=''approved'''),
+ ('get_discoverable_community_test_games()','where c.status=''open''','where not public.beta_fixture_hidden(c.id) and not public.beta_fixture_hidden(c.submission_id) and not public.beta_fixture_hidden(c.approved_game_id) and c.status=''open'''),
+ ('campaign_eligible(uuid,uuid)','where c.id=p_id','where not public.beta_fixture_hidden(c.id) and not public.beta_fixture_hidden(c.submission_id) and not public.beta_fixture_hidden(c.approved_game_id) and c.id=p_id')
+), inspected as (
+ select e.*,p.oid,p.prosecdef,p.provolatile,p.proconfig,p.proacl,
+ case when p.oid is not null then pg_get_functiondef(p.oid) end definition
+ from expected e left join pg_proc p on p.oid=to_regprocedure('public.'||e.signature)
+), helper as (
+ select p.* from pg_proc p where p.oid=to_regprocedure('public.beta_fixture_hidden(uuid)')
+), view_state as (
+ select c.* from pg_class c where c.oid=to_regclass('public.approved_games')
+)
+select jsonb_build_object(
+ 'captured_at',current_timestamp,
+ 'transaction_read_only',current_setting('transaction_read_only'),
+ 'helper',coalesce((select jsonb_build_object(
+  'state',case when regexp_replace(p.prosrc,'[[:space:]]','','g')=regexp_replace('
+ select coalesce(p_id=any(array[
+ ''d3100000-0000-4000-8000-000000000001'',''d3100000-0000-4000-8000-000000000002'',''d3100000-0000-4000-8000-000000000003'',
+ ''d3100000-0000-4000-8000-000000000101'',''d3100000-0000-4000-8000-000000000102'',''d3100000-0000-4000-8000-000000000103''
+ ]::uuid[]),false);
+','[[:space:]]','','g') then '020 body matches; inspect attributes/grants' else 'present but body differs; review required' end,
+  'definition',pg_get_functiondef(p.oid),'volatility',p.provolatile,
+  'security_definer',p.prosecdef,'settings',p.proconfig,
+  'owner',pg_get_userbyid(p.proowner),'acl',p.proacl,
+  'anon_execute',has_function_privilege('anon',p.oid,'execute'),
+  'authenticated_execute',has_function_privilege('authenticated',p.oid,'execute'),
+  'service_execute',has_function_privilege('service_role',p.oid,'execute')) from helper p),jsonb_build_object('state','absent')),
+ 'approved_games',coalesce((select jsonb_build_object(
+  'kind',c.relkind,'owner',pg_get_userbyid(c.relowner),'acl',c.relacl,
+  'options',c.reloptions,
+  'definition',case when c.relkind='v' then pg_get_viewdef(c.oid,true) end,
+  'state',case when c.relkind<>'v' then 'unexpected relation type'
+    when pg_get_viewdef(c.oid,true) ilike '%beta_fixture_hidden%' and pg_get_viewdef(c.oid,true) ilike '%existing_listing%' then 'fixture filter present; earlier wrapper form; review security/updatability'
+    when pg_get_viewdef(c.oid,true) ilike '%beta_fixture_hidden%' then 'fixture filter present; review definition/options'
+    else 'fixture filter absent' end,
+  'privileges',(select jsonb_agg(jsonb_build_object('role',role_name,
+    'select',has_table_privilege(role_name,c.oid,'select'),
+    'insert',has_table_privilege(role_name,c.oid,'insert'),
+    'update',has_table_privilege(role_name,c.oid,'update'),
+    'delete',has_table_privilege(role_name,c.oid,'delete')))
+    from unnest(array['anon','authenticated','service_role']) role_name)) from view_state c),jsonb_build_object('state','absent')),
+ 'function_modifications',(select jsonb_agg(jsonb_build_object(
+  'signature',i.signature,
+  'state',case when i.oid is null then 'function absent'
+    when (length(i.definition)-length(replace(i.definition,i.replacement,'')))/length(i.replacement)=1
+      and (length(i.definition)-length(replace(i.definition,'beta_fixture_hidden','')))/length('beta_fixture_hidden')=
+          (length(i.replacement)-length(replace(i.replacement,'beta_fixture_hidden','')))/length('beta_fixture_hidden')
+      then 'intended predicate applied once'
+    when position('beta_fixture_hidden' in i.definition)>0 then 'partial, duplicate or different modification; review required'
+    when (length(i.definition)-length(replace(i.definition,i.needle,'')))/length(i.needle)=1 then '020 predicate absent; original anchor present'
+    else 'definition differs; review required' end,
+  'definition',i.definition,'settings',i.proconfig,'security_definer',i.prosecdef,'acl',i.proacl,
+  'anon_execute',case when i.oid is not null then has_function_privilege('anon',i.oid,'execute') end,
+  'authenticated_execute',case when i.oid is not null then has_function_privilege('authenticated',i.oid,'execute') end,
+  'service_execute',case when i.oid is not null then has_function_privilege('service_role',i.oid,'execute') end
+ ) order by i.signature) from inspected i)
+) as fixture_020_state;
+commit;
+```
+
+Current view options can be established from this result, but missing options cannot by themselves prove that earlier configured options were cleared: the earlier public-view inspection omitted reloptions. Do not invent or silently enable/disable security_invoker. If an earlier wrapper form is present, inspect its current options and updatability before preparing a direct-form replacement.
+
+**Verified now:** only the duplicate-helper error reported by the owner. **Unverified:** helper semantics/grants, view filter/options, and all ten predicate edits. The diagnostic query passed isolated PostgreSQL checks with absent objects and with an existing matching helper/filtered invoker-secured view; no live inspection result is claimed. No correction is prepared until this result establishes the actual differences; migration 020 is unchanged by this diagnostic task. Keep records, history, paused fixture statuses and layout title unchanged. Next: run the query, confirm `transaction_read_only=on`, export/share the complete one-row result, then prepare only the missing or incorrect fragments. No migration-history repair, writes, deployment, commit or push performed.
+
 ## Latest verification / prepared visibility change — 29 October 2026
+
+**020 corrected before application:** the earlier view wrapper was NOT safe for configured view options: isolated PostgreSQL showed bare CREATE OR REPLACE clearing `reloptions`, including `security_invoker`. The corrected file explicitly retains every existing option via a safely quoted WITH clause and extends the inspected Approved WHERE predicate directly. It also rejects an unexpected view definition. This retains automatic updatability/`check_option`; the old subquery wrapper could not retain an existing WITH CHECK OPTION. Do not run an earlier copied version of 020; use the current corrected file. Existing owner/ACL preservation was also verified.
+
+Focused caller review: `campaign_eligible` gates fresh claims/reclaims and open discovery, while owned unexpired claims use separate owner/status/deadline checks in `_lock_test_reservation` and private start/submit helpers. Available-game/details and share-access paths contain explicit own-claim alternatives; `get_my_test_reservations` retains owned history independently. The hidden-fixture predicate therefore blocks fresh/reclaimed fixture participation, not existing unexpired reservation completion/release. Existing expiry rules remain: expired reservations cannot start, submit or release via those RPCs, and hidden fixtures cannot be reclaimed; drafts/history are not erased. Do not describe expired claims as completable without reclaiming.
+
+Additional actual-RPC tests passed under authenticated roles on paused hidden fixture campaigns: own history/reservation list and game/details access; start then structured feedback submission; release; completion through the legacy submission overload with a null legacy deadline; expired-history retention plus unchanged start/submit/release rejection. A separate isolated view with `security_invoker=true`, `security_barrier=true`, `check_option=local` retained identical options/owner/ACL after the corrected view replacement, and anonymous access still failed on missing underlying-table permission (invoker enforcement was not weakened). `node tests/test-submission-corrections.mjs --visibility` passes all these and the existing exclusion/data-preservation checks. No live SQL or browser journey was run for this focused verification.
 
 **019 confirmed applied from owner-supplied policy output:** the deployed INSERT WITH CHECK now requires own `claimant_id`, `Pending`, null reviewer/note/timestamp fields and unset verification outcome. The UPDATE policy still requires an admin profile in both USING and WITH CHECK. This supersedes the earlier “019 application blocked” status below. No live synthetic claims were created; normal hosted claim/admin journey remains a smoke test.
 
