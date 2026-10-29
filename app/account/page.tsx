@@ -1,4 +1,5 @@
 "use client";
+import { TesterRankPanel, GenrePreferences } from "../components/TestingPolicy";
 
 import { useEffect, useState } from "react";
 import SiteHeader from "../components/SiteHeader";
@@ -206,6 +207,10 @@ export default function AccountPage() {
       <SiteHeader />
 
       <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+        {!loading && roles.includes("tester") && <>
+          <TesterRankPanel />
+          <GenrePreferences />
+        </>}
         <header>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">
             Playtested account
@@ -354,7 +359,7 @@ export default function AccountPage() {
                               {progression && totalXp !== null && (
                                 <span className="mt-3 flex flex-wrap items-center gap-2">
                                   <span className="rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">
-                                    Level {progression.level}
+                                    {role.id === "tester" ? "Tester experience" : `Level ${progression.level}`}
                                   </span>
 
                                   <span className="text-xs font-medium text-zinc-300">
@@ -362,9 +367,9 @@ export default function AccountPage() {
                                   </span>
 
                                   <span className="text-xs text-zinc-500">
-                                    {progression.currentLevelXp}/
+                                    {role.id !== "tester" && <>{progression.currentLevelXp}/
                                     {progression.requiredForNextLevel} XP to
-                                    next level
+                                    next level</>}
                                   </span>
                                 </span>
                               )}

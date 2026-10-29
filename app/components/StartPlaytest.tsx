@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase";
 
+import { CampaignPlaces, FeedbackSignal, DeveloperQualityReports, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
+import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
+import {useDeveloperPlan} from "./DeveloperPlan";
+import { FeedbackActions } from "./FeedbackActions";
+import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
+
 type GameSource = {
   importedGameId: string | null;
   approvedGameId: string | null;
@@ -128,6 +134,7 @@ function CampaignAllowancePanel({
   error: string;
   currentPlaytest: ExistingPlaytest | null;
 }) {
+  const {data:plan,loading:planLoading}=useDeveloperPlan();
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -136,15 +143,15 @@ function CampaignAllowancePanel({
     return () => window.clearInterval(timer);
   }, []);
 
-  const available = !loading && !error && eligibility !== null;
-  const used = available ? eligibility.tester_hub_rounds_last_30_days : null;
+  const available = !loading && !error && !planLoading && plan!==null && eligibility !== null;
+  const used = available ? plan!.rounds_used : null;
   const active = available && (
     eligibility.has_active_playtest ||
     currentPlaytest?.status === "open" ||
     currentPlaytest?.status === "paused"
   );
-  const nextAt = available && eligibility.next_tester_hub_at
-    ? Date.parse(eligibility.next_tester_hub_at)
+  const nextAt = available && plan?.next_at
+    ? Date.parse(plan.next_at)
     : NaN;
   const remaining = now !== null && Number.isFinite(nextAt)
     ? Math.max(0, nextAt - now)
@@ -157,7 +164,7 @@ function CampaignAllowancePanel({
     : hours > 0
       ? `${hours} ${hours === 1 ? "hour" : "hours"}`
       : `${Math.max(1, minutes)} ${minutes === 1 ? "minute" : "minutes"}`;
-  const eligible = available && eligibility.tester_hub_eligible && !active &&
+  const eligible = available && !plan?.next_at && !active &&
     (remaining === null || remaining === 0);
 
   return (
@@ -168,12 +175,12 @@ function CampaignAllowancePanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Tester Hub allowance · This game
+            Tester Hub allowance - Your account
           </p>
           <p className="mt-1 text-sm font-semibold text-zinc-100">
-            {loading ? "Checking launch allowance…" : !available
+            {loading || planLoading ? "Checking launch allowance…" : !available
               ? "Launch allowance unavailable"
-              : <>{used} of 2 launches used <span className="font-normal text-zinc-500">· Last 30 days</span></>}
+              : <>{used} of {plan?.launch_limit} {plan?.launch_limit===1?"launch":"launches"} used</>}
           </p>
         </div>
         {available && (
@@ -188,14 +195,17 @@ function CampaignAllowancePanel({
       </div>
       {available ? (
         <div className="mt-2 space-y-1 text-xs leading-5">
+          {used !== null && used > (plan?.launch_limit??0) && (
+            <p className="text-zinc-400">{used} earlier launches are recorded in this window. Existing campaigns are preserved; new launches follow your current account plan.</p>
+          )}
           {remaining !== null && remaining > 0 && (
             <p className="text-zinc-300">
               Next launch date in <span className="font-semibold text-zinc-100">{countdown}</span>
-              {" · "}<span className="text-zinc-500">{historyFormatDate(eligibility.next_tester_hub_at!)} (local time)</span>
+              {" · "}<span className="text-zinc-500">{historyFormatDate(plan!.next_at!)} (local time)</span>
             </p>
           )}
           {active && (
-            <p className="text-amber-200">Your current campaign must be closed before another can launch.</p>
+            <p className="text-amber-200">This game's current round must be closed before another round for this game.</p>
           )}
           {!active && !eligible && remaining === null && (
             <p className="text-zinc-400">{eligibility.tester_hub_reason || "Your launch allowance is currently restricted."}</p>
@@ -207,9 +217,9 @@ function CampaignAllowancePanel({
           <details className="pt-1 text-zinc-500">
             <summary className="w-fit cursor-pointer text-xs transition hover:text-zinc-200">How limits work</summary>
             <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
-              <p>Maximum two Tester Hub launches per game in a rolling 30-day window, with at least 14 days between launches. Drafts and community-only campaigns do not consume this allowance.</p>
+              <p>{plan?.launch_limit} Tester Hub {plan?.launch_limit===1?"launch":"launches"} across all your games per rolling {plan?plan.window_hours/24:30} days{plan?.gap_hours?`, with at least ${plan.gap_hours} elapsed hours between launches`:""}. Drafts and community-only campaigns do not consume the allowance.</p>
               <p>Only one draft, open or paused campaign can occupy this game’s active slot. Pausing keeps the slot; closing a campaign does not remove its launch from your allowance.</p>
-              <p>The date shown is supplied by your eligibility check. An active campaign must also be closed before another can launch.</p>
+              <p>The next date is the later applicable rolling allowance or launch-spacing restriction. Capacity permits recruitment, not guaranteed participation.</p>
               {!eligible && eligibility.tester_hub_reason && (
                 <p>Eligibility check: {eligibility.tester_hub_reason}</p>
               )}
@@ -424,11 +434,11 @@ function HistoricalPlaytestCard({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
               <p className="text-xs text-zinc-500">
-                Playtested target
+                Free Hub capacity
               </p>
               <p className="mt-1 text-sm font-semibold text-zinc-200">
                 {includesPlaytestedTesters(playtest.audience)
-                  ? `${playtest.targetTesters} testers`
+                  ? `${playtest.targetTesters} Tester Hub places`
                   : "Not used"}
               </p>
             </div>
@@ -493,7 +503,7 @@ function HistoricalPlaytestCard({
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <div className="rounded-lg border border-white/10 bg-black/20 p-3">
                           <p className="text-xs text-zinc-500">
-                            Participating
+                            Test history
                           </p>
                           <p className="mt-1 text-lg font-semibold text-zinc-100">
                             {independentProgress.total_testers}
@@ -551,6 +561,7 @@ function HistoricalPlaytestCard({
                                 key={response.test_id}
                                 className="rounded-lg border border-white/10 bg-black/20"
                               >
+                                <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3 text-sm font-semibold text-zinc-200">
                                   Playtested tester {index + 1}
                                 </summary>
@@ -877,36 +888,35 @@ const feedbackStressTestReviews: AcceptedIndependentFeedback[] = [
   },
 ];
 
+type FeedbackTab="said"|"follow-up"|"individual";
+const feedbackTabs=[["said","What testers said"],["follow-up","Feedback to follow up"],["individual","Individual responses"]] as const;
+
 function ResultsDashboard({
   playtest,
   communityResults,
   independentProgress,
-  acceptedFeedback,
+  acceptedFeedback,feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
   playtest: ExistingPlaytest;
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
 }) {
-  const writtenFeedbackRef = useRef<HTMLDetailsElement>(null);
-  const individualResponsesRef = useRef<HTMLDetailsElement>(null);
-  const issueResponsesRef = useRef<HTMLDivElement>(null);
-  const issueResponsesId = useId();
-  const individualResponsesId = useId();
-
-  function revealFeedback(section: "issues" | "individual") {
-    const details = section === "issues"
-      ? writtenFeedbackRef.current
-      : individualResponsesRef.current;
-    if (!details) return;
-    details.open = true;
-    window.requestAnimationFrame(() => {
-      const target = section === "issues" ? issueResponsesRef.current : details;
-      if (!target) return;
-      target.focus({ preventScroll: true });
-      target.scrollIntoView({ block: "start", behavior: "auto" });
-    });
-  }
+  const [localTab,setLocalTab]=useState<FeedbackTab>('said');
+  const [localActionFilter,setLocalActionFilter]=useState('All reports');
+  const activeTab=feedbackTab??localTab;
+  const changeTab=onFeedbackTabChange??setLocalTab;
+  const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
+  const feedbackPanelRef=useRef<HTMLElement>(null);
+  const issueResponsesRef=useRef<HTMLDivElement>(null);
+  const feedbackId=useId();
+  const issueResponsesId=useId();
+  const individualResponsesId=feedbackId+'-panel-individual';
+  const [navigation,setNavigation]=useState<{target:'issues'|'individual'}|null>(null);
+  const handledNavigation=useRef<typeof navigation>(null);
+  function revealFeedback(target:'issues'|'individual'){changeTab(target==='issues'?'said':'individual');setNavigation({target});}
+  useEffect(()=>{if(!navigation||navigation===handledNavigation.current)return;const target=navigation.target==='issues'?issueResponsesRef.current:feedbackPanelRef.current;if(!target)return;handledNavigation.current=navigation;target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});},[navigation,activeTab,playtest.id]);
 
   const isFeedbackStressTest =
     playtest.id === FEEDBACK_STRESS_TEST_PLAYTEST_ID;
@@ -921,7 +931,7 @@ function ResultsDashboard({
   const totalResponses = independentCount + communityCount;
   // Real accepted evidence only: preview fixtures never complete a target.
   const acceptedForTarget = independentProgress?.accepted_count ?? acceptedFeedback.length;
-  const targetReached = acceptedForTarget >= playtest.targetTesters;
+  const hasAcceptedFeedback = acceptedForTarget > 0;
 
 
   const averageGameplay = averageScore([
@@ -939,18 +949,7 @@ function ResultsDashboard({
     ...communityResponses.map((response) => response.overall_score),
   ]);
 
-  const playedHours = displayedAcceptedFeedback
-    .map((response) => response.hours_played)
-    .filter((value): value is number => value !== null);
-
-  const averageHours =
-    playedHours.length === 0
-      ? null
-      : Math.round(
-          (playedHours.reduce((total, value) => total + value, 0) /
-            playedHours.length) *
-            10
-        ) / 10;
+  const playtime = summarizePlaytime(displayedAcceptedFeedback.map(response => response.hours_played));
 
   const independentBugs = displayedAcceptedFeedback.filter(
     (response) => response.bugs_found?.trim()
@@ -1137,7 +1136,7 @@ function ResultsDashboard({
             </p>
           </div>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-3 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))]">
             <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4">
               <p className="text-xs text-zinc-500">Overall experience</p>
               <p className="mt-2 text-2xl font-semibold text-[#77f29b]">
@@ -1176,14 +1175,20 @@ function ResultsDashboard({
 
             <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.035] p-4">
               <p className="text-xs text-zinc-500">Average play time</p>
-              <p className="mt-2 text-2xl font-semibold text-amber-200">
-                {averageHours === null ? "—" : `${averageHours}h`}
+              <p className="mt-2 text-xl font-semibold text-amber-200 [overflow-wrap:normal]">
+                {formatPlaytime(playtime.averageHours)}
               </p>
               <p className="mt-1 text-[11px] text-zinc-600">
                 Playtested tester reports
               </p>
             </div>
+            <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.035] p-4">
+              <p className="text-xs text-zinc-500">Total reported playtime</p>
+              <p className="mt-2 text-xl font-semibold text-amber-200 [overflow-wrap:normal]">{formatPlaytime(playtime.totalHours)}</p>
+              <p className="mt-1 text-[11px] text-zinc-500">Sum of {playtime.count} accepted independent report{playtime.count === 1 ? "" : "s"} for this build</p>
+            </div>
           </div>
+
 
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
@@ -1240,16 +1245,17 @@ function ResultsDashboard({
           )}
 
           {includesPlaytestedTesters(playtest.audience) && (
-            <section className={`mt-4 rounded-xl border p-4 ${targetReached
+            <section className={`mt-4 rounded-xl border p-4 ${hasAcceptedFeedback
               ? "border-[#77f29b]/25 bg-[#77f29b]/[0.04]"
-              : "border-white/10 bg-black/20"}`} aria-label="Tester Hub feedback target">
+              : "border-white/10 bg-black/20"}`} aria-label="Tester Hub feedback progress">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
+                  <CampaignPlaces id={playtest.id} />
                   <p className="text-sm font-semibold text-zinc-100">
-                    {targetReached ? "Feedback target reached" : "Tester Hub feedback progress"}
+                    {hasAcceptedFeedback ? "Quality-accepted feedback" : "Tester Hub feedback progress"}
                   </p>
                   <p className="mt-1 text-xs text-zinc-400">
-                    {acceptedForTarget} accepted / {playtest.targetTesters} requested
+                    {acceptedForTarget} quality-accepted reports
                     {independentProgress && ` · ${independentProgress.total_testers} participating`}
                   </p>
                 </div>
@@ -1264,19 +1270,19 @@ function ResultsDashboard({
                   </button>
                 )}
               </div>
-              {targetReached && (
+              {hasAcceptedFeedback && (
                 <p className="mt-2 text-xs leading-5 text-zinc-400">
                   {playtest.status === "closed"
                     ? "This round is closed. Use the feedback to plan improvements for your next build."
-                    : "Review the feedback before deciding whether to close this round. Reaching the target does not close it automatically."}
+                    : "Review the feedback before deciding whether to close this round. Reports do not close the campaign automatically."}
                 </p>
               )}
               {independentProgress && (
                 <details className="mt-3 text-xs text-zinc-500">
                   <summary className="w-fit cursor-pointer hover:text-zinc-200">View tester status breakdown</summary>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-                    <span>Claimed: {independentProgress.claimed_count}</span>
-                    <span>In progress: {independentProgress.in_progress_count}</span>
+                    <span>Current reservations and places are shown above.</span>
+
                     <span>Submitted status: {independentProgress.submitted_count}</span>
                     <span className="text-[#77f29b]">Accepted: {independentProgress.accepted_count}</span>
                     <span>Not accepted: {independentProgress.rejected_count}</span>
@@ -1289,28 +1295,9 @@ function ResultsDashboard({
         </div>
       </details>
 
-      <details ref={writtenFeedbackRef} className="rounded-2xl border border-white/10 bg-black/20">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">What testers are saying</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">Open or hide the grouped written feedback for this build.</p>
-          </div>
-          <span className="text-lg text-zinc-400">±</span>
-        </summary>
-        <div className="border-t border-white/10 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
-              What testers are saying
-            </p>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">
-              Direct tester responses are kept intact. Nothing here rewrites or
-              summarises what a tester submitted.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+      <div role="tablist" aria-label="Build feedback" className="grid grid-cols-3 gap-1 border-b border-white/10">{feedbackTabs.map(([tab,label],index)=><button key={tab} ref={node=>{feedbackTabRefs.current[index]=node;}} type="button" role="tab" id={feedbackId+'-tab-'+tab} aria-selected={activeTab===tab} aria-controls={feedbackId+'-panel-'+tab} tabIndex={activeTab===tab?0:-1} onClick={()=>changeTab(tab)} onKeyDown={event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?2:(index+(event.key==='ArrowRight'?1:2))%3;changeTab(feedbackTabs[next][0]);feedbackTabRefs.current[next]?.focus();}} className={`min-w-0 whitespace-normal border-b-2 px-2 py-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300 sm:text-sm ${activeTab===tab?'border-emerald-300 text-emerald-200':'border-transparent text-zinc-400 hover:text-white'}`}>{label}</button>)}</div>
+      <section key={playtest.id+activeTab} ref={feedbackPanelRef} role="tabpanel" id={feedbackId+'-panel-'+activeTab} aria-labelledby={feedbackId+'-tab-'+activeTab} tabIndex={0} className="min-w-0 w-full scroll-mt-6 rounded-xl border border-white/10 p-4 focus-visible:outline-2 focus-visible:outline-emerald-300 sm:p-5">
+       {activeTab==='said'&&<><p className="text-xs leading-5 text-zinc-400">Verbatim feedback for this build, grouped without rewriting tester responses.</p><div className="mt-4 grid gap-4">
           <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#77f29b]">
               Enjoyed most
@@ -1388,7 +1375,7 @@ function ResultsDashboard({
 
           <div ref={issueResponsesRef} id={issueResponsesId} tabIndex={-1} className="scroll-mt-6 rounded-xl border border-red-300/20 bg-red-300/[0.035] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.13em] text-red-200">
-              Bugs & technical issues
+              Technical feedback
             </p>
             <p className="mt-2 text-xs leading-5 text-zinc-500">Verbatim issue notes. Different testers may describe the same issue; these are not counts of unique bugs.</p>
             <div className="mt-3 space-y-3">
@@ -1428,30 +1415,12 @@ function ResultsDashboard({
               )}
             </div>
           </div>
-        </div>
-        </div>
-      </details>
-
-      <details ref={individualResponsesRef} id={individualResponsesId} tabIndex={-1} className="scroll-mt-6 rounded-2xl border border-white/10 bg-black/20">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Individual responses</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">Open or hide the complete raw tester reports for this build.</p>
-          </div>
-          <span className="text-lg text-zinc-400">±</span>
-        </summary>
-        <div className="border-t border-white/10 p-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
-            Individual responses
-          </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
-            Open a response to see the tester&apos;s full report exactly as it
-            was submitted.
-          </p>
-        </div>
-
-        <div className="mt-4 space-y-3">
+        </div></>}
+       {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
+        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
+        ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
+      ]}/>}
+       {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
           {displayedAcceptedFeedback.map((response, index) => (
             <details
               key={response.test_id}
@@ -1519,7 +1488,7 @@ function ResultsDashboard({
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 xl:grid-cols-2">
+                <div className="mt-5 grid gap-3 ">
                   <div className="rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-[#77f29b]">
                       Enjoyed most
@@ -1664,9 +1633,8 @@ function ResultsDashboard({
               No accepted or completed responses yet.
             </div>
           )}
-        </div>
-        </div>
-      </details>
+        </div></>}
+      </section>
     </div>
   );
 }
@@ -1684,25 +1652,35 @@ function BuildResultsPanel({
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const [selectedId, setSelectedId] = useState(currentPlaytest.id);
+  const [feedbackTab,setFeedbackTab]=useState<FeedbackTab>("said");
+  const [actionFilters,setActionFilters]=useState<Record<string,string>>({});
+  const resultsRoot=useRef<HTMLElement>(null);
+  useEffect(()=>{const item=resultsRoot.current?.closest("[data-workspace-item]");if(!item)return;const observer=new MutationObserver(()=>{if(!item.hasAttribute("hidden"))setFeedbackTab("said");});observer.observe(item,{attributes:true,attributeFilter:["hidden"]});return()=>observer.disconnect();},[]);
   const [communityResults, setCommunityResults] = useState<CommunityPlaytestResults | null>(null);
   const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
   const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
+  const resultRequest = useRef(0);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
   const isCurrent = selectedPlaytest.id === currentPlaytest.id;
 
   async function loadResults(playtestId: string) {
+    const request=++resultRequest.current;
     setLoading(true);
     setError("");
 
     const supabase = createClient();
+    try {
     const [communityResult, progressResult, feedbackResult] = await Promise.all([
       supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
     ]);
+    if(request!==resultRequest.current)return;
+    setLoadedBuildId(playtestId);
 
     if (communityResult.error || progressResult.error || feedbackResult.error) {
       setCommunityResults(null);
@@ -1723,14 +1701,21 @@ function BuildResultsPanel({
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
     setLoading(false);
+    } catch {
+      if(request!==resultRequest.current)return;
+      setLoadedBuildId(playtestId);
+      setError("Results could not be loaded. Use Refresh results to try again.");
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     void loadResults(selectedId);
+    return()=>{resultRequest.current++;};
   }, [selectedId]);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+    <section ref={resultsRoot} data-build-feedback tabIndex={-1} className="scroll-mt-6 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
       <div className="border-b border-white/10 p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -1790,22 +1775,23 @@ function BuildResultsPanel({
       </div>
 
       <div className="p-5">
-        {error && (
+        {error && loadedBuildId===selectedPlaytest.id && (
           <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
             {error}
           </div>
         )}
 
-        {loading ? (
+        {loading || loadedBuildId!==selectedPlaytest.id ? (
           <p className="text-sm text-zinc-400">Loading results for this build...</p>
-        ) : (
+        ) : !error ? (
           <ResultsDashboard
+            feedbackTab={feedbackTab} onFeedbackTabChange={setFeedbackTab} actionFilter={actionFilters[selectedPlaytest.id]??"All reports"} onActionFilterChange={filter=>setActionFilters(previous=>({...previous,[selectedPlaytest.id]:filter}))}
             playtest={selectedPlaytest}
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
           />
-        )}
+        ) : null}
       </div>
     </section>
   );
@@ -1818,6 +1804,8 @@ export default function StartPlaytest({
   playtests,
 }: StartPlaytestProps) {
   const router = useRouter();
+  const capacityPolicy=useTestingCapacityPolicy();
+  const developerPlan=useDeveloperPlan();
 
   const [historicalPlaytests, setHistoricalPlaytests] = useState<
     ExistingPlaytest[]
@@ -1839,7 +1827,13 @@ export default function StartPlaytest({
   ]);
   const [audience, setAudience] =
     useState<PlaytestAudience>("playtested_testers");
-  const [targetTesters, setTargetTesters] = useState("5");
+  const [minimumRank,setMinimumRank] = useState(0);
+  const [audienceAvailability,setAudienceAvailability] = useState<AudienceAvailability|null>(null);
+  const [savedAudienceKey,setSavedAudienceKey] = useState<string|null>(null);
+  const [settingsCampaignId,setSettingsCampaignId] = useState<string|null>(null);
+  const [settingsError,setSettingsError] = useState("");
+  const [testingGenre,setTestingGenre] = useState("");
+  const [genreRestricted,setGenreRestricted] = useState(false);
   const [estimatedMinutes, setEstimatedMinutes] = useState("30");
   const [releaseLabel, setReleaseLabel] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1863,8 +1857,12 @@ export default function StartPlaytest({
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
   const [eligibilityError, setEligibilityError] = useState("");
 
-  const buildLocked = acceptedIndependentFeedback.length > 0;
+  const [evidenceLocked,setEvidenceLocked] = useState(false);
+  const buildLocked = evidenceLocked || acceptedIndependentFeedback.length > 0;
   const testerHubSelected = includesPlaytestedTesters(audience);
+  const selectedAudienceKey = audienceSelectionKey(minimumRank,testingGenre,genreRestricted);
+  const needsAudienceCheck = testerHubSelected && (!existingPlaytest || existingPlaytest.status !== "open" || !includesPlaytestedTesters(existingPlaytest.audience) || savedAudienceKey !== selectedAudienceKey);
+  const audienceBlocked = needsAudienceCheck && (audienceAvailability?.key !== selectedAudienceKey || !audienceAvailability.available);
   const testerHubBlocked =
     testerHubSelected && (
       eligibilityLoading ||
@@ -1873,6 +1871,7 @@ export default function StartPlaytest({
       !eligibility.tester_hub_eligible
     );
 
+  useEffect(()=>{if(!existingPlaytest || existingPlaytest.status === "closed")return; let active=true;void createClient().rpc("get_campaign_testing_details",{p_id:existingPlaytest.id}).then(({data,error})=>{if(active){setSettingsError(error?.message||(!data?"Campaign eligibility settings unavailable.":""));if(data){setSavedAudienceKey(audienceSelectionKey(data.minimum_rank,data.testing_genre||"",data.genre_restricted));setEvidenceLocked(data.build_locked);setMinimumRank(data.minimum_rank);setTestingGenre(data.testing_genre||"");setGenreRestricted(data.genre_restricted);setSettingsCampaignId(existingPlaytest.id);}}});return()=>{active=false;};},[existingPlaytest]);
   useEffect(() => {
     let active = true;
 
@@ -1914,6 +1913,7 @@ export default function StartPlaytest({
     gameSource.submissionId,
     existingPlaytest?.id,
     existingPlaytest?.status,
+    developerPlan.data,
   ]);
 
   useEffect(() => {
@@ -2040,7 +2040,6 @@ export default function StartPlaytest({
         : ["Overall experience"]
     );
     setAudience(existingPlaytest.audience);
-    setTargetTesters(String(existingPlaytest.targetTesters));
     setEstimatedMinutes(
       existingPlaytest.estimatedMinutes === null
         ? ""
@@ -2066,9 +2065,9 @@ export default function StartPlaytest({
     setAccessLink("");
     setAccessType("steam_demo");
     setInstructions("");
+    setMinimumRank(0); setTestingGenre(""); setGenreRestricted(false);
     setFocusAreas(["Overall experience"]);
     setAudience("playtested_testers");
-    setTargetTesters("5");
     setEstimatedMinutes("30");
     setReleaseLabel("");
     clearMessage();
@@ -2131,21 +2130,7 @@ export default function StartPlaytest({
       };
     }
 
-    const target = Number(targetTesters);
-
-    if (
-      !Number.isInteger(target) ||
-      target < 1 ||
-      target > 100
-    ) {
-      return {
-        error: "Target testers must be between 1 and 100.",
-        accessLink: "",
-        instructions: "",
-        target: 0,
-        minutes: null as number | null,
-      };
-    }
+    const target = 2;
 
     const minutes =
       estimatedMinutes.trim() === ""
@@ -2277,6 +2262,7 @@ export default function StartPlaytest({
       return;
     }
 
+    if (publish && audienceBlocked) { setMessage(audienceAvailability?.key === selectedAudienceKey ? audienceAvailability.message : "Wait for the tester availability check before publishing."); setMessageType("error"); return; }
     if (publish && includesPlaytestedTesters(audience)) {
       if (eligibilityLoading || eligibilityError || !eligibility) {
         setMessage("Your launch allowance could not be confirmed. Reload the page and try again.");
@@ -2290,6 +2276,7 @@ export default function StartPlaytest({
       }
     }
 
+    if(!capacityPolicy){setMessage("Capacity rules are unavailable. Enable the reservation migration before creating a campaign.");setMessageType("error");return;}
     setSaving(true);
 
     const supabase = createClient();
@@ -2305,7 +2292,8 @@ export default function StartPlaytest({
         p_instructions: validated.instructions,
         p_focus_areas: focusAreas,
         p_audience: audience,
-        p_target_testers: validated.target,
+        p_target_testers: capacityPolicy?.places ?? 0,
+        p_minimum_rank: minimumRank, p_testing_genre: testingGenre || null, p_genre_restricted: genreRestricted,
         p_estimated_minutes: validated.minutes,
         p_release_label:
           releaseLabel.trim() === ""
@@ -2325,10 +2313,13 @@ export default function StartPlaytest({
     setSaving(false);
     setOpen(false);
     resetNewPlaytestForm();
+    await developerPlan.refresh();
     router.refresh();
   }
 
   async function updatePlaytest(status: PlaytestStatus) {
+    if (status === "open" && audienceBlocked) { setMessage(audienceAvailability?.key === selectedAudienceKey ? audienceAvailability.message : "Wait for the tester availability check before publishing."); setMessageType("error"); return; }
+    if (existingPlaytest && settingsCampaignId !== existingPlaytest.id) { setMessage(settingsError || "Wait for campaign eligibility settings to load before saving."); setMessageType("error"); return; }
     if (!existingPlaytest) {
       return;
     }
@@ -2356,7 +2347,8 @@ export default function StartPlaytest({
         p_instructions: validated.instructions,
         p_focus_areas: focusAreas,
         p_audience: audience,
-        p_target_testers: validated.target,
+        p_target_testers: existingPlaytest?.targetTesters ?? 0,
+        p_minimum_rank: minimumRank, p_testing_genre: testingGenre || null, p_genre_restricted: genreRestricted,
         p_estimated_minutes: validated.minutes,
         p_release_label: releaseLabel.trim(),
         p_status: status,
@@ -2386,6 +2378,7 @@ export default function StartPlaytest({
               : "Playtest updated."
     );
     setMessageType("success");
+    await developerPlan.refresh();
     router.refresh();
   }
 
@@ -2487,6 +2480,7 @@ export default function StartPlaytest({
                 </span>
               </button>
 
+              <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} publishedTargeting={existingPlaytest?.publishedAt&&savedAudienceKey?JSON.parse(savedAudienceKey) as [number,string,boolean]:undefined} />
               {setupExpanded && (
                 <form
                   className="space-y-6 border-t border-white/10 p-5"
@@ -2684,24 +2678,14 @@ export default function StartPlaytest({
                   {includesPlaytestedTesters(audience) && (
                     <label className="block">
                       <span className="text-sm font-medium text-zinc-200">
-                        Target Playtested testers
+                        {existingPlaytest?.targetTesters ?? capacityPolicy?.places ?? "Checking"} Tester Hub places
                       </span>
 
                       <span className="mt-1 block text-xs leading-5 text-zinc-500">
                         Community responses are counted separately.
                       </span>
 
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        max="100"
-                        value={targetTesters}
-                        onChange={(event) =>
-                          setTargetTesters(event.target.value)
-                        }
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-                      />
+                      <PlacesRules/>
                     </label>
                   )}
 
@@ -2780,7 +2764,7 @@ export default function StartPlaytest({
                   <div className="flex flex-wrap gap-3 border-t border-white/10 pt-5">
                     <button
                       type="submit"
-                      disabled={saving}
+                      disabled={saving || audienceBlocked}
                       className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {saving
@@ -2804,7 +2788,7 @@ export default function StartPlaytest({
                     {existingPlaytest.status === "paused" && (
                       <button
                         type="button"
-                        disabled={saving}
+                        disabled={saving || audienceBlocked}
                         onClick={() => void updatePlaytest("open")}
                         className="rounded-lg border border-[#77f29b]/25 px-5 py-3 text-sm font-semibold text-[#77f29b] transition hover:border-[#77f29b]/50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -2890,6 +2874,8 @@ export default function StartPlaytest({
             <button
               type="button"
               onClick={() => setResultsExpanded((current) => !current)}
+              data-results-toggle
+              aria-expanded={resultsExpanded}
               className="flex w-full items-center justify-between gap-4 p-5 text-left"
             >
               <div>
@@ -2906,6 +2892,7 @@ export default function StartPlaytest({
               </span>
             </button>
 
+            <DeveloperQualityReports campaignId={existingPlaytest.id} />
             {resultsExpanded && (
               <div className="border-t border-white/10 p-5">
                 <BuildResultsPanel
@@ -2988,17 +2975,13 @@ export default function StartPlaytest({
           <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
               {includesPlaytestedTesters(existingPlaytest.audience)
-                ? "Playtested target"
+                ? "Tester Hub capacity"
                 : "Target"}
             </p>
 
             <p className="mt-2 text-sm font-medium text-zinc-200">
               {includesPlaytestedTesters(existingPlaytest.audience)
-                ? `${existingPlaytest.targetTesters} ${
-                    existingPlaytest.targetTesters === 1
-                      ? "tester"
-                      : "testers"
-                  }`
+                ? `${existingPlaytest.targetTesters} Tester Hub places`
                 : "Community testers"}
             </p>
           </div>
@@ -3315,24 +3298,15 @@ export default function StartPlaytest({
           </select>
         </label>
 
+        <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
+          {includesPlaytestedTesters(audience) && (<label className="block">
             <span className="text-sm font-medium text-zinc-200">
-              Target Playtested testers
+              {capacityPolicy?.places ?? "Checking"} Tester Hub places
             </span>
 
-            <input
-              type="number"
-              required
-              min="1"
-              max="100"
-              value={targetTesters}
-              onChange={(event) =>
-                setTargetTesters(event.target.value)
-              }
-              className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-            />
-          </label>
+            <PlacesRules/>
+          </label>)}
 
           <label className="block">
             <span className="text-sm font-medium text-zinc-200">
@@ -3398,7 +3372,7 @@ export default function StartPlaytest({
         <div className="flex flex-wrap gap-3 border-t border-white/10 pt-5">
           <button
             type="submit"
-            disabled={saving || testerHubBlocked}
+            disabled={saving || testerHubBlocked || audienceBlocked}
             className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving

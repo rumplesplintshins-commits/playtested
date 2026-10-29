@@ -1,9 +1,11 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import SiteHeader from "../components/SiteHeader";
+import GameLinksEngagement from "../components/GameLinksEngagement";
 import StartPlaytest from "../components/StartPlaytest";
+import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
+import {submissionIssues,completenessMessage} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
 
 type ClaimStatus =
@@ -31,6 +33,7 @@ type PlaytestAccessType =
   | "other";
 
 type SubmissionRow = {
+  review_reason: string | null;
   id: string;
   title: string;
   genre: string;
@@ -228,6 +231,8 @@ type DeveloperReception = {
 };
 
 type LinkedGame = {
+  approvedClaimIds: string[];
+  identity: string;
   linkId: string;
   gameId: string;
   importedGameId: string | null;
@@ -254,7 +259,7 @@ type LinkedGame = {
 
 function LoadingDashboard() {
   return (
-    <p className="mt-8 text-zinc-400">
+    <p role="status" className="mt-8 text-zinc-400">
       Loading your developer dashboard...
     </p>
   );
@@ -542,8 +547,8 @@ async function DeveloperDashboard() {
       .eq("id", user.id)
       .single();
 
+  if(profileError) return <WorkspaceRetry message="Could not verify your developer access. Please retry."/>;
   if (
-    profileError ||
     !profile ||
     !Array.isArray(profile.roles) ||
     !profile.roles.includes("developer")
@@ -561,7 +566,7 @@ async function DeveloperDashboard() {
   ] = await Promise.all([
     supabase
       .from("game_submissions")
-      .select("id, title, genre, status, submitted_at")
+      .select("*")
       .eq("developer_id", user.id)
       .order("submitted_at", { ascending: false }),
 
@@ -661,9 +666,7 @@ async function DeveloperDashboard() {
     );
 
     return (
-      <p className="mt-8 text-red-400">
-        Could not load your submissions. Please try again.
-      </p>
+      <WorkspaceRetry message={"Could not load your submissions. Please try again."} />
     );
   }
 
@@ -674,9 +677,7 @@ async function DeveloperDashboard() {
     );
 
     return (
-      <p className="mt-8 text-red-400">
-        Could not load your developer claims. Please try again.
-      </p>
+      <WorkspaceRetry message={"Could not load your developer claims. Please try again."} />
     );
   }
 
@@ -687,9 +688,7 @@ async function DeveloperDashboard() {
     );
 
     return (
-      <p className="mt-8 text-red-400">
-        Could not load your linked games. Please try again.
-      </p>
+      <WorkspaceRetry message={"Could not load your linked games. Please try again."} />
     );
   }
 
@@ -700,22 +699,7 @@ async function DeveloperDashboard() {
     );
 
     return (
-      <p className="mt-8 text-red-400">
-        Could not load your playtests. Please try again.
-      </p>
-    );
-  }
-
-  if (pulseJobsError) {
-    console.error(
-      "Could not load PULSE diagnostic history:",
-      pulseJobsError
-    );
-
-    return (
-      <p className="mt-8 text-red-400">
-        Could not load your PULSE diagnostic history. Please try again.
-      </p>
+      <WorkspaceRetry message={"Could not load your playtests. Please try again."} />
     );
   }
 
@@ -769,7 +753,7 @@ async function DeveloperDashboard() {
     importedIds.length > 0
       ? supabase
           .from("imported_games")
-          .select("id, title, developer_name, genre, image_url")
+          .select("id, title, developer_name, genre, image_url, steam_app_id")
           .in("id", importedIds)
       : Promise.resolve({
           data: [] as {
@@ -785,7 +769,7 @@ async function DeveloperDashboard() {
     approvedIds.length > 0
       ? supabase
           .from("approved_games")
-          .select("id, title, developer_name, genre, image_url")
+          .select("id, title, developer_name, genre, image_url, steam_app_id")
           .in("id", approvedIds)
       : Promise.resolve({
           data: [] as {
@@ -801,7 +785,7 @@ async function DeveloperDashboard() {
     submissionIds.length > 0
       ? supabase
           .from("game_submissions")
-          .select("id, title, developer_name, genre, image_url")
+          .select("id, title, developer_name, genre, image_url, steam_app_id")
           .in("id", submissionIds)
       : Promise.resolve({
           data: [] as {
@@ -845,6 +829,7 @@ async function DeveloperDashboard() {
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
+        steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
       },
     ])
   );
@@ -858,6 +843,7 @@ async function DeveloperDashboard() {
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
+        steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
       },
     ])
   );
@@ -871,6 +857,7 @@ async function DeveloperDashboard() {
           game.developer_name ?? "Unknown developer",
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
+        steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
       },
     ])
   );
@@ -913,6 +900,12 @@ async function DeveloperDashboard() {
 
   const linkedGamesWithoutPlaytests = rawLinks.map(
     (link) => {
+      const approvedClaimIds=claims.filter(claim=>claim.status==="Approved"
+        && (!link.source_claim_id || claim.id===link.source_claim_id)
+        && ((!!link.imported_game_id && claim.imported_game_id===link.imported_game_id)
+          || (!!link.approved_game_id && claim.approved_game_id===link.approved_game_id)
+          || (!!link.submission_id && claim.submission_id===link.submission_id)))
+        .map(claim=>claim.id);
       if (link.imported_game_id) {
         const target = importedMap.get(
           link.imported_game_id
@@ -920,6 +913,8 @@ async function DeveloperDashboard() {
 
         return {
           linkId: link.id,
+          approvedClaimIds,
+          identity: target?.steamAppId ? `steam:${target.steamAppId}` : `game:${link.imported_game_id}`,
           gameId: link.imported_game_id,
           importedGameId: link.imported_game_id,
           approvedGameId: null,
@@ -943,6 +938,8 @@ async function DeveloperDashboard() {
 
         return {
           linkId: link.id,
+          approvedClaimIds,
+          identity: target?.steamAppId ? `steam:${target.steamAppId}` : `game:${link.approved_game_id}`,
           gameId: link.approved_game_id,
           importedGameId: null,
           approvedGameId: link.approved_game_id,
@@ -965,6 +962,8 @@ async function DeveloperDashboard() {
 
       return {
         linkId: link.id,
+          approvedClaimIds,
+        identity: target?.steamAppId ? `steam:${target.steamAppId}` : `game:${link.submission_id||link.id}`,
         gameId: link.submission_id ?? link.id,
         importedGameId: null,
         approvedGameId: null,
@@ -982,14 +981,14 @@ async function DeveloperDashboard() {
     }
   );
 
-  const linkedGames: LinkedGame[] =
+  const linkedGameCandidates: LinkedGame[] =
     linkedGamesWithoutPlaytests
       .map((game) => {
         const playtests = findPlaytestsForGame(game, rawPlaytests);
 
         return {
           ...game,
-          latestPlaytest: playtests[0] ?? null,
+          latestPlaytest: playtests.find(p=>p.status!=="closed") ?? playtests[0] ?? null,
           playtests,
           currentReception: receptionForGame(game, rawReceptions),
         };
@@ -1023,15 +1022,15 @@ async function DeveloperDashboard() {
         );
       });
 
-  const openPlaytests = rawPlaytests.filter(
-    (playtest) => playtest.status === "open"
-  ).length;
-
-  const attentionClaims = claims.filter(
-    (claim) =>
-      claim.status === "Pending" ||
-      claim.status === "Needs More Information"
-  );
+  const linkedGames = Array.from(linkedGameCandidates.reduce((groups,game)=>{
+    const key=Array.from(groups.entries()).find(([,other])=>other.gameId===game.gameId||other.identity===game.identity)?.[0]||game.identity;
+    const previous=groups.get(key);
+    if(!previous){groups.set(key,game);return groups;}
+    const playtests=Array.from(new Map([...previous.playtests,...game.playtests].map(p=>[p.id,p])).values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime());
+    const active=playtests.find(p=>p.status!=="closed");
+    const representative=active&&game.playtests.some(p=>p.id===active.id)?game:previous;
+    groups.set(key,{...representative,approvedClaimIds:[...new Set([...previous.approvedClaimIds,...game.approvedClaimIds])],playtests,latestPlaytest:active||playtests[0]||null,currentReception:representative.currentReception||previous.currentReception||game.currentReception});return groups;
+  },new Map<string,LinkedGame>()).values());
 
   const developerXp =
     typeof profile.developer_xp === "number"
@@ -1052,96 +1051,9 @@ async function DeveloperDashboard() {
     (job) => job.status === "COMPLETE"
   );
 
-  const latestPulseRun = completedPulseRuns[0] ?? null;
-  const latestPulseSummary = getPulseReportSummary(latestPulseRun?.report_json);
-  const previousPulseJobs = latestPulseRun
-    ? pulseJobs.filter((job) => job.id !== latestPulseRun.id)
-    : pulseJobs;
-
-  return (
-    <>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm text-zinc-400">
-            My games
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-[#77f29b]">
-            {linkedGames.length}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm text-zinc-400">
-            Open playtests
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-[#77f29b]">
-            {openPlaytests}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm text-zinc-400">
-            PULSE runs
-          </p>
-
-          <p className="mt-2 text-3xl font-bold">
-            {completedPulseRuns.length}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <p className="text-sm text-zinc-400">
-            Claims needing attention
-          </p>
-
-          <p className="mt-2 text-3xl font-bold text-sky-200">
-            {attentionClaims.length}
-          </p>
-        </div>
-      </div>
-
-      <section className="mt-10">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-              Developer games
-            </p>
-
-            <h2 className="mt-2 text-2xl font-bold">
-              My Games
-            </h2>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-              Manage your games and run structured
-              playtests with real players.
-            </p>
-          </div>
-
-          <Link
-            href="/submit"
-            className="rounded-lg bg-[#77f29b] px-5 py-3 font-semibold text-black transition hover:bg-[#91ffb0]"
-          >
-            Add or claim a game
-          </Link>
-        </div>
-
-        {linkedGames.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-8">
-            <h3 className="text-lg font-semibold">
-              No games linked to your developer account yet
-            </h3>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Add a new game or claim an existing Playtested
-              catalogue listing. Once your developer relationship
-              is approved, the game will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-5">
-            {linkedGames.map((game) => {
+  return <DeveloperWorkspace showPlan feedbackCountsReady={!receptionError}
+ warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
+ games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",context:game.relationship+(game.latestPlaytest?.releaseLabel?` ? ${game.latestPlaytest.releaseLabel}`:""),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,feedback:receptionError?undefined:game.currentReception?`${game.currentReception.acceptedTests} accepted independent ? ${game.currentReception.releaseLabel}. Community totals in results.`:undefined,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1149,11 +1061,11 @@ async function DeveloperDashboard() {
               );
 
               return (
-              <details
+              <article
                 key={game.linkId}
                 className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
               >
-                <summary className="cursor-pointer list-none p-5 sm:p-6">
+                <header className="cursor-pointer list-none p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex min-w-0 items-start gap-4">
                     <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30">
@@ -1194,9 +1106,7 @@ async function DeveloperDashboard() {
                       >
                         {game.verificationStatus}
                       </span>
-                      <span className="text-sm text-zinc-500 transition group-open:rotate-180">
-                        ▼
-                      </span>
+
                     </div>
                   </div>
 
@@ -1244,7 +1154,7 @@ async function DeveloperDashboard() {
                     <span>·</span>
                     <span>{hasPulse ? "PULSE complete" : "No PULSE run"}</span>
                   </div>
-                </summary>
+                </header>
 
                 <div className="border-t border-white/10 p-5 sm:p-6">
                   <div className="grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
@@ -1269,17 +1179,17 @@ async function DeveloperDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-5 max-w-2xl rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] p-4">
+                {game.approvedClaimIds.length>0 && <div className="mt-5 max-w-2xl rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] p-4">
                   <p className="font-semibold text-[#77f29b]">
-                    Developer access active
+                    Developer claim approved
                   </p>
 
                   <p className="mt-2 text-sm leading-6 text-zinc-400">
-                    Your developer relationship with this game is
-                    approved. Playtesting is separate from
+                    Your developer claim for this game was approved.
+                    Playtesting is separate from
                     Playtested assessment and verification.
                   </p>
-                </div>
+                </div>}
 
                   <StartPlaytest
                     gameTitle={game.gameTitle}
@@ -1291,426 +1201,43 @@ async function DeveloperDashboard() {
                     existingPlaytest={game.latestPlaytest}
                     playtests={game.playtests}
                   />
+                  <GameLinksEngagement source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
                 </div>
-              </details>
+              </article>
               );
-            })}
-          </div>
-        )}
-      </section>
+            })(game)}))}
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<>{((game) => (
+              <article
+                key={game.id}
+                className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      {game.title}
+                    </h3>
 
-      <details className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-4 sm:px-6">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
-                PULSE diagnostics
-              </p>
-              {latestPulseRun && (
-                <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/10 px-2 py-0.5 text-[11px] font-semibold text-[#77f29b]">
-                  Latest complete
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-sm text-zinc-400">
-              {latestPulseRun
-                ? `${completedPulseRuns.length} completed run${completedPulseRuns.length === 1 ? "" : "s"} · ${latestPulseSummary.available ? latestPulseSummary.summary : "Latest report stored"}`
-                : "Automated build, launch, stability and security diagnostics."}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-3 text-sm text-zinc-500">
-            <span>{pulseJobs.length} total</span>
-            <span className="transition group-open:rotate-180">▼</span>
-          </div>
-        </summary>
-
-        <div className="border-t border-white/10 px-5 py-5 sm:px-6">
-          {latestPulseRun ? (
-            <>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                    Latest run
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold text-zinc-100">
-                    {submissionTitleById.get(latestPulseRun.submission_id) ?? "Submitted game"}
-                  </h3>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    {latestPulseRun.completed_at
-                      ? formatDate(latestPulseRun.completed_at)
-                      : "Completion time not recorded"}
-                    {latestPulseRun.worker_version
-                      ? ` · Worker ${latestPulseRun.worker_version}`
-                      : ""}
-                  </p>
-                </div>
-
-                <span className="rounded-md border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-1.5 text-xs font-semibold text-[#77f29b]">
-                  COMPLETE
-                </span>
-              </div>
-
-              {latestPulseSummary.available ? (
-                <>
-                  <div className="mt-5 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] px-4 py-3">
-                    <p className="font-medium text-zinc-100">
-                      {latestPulseSummary.summary}
+                    <p className="mt-1 text-sm text-zinc-400">
+                      {game.genre}
                     </p>
-                    <p className="mt-1 text-sm text-zinc-500">
-                      {latestPulseSummary.issueCount === 0
-                        ? "PULSE found no repeatable technical failures in this run."
-                        : `${latestPulseSummary.issueCount} technical warning${latestPulseSummary.issueCount === 1 ? "" : "s"} recorded.`}
+
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Submitted{" "}
+                      {formatDate(game.submitted_at)}
                     </p>
                   </div>
 
-                  <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="bg-[#090b0a] p-4">
-                      <p className="text-xs uppercase tracking-wider text-zinc-600">Checks</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-100">
-                        {latestPulseSummary.successfulLoads}/{latestPulseSummary.totalChecks}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">Build loads completed</p>
-                    </div>
-                    <div className="bg-[#090b0a] p-4">
-                      <p className="text-xs uppercase tracking-wider text-zinc-600">Launch</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-100">
-                        {latestPulseSummary.launchPassed}/{latestPulseSummary.launchTotal}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">Successful starts</p>
-                    </div>
-                    <div className="bg-[#090b0a] p-4">
-                      <p className="text-xs uppercase tracking-wider text-zinc-600">Restart</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-100">
-                        {latestPulseSummary.restartPassed}/{latestPulseSummary.restartTotal}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">Successful restarts</p>
-                    </div>
-                    <div className="bg-[#090b0a] p-4">
-                      <p className="text-xs uppercase tracking-wider text-zinc-600">Runtime issues</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-100">
-                        {latestPulseSummary.runtimeErrors +
-                          latestPulseSummary.failedRequests +
-                          latestPulseSummary.stalls +
-                          latestPulseSummary.workerErrors}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">Errors, requests, stalls</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                    <div className={`rounded-lg border p-3 ${
-                      latestPulseSummary.securityBlocked
-                        ? "border-red-400/30 bg-red-400/[0.07]"
-                        : "border-[#77f29b]/25 bg-[#77f29b]/[0.055]"
-                    }`}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Malware scan
-                      </p>
-                      <p className={`mt-1 text-xs font-semibold ${
-                        latestPulseSummary.securityBlocked ? "text-red-300" : "text-[#77f29b]"
-                      }`}>
-                        {latestPulseSummary.securityBlocked
-                          ? "Blocked"
-                          : latestPulseSummary.securityStatus || "No known threats detected"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Package
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-zinc-200">
-                        {latestPulseSummary.packageValid ? "Valid" : "Not confirmed"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Entry point
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-zinc-200">
-                        {latestPulseSummary.entryPointFound ? "Found" : "Not confirmed"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Immediate crashes
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-zinc-200">
-                        {latestPulseSummary.immediateCrashes}
-                      </p>
-                    </div>
-
-                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Median load
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-zinc-200">
-                        {latestPulseSummary.medianLoadMs
-                          ? `${latestPulseSummary.medianLoadMs} ms`
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-[11px] text-zinc-600">
-                    PULSE run duration:{" "}
-                    {latestPulseSummary.durationMs
-                      ? `${(latestPulseSummary.durationMs / 1000).toFixed(1)} seconds`
-                      : "—"}
-                  </p>
-                </>
-              ) : (
-                <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
-                  This is a legacy PULSE run. The technical run was completed, but the full report was not stored with the job.
+                  <span
+                    className={`rounded-md border px-3 py-2 text-sm ${submissionStatusClasses(
+                      game.status
+                    )}`}
+                  >
+                    {game.status}
+                  </span>
                 </div>
-              )}
-
-              {previousPulseJobs.length > 0 && (
-                <details className="mt-5 overflow-hidden rounded-lg border border-white/10 bg-black/10">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-zinc-300">
-                    <span>Previous runs</span>
-                    <span className="rounded-md border border-orange-400/40 bg-orange-400/10 px-2.5 py-1 text-xs font-bold text-orange-200">
-                      {previousPulseJobs.length}
-                    </span>
-                  </summary>
-                  <div className="space-y-3 border-t border-white/10 p-3">
-                    {previousPulseJobs.slice(0, 10).map((job) => {
-                      const summary = getPulseReportSummary(job.report_json);
-                      const runtimeIssues =
-                        summary.runtimeErrors +
-                        summary.failedRequests +
-                        summary.stalls +
-                        summary.workerErrors;
-
-                      return (
-                        <div
-                          key={job.id}
-                          className="rounded-lg border border-white/10 bg-black/20 p-4"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium text-zinc-200">
-                                {submissionTitleById.get(job.submission_id) ?? "Submitted game"}
-                              </p>
-                              <p className="mt-1 text-xs text-zinc-600">
-                                {job.completed_at
-                                  ? formatDate(job.completed_at)
-                                  : formatDate(job.created_at)}
-                                {job.worker_version ? ` · ${job.worker_version}` : ""}
-                                {job.technical_run_id
-                                  ? ` · Run ${job.technical_run_id.slice(0, 8).toUpperCase()}`
-                                  : ""}
-                              </p>
-                            </div>
-
-                            <span
-                              className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${pulseStatusClasses(
-                                job.status
-                              )}`}
-                            >
-                              {job.status}
-                            </span>
-                          </div>
-
-                          {summary.available ? (
-                            <>
-                              <p className="mt-3 text-sm font-medium text-zinc-300">
-                                {summary.summary}
-                              </p>
-
-                              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
-                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Checks</p>
-                                  <p className="mt-1 font-semibold text-zinc-100">
-                                    {summary.successfulLoads}/{summary.totalChecks}
-                                  </p>
-                                </div>
-                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
-                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Launch</p>
-                                  <p className="mt-1 font-semibold text-zinc-100">
-                                    {summary.launchPassed}/{summary.launchTotal}
-                                  </p>
-                                </div>
-                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
-                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Restart</p>
-                                  <p className="mt-1 font-semibold text-zinc-100">
-                                    {summary.restartPassed}/{summary.restartTotal}
-                                  </p>
-                                </div>
-                                <div className="rounded-md border border-white/[0.07] bg-white/[0.02] p-3">
-                                  <p className="text-[10px] uppercase tracking-wider text-zinc-600">Runtime issues</p>
-                                  <p className="mt-1 font-semibold text-zinc-100">{runtimeIssues}</p>
-                                </div>
-                              </div>
-
-                              <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-zinc-500">
-                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
-                                  Malware: {summary.securityBlocked ? "Blocked" : summary.securityStatus || "No known threats detected"}
-                                </span>
-                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
-                                  Package: {summary.packageValid ? "Valid" : "Not confirmed"}
-                                </span>
-                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
-                                  Entry: {summary.entryPointFound ? "Found" : "Not confirmed"}
-                                </span>
-                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
-                                  Crashes: {summary.immediateCrashes}
-                                </span>
-                                <span className="rounded-md bg-white/[0.03] px-2 py-1">
-                                  {summary.durationMs ? `${(summary.durationMs / 1000).toFixed(1)}s` : "Duration —"}
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <p className="mt-3 text-xs text-zinc-600">
-                              Full technical report was not stored for this legacy run.
-                            </p>
-                          )}
-
-                          {job.error_message && (
-                            <p className="mt-3 text-xs text-red-300">
-                              {job.error_message}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </details>
-              )}
-            </>
-          ) : (
-            <div className="rounded-lg border border-white/10 bg-black/20 p-5">
-              <p className="font-semibold text-zinc-200">No PULSE diagnostics yet</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
-                PULSE runs will appear here after you submit a build for technical diagnostics.
-              </p>
-            </div>
-          )}
-        </div>
-      </details>
-
-      <details className="group mt-5 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-r from-white/[0.025] to-[#77f29b]/[0.025]">
-        <summary className="cursor-pointer list-none px-5 py-5 sm:px-6 sm:py-6">
-          <div className="flex items-start justify-between gap-5">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">
-                Developer progression
-              </p>
-
-              <div className="mt-3 grid w-fit grid-cols-[auto_auto_auto] items-center gap-x-6 gap-y-2">
-                <span className="whitespace-nowrap text-lg font-semibold text-zinc-100">
-                  Level {developerProgress.level}
-                </span>
-
-                <span className="whitespace-nowrap rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-1.5 text-xs font-semibold text-[#77f29b]">
-                  {developerTitle}
-                </span>
-
-                <span className="whitespace-nowrap text-xs text-zinc-500">
-                  {developerXp} XP total
-                </span>
-              </div>
-            </div>
-
-            <span className="shrink-0 text-sm text-zinc-600 transition group-open:rotate-180">
-              ▼
-            </span>
-          </div>
-
-          <div className="mt-6 rounded-lg border border-white/[0.07] bg-black/20 p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold text-zinc-300">
-                  XP to Level {developerProgress.level + 1}
-                </p>
-                <p className="mt-1 text-[11px] text-zinc-600">
-                  Keep building experience to unlock the next developer level.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-md border border-[#77f29b]/20 bg-[#77f29b]/[0.07] px-2.5 py-1 text-xs font-semibold text-[#77f29b]">
-                {developerProgress.xpIntoLevel} / {developerProgress.xpForNextLevel} XP
-              </span>
-            </div>
-
-            <div className="mt-4 h-3 w-full overflow-hidden rounded-full border border-white/[0.08] bg-[#151a17]">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${developerProgress.progressPercent}%`,
-                  backgroundColor: "#77f29b",
-                  boxShadow: "0 0 14px rgba(119, 242, 155, 0.35)",
-                }}
-              />
-            </div>
-
-            <div className="mt-2 flex justify-between text-[10px] text-zinc-600">
-              <span>Level {developerProgress.level}</span>
-              <span>{developerProgress.progressPercent}%</span>
-              <span>Level {developerProgress.level + 1}</span>
-            </div>
-          </div>
-        </summary>
-
-        <div className="grid gap-3 border-t border-white/10 px-5 py-5 sm:grid-cols-3 sm:px-6">
-          <div className="rounded-lg bg-black/20 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
-              Current level
-            </p>
-            <p className="mt-1 text-lg font-semibold text-zinc-100">
-              Level {developerProgress.level}
-            </p>
-          </div>
-
-          <div className="rounded-lg bg-black/20 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
-              Total experience
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[#77f29b]">
-              {developerXp} XP
-            </p>
-          </div>
-
-          <div className="rounded-lg bg-black/20 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-600">
-              Next milestone
-            </p>
-            <p className="mt-1 text-lg font-semibold text-zinc-100">
-              Level {developerProgress.level + 1}
-            </p>
-          </div>
-
-          <p className="text-xs leading-5 text-zinc-600 sm:col-span-3">
-            Build your Playtested developer experience through validated milestones and meaningful participation.
-          </p>
-        </div>
-      </details>
-
-      {claims.length > 0 && (
-        <details className="group mt-8 rounded-xl border border-white/10 bg-white/[0.025]">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                Ownership & representation
-              </p>
-              <h2 className="mt-1 text-lg font-semibold">
-                Developer claims
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {claims.length} claim{claims.length === 1 ? "" : "s"} · {attentionClaims.length} need attention
-              </p>
-            </div>
-            <span className="text-sm text-zinc-500 transition group-open:rotate-180">
-              ▼
-            </span>
-          </summary>
-
-          <div className="space-y-5 border-t border-white/10 p-5">
-            {claims.map((claim) => (
+              </article>
+            ))(game)}<aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{completenessMessage(submissionIssues(game as unknown as Record<string,unknown>))||"Required developer details are complete. Approval still requires admin review."}</p>{(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>Complete information</a>}</aside><div className="mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"><p className="font-semibold">Human reviewer notes</p><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p>{game.status==="Pending Review"&&<p className="mt-2 text-zinc-400">Awaiting listing review. No action is needed unless more information is requested.</p>}{game.status==="Approved"&&<p className="mt-2 text-zinc-400">Listing approval is separate from a game-quality assessment. Use My games to manage an approved developer relationship.</p>}</div></>}))}
+ claims={claims.map(claim=>({id:claim.id,title:claim.gameTitle,status:claim.status,context:claim.relationship,content:((claim) => (
               <article
                 key={claim.id}
                 className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
@@ -1845,86 +1372,295 @@ async function DeveloperDashboard() {
                   )}
                 </div>
               </article>
-            ))}
+            ))(claim)}))}
+ diagnostics={pulseJobs.map(job=>{
+ const latestPulseRun=job;
+ const latestPulseSummary=getPulseReportSummary(job.report_json);
+ const completedPulseRuns=pulseJobs.filter(run=>run.submission_id===job.submission_id&&run.status==="COMPLETE");
+ const gameJobs=pulseJobs.filter(run=>run.submission_id===job.submission_id);
+ return {id:job.id,title:submissionTitleById.get(job.submission_id)||"Submitted game unavailable",status:job.status,context:formatDate(job.created_at)+(job.build_sha256?` | Build ${job.build_sha256.slice(0,12)}`:" | Build identifier not recorded"),content:(()=>{const pulseJobs=gameJobs;return (<details open className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
+                PULSE diagnostics
+              </p>
+              {latestPulseRun && (
+                <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/10 px-2 py-0.5 text-[11px] font-semibold text-[#77f29b]">
+                  Stored run
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-zinc-400">
+              {latestPulseRun
+                ? `${completedPulseRuns.length} completed run${completedPulseRuns.length === 1 ? "" : "s"} · ${latestPulseSummary.available ? latestPulseSummary.summary : "No detailed report stored"}`
+                : "Automated build, launch, stability and security diagnostics."}
+            </p>
           </div>
-        </details>
-      )}
 
-      <details open className="group mt-8 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.015]">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 sm:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              Submitted games
-            </p>
-            <h2 className="mt-1 text-lg font-semibold">
-              Submission history
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Review status and recent developer submissions.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="rounded-md border border-orange-400/40 bg-orange-400/10 px-2.5 py-1 text-xs font-bold text-orange-200">
-              {games.length}
-            </span>
-            <span className="text-sm text-zinc-500 transition group-open:rotate-180">
-              ▼
-            </span>
+          <div className="flex shrink-0 items-center gap-3 text-sm text-zinc-500">
+            <span>{pulseJobs.length} loaded for this game</span>
+            <span className="transition group-open:rotate-180">▼</span>
           </div>
         </summary>
 
-        <div className="border-t border-white/10 p-5">
+        <div className="border-t border-white/10 px-5 py-5 sm:px-6">
+          {latestPulseRun ? (
+            <>
+              <p className="mb-4 text-sm text-zinc-400">Technical diagnostics for this submitted game and stored build only. They are not a gameplay-quality assessment or a guarantee of safety.</p>
+              <p className="mb-3 break-all text-xs text-zinc-400">Run: {latestPulseRun.id} | Build SHA-256: {latestPulseRun.build_sha256 || "Not recorded"}</p>
+              {latestPulseRun.error_message && <p role="alert" className="mb-4 rounded-lg border border-red-300/30 p-3 text-sm text-red-200">{latestPulseRun.error_message}</p>}
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Selected run
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-zinc-100">
+                    {submissionTitleById.get(latestPulseRun.submission_id) ?? "Submitted game"}
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {latestPulseRun.completed_at
+                      ? formatDate(latestPulseRun.completed_at)
+                      : "Completion time not recorded"}
+                    {latestPulseRun.worker_version
+                      ? ` · Worker ${latestPulseRun.worker_version}`
+                      : ""}
+                  </p>
+                </div>
 
-        {games.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-8">
-            <h3 className="text-lg font-semibold">
-              No new games submitted yet
-            </h3>
+                <span className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${pulseStatusClasses(latestPulseRun.status)}`}>
+                  {latestPulseRun.status}
+                </span>
+              </div>
 
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Games submitted through Playtested will appear here
-              with their review status.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {games.map((game) => (
-              <article
-                key={game.id}
-                className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold">
-                      {game.title}
-                    </h3>
-
-                    <p className="mt-1 text-sm text-zinc-400">
-                      {game.genre}
+              {latestPulseSummary.available ? (
+                <>
+                  <div className="mt-5 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] px-4 py-3">
+                    <p className="font-medium text-zinc-100">
+                      {latestPulseSummary.summary}
                     </p>
-
-                    <p className="mt-2 text-xs text-zinc-500">
-                      Submitted{" "}
-                      {formatDate(game.submitted_at)}
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {latestPulseRun.status !== "COMPLETE" ? "This run is not complete; stored metrics may be partial." : latestPulseSummary.issueCount === 0
+                        ? "PULSE found no repeatable technical failures in this run."
+                        : `${latestPulseSummary.issueCount} technical warning${latestPulseSummary.issueCount === 1 ? "" : "s"} recorded.`}
                     </p>
                   </div>
 
-                  <span
-                    className={`rounded-md border px-3 py-2 text-sm ${submissionStatusClasses(
-                      game.status
-                    )}`}
-                  >
-                    {game.status}
-                  </span>
+                  <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Checks</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.successfulLoads}/{latestPulseSummary.totalChecks}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Build loads completed</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Launch</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.launchPassed}/{latestPulseSummary.launchTotal}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Successful starts</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Restart</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.restartPassed}/{latestPulseSummary.restartTotal}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Successful restarts</p>
+                    </div>
+                    <div className="bg-[#090b0a] p-4">
+                      <p className="text-xs uppercase tracking-wider text-zinc-600">Runtime issues</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-100">
+                        {latestPulseSummary.runtimeErrors +
+                          latestPulseSummary.failedRequests +
+                          latestPulseSummary.stalls +
+                          latestPulseSummary.workerErrors}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">Errors, requests, stalls</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className={`rounded-lg border p-3 ${
+                      latestPulseSummary.securityBlocked
+                        ? "border-red-400/30 bg-red-400/[0.07]"
+                        : "border-[#77f29b]/25 bg-[#77f29b]/[0.055]"
+                    }`}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Malware scan
+                      </p>
+                      <p className={`mt-1 text-xs font-semibold ${
+                        latestPulseSummary.securityBlocked ? "text-red-300" : "text-[#77f29b]"
+                      }`}>
+                        {latestPulseSummary.securityBlocked
+                          ? "Blocked"
+                          : latestPulseSummary.securityStatus || "Not recorded"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Package
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.packageValid ? "Valid" : "Not confirmed"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Entry point
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.entryPointFound ? "Found" : "Not confirmed"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Immediate crashes
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.immediateCrashes}
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Median load
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-200">
+                        {latestPulseSummary.medianLoadMs
+                          ? `${latestPulseSummary.medianLoadMs} ms`
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-[11px] text-zinc-600">
+                    PULSE run duration:{" "}
+                    {latestPulseSummary.durationMs
+                      ? `${(latestPulseSummary.durationMs / 1000).toFixed(1)} seconds`
+                      : "—"}
+                  </p>
+                </>
+              ) : (
+                <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-zinc-500">
+                  {latestPulseRun.status === "COMPLETE" ? "This run completed, but a detailed report is not stored." : "A completed report is not available for this run. Check its status and any error below."}
                 </div>
-              </article>
-            ))}
-          </div>
-        )}
+              )}
+
+
+            </>
+          ) : (
+            <div className="rounded-lg border border-white/10 bg-black/20 p-5">
+              <p className="font-semibold text-zinc-200">No PULSE diagnostics yet</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">
+                PULSE runs will appear here after you submit a build for technical diagnostics.
+              </p>
+            </div>
+          )}
         </div>
-      </details>
-    </>
-  );
+      </details>);})()};
+ })}
+ diagnosticsReady={!pulseJobsError}
+ extras={<><details open className="group mt-5 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-r from-white/[0.025] to-[#77f29b]/[0.025]">
+        <summary className="cursor-pointer list-none px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex items-start justify-between gap-5">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                Developer progression
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <span className="whitespace-nowrap text-lg font-semibold text-zinc-100">
+                  Level {developerProgress.level}
+                </span>
+
+                <span className="whitespace-nowrap rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-1.5 text-xs font-semibold text-[#77f29b]">
+                  {developerTitle}
+                </span>
+
+                <span className="whitespace-nowrap text-xs text-zinc-500">
+                  {developerXp} XP total
+                </span>
+              </div>
+            </div>
+
+            <span className="shrink-0 text-sm text-zinc-400 transition group-open:rotate-180">
+              ▼
+            </span>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-white/[0.07] bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold text-zinc-300">
+                  XP to Level {developerProgress.level + 1}
+                </p>
+                <p className="mt-1 text-[11px] text-zinc-400">
+                  Keep building experience to unlock the next developer level.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-md border border-[#77f29b]/20 bg-[#77f29b]/[0.07] px-2.5 py-1 text-xs font-semibold text-[#77f29b]">
+                {developerProgress.xpIntoLevel} / {developerProgress.xpForNextLevel} XP
+              </span>
+            </div>
+
+            <div role="progressbar" aria-label="Developer XP toward next level" aria-valuemin={0} aria-valuemax={developerProgress.xpForNextLevel} aria-valuenow={developerProgress.xpIntoLevel} className="mt-4 h-3 w-full overflow-hidden rounded-full border border-white/[0.08] bg-[#151a17]">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${developerProgress.progressPercent}%`,
+                  backgroundColor: "#77f29b",
+                  boxShadow: "0 0 14px rgba(119, 242, 155, 0.35)",
+                }}
+              />
+            </div>
+
+            <div className="mt-2 flex justify-between text-[10px] text-zinc-400">
+              <span>Level {developerProgress.level}</span>
+              <span>{developerProgress.progressPercent}%</span>
+              <span>Level {developerProgress.level + 1}</span>
+            </div>
+          </div>
+        </summary>
+
+        <div className="grid gap-3 border-t border-white/10 px-5 py-5 sm:grid-cols-3 sm:px-6">
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+              Current level
+            </p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">
+              Level {developerProgress.level}
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+              Total experience
+            </p>
+            <p className="mt-1 text-lg font-semibold text-[#77f29b]">
+              {developerXp} XP
+            </p>
+          </div>
+
+          <div className="rounded-lg bg-black/20 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+              Next milestone
+            </p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">
+              Level {developerProgress.level + 1}
+            </p>
+          </div>
+
+          <p className="text-xs leading-5 text-zinc-400 sm:col-span-3">
+            Build your Playtested developer experience through validated milestones and meaningful participation.
+          </p>
+        </div>
+      </details></>}
+ />;
 }
 
 export default function MySubmissionsPage() {

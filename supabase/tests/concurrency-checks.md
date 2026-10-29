@@ -1,3 +1,9 @@
+## Four-place / 72-hour reservation rules (migration 012)
+
+Run `npm run test:reservations:concurrency` from the repository root. It reuses the existing policy test harness, starts PostgreSQL 17 in a disposable Docker container with `--network none`, no ports/volumes/source credentials, loads synthetic fixtures and migrations, then removes the container. It checks a final-place reclaim racing a new claim (one winner), rollback allowing the waiting claimant, a submission waiting across expiry, and one tester in two tabs. These are real independent PostgreSQL connections, distinct from `npm run test:reservations` single-engine simulations. No production or recovery container is used. Requires the existing cached PostgreSQL image; does not install or pull dependencies.
+
+The instructions below document the earlier two-place baseline. For migration 012, use a new four-place campaign with three consumed places when testing the final place; retain existing campaign capacities. Submitted reports still count after their reservation deadline and review rejection; only the audited moderator exception frees one.
+
 # Real multi-connection checks (not yet run)
 
 Use a staging copy after applying the five migrations. Use dedicated disposable tester accounts and campaigns. Do not run the schema fixture against staging or production.

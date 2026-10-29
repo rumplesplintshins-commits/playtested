@@ -1,3 +1,4 @@
+import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
@@ -289,6 +290,7 @@ export default async function SubmissionPage({
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
+          <ShareJourneyBanner />
 
       <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6">
         {/* GAME HEADER */}
@@ -327,14 +329,14 @@ export default async function SubmissionPage({
 
             {externalUrl && (
               <div className="mt-3">
-                <a
+                <TrackedAccessLink
                   href={externalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block rounded-lg bg-[#77f29b] px-4 py-2 text-sm font-semibold text-black hover:bg-[#9af9b3]"
                 >
                   {externalUrlLabel}
-                </a>
+                </TrackedAccessLink>
               </div>
             )}
           </div>

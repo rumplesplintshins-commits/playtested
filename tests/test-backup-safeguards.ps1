@@ -1,9 +1,22 @@
 $ErrorActionPreference = 'Stop'
-$helper = Join-Path $PSScriptRoot 'backup-database.ps1'
+$helper = Join-Path $PSScriptRoot '..\scripts\recovery\backup-database.ps1'
 $tokens = $null
 $parseErrors = $null
 [System.Management.Automation.Language.Parser]::ParseFile($helper, [ref]$tokens, [ref]$parseErrors) | Out-Null
 if ($parseErrors.Count) { throw 'Backup helper syntax check failed.' }
+$readiness = Join-Path $PSScriptRoot '..\scripts\recovery\check-backup-readiness.ps1'
+[System.Management.Automation.Language.Parser]::ParseFile($readiness, [ref]$tokens, [ref]$parseErrors) | Out-Null
+if ($parseErrors.Count) { throw 'Readiness helper syntax check failed.' }
+$savedPath = $env:PATH
+try {
+    $env:PATH = ''
+    $rejected = $false
+    try { & $readiness -RequireReady | Out-Null } catch {
+        if ($_.Exception.Message -notmatch 'Export prerequisites unavailable') { throw }
+        $rejected = $true
+    }
+    if (-not $rejected) { throw 'Missing export tools must block execution.' }
+} finally { $env:PATH = $savedPath }
 
 $repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $previewTarget = Join-Path ([IO.Path]::GetTempPath()) ('playtested-backup-preview-' + [guid]::NewGuid())

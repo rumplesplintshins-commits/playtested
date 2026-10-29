@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot)).TrimEnd('\', '/')
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot $(if ((Split-Path -Leaf $PSScriptRoot) -in @('recovery','maintenance')) {'..\..'} else {'..'}))).TrimEnd('\', '/')
 $backupRoot = [IO.Path]::GetFullPath($OutputDirectory).TrimEnd('\', '/')
 if ($backupRoot.Equals($repoRoot, [StringComparison]::OrdinalIgnoreCase) -or
     $backupRoot.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
@@ -20,8 +20,8 @@ if (-not $Execute) {
     return
 }
 
-if (-not (Get-Command supabase -ErrorAction SilentlyContinue)) { throw 'Install Supabase CLI and its documented prerequisites first.' }
 if (Test-Path -LiteralPath $backupRoot) { throw 'Use a new, unused backup directory; existing files will not be overwritten.' }
+& (Join-Path $PSScriptRoot 'check-backup-readiness.ps1') -RequireReady
 # Credentials are requested only interactively, never as a script argument/file.
 # Supabase CLI still receives the URL in process arguments on this trusted machine.
 $secureUrl = Read-Host 'Enter the existing source DB connection URL privately (hidden; never paste it into chat)' -AsSecureString
@@ -40,11 +40,30 @@ try {
     foreach ($stage in $stages) {
         $filePath = Join-Path $backupRoot $stage.File
         $dumpArgs = @('db', 'dump', '--db-url', $connectionUrl, '-f', $filePath) + $stage.Options
-        # Discard CLI diagnostics rather than risk printing connection details.
-        try { & supabase @dumpArgs *> $null } catch { throw 'Export failed. Artifacts are incomplete; do not treat them as a recovery point.' }
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $filePath) -or (Get-Item -LiteralPath $filePath).Length -eq 0) {
-            throw ('Export stage failed: ' + $stage.File + '. Do not use partial exports as a recovery point.')
+        # Windows PowerShell can turn normal native stderr progress into a terminating
+        # error under Stop. Capture it privately and judge success by the exit code.
+        $diagnostics = $null
+        $stageExitCode = -1
+        try {
+            $ErrorActionPreference = 'Continue'
+            $diagnostics = (& supabase @dumpArgs 2>&1 | Out-String)
+            $stageExitCode = $LASTEXITCODE
+        } catch {
+            $diagnostics = $_.Exception.Message
+        } finally { $ErrorActionPreference = 'Stop' }
+        if ($stageExitCode -ne 0 -or -not (Test-Path -LiteralPath $filePath) -or (Get-Item -LiteralPath $filePath).Length -eq 0) {
+            # Only fixed categories may leave memory; never echo raw diagnostics.
+            $category = 'Unclassified CLI failure'
+            if ($diagnostics -match 'password authentication failed|SASL authentication failed') { $category = 'Database authentication failed' }
+            elseif ($diagnostics -match 'no such host|could not translate host name|Name or service not known') { $category = 'Database hostname resolution failed' }
+            elseif ($diagnostics -match 'network is unreachable|connection timed out|connection refused') { $category = 'Database network connection failed' }
+            elseif ($diagnostics -match 'error during connect|Cannot connect to the Docker daemon|docker_engine') { $category = 'Docker connection failed' }
+            elseif ($diagnostics -match 'pull access denied|failed to resolve reference|error pulling image') { $category = 'Docker image download failed' }
+            elseif ($diagnostics -match 'telemetry.json|EPERM|Access is denied') { $category = 'Local file access failed' }
+            $diagnostics = $null
+            throw ('Export stage failed: ' + $stage.File + '. ' + $category + ' (exit ' + $stageExitCode + '). Artifacts are incomplete.')
         }
+        $diagnostics = $null
     }
     $files = foreach ($stage in $stages) {
         $filePath = Join-Path $backupRoot $stage.File

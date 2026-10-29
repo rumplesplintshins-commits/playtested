@@ -1,3 +1,4 @@
+import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";
 import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
 import { games } from "../../data/games";
@@ -148,6 +149,7 @@ export default async function GamePage({
       return (
         <main className="min-h-screen bg-[#090b0a] text-zinc-100">
           <SiteHeader />
+          <ShareJourneyBanner />
           <section className="mx-auto max-w-6xl px-6 py-20">
             <h1 className="text-3xl font-bold">Game not found</h1>
             <a href="/" className="mt-6 inline-block text-[#77f29b]">
@@ -179,6 +181,7 @@ export default async function GamePage({
       return (
         <main className="min-h-screen bg-[#090b0a] text-zinc-100">
           <SiteHeader />
+          <ShareJourneyBanner />
           <section className="mx-auto max-w-6xl px-6 py-20">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
               Steam catalogue listing
@@ -199,14 +202,14 @@ export default async function GamePage({
                 Back to Game Discovery
               </a>
               {importedGame.steam_url && (
-                <a
+                <TrackedAccessLink
                   href={importedGame.steam_url}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-md bg-[#77f29b] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#8af5a8]"
                 >
                   View Steam page ↗
-                </a>
+                </TrackedAccessLink>
               )}
             </div>
           </section>
@@ -530,6 +533,7 @@ export default async function GamePage({
     return (
       <main className="min-h-screen bg-[#090b0a] text-zinc-100">
         <SiteHeader />
+          <ShareJourneyBanner />
 
         <section className="border-b border-white/[0.08] bg-gradient-to-br from-[#14251b] via-[#0c100d] to-[#090b0a]">
           <div className="mx-auto max-w-6xl px-6 py-12 md:py-16">
@@ -566,14 +570,14 @@ export default async function GamePage({
 
                 <div className="mt-7 flex flex-wrap gap-3">
                   {steamUrl && (
-                    <a
+                    <TrackedAccessLink
                       href={steamUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-md bg-[#77f29b] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#8af5a8]"
                     >
                       View Steam page ↗
-                    </a>
+                    </TrackedAccessLink>
                   )}
                   <a
                     href="/"
@@ -1110,6 +1114,7 @@ export default async function GamePage({
     return (
       <main className="min-h-screen bg-[#090b0a] text-zinc-100">
         <SiteHeader />
+          <ShareJourneyBanner />
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h1 className="text-3xl font-bold">Game not found</h1>
           <a href="/" className="mt-6 inline-block text-[#77f29b]">
@@ -1126,6 +1131,7 @@ export default async function GamePage({
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
+          <ShareJourneyBanner />
 
       <section className="border-b border-white/[0.08] bg-gradient-to-br from-[#14251b] via-[#0c100d] to-[#090b0a]">
         <div className="mx-auto max-w-6xl px-6 py-16">

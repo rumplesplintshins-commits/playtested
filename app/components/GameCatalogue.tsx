@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -91,9 +92,7 @@ type CommunityReception = {
 
 const aiTypes = [
   "All AI types",
-  "AI-generated",
-  "AI-assisted",
-  "No AI disclosed",
+  ...AI_CLASSIFICATIONS,
   "AI use unknown",
 ];
 
@@ -186,24 +185,30 @@ function GenreBadge({ genre }: { genre: string }) {
 function GameCardContent({
   game,
   onOpen,
+  compact,
 }: {
   game: CatalogueGame;
   onOpen: () => void;
+  compact: boolean;
 }) {
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const disclosure = AI_CLASSIFICATIONS.includes(game.aiType.trim()) ? game.aiType.trim() : "AI use unknown";
+  const disclosureStyle = disclosure === "AI-generated" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] transition hover:border-emerald-400/30">
+    <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
       <button
         type="button"
         onClick={onOpen}
         className="block aspect-video w-full overflow-hidden bg-[#202520] text-left"
         aria-label={`View ${game.title} details`}
       >
-        {game.image ? (
+        {game.image && failedImage !== game.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={game.image}
             alt={game.title}
             loading="lazy"
+            onError={() => setFailedImage(game.image)}
             className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]"
           />
         ) : (
@@ -213,10 +218,9 @@ function GameCardContent({
         )}
       </button>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className={`flex flex-1 flex-col ${compact ? "gap-3 p-4" : "gap-4 p-5"}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <GenreBadge genre={game.genre} />
-          <VerificationBadge status={game.verificationStatus} />
         </div>
 
         <button type="button" onClick={onOpen} className="text-left">
@@ -225,11 +229,23 @@ function GameCardContent({
           </h3>
         </button>
 
-        <p className="text-sm text-white/60">by {game.developer}</p>
+        <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
 
-        <p className="line-clamp-3 text-sm leading-6 text-white/75">
-          {game.description}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />
+          <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
+            {disclosure === "AI use unknown" && <span aria-hidden="true">?</span>}{disclosure}
+          </span>
+        </div>
+
+        {game.description ? <details className="group text-sm leading-6 text-white/75">
+          <summary className="cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-emerald-300">
+            <span className="line-clamp-3 group-open:hidden">{game.description}</span>
+            <span className="text-xs text-emerald-300 group-open:hidden">Read full description</span>
+            <span className="hidden text-xs text-emerald-300 group-open:inline">Hide full description</span>
+          </summary>
+          <p className="mt-2">{game.description}</p>
+        </details> : <p className="text-sm text-white/65">No description provided.</p>}
 
         <div className="rounded-lg border border-white/10 bg-black/15 p-3">
           {game.communityReception &&
@@ -274,7 +290,6 @@ function GameCardContent({
         </div>
 
         <div className="mt-auto space-y-3 pt-2">
-          <span className="text-sm text-white/65">{game.aiType}</span>
 
           <button
             type="button"
@@ -293,6 +308,7 @@ function GameCardContent({
 
 export default function GameCatalogue() {
   const router = useRouter();
+  const [density, setDensity] = useState<"compact" | "comfortable">("compact");
 
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("All genres");
@@ -475,7 +491,7 @@ export default function GameCatalogue() {
     "min-w-0 w-full rounded-lg border border-white/25 bg-[#151815] px-4 py-3.5 text-base font-medium text-white shadow-sm outline-none transition placeholder:text-white/45 hover:border-emerald-400/45 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/40";
 
   return (
-    <div className="w-full space-y-6 pt-2 text-white">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 pt-2 text-white sm:px-6">
       <section className="rounded-xl border border-white/15 bg-[#101310] p-4 shadow-lg shadow-black/20 sm:p-5">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -624,6 +640,9 @@ export default function GameCatalogue() {
               Loading catalogue listings...
             </p>
           )}
+          <div role="group" aria-label="Catalogue view" className="flex flex-wrap gap-2">
+            {(["compact", "comfortable"] as const).map((view) => <button key={view} type="button" aria-pressed={density === view} onClick={() => setDensity(view)} className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${density === view ? "border-emerald-300 bg-emerald-300/15 text-emerald-200" : "border-white/25 text-white/75 hover:border-white/50"}`}>{view === "compact" ? "Compact" : "Comfortable"}</button>)}
+          </div>
         </div>
 
         {loadError && (
@@ -634,16 +653,17 @@ export default function GameCatalogue() {
         )}
 
         {games.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div data-catalogue-density={density} className={`grid ${density === "compact" ? "gap-4" : "gap-6"}`} style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${density === "compact" ? "240px" : "330px"}), 1fr))` }}>
             {games.map((game) => (
               <GameCardContent
                 key={game.key}
                 game={game}
+                compact={density === "compact"}
                 onOpen={() => openGame(game)}
               />
             ))}
           </div>
-        ) : (
+        ) : loaded && !loadError ? (
           <div className="rounded-xl border border-white/10 bg-[#151815] px-5 py-12 text-center">
             <h3 className="text-lg font-semibold">No games found</h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-white/60">
@@ -659,7 +679,7 @@ export default function GameCatalogue() {
               Clear filters
             </button>
           </div>
-        )}
+        ) : null}
 
         {loaded && !loadError && pageCount > 1 && (
           <nav

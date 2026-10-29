@@ -1117,6 +1117,8 @@ export async function POST(request: NextRequest) {
     */
     const workerFileName = "technical-test-worker-v6.10.mjs";
     const workerCandidates = [
+      resolve(process.cwd(), "scripts", "workers", workerFileName),
+      resolve(process.cwd(), "..", "scripts", "workers", workerFileName),
       resolve(process.cwd(), "scripts", workerFileName),
       resolve(process.cwd(), "..", "scripts", workerFileName),
     ];

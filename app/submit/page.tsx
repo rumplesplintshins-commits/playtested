@@ -2,14 +2,17 @@
 
 
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 
+import SubmissionCorrection from "../components/SubmissionCorrection";
+import {submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
 import SiteHeader from "../components/SiteHeader";
 
 import { createClient } from "../../lib/supabase";
+import { GAME_GENRES } from "../../lib/genres";
 
 
 
@@ -420,7 +423,12 @@ function pulseDescribeFailureEvidence(
     .join("\n");
 }
 
+function subscribeCorrectionPath(notify:()=>void){window.addEventListener("popstate",notify);return()=>window.removeEventListener("popstate",notify);}
+function correctionPath(){return new URLSearchParams(window.location.search).get("edit");}
 export default function SubmitGamePage() {
+  const correctionId=useSyncExternalStore(subscribeCorrectionPath,correctionPath,()=>null);
+  const incompleteRequestId=useRef<string|null>(null);
+
 
   const [accessStatus, setAccessStatus] =
 
@@ -534,7 +542,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = "/login?next=/submit";
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
 
         return;
 
@@ -963,7 +971,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = "/login?next=/submit";
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
 
         return;
 
@@ -1130,6 +1138,9 @@ export default function SubmitGamePage() {
     const form = event.currentTarget;
 
     const formData = new FormData(form);
+    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),evidence_link:String(formData.get('evidenceLink')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String)};
+
+
 
 
 
@@ -1177,6 +1188,8 @@ export default function SubmitGamePage() {
 
 
 
+    const steamAppId = extractSteamAppId(steamUrl);
+    if(!submissionIssues(draft).length){
     if (
 
       !["Released", "Upcoming", "Not announced"].includes(
@@ -1301,25 +1314,12 @@ export default function SubmitGamePage() {
 
 
 
-    if (submittedImageUrl && imageStatus !== "loaded") {
-
-      setError(
-
-        imageStatus === "error"
-
-          ? "Your thumbnail could not be loaded. Check the URL or use another image."
-
-          : "Please wait for your thumbnail preview to load."
-
-      );
-
-      return;
-
-    }
+    // The optional image preview does not decide server-side completeness.
 
 
 
-    const steamAppId = extractSteamAppId(steamUrl);
+
+
 
 
 
@@ -1336,6 +1336,8 @@ export default function SubmitGamePage() {
     }
 
 
+
+    }
 
     const currentDuplicateKey = createDuplicateKey(
 
@@ -1369,7 +1371,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = "/login?next=/submit";
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
 
         return;
 
@@ -1775,6 +1777,25 @@ export default function SubmitGamePage() {
 
 
 
+      if(submissionIssues(draft).length){
+      setSubmitting(true);setError('');
+      try {
+        const client=supabase;const readiness=await client.rpc('submission_completeness',{p:draft});
+        if(readiness.error){setError('The submission correction update is not available yet. Your entered details have been kept.');return;}
+
+        const id=incompleteRequestId.current||(incompleteRequestId.current=crypto.randomUUID());
+        let result=await client.from('game_submissions').insert({...draft,id,developer_id:user.id,status:'Pending Review'}).select('*').single();
+        if(result.error?.code==='23505')result=await client.from('game_submissions').select('*').eq('id',id).eq('developer_id',user.id).single();
+        if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
+        const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
+        if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
+        window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }catch{setError('Your save could not be confirmed. Your details remain here; retry the same request.');}
+      finally{setSubmitting(false);}
+      return;
+    }
+
       const { data: insertedSubmission, error: insertError } = await supabase
 
         .from("game_submissions")
@@ -1839,7 +1860,7 @@ export default function SubmitGamePage() {
 
         })
 
-        .select("id")
+        .select("*")
 
         .single();
 
@@ -1890,6 +1911,8 @@ export default function SubmitGamePage() {
       }
 
 
+
+      if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
       const submittedGameLink = String(
         formData.get("gameLink") ?? ""
@@ -2086,6 +2109,7 @@ export default function SubmitGamePage() {
 
 
 
+  if(correctionId)return <SubmissionCorrection key={correctionId} id={correctionId}/>;
   return (
 
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
@@ -2969,7 +2993,7 @@ export default function SubmitGamePage() {
 
         ) : (
 
-          <form onSubmit={handleSubmit} className="space-y-10">
+          <form onSubmit={handleSubmit} noValidate className="space-y-10">
 
             {error && (
 
@@ -3473,25 +3497,7 @@ export default function SubmitGamePage() {
 
                   </option>
 
-                  <option>Action</option>
-
-                  <option>Action RPG</option>
-
-                  <option>Adventure</option>
-
-                  <option>Casual</option>
-
-                  <option>Horror</option>
-
-                  <option>Platformer</option>
-
-                  <option>Simulation</option>
-
-                  <option>Strategy</option>
-
-                  <option>Survival</option>
-
-                  <option>Other</option>
+                  {GAME_GENRES.map(genre => <option key={genre} value={genre}>{genre}</option>)}
 
                 </select>
 
@@ -3927,25 +3933,7 @@ export default function SubmitGamePage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
 
-                  {[
-
-                    "Programming or code",
-
-                    "Artwork or textures",
-
-                    "Writing or dialogue",
-
-                    "Voice or audio",
-
-                    "Music or sound effects",
-
-                    "Animation or video",
-
-                    "Testing or development tools",
-
-                    "Other",
-
-                  ].map((area) => (
+                  {AI_AREAS.map((area) => (
 
                     <label
 
@@ -4021,7 +4009,7 @@ export default function SubmitGamePage() {
 
                 <span className="mt-2 block text-xs leading-5 text-zinc-500">
 
-                  Evidence might include tool disclosures, production notes or
+                  For disclosed AI-generated or AI-assisted work, include an explanation and supporting evidence. No-AI disclosures do not require proof of absence. Evidence might include tool disclosures, production notes or
 
                   asset records.
 
@@ -4045,7 +4033,7 @@ export default function SubmitGamePage() {
 
               <p className="mt-2 text-sm leading-6 text-zinc-400">
 
-                Submissions start as Pending Review. Steam games are matched
+                Complete submissions start as Pending Review; missing developer details are saved as Needs More Information for you to correct and resubmit. Steam games are matched
 
                 using their Steam App ID. Existing games can be claimed by a
 

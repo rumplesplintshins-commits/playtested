@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const worker = path.join(ROOT, "scripts", "technical-test-worker-v6.8.mjs");
+const worker = path.join(ROOT, "scripts", "workers", "technical-test-worker-v6.8.mjs");
 const benchmarkDir = path.join(ROOT, "benchmarks-generalisation");
 const resultsDir = path.join(ROOT, "technical-test-results");
 const profile = process.argv.find((x) => x.startsWith("--profile="))?.split("=")[1] ?? "quick";
@@ -88,7 +88,7 @@ function pad(value, width) {
 
 if (!existsSync(worker)) {
   console.error(`Worker not found: ${worker}`);
-  console.error("Put technical-test-worker-v6.8.mjs in .\\scripts\\ first.");
+  console.error("Put technical-test-worker-v6.8.mjs in .\\scripts\\workers\\ first.");
   process.exit(1);
 }
 

@@ -1,6 +1,7 @@
 
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -21,10 +22,26 @@ export default function Home() {
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 md:text-base">
-            Find games worth your time through honest player feedback,
-            structured testing and transparent verification. No matter
-            how they were made, quality comes first.
+            Good games get better when people play them. Playtested brings
+            developers and players together to try games, share honest feedback
+            and work out what needs improving.
           </p>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+            <section aria-labelledby="home-developers" className="flex flex-col rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-5">
+              <h2 id="home-developers" className="text-lg font-semibold text-white">Making a game?</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">Submit your game, tell testers what you want them to focus on, and read their feedback for each build. Find out what works and what could be better.</p>
+              <Link href="/submit" className="mt-5 rounded-lg bg-[#77f29b] px-4 py-3 text-center text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Submit a game</Link>
+              <Link href="/login?mode=signup&role=developer&next=/my-submissions" className="mt-3 text-center text-sm text-[#77f29b] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">New here? Join as a developer</Link>
+            </section>
+            <section aria-labelledby="home-testers" className="flex flex-col rounded-xl border border-white/10 bg-white/[0.025] p-5">
+              <h2 id="home-testers" className="text-lg font-semibold text-white">Enjoy trying games?</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">Sign in to find a game you can test, play it and tell the developer about your experience. Useful criticism matters just as much as praise.</p>
+              <Link href="/tester" className="mt-5 rounded-lg border border-[#77f29b]/30 px-4 py-3 text-center text-sm font-semibold text-[#77f29b] transition hover:bg-[#77f29b]/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Find a game to test</Link>
+              <Link href="/login?mode=signup&role=tester&next=/tester" className="mt-3 text-center text-sm text-[#77f29b] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">New here? Join as a tester</Link>
+            </section>
+          </div>
+          <p className="mt-4 text-sm leading-6 text-zinc-400">You can be a developer, a tester, or both. Just looking around? <a href="#discover-games" className="text-[#77f29b] underline underline-offset-4 focus-visible:outline-2">Browse the games below</a>.</p>
         </div>
       </section>
 

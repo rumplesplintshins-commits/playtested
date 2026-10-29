@@ -22,6 +22,7 @@ const projectRoot = process.cwd();
 const workerPath = resolve(
   projectRoot,
   "scripts",
+  "workers",
   "technical-test-worker.mjs"
 );
 

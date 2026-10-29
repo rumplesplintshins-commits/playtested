@@ -1,0 +1,5 @@
+import {createClient} from "@supabase/supabase-js";
+import {createHmac} from "node:crypto";
+export function shareService(){const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error("Reporting unavailable");return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});}
+export function publicShareRequest(headers:Headers){return !/bot|crawler|spider|slurp|headless|preview|facebookexternalhit/i.test(headers.get("user-agent")||"")&&!/prefetch/i.test(headers.get("purpose")||headers.get("sec-purpose")||"")&&!headers.has("next-router-prefetch");}
+export function shareRateKey(headers:Headers){const key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!key)throw new Error("Reporting unavailable");const address=(headers.get("x-forwarded-for")||headers.get("x-real-ip")||"unknown").split(",")[0].trim().slice(0,80);return createHmac("sha256",key).update("playtested-share-rate-v1:"+new Date().toISOString().slice(0,10)+":"+address).digest("hex");}

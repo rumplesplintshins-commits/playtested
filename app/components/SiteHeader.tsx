@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createClient } from "../../lib/supabase";
+import {testerRankPresentation} from "@/lib/tester-rank";
 
+import {currentJourney,subscribeJourney,carryJourney} from "@/lib/share-links";
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Community", href: "/community" },
@@ -27,12 +29,13 @@ function getLevel(totalXp: number) {
 }
 
 export default function SiteHeader() {
+  const journey=useSyncExternalStore(subscribeJourney,currentJourney,()=>null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("user");
   const [roles, setRoles] = useState<SignupRole[]>(["player"]);
-  const [testerXp, setTesterXp] = useState(0);
+  const [testerRank,setTesterRank] = useState<number|null>(null);
   const [developerXp, setDeveloperXp] = useState(0);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,7 +58,7 @@ export default function SiteHeader() {
       if (error) {
         setRole("user");
         setRoles(["player"]);
-        setTesterXp(0);
+        setTesterRank(null);
         setDeveloperXp(0);
       } else {
         setRole(data?.role ?? "user");
@@ -69,7 +72,9 @@ export default function SiteHeader() {
             : ["player"]
         );
 
-        setTesterXp(data?.tester_xp ?? 0);
+        const {data:progress} = await supabase.rpc("get_my_testing_progress");
+        if (!mounted) return;
+        setTesterRank(progress?.rank ?? null);
         setDeveloperXp(data?.developer_xp ?? 0);
       }
 
@@ -93,7 +98,7 @@ export default function SiteHeader() {
         setEmail("");
         setRole("user");
         setRoles(["player"]);
-        setTesterXp(0);
+        setTesterRank(null);
         setDeveloperXp(0);
         setProfileLoaded(true);
       }
@@ -125,7 +130,7 @@ export default function SiteHeader() {
         setEmail("");
         setRole("user");
         setRoles(["player"]);
-        setTesterXp(0);
+        setTesterRank(null);
         setDeveloperXp(0);
         setProfileLoaded(true);
       }
@@ -160,11 +165,12 @@ export default function SiteHeader() {
     window.location.href = "/";
   }
 
-  const testerLevel = getLevel(testerXp);
+
   const developerLevel = getLevel(developerXp);
 
   const showRoleLinks = loggedIn && profileLoaded;
 
+  const rankPresentation=testerRankPresentation(testerRank);
   const showTesterLevel =
     loggedIn && profileLoaded && roles.includes("tester");
 
@@ -182,7 +188,7 @@ export default function SiteHeader() {
       : []),
 
     ...(showRoleLinks && roles.includes("tester")
-      ? [{ label: "Tester Hub", href: "/tester" }]
+      ? [{ label: "Tester Hub", href: carryJourney("/tester",journey) }]
       : []),
 
     ...(!checkingSession && loggedIn && role === "admin"
@@ -215,8 +221,8 @@ export default function SiteHeader() {
                   <span className="mr-1 truncate">{email}</span>
 
                   {showTesterLevel && (
-                    <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">
-                      Tester Lv. {testerLevel}
+                    <span className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${rankPresentation.badge}`}>
+                      {rankPresentation.label}
                     </span>
                   )}
 
@@ -238,14 +244,14 @@ export default function SiteHeader() {
             ) : (
               <>
                 <a
-                  href="/login"
+                  href={journey?"/login?next="+encodeURIComponent(window.location.pathname+window.location.search):"/login"}
                   className="rounded-md px-2 py-2 text-sm text-zinc-300 transition hover:text-white"
                 >
                   Log in
                 </a>
 
                 <a
-                  href="/login?mode=signup"
+                  href={journey?"/login?mode=signup&next="+encodeURIComponent(window.location.pathname+window.location.search):"/login?mode=signup"}
                   className="rounded-md bg-[#77f29b] px-3 py-2 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4]"
                 >
                   Sign up
@@ -305,8 +311,8 @@ export default function SiteHeader() {
 
                 <div className="mt-2 flex flex-col gap-1">
                   {showTesterLevel && (
-                    <p className="text-xs text-[#77f29b]">
-                      Tester level: {testerLevel}
+                    <p className={`self-start rounded-full border px-2 py-1 text-xs ${rankPresentation.badge}`}>
+                      {rankPresentation.label}
                     </p>
                   )}
 

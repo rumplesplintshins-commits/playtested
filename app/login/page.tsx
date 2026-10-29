@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
+import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
 
 type SignupRole = "player" | "tester" | "developer";
 
@@ -28,18 +29,6 @@ const roleOptions: {
   },
 ];
 
-function getSafeNextPath(value: string | null) {
-  if (!value) {
-    return "/";
-  }
-
-  if (!value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-
-  return value;
-}
-
 function isSignupRole(value: string | null): value is SignupRole {
   return value === "player" || value === "tester" || value === "developer";
 }
@@ -52,6 +41,7 @@ export default function LoginPage() {
   const [nextPath, setNextPath] = useState("/");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmationFailed,setConfirmationFailed] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,6 +54,7 @@ export default function LoginPage() {
 
     setMode(requestedMode);
     setNextPath(requestedNext);
+    setConfirmationFailed(params.get("error") === "auth_callback_failed");
 
     if (requestedMode === "signup" && isSignupRole(requestedRole)) {
       setSignupRoles([requestedRole]);
@@ -109,6 +100,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setMessage("");
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -162,7 +154,7 @@ export default function LoginPage() {
 
         setMessage(
           nextPath !== "/"
-            ? "Registration received. Check your email to confirm your account. After confirmation, you'll return to the playtest."
+            ? `Registration received. Check your email to confirm your account. After confirmation, continue to ${authDestination(nextPath)}.`
             : "Registration received. Check your email to confirm your account."
         );
       } else {
@@ -210,6 +202,15 @@ export default function LoginPage() {
                 : "Choose all the ways you want to use Playtested."}
           </p>
 
+          {confirmationFailed && <div role="alert" aria-labelledby="confirmation-error-heading" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100">
+            <h2 id="confirmation-error-heading" className="font-semibold">We couldn&apos;t confirm your email link</h2>
+            <p className="mt-1">The link may have expired, already been used, or confirmation may be temporarily unavailable.</p>
+            <p className="mt-2">If you already confirmed your account, sign in below. Otherwise, open the latest confirmation email in the browser where you registered. If it still fails, try again later.</p>
+            <p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p>
+          </div>}
+
+          {nextPath !== "/" && !nextPath.startsWith("/playtest/") && <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.</p>}
+
           {nextPath.startsWith("/playtest/") && (
             <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4">
               <p className="text-sm font-semibold text-emerald-300">
@@ -223,7 +224,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <form onSubmit={handleSubmit} aria-busy={loading} className="mt-8 space-y-5">
             {mode === "signup" && (
               <fieldset className="space-y-3">
                 <legend className="mb-3 text-sm font-medium">
@@ -244,6 +245,7 @@ export default function LoginPage() {
                     >
                       <input
                         type="checkbox"
+                        disabled={loading}
                         checked={checked}
                         onChange={() => toggleRole(role.value)}
                         className="mt-1 h-4 w-4 accent-emerald-400"
@@ -275,6 +277,7 @@ export default function LoginPage() {
 
               <input
                 id="email"
+                disabled={loading}
                 type="email"
                 autoComplete="email"
                 required
@@ -298,6 +301,7 @@ export default function LoginPage() {
 
               <input
                 id="password"
+                disabled={loading}
                 type="password"
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
@@ -347,6 +351,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={switchMode}
+              disabled={loading}
               className="font-semibold text-emerald-400 hover:text-emerald-300"
             >
               {mode === "login" ? "Create an account" : "Sign in"}

@@ -1,9 +1,17 @@
 "use client";
 
+import {currentJourney} from "@/lib/share-links";
+import {TrackedAccessLink,ShareJourneyBanner} from "../components/ShareJourney";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
+import { GAME_GENRES, matchesGenrePreferences } from "../../lib/genres";
+import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
+
+import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
+
+function receivedReservationClock(serverNow:string){return {server:Date.parse(serverNow),local:Date.now()};}
 
 type TestAccessType =
   | "steam_demo"
@@ -13,6 +21,8 @@ type TestAccessType =
   | "other";
 
 type TestGame = {
+  can_claim?: boolean;
+  restriction_reason?: string | null;
   submission_id: string;
   title: string;
   developer_name: string;
@@ -25,65 +35,19 @@ type TestGame = {
   focus_areas: string[];
 };
 
-type TestClaim = {
+type TestClaim = FeedbackQualityRecord & {
   id: string;
   submission_id: string | null;
   playtest_id: string | null;
-  status: "claimed" | "in_progress" | "submitted" | "reviewed";
+  status: "claimed" | "in_progress" | "submitted" | "reviewed" | "expired";
+  reservation_expires_at?:string|null;
+  reservation_started_at?:string|null;
+  game_title?:string;
+  reclaim_campaign_id?:string|null;
   review_outcome: "pending" | "accepted" | "rejected";
+  review_reason: string | null;
+  xp_awarded: boolean;
 };
-
-type TesterProgress = {
-  level: number;
-  title: string;
-  xpIntoLevel: number;
-  xpNeededForLevel: number;
-  xpToNextLevel: number;
-  progressPercent: number;
-};
-
-function xpRequiredForNextLevel(level: number) {
-  return 100 + (level - 1) * 50;
-}
-
-function getTesterTitle(level: number) {
-  if (level >= 50) return "Playtested Legend";
-  if (level >= 40) return "Veteran Tester";
-  if (level >= 30) return "Master Tester";
-  if (level >= 25) return "Elite Tester";
-  if (level >= 20) return "Expert Tester";
-  if (level >= 15) return "Senior Tester";
-  if (level >= 10) return "Experienced Tester";
-  if (level >= 5) return "Playtester";
-
-  return "New Tester";
-}
-
-function calculateTesterProgress(totalXp: number): TesterProgress {
-  const safeXp = Math.max(0, totalXp);
-
-  let level = 1;
-  let remainingXp = safeXp;
-  let xpNeededForLevel = xpRequiredForNextLevel(level);
-
-  while (remainingXp >= xpNeededForLevel) {
-    remainingXp -= xpNeededForLevel;
-    level += 1;
-    xpNeededForLevel = xpRequiredForNextLevel(level);
-  }
-
-  return {
-    level,
-    title: getTesterTitle(level),
-    xpIntoLevel: remainingXp,
-    xpNeededForLevel,
-    xpToNextLevel: xpNeededForLevel - remainingXp,
-    progressPercent:
-      xpNeededForLevel > 0
-        ? Math.min(100, (remainingXp / xpNeededForLevel) * 100)
-        : 0,
-  };
-}
 
 function getAccessLabel(accessType: TestAccessType) {
   switch (accessType) {
@@ -232,7 +196,7 @@ function feedbackRequiredAnswers(draft: FeedbackDraft) {
   const intentValid = (value: string) => ["definitely", "probably", "maybe", "probably_not", "definitely_not"].includes(value);
   const hours = Number(draft.hoursPlayed);
   const hoursValid = draft.hoursPlayed.trim() !== "" && Number.isFinite(hours) && hours >= 0 && hours <= 1000 && Math.abs(hours * 4 - Math.round(hours * 4)) < 0.000001;
-  const textValid = (value: string) => value.trim().length >= 10 && value.length <= 5000;
+  const textValid = (value: string) => value.trim().length > 0 && value.length <= 5000;
   return [
     scoreValid(draft.overallScore), intentValid(draft.continuePlaying), intentValid(draft.recommendGame),
     scoreValid(draft.gameplayScore), scoreValid(draft.performanceScore), hoursValid,
@@ -336,7 +300,7 @@ function FeedbackForm({
     if (!readyRef.current || submittingRef.current || busy) return;
     const values = draftRef.current;
     if (feedbackRequiredAnswers(values).some((answered) => !answered)) {
-      setValidationError("Please choose each rating and answer, enter your actual play time, and write at least 10 characters for each required written response.");
+      setValidationError("Please choose each rating and answer, enter your actual play time, and complete each required written response.");
       return;
     }
     if (values.bugsFound.length > 5000 || values.feedback.length > 10000) {
@@ -554,7 +518,7 @@ function FeedbackForm({
                                     What did you enjoy most?
                                     <textarea
                                       required
-                                      minLength={10}
+
                                       maxLength={5000}
                                       value={enjoyedMost}
                                       onChange={(event) => updateField("enjoyedMost", event.target.value)}
@@ -568,7 +532,7 @@ function FeedbackForm({
                                     What frustrated you or got in the way?
                                     <textarea
                                       required
-                                      minLength={10}
+
                                       maxLength={5000}
                                       value={frustrations}
                                       onChange={(event) => updateField("frustrations", event.target.value)}
@@ -602,7 +566,7 @@ function FeedbackForm({
                                     What is the single biggest thing you would improve?
                                     <textarea
                                       required
-                                      minLength={10}
+
                                       maxLength={5000}
                                       value={biggestImprovement}
                                       onChange={(event) => updateField("biggestImprovement", event.target.value)}
@@ -650,7 +614,7 @@ function FeedbackForm({
                                 <button
                                   type="submit"
                                   disabled={
-                                    busy
+                                    busy || claim.status==="expired"
                                   }
                                   className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -666,7 +630,18 @@ function FeedbackForm({
 
 export default function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
-  const [claims, setClaims] = useState<TestClaim[]>([]);
+  useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
+  const [reviewHistory,setReviewHistory]=useState<{id:number;test_id:string;kind:string;reason:string;xp_delta:number;rubric_version?:number|null;quality_score?:number|null;actual_xp_award?:number|null;created_at?:string}[]>([]);
+  const [reviewHistoryError,setReviewHistoryError]=useState("");
+  const [storedClaims, setClaims] = useState<TestClaim[]>([]);
+  const capacityPolicy=useTestingCapacityPolicy();
+  const [clock,setClock]=useState<{server:number;local:number}|null>(null);
+  // Prerender must be deterministic; live time is read by the effects below.
+  const [clockTick,setClockTick]=useState(0);
+  const now=clock?clock.server+Math.max(0,clockTick-clock.local):null;
+  const claims=storedClaims.map(claim=>claim.reservation_expires_at&&now!==null&&Date.parse(claim.reservation_expires_at)<=now&&["claimed","in_progress"].includes(claim.status)?{...claim,status:"expired" as const}:claim);
+  useEffect(()=>{if(!clock)return;const serverNow=clock.server+Date.now()-clock.local;const deadlines=storedClaims.filter(claim=>["claimed","in_progress"].includes(claim.status)&&claim.reservation_expires_at).flatMap(claim=>[Date.parse(claim.reservation_expires_at!)-86400000,Date.parse(claim.reservation_expires_at!)]).filter(deadline=>deadline>serverNow);if(!deadlines.length)return;const timer=setTimeout(()=>setClockTick(Date.now()),Math.min(2147483647,Math.max(1,Math.min(...deadlines)-serverNow+1)));return()=>clearTimeout(timer);},[clock,storedClaims,clockTick]);
+  useEffect(()=>{const tick=()=>setClockTick(Date.now());const timer=setInterval(tick,60000);window.addEventListener("focus",tick);document.addEventListener("visibilitychange",tick);return()=>{clearInterval(timer);window.removeEventListener("focus",tick);document.removeEventListener("visibilitychange",tick);};},[]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [releasingId, setReleasingId] = useState<string | null>(null);
@@ -678,9 +653,9 @@ export default function TesterPage() {
     "success"
   );
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [testerXp, setTesterXp] = useState(0);
-  const [completedTests, setCompletedTests] = useState(0);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const [, setTesterXp] = useState(0);
+  const [, setCompletedTests] = useState(0);
+  const [, setProfileLoading] = useState(true);
 
   const alertRef = useRef<HTMLDivElement>(null);
 
@@ -688,6 +663,10 @@ export default function TesterPage() {
   const loadedAccountRef = useRef<string | null>(null);
   const feedbackDraftControllerRef = useRef<FeedbackDraftController | null>(null);
 
+  const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
+  const [genreFilter,setGenreFilter] = useState("preferred");
+  const [discoveryReady,setDiscoveryReady] = useState(false);
+  useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
   const router = useRouter();
   const activeClaimCount = claims.filter(
     (claim) => claim.status === "claimed" || claim.status === "in_progress"
@@ -727,7 +706,8 @@ export default function TesterPage() {
         setDraftOwnerId(null);
         setGames([]);
         setClaims([]);
-        router.replace("/login?next=/tester");
+        setReviewHistory([]);
+        router.replace("/login?next="+encodeURIComponent(window.location.pathname+window.location.search));
       }
     });
 
@@ -740,7 +720,7 @@ export default function TesterPage() {
       } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        router.replace("/login?next=/tester");
+        router.replace("/login?next="+encodeURIComponent(window.location.pathname+window.location.search));
         return;
       }
 
@@ -769,13 +749,13 @@ export default function TesterPage() {
         { data: claimsData, error: claimsError },
         { data: progressData, error: progressError },
       ] = await Promise.all([
-        supabase.rpc("get_available_community_test_games"),
-        supabase
-          .from("community_game_tests")
-          .select(
-            "id, submission_id, playtest_id, status, review_outcome"
-          )
-          .eq("tester_id", user.id),
+        (async () => {
+          const discovery = await supabase.rpc("get_discoverable_community_test_games");
+          if (!discovery.error) { setDiscoveryReady(true); return discovery; }
+          if (!["PGRST202", "42883"].includes(discovery.error.code)) return discovery;
+          return supabase.rpc("get_available_community_test_games");
+        })(),
+        (async()=>{const result=await supabase.rpc("get_my_test_reservations");if(!result.error&&result.data?.server_now){setClock(receivedReservationClock(result.data.server_now));return {data:result.data.claims,error:null};}if(result.error&&!["PGRST202","42883"].includes(result.error.code))return result;return supabase.from("community_game_tests").select("id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded").eq("tester_id",user.id);})(),
         supabase
           .from("profiles")
           .select("tester_xp, completed_tests")
@@ -806,7 +786,9 @@ export default function TesterPage() {
       }
 
       setGames((gamesData ?? []) as TestGame[]);
+      if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
       setClaims((claimsData ?? []) as TestClaim[]);
+      if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id));if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
       setDraftOwnerId(user.id);
 
       if (progressError) {
@@ -849,7 +831,7 @@ export default function TesterPage() {
 
     if (authError || !user) {
       setClaimingId(null);
-      router.push("/login?next=/tester");
+      router.push("/login?next="+encodeURIComponent(window.location.pathname+window.location.search));
       return;
     }
 
@@ -870,11 +852,10 @@ export default function TesterPage() {
       return;
     }
 
+    const journey=currentJourney();
     const { data, error } = await supabase.rpc(
-      "claim_community_game_test",
-      {
-        p_submission_id: game.submission_id,
-      }
+      journey ? "claim_with_share_attribution" : "claim_community_game_test",
+      {p_submission_id:game.submission_id,...(journey?{p_visit:journey}:{})}
     );
 
     if (error) {
@@ -891,7 +872,7 @@ export default function TesterPage() {
     const { data: createdClaim, error: createdClaimError } = await supabase
       .from("community_game_tests")
       .select(
-        "id, submission_id, playtest_id, status, review_outcome"
+        "id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, reservation_expires_at, reservation_started_at"
       )
       .eq("id", data as string)
       .eq("tester_id", user.id)
@@ -908,6 +889,10 @@ export default function TesterPage() {
       return;
     }
 
+    const confirmed=await supabase.rpc("get_my_test_reservations");
+    if(!confirmed.error&&confirmed.data?.server_now)setClock(receivedReservationClock(confirmed.data.server_now));
+    const catalogue=await supabase.rpc("get_discoverable_community_test_games");
+    if(!catalogue.error&&Array.isArray(catalogue.data))setGames(catalogue.data);
     setClaims((previous) => [
       ...previous.filter((item) => item.id !== createdClaim.id),
       createdClaim as TestClaim,
@@ -1004,6 +989,7 @@ export default function TesterPage() {
   }
 
   async function submitTest(game: TestGame, claim: TestClaim, values: FeedbackDraft): Promise<boolean> {
+    if(claim.status==="expired"){setFormErrors(previous=>({...previous,[claim.id]:"Reservation expired. Reclaim a place before submitting. Your draft is kept."}));return false;}
     if (submittingId !== null) return false;
     if (!draftOwnerId || feedbackRequiredAnswers(values).some((answered) => !answered) || values.bugsFound.length > 5000 || values.feedback.length > 10000) {
       setFormErrors((previous) => ({ ...previous, [claim.id]: "Please complete all required answers before submitting." }));
@@ -1048,18 +1034,23 @@ export default function TesterPage() {
     }
   }
 
-  const testerProgress = calculateTesterProgress(testerXp);
 
-  const { activeGames, availableGames, unavailableActiveClaims } =
+
+  const { activeGames, availableGames: eligibleGames, unavailableActiveClaims } =
     getTesterGameGroups(games, claims);
+  const expiredEditorClaim=claims.find(claim=>claim.id===activeTestId&&claim.status==="expired");
+  const editorGame=expiredEditorClaim?(games.find(game=>claimMatchesGame(expiredEditorClaim,game))??{submission_id:expiredEditorClaim.playtest_id??expiredEditorClaim.submission_id!,title:expiredEditorClaim.game_title??"Historical test",developer_name:"Developer",genre:"",description:"The campaign is not currently available. Your saved draft is still accessible.",game_link:null,access_type:"other",image_url:null,ai_type:null,focus_areas:[]} as TestGame):undefined;
+  const displayedActiveGames=editorGame&&!activeGames.includes(editorGame)?[...activeGames,editorGame]:activeGames;
 
   const historyClaims = claims.filter(
     (claim) =>
       claim.status === "submitted" ||
-      claim.status === "reviewed"
+      claim.status === "reviewed" || claim.status === "expired"
   );
 
+  const availableGames=eligibleGames.filter(g=>genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter])));
   function getStatusLabel(claim: TestClaim) {
+    if(claim.status==="expired")return "Reservation expired";
     if (claim.status === "submitted") {
       return "Awaiting admin review";
     }
@@ -1082,12 +1073,13 @@ export default function TesterPage() {
                   (item) =>
                     claimMatchesGame(item, game) &&
                     (item.status === "claimed" ||
-                      item.status === "in_progress")
+                      item.status === "in_progress" || (item.status === "expired" && activeTestId===item.id))
                 );
 
                 return (
                   <article
-                    key={game.submission_id}
+                    key={claim?.id||game.submission_id}
+                    id={"tester-campaign-"+game.submission_id}
                     className={`flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${
                       activeTestId
                         ? claim?.id === activeTestId
@@ -1104,6 +1096,9 @@ export default function TesterPage() {
                       />
                     )}
 
+                    <CampaignPlaces id={game.submission_id} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
+                    <ReservationNotice claimed={!!claim} expiresAt={claim?.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
+                    {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
                     <div
                       className={`flex flex-1 flex-col ${
                         activeTestId === claim?.id
@@ -1206,11 +1201,12 @@ export default function TesterPage() {
                       )}
 
                       <div className="mt-auto space-y-3 pt-6">
+                        {!claim && game.can_claim === false && <p className="text-sm text-amber-200">{game.restriction_reason || "Testing requirements not met"}. Update your interests in Account if this genre suits you.</p>}
                         {!claim ? (
                           <button
                             type="button"
                             disabled={
-                              claimingId !== null || hasActiveTest
+                              claimingId !== null || hasActiveTest || game.can_claim === false || !capacityPolicy
                             }
                             aria-describedby={hasActiveTest ? "one-active-test-note" : undefined}
                             onClick={() => void claimGame(game)}
@@ -1218,11 +1214,13 @@ export default function TesterPage() {
                           >
                             {claimingId === game.submission_id
                               ? "Starting..."
+                              : game.can_claim === false
+                                ? "Requirements not met"
                               : hasActiveTest
                                 ? "Finish or release current test"
-                                : "Test game"}
+                                : !capacityPolicy ? "Reservation rules unavailable" : "Test game"}
                           </button>
-                        ) : claim.status === "claimed" ? (
+                        ) : claim.status === "claimed" && activeTestId!==claim.id ? (
                           <>
                             <p className="text-center text-sm font-medium text-[#77f29b]">
                               Ready to test
@@ -1278,14 +1276,14 @@ export default function TesterPage() {
                                   {getAccessInstructions(accessType)}
                                 </p>
 
-                                <a
+                                <TrackedAccessLink campaignId={game.submission_id}
                                   href={accessLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="mt-4 block w-full rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-4 py-3 text-center text-sm font-semibold text-[#b9f9ca] hover:bg-[#77f29b]/15"
                                 >
                                   {getAccessButtonLabel(accessType)}
-                                </a>
+                                </TrackedAccessLink>
                               </div>
                             ) : (
                               <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
@@ -1365,6 +1363,7 @@ export default function TesterPage() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-white">
       <SiteHeader />
+      <ShareJourneyBanner />
 
       <section className="mx-auto max-w-7xl px-6 py-10">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#77f29b]">
@@ -1374,98 +1373,11 @@ export default function TesterPage() {
         <h1 className="mt-3 text-3xl font-bold">Tester Hub</h1>
 
         <p className="mt-3 max-w-2xl text-zinc-400">
-          Claim a game, play it, and submit useful, evidence-based feedback.
-          Honest criticism is just as valuable as praise.
+          Discover a game, share useful feedback, and build your tester experience.
         </p>
 
-        <section className="mt-8 rounded-2xl border border-[#77f29b]/20 bg-gradient-to-br from-[#77f29b]/10 to-transparent p-6">
-          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#77f29b]">
-                Tester progress
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold">
-                {profileLoading
-                  ? "Loading level..."
-                  : `Level ${testerProgress.level}`}
-              </h2>
-
-              {!profileLoading && (
-                <p className="mt-1 text-sm font-semibold text-[#77f29b]">
-                  {testerProgress.title}
-                </p>
-              )}
-
-              <p className="mt-2 text-sm text-zinc-400">
-                Earn 100 XP for every test accepted by an admin. Higher
-                levels require progressively more XP.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:min-w-64">
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs text-zinc-400">Total XP</p>
-                <p className="mt-1 text-2xl font-bold text-[#77f29b]">
-                  {profileLoading ? "..." : testerXp}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <p className="text-xs text-zinc-400">
-                  Accepted tests
-                </p>
-                <p className="mt-1 text-2xl font-bold">
-                  {profileLoading ? "..." : completedTests}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-              <span className="text-zinc-300">
-                {profileLoading
-                  ? "Calculating progress..."
-                  : `${testerProgress.xpIntoLevel}/${testerProgress.xpNeededForLevel} XP towards Level ${testerProgress.level + 1}`}
-              </span>
-
-              <span className="text-zinc-400">
-                {profileLoading
-                  ? ""
-                  : `${testerProgress.xpToNextLevel} XP to go`}
-              </span>
-            </div>
-
-            <div
-              className="h-3 overflow-hidden rounded-full bg-white/10"
-              role="progressbar"
-              aria-label="Progress towards next tester level"
-              aria-valuemin={0}
-              aria-valuemax={testerProgress.xpNeededForLevel}
-              aria-valuenow={
-                profileLoading ? 0 : testerProgress.xpIntoLevel
-              }
-            >
-              <div
-                className="h-full rounded-full bg-[#77f29b] transition-all duration-500"
-                style={{
-                  width: `${
-                    profileLoading
-                      ? 0
-                      : testerProgress.progressPercent
-                  }%`,
-                }}
-              />
-            </div>
-
-            <p className="mt-3 text-xs text-zinc-500">
-              XP is awarded only after an admin accepts your test.
-              Tester titles improve at milestone levels as your
-              experience grows.
-            </p>
-          </div>
-        </section>
+        <TesterRankPanel />
+        <QualityGuidance collapsible />
 
           {message && (
             <div
@@ -1506,14 +1418,14 @@ export default function TesterPage() {
                 </span>
               </div>
 
-              {activeGames.length === 0 && unavailableActiveClaims.length === 0 ? (
+              {displayedActiveGames.length === 0 && unavailableActiveClaims.length === 0 ? (
                 <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-400">
                   You have no active tests. Choose a game from Available to test below to get started.
                 </p>
               ) : (
                 <>
                   <div className={`mt-6 grid items-stretch gap-6 ${activeTestId ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
-                    {activeGames.map(renderGameCard)}
+                    {displayedActiveGames.map(renderGameCard)}
                   </div>
                   {!activeTestId && unavailableActiveClaims.length > 0 && (
                     <div className="mt-4 space-y-3">
@@ -1541,10 +1453,12 @@ export default function TesterPage() {
                     </p>
                   </div>
                   <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                    {availableGames.length} available
+                    {availableGames.filter(game=>game.can_claim!==false).length} available{availableGames.some(game=>game.can_claim===false) ? ` ? ${availableGames.filter(game=>game.can_claim===false).length} restricted` : ""}
                   </span>
                 </div>
 
+                <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All genres" : "All eligible genres"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
+                <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible genres. Set your interests in Account.":"All genres includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
                 {hasActiveTest && (
                   <div id="one-active-test-note" className="mt-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">
                     <p className="font-semibold text-zinc-200">One test at a time</p>
@@ -1582,7 +1496,7 @@ export default function TesterPage() {
             </h2>
 
             <p className="mt-2 text-sm text-zinc-400">
-              Keep track of every submitted test, its review outcome
+              Keep track of expired reservations, submitted tests, review outcomes
               and your progress as a tester.
             </p>
           </div>
@@ -1593,7 +1507,7 @@ export default function TesterPage() {
             </p>
           ) : historyClaims.length === 0 ? (
             <p className="mt-6 rounded-lg border border-white/10 p-6 text-zinc-400">
-              Your submitted and reviewed tests will appear here.
+              Your expired reservations, submitted and reviewed tests will appear here.
             </p>
           ) : (
             <div className="mt-6 space-y-3">
@@ -1616,7 +1530,7 @@ export default function TesterPage() {
                     <div>
                       <h3 className="font-semibold">
                         {game?.title ??
-                          "Previously tested game"}
+                          claim.game_title ?? "Previously tested game"}
                       </h3>
 
                       <p className="mt-1 text-sm text-zinc-400">
@@ -1625,17 +1539,23 @@ export default function TesterPage() {
                           : "Game details are no longer available in the current catalogue."}
                       </p>
 
+                      <p className="mt-2 text-sm text-zinc-300">{feedbackQualityLabel(claim)}</p>
+                      {accepted&&claim.review_reason&&<p className="mt-2 text-sm text-zinc-400">Admin reason: {claim.review_reason}</p>}
+                      {reviewHistoryError&&<p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
+                      {reviewHistory.some(event=>event.test_id===claim.id)&&<details className="mt-3 text-xs text-zinc-400"><summary>XP and review history</summary>{reviewHistory.filter(event=>event.test_id===claim.id).map(event=><p key={event.id} className="mt-2 break-words">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"} · {event.kind} · XP change {event.xp_delta}{event.rubric_version!=null?` · Feedback quality ${event.quality_score}% · Award ${event.actual_xp_award} XP`:" · Legacy score not recorded"} · {event.reason}</p>)}</details>}
+                      {(rejected||(accepted&&claim.quality_rubric_version!=null&&typeof claim.base_xp_amount==="number"&&claim.base_xp_amount<100)) && <Reconsideration testId={claim.id} reason={claim.review_reason} />}
                       <p className="mt-2 text-xs text-zinc-500">
-                        {pending
+                        {claim.status==="expired" ? "Your draft is kept. Reclaim a place to continue; expiry has no XP penalty." : pending
                           ? "Your feedback has been submitted and is awaiting admin review."
                           : accepted
-                            ? "Your test was accepted and earned 100 XP."
+                            ? `Accepted. ${feedbackQualityLabel(claim)}.`
                             : rejected
                               ? "Your test was reviewed but was not accepted for XP."
                               : "Your test has been reviewed."}
                       </p>
                     </div>
 
+                    {claim.status==="expired"&&<div className="flex flex-wrap gap-2"><button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!,title:claim.game_title??game?.title??"this game"} as TestGame)} className="rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>{<button type="button" onClick={()=>setActiveTestId(claim.id)} className="rounded-lg border border-white/20 px-3 py-2 text-sm">Open saved draft</button>}{!claim.playtest_id&&!claim.reclaim_campaign_id&&<p className="text-xs text-zinc-400">This historical test needs a published campaign before it can be reclaimed.</p>}</div>}
                     <span
                       className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${
                         pending
