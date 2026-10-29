@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import ts from 'typescript';
 import {chromium,expect} from 'playwright/test';
 const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/submission-completeness.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(model);
-const endpoint=/^NEXT_PUBLIC_SUPABASE_URL\s*=\s*["']?([^\r\n"']+)/m.exec(fs.readFileSync('.env.local','utf8'))?.[1];const backend=new URL(endpoint.trim()),origin='http://localhost:3000';
+const endpoint=/^NEXT_PUBLIC_SUPABASE_URL\s*=\s*["']?([^\r\n"']+)/m.exec(fs.readFileSync('.env.local','utf8'))?.[1];const backend=new URL(endpoint.trim()),origin=process.env.TEST_APP_URL||'http://localhost:3000';
 const uid='d1000000-0000-4000-8000-000000000001';const encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');const user={id:uid,aud:'authenticated',role:'authenticated',email:'fixture@example.test',app_metadata:{provider:'email'},user_metadata:{}};const expiry=Math.floor(Date.now()/1000)+3600;
 const session={access_token:encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,exp:expiry,role:'authenticated'})+'.fixture',refresh_token:'fixture',expires_in:3600,expires_at:expiry,token_type:'bearer',user};
 let row=null,failSave=true,batches=0;const events=[];
 const legacy={id:'d1000000-0000-4000-8000-000000000010',developer_id:uid,title:'Legacy pending fixture',developer_name:'Fixture studio',genre:'Action',description:'Test the game',ai_type:'AI-assisted',ai_explanation:'',evidence_link:'',game_link:'',release_status:'Not announced',submitted_at:'2026-10-28',status:'Pending Review',submission_revision:0};
 function validation(record){const issues=model.submissionIssues(record);return {issues,message:model.completenessMessage(issues)};}
 function correction(){return {submission:row,validation:validation(row),history:[]};}
+if(process.argv.includes('--review')){await reviewBrowser();process.exit(0);}
 if(process.argv.includes('--listings')){await listingBrowser();process.exit(0);}
 const browser=await chromium.launch({headless:true});
 const metricsFile='app/components/_submission_metrics_fixture.tsx',fixtureDir='app/submission-metrics-fixture';let fixtureCreated=false;
@@ -76,4 +77,33 @@ async function listingBrowser(){
  await expect(page.getByText('1 out of 1 positive',{exact:true}).first()).toBeVisible();await expect(page.getByText('No answers yet',{exact:true}).first()).toBeVisible();await page.getByRole('button',{name:/Build B/}).click();await expect(page.getByText('2 out of 4 positive',{exact:true}).first()).toBeVisible();await expect(page.getByText('1 definitely \u00b7 1 probably',{exact:true}).first()).toBeVisible();
  console.log('PASS browser: current editor, partial payloads, failed-save preservation, direct Approved saves, optional evidence, conditional AI validation, no resubmission, reassessment gate, unsaved/mobile, per-question counts and historical-build switching. Auth/RPC mocked.');
  }finally{await browser.close();fs.unlinkSync(fixture+'/page.tsx');fs.rmdirSync(fixture);}
+}
+
+async function reviewBrowser(){
+ const browser=await chromium.launch({headless:true});const context=await browser.newContext();await context.addCookies([{name:'sb-'+backend.hostname.split('.')[0]+'-auth-token',value:'base64-'+encode(session),url:origin}]);
+ const rid=n=>'d2000000-0000-4000-8000-'+String(n).padStart(12,'0');
+ const base={developer_id:uid,developer_name:'Fixture studio',genre:'Action',description:'Complete listing',ai_type:'AI-assisted',ai_explanation:'Edited generated artwork',evidence_link:'',game_link:'',release_status:'Not announced',status:'Pending Review',review_reason:''};
+ const rows=Array.from({length:103},(_,i)=>({...base,id:rid(i+1),title:i===0?'Newest complete':i===1?'Timestamp tie':i===2?'Incomplete initial':i===102?'Distant match':'Older '+i,submitted_at:i<2?'2026-10-29':i===2?'2026-10-28':'2026-10-20',...(i===2?{description:''}:{}),...(i===102?{developer_name:'FindMe studio',status:'Approved'}:{})}));
+ const assessments=new Map();let reads=0,decisions=0,noteWrites=0,assessmentWrites=0;
+ await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(u.origin===origin){const headers={...req.headers()};delete headers.cookie;return route.continue({headers});}if(u.origin!==backend.origin)return route.abort();const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*'};if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});let data=[],status=200;
+ if(u.pathname.endsWith('/user'))data=user;
+ else if(u.pathname.endsWith('/profiles'))data={id:uid,role:'admin',roles:['developer']};
+ else if(u.pathname.endsWith('/game_submissions')){assert.equal(u.searchParams.get('order'),'submitted_at.desc.nullslast,id.asc');reads++;data=[...rows].sort((a,b)=>Date.parse(b.submitted_at)-Date.parse(a.submitted_at)||a.id.localeCompare(b.id)).slice(Number(u.searchParams.get('offset')||0),Number(u.searchParams.get('offset')||0)+100);}
+ else if(u.pathname.endsWith('/game_verifications')){if(req.method()==='GET')data=assessments.get(u.searchParams.get('submission_id')?.slice(3))||null;else{const body=req.postDataJSON();if(Object.keys(body).sort().join(',')==='reviewer_notes,submission_id'){noteWrites++;assessments.set(body.submission_id,{...assessments.get(body.submission_id),...body});}else assessmentWrites++;data=null;}}
+ else if(u.pathname.endsWith('/rpc/review_game_submission')){decisions++;const b=req.postDataJSON(),row=rows.find(r=>r.id===b.p_submission_id);assert.equal(model.submissionIssues(row).length,0);assert.equal(b.p_status,'Approved');row.status='Approved';data=null;}
+ else if(req.method()!=='GET'&&!u.pathname.includes('/rpc/get_'))throw Error('Unexpected review fixture mutation '+u.pathname);
+ return route.fulfill({status,headers,json:data});});
+ try{const page=await context.newPage();await page.goto(origin+'/admin/submissions');await expect(page.getByRole('heading',{name:'Newest complete',exact:true})).toBeVisible();assert.equal(reads,2);const cards=page.locator('section').filter({has:page.getByRole('heading',{name:'Submissions',exact:true})}).getByRole('button');await expect(cards.nth(0)).toContainText('Newest complete');await expect(cards.nth(1)).toContainText('Timestamp tie');await expect(cards.nth(2)).toContainText('Incomplete initial');
+ const optional=page.locator('details').filter({has:page.locator('summary h3',{hasText:'Optional independent gameplay assessment'})});await expect(optional).not.toHaveAttribute('open');await expect(page.getByText('Independent assessment publication readiness',{exact:true})).toBeHidden();
+ await expect(page.getByText('AI use is declared by the developer. Review does not independently prove how the game was made.')).toBeVisible();
+ const decision=page.getByLabel('Listing review status');await decision.selectOption('Needs More Information');await page.getByLabel('Information requested',{exact:true}).fill('Clarify only the generated artwork');
+ await page.getByLabel('Search submissions').fill('no matches');await expect(page.getByText('No submissions match the current filters.')).toBeVisible();await expect(page.getByLabel('Information requested',{exact:true})).toHaveValue('Clarify only the generated artwork');
+ await page.getByRole('button',{name:'All',exact:true}).click();await page.getByLabel('Search submissions').fill('FindMe');await expect(page.getByRole('status').filter({hasText:'1 of 103'})).toBeVisible();await expect(page.getByRole('button',{name:/Distant match/})).toBeVisible();assert.equal(reads,2);
+ await page.getByRole('button',{name:'Clear search',exact:true}).click();await decision.selectOption('Approved');await page.getByRole('button',{name:'Save listing decision',exact:true}).click();await expect(decision).toHaveValue('Approved');assert.equal(decisions,1);assert.equal(assessmentWrites,0);
+ const notes=page.getByLabel('Private admin notes',{exact:true});await expect(notes).toHaveValue('');await expect(notes).toHaveAttribute('placeholder','Disclosure reviewed; requested clarification about AI-generated artwork.');await notes.fill('Private real note');await page.getByRole('button',{name:'Save private notes',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'Private admin notes saved'})).toBeVisible();assert.equal(noteWrites,1);assert.equal(assessmentWrites,0);
+ await optional.locator('summary').click();await expect(page.getByText('Independent assessment publication readiness',{exact:true})).toBeVisible();await page.getByLabel('Publish verification results').check();await page.getByRole('button',{name:'Save independent assessment',exact:true}).click();await expect(page.getByText(/Publishing requires|public summary|Public summary|Select an AI/).filter({visible:true}).first()).toBeVisible();assert.equal(assessmentWrites,0);
+ await page.getByLabel('Search submissions').fill('Incomplete initial');await page.getByRole('button',{name:/Incomplete initial/}).click();await decision.selectOption('Approved');await expect(page.getByRole('button',{name:'Save listing decision',exact:true})).toBeDisabled();
+ await page.setViewportSize({width:390,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ console.log('PASS admin review browser: complete approval without assessment/evidence, correction guard, note-only save/placeholders, optional publication safeguards, full batched search/order/status counts, unsaved selection/reason preservation and mobile. All backend requests mocked.');
+ }finally{await browser.close();}
 }

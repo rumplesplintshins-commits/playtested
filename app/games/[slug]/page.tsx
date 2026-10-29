@@ -1,3 +1,4 @@
+import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
 import {notFound} from "next/navigation";
@@ -548,7 +549,7 @@ export default async function GamePage({
           <div className="mx-auto max-w-6xl px-6 py-12 md:py-16">
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex rounded-full border border-white/20 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-zinc-300">
-                {verificationStatus}
+                {assessmentLabel(verificationStatus)}
               </span>
               <span className="inline-flex rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-3 py-1.5 text-xs font-semibold text-violet-200">
                 {listingUpdate?.fields.ai_type||"AI Use Unknown"}
@@ -651,7 +652,7 @@ export default async function GamePage({
                   )}
 
                   <span className="rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs font-semibold text-zinc-300">
-                    {verificationStatus}
+                    {assessmentLabel(verificationStatus)}
                   </span>
                 </div>
               </div>
@@ -1010,7 +1011,7 @@ export default async function GamePage({
 
                     <p className="mt-4 text-xs leading-5 text-zinc-600">
                       These are accepted tester comments, not independently
-                      confirmed findings or a Playtested verification verdict.
+                      confirmed findings or an independent gameplay assessment.
                     </p>
                   </div>
                 </details>

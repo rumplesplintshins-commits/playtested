@@ -499,9 +499,7 @@ export default function ImportedSteamCatalogue() {
                         )}
 
                         <p className="mt-4 text-xs leading-5 text-zinc-500">
-                          Catalogue eligibility is not Playtested verification.
-                          Imported Steam listings remain Not yet verified until
-                          independently assessed.
+                          Catalogue eligibility is not an independent gameplay assessment or certification of developer-declared AI use.
                         </p>
                       </div>
                     )}

@@ -6,6 +6,7 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--review')){try{await reviewScopeChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--visibility')){try{await visibilityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--claims')){try{await ownershipClaimChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--maintenance')){try{await listingChecks(true);}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
@@ -317,4 +318,32 @@ async function qaActivityChecks(){
  for(const[cid,,status]of campaigns){assert.equal((await one(`select status from community_playtests where id='${cid}'`)).status,status);assert.equal((await one(`select public.campaign_eligible('${cid}','${id(50)}') eligible`)).eligible,false);}
  await as(500);await run('set role authenticated');assert.equal(Number((await one(`select count(*) n from community_game_tests where tester_id=auth.uid()`)).n),1);await run('reset role');
  console.log('PASS 022 isolated exact-ID cleanup: four QA listings excluded; three genuine Steam entries retained; both Rail QA rounds, recommendations, rating/build reception and recruitment excluded; all 29 reports/community feedback/history/recorded XP preserved; view security unchanged. No live application.');
+}
+
+async function reviewScopeChecks(){
+ await run(fs.readFileSync('supabase/tests/v10-fixture.sql','utf8'));
+ await run(fs.readFileSync('supabase/migrations/202610280010_submission_corrections.sql','utf8'));
+ const latest=fs.readFileSync('supabase/migrations/202610290017_admission_maintenance_intents.sql','utf8');
+ await run(latest.slice(latest.indexOf('create or replace function public.submission_completeness'),latest.indexOf('create function public._listing_has_admission')));
+ await run(`drop table approved_games cascade;create view approved_games as select id,title,developer_name from game_submissions where status='Approved';create table developer_xp_awards(id uuid default gen_random_uuid(),developer_id uuid,xp_amount integer,award_type text,source_type text,source_id uuid,description text,unique(developer_id,award_type,source_type,source_id));`);
+ await run(fs.readFileSync('supabase/tests/submission-review-fixture.sql','utf8'));
+ for(const n of [1,2,3])await run(`insert into auth.users values('${id(n)}');insert into profiles(id,roles,role)values('${id(n)}',array['developer'],'${n===3?'admin':'user'}')`);
+ await as(1);await insert(30,{ai_type:'AI-assisted',ai_explanation:'Edited generated artwork',evidence_link:''});await insert(31,{description:''});
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(30),'Approved',null]),/Admin access/);
+ await as(3);await one('select review_game_submission($1,$2,$3)',[id(30),'Approved',null]);
+ assert.equal((await one('select status from game_submissions where id=$1',[id(30)])).status,'Approved');assert.equal((await one('select count(*) n from game_verifications')).n,0);
+ const xp=(await one('select developer_xp from profiles where id=$1',[id(1)])).developer_xp;
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(31),'Approved',null]),/Please complete/);assert.equal((await one('select developer_xp from profiles where id=$1',[id(1)])).developer_xp,xp);
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(31),'Needs More Information','']),/reason is required/);
+ await one('select review_game_submission($1,$2,$3)',[id(31),'Needs More Information','Clarify disclosure']);
+ await run('grant select on profiles to authenticated;set role authenticated');
+ await one(`insert into game_verifications(submission_id,reviewer_notes)values($1,'Private review only')on conflict(submission_id)do update set reviewer_notes=excluded.reviewer_notes returning submission_id`,[id(30)]);
+ const before=await one('select * from game_verifications where submission_id=$1',[id(30)]);assert.equal(before.published,false);assert.equal(before.quality_status,'Not Tested');
+ await assert.rejects(one('update game_verifications set published=true where submission_id=$1',[id(30)]),/check constraint/);
+ await assert.rejects(one('update game_verifications set quality_score=8 where submission_id=$1',[id(30)]),/check constraint/);
+ await one(`update game_verifications set reviewer_notes='Changed private note' where submission_id=$1`,[id(30)]);
+ const after=await one('select * from game_verifications where submission_id=$1',[id(30)]);delete before.reviewer_notes;delete after.reviewer_notes;assert.deepEqual(after,before);
+ await as(1);await run('set role authenticated');assert.equal((await one('select count(*) n from game_verifications')).n,0);assert.equal((await db.query('update game_verifications set reviewer_notes=$1 returning id',['forge'])).rows.length,0);
+ await assert.rejects(one('select reviewer_notes from published_game_verifications'),/does not exist/);
+ console.log('PASS isolated review scope: actual archived approval RPC plus current completeness guards permit complete no-evidence/no-assessment approval; incomplete approval rolls back XP side effects; admin/reason guards, private-note RLS/exposure and note-only preservation, assessment publishing/score constraints retained. Not a fresh live-schema inspection.');
 }
