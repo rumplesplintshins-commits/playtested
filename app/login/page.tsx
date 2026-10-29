@@ -149,7 +149,7 @@ export default function LoginPage() {
         }
 
         if (data.session) {
-          window.location.href = nextPath;
+          window.location.replace(nextPath);
           return;
         }
 
@@ -168,7 +168,7 @@ export default function LoginPage() {
           throw error;
         }
 
-        window.location.href = nextPath;
+        window.location.replace(nextPath);
       }
     } catch (error) {
       setMessage(

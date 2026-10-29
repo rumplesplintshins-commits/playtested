@@ -2,6 +2,8 @@
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
+import {SITE_ORIGIN} from "../lib/seo";
+export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
 
 export default function Home() {
   return (

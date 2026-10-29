@@ -1,4 +1,11 @@
 import IntentSummary from "@/app/components/IntentSummary";
+import {gameMetadata} from "@/lib/public-game-seo";
+import {notFound} from "next/navigation";
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}) {
+  const {slug}=await params;
+  if(!slug.startsWith("steam-"))notFound();
+  return gameMetadata("imported",slug.slice(6));
+}
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";

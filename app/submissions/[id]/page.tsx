@@ -670,3 +670,7 @@ export default async function SubmissionPage({
     </main>
   );
 }
+import {gameMetadata} from "@/lib/public-game-seo";
+export async function generateMetadata({params}:{params:Promise<{id:string}>}) {
+  return gameMetadata("approved",(await params).id);
+}

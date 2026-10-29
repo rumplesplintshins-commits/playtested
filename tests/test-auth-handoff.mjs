@@ -4,10 +4,13 @@ import {createRequire} from 'node:module';
 import ts from 'typescript';
 import {chromium,expect} from 'playwright/test';
 const require=createRequire(import.meta.url);
+const origin=process.env.TEST_APP_URL||'http://localhost:3000';
+if(process.argv.includes('--seo')){await seoChecks();process.exit(0);}
+if(process.argv.includes('--navigation')){await navigationChecks();process.exit(0);}
 if(process.argv.includes('--passwords')){await passwordChecks();process.exit(0);}
 async function passwordChecks(){
  const {default:env}=await import('@next/env');env.loadEnvConfig(process.cwd(),false,{info(){},error(){}});
- const backend=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL),origin='http://localhost:3000';
+ const backend=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL),origin=process.env.TEST_APP_URL||'http://localhost:3000';
  const uid='a1000000-0000-4000-8000-000000000001',user={id:uid,aud:'authenticated',role:'authenticated',email:'fixture@example.test',app_metadata:{provider:'email'},user_metadata:{}};
  const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
  const token=encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:uid,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})+'.fixture';
@@ -46,6 +49,56 @@ async function passwordChecks(){
   console.log('PASS password browser: generic known/unknown request, throttling, PKCE recovery, mismatch/visibility, used/expired/ordinary-session rejection, captured-account update, current password and reauthentication nonce, mobile. All Auth calls mocked; no real emails or credentials.');
  }finally{await browser.close();fs.unlinkSync(dir+'/page.tsx');fs.rmdirSync(dir);}
 }
+async function seoChecks(){
+ const seo=load('lib/seo.ts');
+ assert.equal(seo.SITE_TITLE,'Playtested | Find Your Next Good Game');
+ for(const path of ['/login','/submit','/account','/my-submissions','/tester','/admin/submissions','/auth/callback','/reset-password','/share/id','/playtest/token'])assert(seo.noIndexPath(path));
+ for(const path of ['/','/contact','/games/steam-123','/submissions/id'])assert(!seo.noIndexPath(path));
+ const robots=load('app/robots.ts',n=>n==='@/lib/seo'?seo:require(n)).default();
+ assert.equal(robots.sitemap,'https://playtested.co.uk/sitemap.xml');assert.equal(robots.rules.disallow,'/api/');
+ let fail=false;const requests=[];
+ const client={rpc:async()=>({data:[{fields:{title:'Reviewed title',description:'Published description'}}],error:null}),from(table){const filters={};let columns;return{select(value){columns=value;return this;},order(){return this;},eq(k,v){filters[k]=v;return this;},async range(from,to){requests.push({table,columns,from,to});if(fail)return{data:null,error:{code:'fixture'}};return{data:table==='approved_games'?[{id:'10000000-0000-4000-8000-000000000001'}]:[{id:'link',imported_game_id:'imported'},{id:'duplicate',imported_game_id:'imported'}],error:null};},in(k,v){filters[k]=v;return this;},then(resolve){requests.push({table,filters,columns});return Promise.resolve(fail?{data:null,error:{code:'fixture'}}:{data:[{steam_app_id:'123'},{steam_app_id:'PLAYTESTED_TEST'}],error:null}).then(resolve);},async maybeSingle(){requests.push({table,filters});if(fail)return{error:{code:'fixture_error'}};return{data:filters.steam_app_id==='123'?{id:'10000000-0000-4000-8000-000000000001',title:'Game',description:''}:null,error:null};}};}};
+ const gameSeo=load('lib/public-game-seo.ts',n=>n==='server-only'?{}:n==='next/cache'?{cacheLife(){}}:n==='next/navigation'?{notFound(){throw Error('NOT_FOUND')}}:n==='@supabase/supabase-js'?{createClient:()=>client}:n==='./seo'?seo:n==='./listing-updates'?load('lib/listing-updates.ts'):require(n));
+ const sitemap=await gameSeo.publicSitemap();assert.equal(requests.length,3);assert(requests.slice(0,2).every(r=>r.to-r.from===99&&!r.columns.includes('description')));assert.deepEqual(requests[2].filters.id,['imported']);assert.equal(requests[2].filters.catalogue_eligible,true);
+ assert.deepEqual(sitemap.map(r=>r.url),['https://playtested.co.uk/','https://playtested.co.uk/contact','https://playtested.co.uk/submissions/10000000-0000-4000-8000-000000000001','https://playtested.co.uk/games/steam-123']);assert(sitemap.every(r=>!r.lastModified));
+ const metadata=await gameSeo.gameMetadata('imported','123');assert.equal(metadata.title,'Reviewed title | Playtested');assert.equal(metadata.description,'Published description');assert.equal(metadata.alternates.canonical,'https://playtested.co.uk/games/steam-123');assert.equal(requests.at(-1).filters.catalogue_eligible,true);
+ await assert.rejects(gameSeo.gameMetadata('imported','PLAYTESTED_TEST'),/NOT_FOUND/);await assert.rejects(gameSeo.gameMetadata('imported','999'),/NOT_FOUND/);
+ fail=true;await assert.rejects(gameSeo.publicSitemap(),/unavailable/);await assert.rejects(gameSeo.gameMetadata('imported','123'),/unavailable/);
+ assert(fs.existsSync('public/images/roles/player-role.png'));
+ console.log('PASS SEO units: canonical origin/title, private noindex classification, crawlable directives, bounded public view/link sitemap batches, dedup/external Steam omission, no invented dates, published metadata, hidden/missing 404 and service-error distinction. Mocked public reads only.');
+}
+
+async function navigationChecks(){
+ const origin=process.env.TEST_APP_URL||'http://localhost:3000';
+ const browser=await chromium.launch({headless:true});
+ const user={id:'a1000000-0000-4000-8000-000000000001',aud:'authenticated',role:'authenticated',email:'fixture@example.test',app_metadata:{provider:'email'},user_metadata:{}};
+ const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');const token=encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})+'.fixture';
+ try{for(const flow of ['login','signup','submit','invitation']){
+  let signedIn=false;const context=await browser.newContext();const errors=[];
+  await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(u.origin===origin){if(flow==='invitation'&&u.pathname.startsWith('/playtest/'))return route.fulfill({contentType:'text/html',body:'<h1>Intentional invitation destination</h1>'});const headers={...req.headers()};delete headers.cookie;return route.continue({headers});}
+   const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*'};if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});
+   if(u.pathname.endsWith('/token')||u.pathname.endsWith('/signup')){signedIn=true;return route.fulfill({headers,json:{access_token:token,refresh_token:'fixture-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user}});}
+   if(u.pathname.endsWith('/user'))return signedIn?route.fulfill({headers,json:user}):route.fulfill({status:401,headers,json:{msg:'Not signed in'}});
+   if(u.pathname.endsWith('/profiles'))return route.fulfill({headers,json:{id:user.id,role:'user',roles:['player','developer'],tester_xp:0,developer_xp:0,completed_tests:0}});
+   return route.fulfill({headers,json:[]});
+  });
+  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(origin+'/');
+  const invitation='/playtest/10000000-0000-4000-8000-000000000001?pt_visit='+'a'.repeat(64);
+  if(flow==='submit'){await page.getByRole('link',{name:'Submit a game',exact:true}).first().click();await expect(page).toHaveURL(/\/login\?next=/);}
+  else await page.goto(origin+(flow==='invitation'?'/login?mode=signup&next='+encodeURIComponent(invitation):flow==='signup'?'/login?mode=signup':'/login'));
+  if(flow==='submit')await expect(page.getByText('After signing in, continue to adding your game.',{exact:false})).toBeVisible();
+  if(flow==='signup'||flow==='invitation')await expect(page.getByRole('heading',{name:'Create your account',exact:true})).toBeVisible();
+  await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');
+  await page.getByRole('button',{name:flow==='signup'||flow==='invitation'?/Create account|Join/:/Log in|Sign in/}).click();
+  const target=flow==='submit'?'/submit':flow==='invitation'?invitation:'/';await expect(page).toHaveURL(origin+target);
+  if(flow==='submit'){await expect(page.getByRole('heading',{name:'Submit your game.'})).toBeVisible();await expect(page.getByText('Checking account permissions...', {exact:true})).toHaveCount(0);assert(!/\uFFFD/.test(await page.locator('body').innerText()));}
+  await page.goBack();await expect(page).toHaveURL(origin+'/');assert.equal(errors.length,0,errors.join('\n'));
+  await context.close();
+ }
+ console.log('PASS mocked navigation: default login/immediate signup -> Home; signed-out Submit -> intentional Submit; invitation token preserved; Back returns Home, no Auth trap or broken submit text. Existing browser history outside app-created entries is not rewritten. No live users/emails.');
+ }finally{await browser.close();}
+}
 function load(path,resolve=require){const exports={};new Function('exports','require',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(exports,resolve);return exports;}
 const navigation=load('lib/auth-navigation.ts');
 for(const value of [null,'https://example.test','//example.test','/\\example.test','/%5cexample.test','/%2fexample.test','/\n/example.test','/%00evil','/%zz'])assert.equal(navigation.getSafeNextPath(value),'/');
@@ -71,14 +124,14 @@ try{
   if(url.pathname.endsWith('/auth/v1/signup')){signup={url:url.href,body:request.postDataJSON()};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({id:'fixture-user',aud:'authenticated',email:'fixture@example.test',identities:[]})});}
   return route.fulfill({status:200,headers,contentType:'application/json',body:'[]'});
  });
- await page.goto('http://localhost:3000/auth/callback?next=/tester');
+ await page.goto(origin+'/auth/callback?next=/tester');
  await expect(page.getByRole('alert',{name:"We couldn't confirm your email link"})).toContainText('Your destination is saved: Tester Hub');
  await expect(page.getByLabel('Email address')).toBeVisible();
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
  assert.equal(new URL(page.url()).searchParams.get('next'),'/tester');
- await page.goto('http://localhost:3000/login?mode=signup&role=developer&next=/my-submissions');
+ await page.goto(origin+'/login?mode=signup&role=developer&next=/my-submissions');
  await expect(page.getByRole('checkbox',{name:/Game Developer/})).toBeChecked();
  await expect(page.getByText('After signing in, continue to My Games.',{exact:false})).toBeVisible();
  await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');

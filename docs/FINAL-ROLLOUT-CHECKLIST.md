@@ -1,5 +1,24 @@
 # Playtested rollout preparation
 
+## v11.1 SEO/Auth patch — review before release
+
+Prepared on `fix/v11.1-seo-auth` from `origin/v11` (`cb43cda`), in an isolated worktree. The original v11 working tree/title edit and release tag remain untouched. No database, email, DNS/Auth or production deployment actions are part of this patch.
+
+Production HTTP inspection: HTTP and www redirect to HTTPS root; the current homepage serves Playtested, not one.com. It has the older title and no canonical; robots/sitemap return 404. The reported Google placeholder is consistent with stale indexing, not a currently served placeholder. No production-wide noindex was observed. New metadata preserves “Playtested | Find Your Next Good Game”, uses the canonical domain and existing role artwork. Auth/private/invitation routes receive noindex headers and remain crawlable so directives can be read.
+
+Sitemap uses only anonymous public detail sources: the filtered approved view and eligible imported IDs with publicly readable developer links. It projects URL fields in ordered batches of 100, deduplicates, caches hourly and invents no modification dates. It does not enumerate thousands of external Steam cards through the expensive reception/catalogue aggregate. Local built output: HTTP 200, six URLs, no known fixtures/private/token URLs; currently no imported developer links are anonymously readable. Existing approved records remain eligible regardless of test-like titles: no additional fixture classification or cleanup is authorised here. Draft legal pages retain their existing noindex and are omitted.
+
+Navigation cause: signed-out Submit and completed Auth used history-pushing assignments. Replacing those entries preserves intentional safe return paths without replaying completed guards/Auth on Back; default remains Home. Arbitrary pre-existing browser history is not rewritten. Broken submit encoding was not reproduced; request the exact screenshot before changing copy.
+
+Validation: production build/TypeScript passed; SEO units, mocked login/signup/Submit/invitation/Back, confirmation callback, safe redirects, password recovery/change and mobile checks passed. Actual built HTTP verified homepage metadata, robots, XML sitemap, public game metadata and fixture/missing 404 with blocking crawler agents. Streaming responses may send 200 before Next emits not-found/noindex. New SEO/proxy files pass targeted lint; existing page lint findings were compared with baseline, with no additions. The isolated worktree reused dependencies via a junction, requiring a temporary Turbopack filesystem root for local build only; next.config.ts was restored unchanged. No live Auth writes/emails were used.
+
+No tracked Render deployment configuration was found. Remote automatic-preview configuration is unverified: pushing this feature branch may create a preview if enabled. Do not change Render production branch, merge or deploy during preparation. After approval: merge reviewed patch into v11, verify Render source commit and hosted checks, then tag the successful release v11.1. After release, verify the Search Console Domain property using Google's supplied DNS TXT value, submit `https://playtested.co.uk/sitemap.xml`, and request homepage indexing through URL Inspection. Google must recrawl and can choose different result wording; no immediate update is promised. References: [ownership verification](https://support.google.com/webmasters/answer/9008080), [sitemap submission](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap).
+
+Manual verification after approved release:
+1. Fresh ordinary login/signup reaches Home; Back avoids completed Auth/Submit traps. Check same-browser email confirmation/recovery using controlled accounts.
+2. Signed-out Submit returns to Submit after login with normal role checks/drafts; invitation tokens and intentional internal destinations survive. External/encoded return URLs fall back to Home. Capture any broken submit text.
+3. Inspect homepage title/description/canonical/OG/Twitter, a genuine public game, robots and sitemap. Known hidden/missing games must not become indexed pages; Auth/private/invitation responses must carry noindex. Check mobile layout and existing HTTP/www redirects.
+
 ## 022 applied - public QA exclusion verified 29 October 2026
 
 Owner reports successful 022 application with no error. Subsequent **read-only** API verification at **17:35:58 UTC** against `qtcmzckdhgahuqqilmzj.supabase.co` confirms the intended deployed results. This supersedes earlier 022 prepared/not-applied and HOLD statuses below. Do not rerun 019-022.
