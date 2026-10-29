@@ -1,6 +1,26 @@
 # Playtested rollout preparation
 
+## Latest verification / prepared visibility change — 29 October 2026
+
+**019 confirmed applied from owner-supplied policy output:** the deployed INSERT WITH CHECK now requires own `claimant_id`, `Pending`, null reviewer/note/timestamp fields and unset verification outcome. The UPDATE policy still requires an admin profile in both USING and WITH CHECK. This supersedes the earlier “019 application blocked” status below. No live synthetic claims were created; normal hosted claim/admin journey remains a smoke test.
+
+The subsequent public-definition inspection confirms `approved_games` is a view of Approved submissions and `get_public_catalogue` reads it **before** search/count/pagination. Supplied public feedback/reception definitions are now preserved in a definition-only isolated test fixture, not user records. No migration-history reconstruction is needed.
+
+**Prepared, NOT applied:** `supabase/migrations/202610290020_hide_confirmed_beta_fixtures.sql`. This new migration needs explicit review before application. It adds one immutable exact-ID visibility helper for the documented three listing IDs and three campaign IDs; filters the existing approved view; and adds narrow predicates to public reception/history/feedback, community invitation, summary/recruitment, discovery/eligibility and share-context functions. Existing view privileges, function signatures/grants and all underlying data remain. No extra visibility table, status rewrite, title heuristic, deletion or XP adjustment. The already-paused fixture campaigns remain paused independently.
+
+The view filter removes fixture cards and totals at their authoritative source, rather than discarding cards after pagination. Direct public detail lookup uses that same view. Public intent/listing updates and share contexts also reject explicit hidden IDs; fixture-only eligibility is denied, while legitimate rank/genre/capacity rules remain. Active tester history remains accessible through the existing private claim path; no global filtering of owned history was added. Reversibility is a separately reviewed replacement of `beta_fixture_hidden(uuid)` returning false, without touching records or automatically reopening campaigns.
+
+Safety: migration 020 expects the inspected view and exact function predicate anchors. Missing functions, changed/duplicate anchors or a non-view approved relation abort the transaction; do not remove those guards or replay earlier migrations to bypass a conflict. It updates definitions only and does not apply migration 019 again. Do not apply 020 without reviewing this explanation and the SQL. The current live listing/count suppression is still incomplete until it is applied.
+
+**Passed:** `node tests/test-submission-corrections.mjs --visibility` uses embedded PostgreSQL, the supplied actual public catalogue/reception/feedback definitions, and existing migration/test infrastructure. Confirms fixture exclusion before pagination with correct totals; anonymous direct-detail source denial; genuine Steam and a legitimate Test-named listing retained; genuine eligibility unchanged; public fixture feedback/intents/recruitment/share suppressed; authenticated tester history retained; original rows/profiles/XP/link data identical; and reversal restores visibility. Source grants absent from the reduced baseline are explicitly reproduced in the test. Existing `--claims` checks also pass. These are isolated tests, not hosted application evidence. No production build repeated: this continuation changes SQL/tests/docs only.
+
+**User work preserved:** `app/layout.tsx` title is now `Playtested | Find Your Next Good Game`; that user edit was neither overwritten nor included in the visibility change's staging/commit.
+
+**Next action:** review migration **020** and authorise its targeted transaction in project `qtcmzckdhgahuqqilmzj`. Authenticated arbitrary SQL access is still unavailable from this session, so the exact file may need to be run in Dashboard SQL Editor after approval. After successful application, use an anonymous catalogue/search request and a known genuine listing to verify totals/visibility, check fixture direct details/share destinations unavailable, and confirm own tester history still visible. Keep normal Pending claim/admin approval as the hosted smoke check for 019. No fixture records or historical feedback should be deleted. SMTP/Auth, legal operator details and PULSE hosting remain unresolved.
+
 ## Beta fixture/claim execution status — 29 October 2026
+
+Historical execution notes below are superseded by the latest status above where indicated.
 
 **Completed in Supabase:** existing reversible pause mechanism applied only to the three confirmed campaign IDs below, with matching submission-ID predicates, in one targeted API PATCH. Read-back confirms all three `paused`; authorised public summary confirms `recruiting=false` for all three. No migrations were replayed, no records deleted, and no claims/feedback/XP were updated. Their public campaign-specific share contexts require open status, so they no longer recruit. Existing test history/relationships remain; active claims were not released or reset. To reverse, explicitly resume only these same campaigns after reviewing the current fixture-hiding decision; no automatic republishing was added.
 

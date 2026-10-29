@@ -6,10 +6,61 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--visibility')){try{await visibilityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--claims')){try{await ownershipClaimChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--maintenance')){try{await listingChecks(true);}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--listings')){try{await listingChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 async function as(n){await run(`reset role;set test.uid='${id(n)}'`);}
+async function visibilityChecks(){
+ await run(fs.readFileSync('supabase/tests/v10-fixture.sql','utf8'));
+ for(const f of fs.readdirSync('supabase/migrations').filter(f=>/^20261028000[1-9]_/.test(f)).sort())await run(fs.readFileSync('supabase/migrations/'+f,'utf8'));
+ for(const f of ['202610280010_submission_corrections.sql','202610280011_share_engagement.sql','202610280012_tester_reservations.sql','202610290015_public_recruitment.sql','202610290016_listing_revisions.sql'])await run(fs.readFileSync('supabase/migrations/'+f,'utf8'));
+ const intents=fs.readFileSync('supabase/migrations/202610290017_admission_maintenance_intents.sql','utf8');
+ await run(intents.slice(intents.indexOf('create function public._intent_counts')));
+ const sharing=fs.readFileSync('supabase/migrations/202610290018_campaign_share_results.sql','utf8');
+ await run(sharing.slice(sharing.indexOf('create or replace function public._share_link_context'),sharing.indexOf('create or replace function public.get_share_context')));
+ await run(`drop table public.approved_games cascade;create table public.published_game_verifications(game_id uuid,verification_status text,quality_score numeric);`);
+ await run(fs.readFileSync('supabase/tests/public-visibility-fixture.sql','utf8'));
+ // Source grants/policies omitted by the reduced baseline; own history must work
+ // with its real policy dependencies, without granting unrelated submission access.
+ await run(`grant usage on schema public,auth to authenticated,anon;grant select on public.game_submissions to authenticated;alter table public.game_submissions enable row level security;create policy fixture_owner_submission_read on public.game_submissions for select to authenticated using(developer_id=auth.uid());grant select on public.approved_games,public.imported_games,public.published_game_verifications,public.game_developer_links to anon,authenticated;alter table public.game_developer_links enable row level security;`);
+ for(const n of [1,2])await run(`insert into profiles(id,role,roles,preferred_genres)values('${id(n)}','user',array['developer','tester'],array['Action'])`);
+ const fixture=n=>`d3100000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+ await run(`set session_replication_role=replica`);
+ for(const n of [1,2,3,10])await run(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,status,game_link,ai_type)values('${n===10?id(10):fixture(n)}','${id(1)}','${n===10?'Test Real Release':'QA Fixture '+n}','Studio','Action','Description','Approved','https://example.test/game','No AI disclosed')`);
+ await run(`insert into imported_games(id,title,developer_name,genre,description,image_url,steam_url,steam_app_id,catalogue_eligible,metadata_backfill_status)values('${id(20)}','Genuine Steam','Studio','Action','Description','https://example.test/image','https://store.steampowered.com/app/110/','110',true,'complete')`);
+ for(const n of [1,2,3,10])await run(`insert into community_playtests(id,developer_id,submission_id,title,access_link,instructions,status,audience,published_at,release_label)values('${n===10?id(40):fixture(n+100)}','${id(1)}','${n===10?id(10):fixture(n)}','Campaign','https://example.test/game','Test controls','${n===10?'open':'paused'}','both',now(),'Build 1')`);
+ for(const n of [1,10])await run(`insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome,overall_score,gameplay_score,performance_score,hours_played)values('${id(n+100)}','${n===10?id(40):fixture(101)}','${id(2)}','reviewed','accepted',8,8,8,1)`);
+ await run(`set session_replication_role=origin;set test.uid='${id(1)}';insert into engagement_games(id,identity_key)values('${id(200)}',public._share_key('submission','${fixture(1)}'));insert into engagement_links(id,game_id,owner_id,kind,source_id,source,medium,campaign,label,destination,snapshot)values('${id(201)}','${id(200)}','${id(1)}','submission','${fixture(1)}','reddit','social','qa','Fixture','game','{}');`);
+ assert.ok((await one(`select public._share_link_context('${id(201)}') result`)).result);
+ assert.equal((await one(`select count(*) n from get_public_catalogue(1,100)`)).n,5);
+ const snapshot=async()=>(await one(`select jsonb_build_object('games',(select jsonb_agg(to_jsonb(s) order by id) from game_submissions s),'campaigns',(select jsonb_agg(to_jsonb(c) order by id) from community_playtests c),'reports',(select jsonb_agg(to_jsonb(t) order by id) from community_game_tests t),'profiles',(select jsonb_agg(to_jsonb(p) order by id) from profiles p),'links',(select jsonb_agg(to_jsonb(l) order by id) from engagement_links l)) data`)).data;
+ const before=await snapshot();
+ await run(fs.readFileSync('supabase/migrations/202610290020_hide_confirmed_beta_fixtures.sql','utf8'));
+ assert.deepEqual(await snapshot(),before,'Visibility DDL preserves all underlying records, history and XP');
+ for(const page of [1,2]){const rows=(await db.query(`select * from get_public_catalogue(${page},1,'','All genres','All verification statuses','All AI types',false,'Title A-Z')`)).rows;assert.equal(rows.length,1);assert.equal(Number(rows[0].total_count),2);assert.ok([id(10),id(20)].includes(rows[0].game_id));}
+ assert.equal((await one(`select count(*) n from approved_games where id='${fixture(1)}'`)).n,0);
+ assert.equal((await one(`select count(*) n from get_public_catalogue(1,12,'QA Fixture')`)).n,0);
+ assert.equal((await one(`select count(*) n from get_public_catalogue(1,12,'Test Real')`)).n,1,'Words Test/Demo do not classify real listings');
+ assert.equal((await one('select count(*) n from get_game_community_reception()')).n,1);
+ assert.equal((await one(`select count(*) n from get_public_submission_playtest_history('${fixture(1)}')`)).n,0);
+ assert.equal((await one(`select count(*) n from get_public_submission_playtest_feedback('${fixture(1)}')`)).n,0);
+ assert.equal((await one(`select public._share_link_context('${id(201)}') result`)).result,null);
+ assert.equal((await one(`select public.campaign_eligible('${fixture(101)}','${id(2)}') result`)).result,false);
+ assert.equal((await one(`select public.campaign_eligible('${id(40)}','${id(2)}') result`)).result,true,'Genuine eligibility unchanged');
+ for(const rpc of ['get_public_listing_updates','get_public_intent_counts'])assert.deepEqual((await one(`select ${rpc}($1::jsonb) result`,[JSON.stringify([{kind:'submission',id:fixture(1)}])])).result,[]);
+ assert.deepEqual((await db.query(`select * from get_public_recruitment($1::jsonb)`,[JSON.stringify([{source_type:'approved',game_id:fixture(1)}])])).rows,[]);
+ await run('set role anon');
+ assert.equal((await one('select count(*) n from get_public_catalogue(1,100)')).n,2,'Anonymous catalogue uses the same filtered source');
+ assert.equal((await one(`select count(*) n from approved_games where id='${fixture(1)}'`)).n,0,'Anonymous direct detail source excludes fixture');
+ await run('reset role');
+ await as(2);await run('set role authenticated');
+ assert.equal((await one(`select count(*) n from community_game_tests where id='${id(101)}'`)).n,1,'Tester retains own fixture history');
+ await run(`reset role;create or replace function public.beta_fixture_hidden(p_id uuid) returns boolean language sql immutable set search_path='' as $$select false$$;`);
+ assert.equal((await one('select count(*) n from get_public_catalogue(1,100)')).n,5,'Reversible without changing game data');
+ assert.deepEqual(await snapshot(),before);
+ console.log('PASS isolated public visibility: exact IDs excluded before pagination/counts; real Steam and Test-named listing retained; public feedback/intents/share suppressed; own history and rows/XP preserved; visibility reversible. Supplied public SQL definitions used; no live application.');
+}
 async function ownershipClaimChecks(){
  await run(fs.readFileSync('supabase/tests/v10-fixture.sql','utf8'));
  for(const n of [1,2,3])await run(`insert into auth.users values('${id(n)}');insert into profiles(id,roles,role) values('${id(n)}',array['developer'],'${n===3?'admin':'user'}')`);
