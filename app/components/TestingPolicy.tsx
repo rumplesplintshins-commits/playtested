@@ -68,7 +68,7 @@ export function GenrePreferences() {
         return () => { active = false; };
     }, []);
     async function save() { setBusy(true); const { error } = await createClient().rpc("update_my_testing_genres", { p_genres: selected }); setStatus(error?.message || "Preferences saved. These are interests, not verified expertise."); setBusy(false); }
-    return <section className="my-6 rounded-xl border border-white/10 p-5">
+    return <section id="testing-interests" className="my-6 scroll-mt-24 rounded-xl border border-white/10 p-5">
     <h2 className="font-bold">Preferred testing genres</h2>
     <p className="my-2 text-sm text-zinc-400">Select any genres you enjoy testing. You can change these normally; existing claims remain usable.</p>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{GAME_GENRES.map(g => <label key={g} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={selected.includes(g)} onChange={e => setSelected(s => e.target.checked ? [...s, g] : s.filter(x => x !== g))}/> {g}</label>)}</div>

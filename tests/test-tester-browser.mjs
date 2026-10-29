@@ -11,6 +11,7 @@ const user={id:uid,aud:'authenticated',role:'authenticated',email:'fixture@examp
 const encode=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
 const token=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:uid,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})}.fixture-signature`;
 const session={access_token:token,refresh_token:'fixture-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user};
+let restrictionReason='Requires Strategy interest';
 let claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false};
 let failSubmit=true,failRelease=true,failReclaim=true,reclaims=0;let reviewEvents=[];
 const browser=await chromium.launch({headless:true});
@@ -34,7 +35,7 @@ try{
      else if(url.pathname.endsWith('/start_community_game_test')){claim={...claim,status:'in_progress'};data=null;}
      else if(url.pathname.endsWith('/test_review_events'))data=reviewEvents;
      else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
-     else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:'Requires Strategy interest'}];
+     else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:restrictionReason}];
      else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
      else if(url.pathname.endsWith('/submit_community_game_test')){
        if(failSubmit){status=400;data={message:'Simulated submission failure',code:'P0001'};failSubmit=false;}
@@ -59,6 +60,18 @@ try{
  const restricted=page.locator('article').filter({has:page.getByRole('heading',{name:'Strategy restricted fixture'})});
  await expect(restricted.getByText('Requires Strategy interest',{exact:false})).toBeVisible();
  await expect(restricted.getByRole('button',{name:'Requirements not met'})).toBeDisabled();
+ await expect(page.getByText('1 game you can test',{exact:true})).toBeVisible();
+ await expect(page.getByText('1 game with unmet requirements',{exact:true})).toBeVisible();
+ await expect(restricted.getByRole('link',{name:'Edit interests'})).toHaveAttribute('href','/account#testing-interests');
+ for(const width of [320,390]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await expect(page.getByText('1 game with unmet requirements',{exact:true})).toBeVisible();}
+ await page.setViewportSize({width:1280,height:900});
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('Strategy');
+ await expect(page.getByText('0 games you can test',{exact:true})).toBeVisible();
+ await expect(page.getByText('1 game with unmet requirements',{exact:true})).toBeVisible();
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('Adventure');
+ await expect(page.getByText('1 game you can test',{exact:true})).toBeVisible();
+ await expect(page.getByText('0 games with unmet requirements',{exact:true})).toBeVisible();
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('all');
  await page.getByRole('button',{name:'Finish feedback'}).click();
  const selects=page.locator('form select');
  assert.equal(await selects.count(),5);
@@ -86,6 +99,14 @@ try{
  assert.ok(await page.evaluate(k=>localStorage.getItem(k),key),'failed release preserves draft');
  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Release game',exact:true}).click();
  await expect.poll(()=>page.evaluate(k=>localStorage.getItem(k),key)).toBe(null);
+
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('all');
+ await expect(page.getByText('2 games you can test',{exact:true})).toBeVisible();
+ restrictionReason='Requires Silver tester rank';await page.reload();
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('all');
+ await expect(restricted.getByText('Requires Silver tester rank',{exact:true})).toBeVisible();
+ await expect(restricted.getByRole('link',{name:'Edit interests'})).toHaveCount(0);
+ restrictionReason='Requires Strategy interest';
 
  // Expiry preserves the actual editor draft and requires a successful reclaim.
  claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false,reservation_expires_at:new Date(Date.now()+3600000).toISOString()};await page.reload();await expect(page.getByText(/Final 24 hours/)).toBeVisible();await page.getByRole('button',{name:'Finish feedback'}).click();await page.locator('form textarea').nth(0).fill('Preserve my expired draft');await page.getByRole('button',{name:'Back to your active tests'}).click();

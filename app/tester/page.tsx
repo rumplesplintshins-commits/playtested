@@ -1049,6 +1049,8 @@ export default function TesterPage() {
   );
 
   const availableGames=eligibleGames.filter(g=>genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter])));
+  const unmetRequirementsCount = availableGames.filter(game => game.can_claim === false).length;
+  const testableGamesCount = availableGames.length - unmetRequirementsCount;
   function getStatusLabel(claim: TestClaim) {
     if(claim.status==="expired")return "Reservation expired";
     if (claim.status === "submitted") {
@@ -1201,7 +1203,7 @@ export default function TesterPage() {
                       )}
 
                       <div className="mt-auto space-y-3 pt-6">
-                        {!claim && game.can_claim === false && <p className="text-sm text-amber-200">{game.restriction_reason || "Testing requirements not met"}. Update your interests in Account if this genre suits you.</p>}
+                        {!claim && game.can_claim === false && <div className="text-sm text-amber-200"><p>{game.restriction_reason || "Testing requirements not met"}</p>{/^Requires .+ interest$/.test(game.restriction_reason || "") && <p className="mt-1 text-zinc-400">If this genre genuinely suits you, <a href="/account#testing-interests" className="underline underline-offset-2 hover:text-white">Edit interests</a>.</p>}</div>}
                         {!claim ? (
                           <button
                             type="button"
@@ -1452,9 +1454,14 @@ export default function TesterPage() {
                       Choose your next game. Tests you have already claimed appear above.
                     </p>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                    {availableGames.filter(game=>game.can_claim!==false).length} available{availableGames.some(game=>game.can_claim===false) ? ` ? ${availableGames.filter(game=>game.can_claim===false).length} restricted` : ""}
-                  </span>
+                  <div className="flex flex-wrap gap-2 text-xs" aria-live="polite">
+                    <span className="rounded-full border border-[#77f29b]/30 px-3 py-1 text-[#77f29b]">
+                      {testableGamesCount} {testableGamesCount === 1 ? "game" : "games"} you can test
+                    </span>
+                    <span className="rounded-full border border-amber-200/30 px-3 py-1 text-amber-200">
+                      {unmetRequirementsCount} {unmetRequirementsCount === 1 ? "game" : "games"} with unmet requirements
+                    </span>
+                  </div>
                 </div>
 
                 <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All genres" : "All eligible genres"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
