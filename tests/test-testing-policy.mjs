@@ -8,6 +8,7 @@ const one = async s => (await db.query(s)).rows[0];
 const id = n => `00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
 const as = async n => sql(`set test.uid='${id(n)}'`);
 const fail = async (s,pattern) => assert.rejects(sql(s),pattern);
+if(process.argv.includes('--recruitment-only')){try{await recruitmentChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--graded-quality')){try{await gradedQualityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--plan-concurrency')){await db.close();try{await reservationConcurrency(false,true);}catch(e){console.error(e.message);process.exitCode=1;}process.exit(process.exitCode||0);}
 if(process.argv.includes('--quality-concurrency')){await db.close();try{await reservationConcurrency(true);}catch(e){console.error(e.message);process.exitCode=1;}process.exit(process.exitCode||0);}
@@ -297,4 +298,36 @@ async function gradedQualityChecks(){
  await review(tests[0],3);assert.equal((await one(`select xp_delta n from test_review_events where test_id='${tests[0]}' order by id desc limit 1`)).n,-40,'Explicit legacy re-review adjusts the known actual award');assert.equal((await one(`select rubric_version v from test_review_events where test_id='${tests[0]}' order by id limit 1`)).v,null,'Historical audit score remains unrecorded');
  const progress=(await one(`select get_my_testing_progress() p`)).p;assert(progress&&typeof progress.xp==='number');await as(5);const own=(await one('select get_my_testing_progress() p')).p;assert.equal(own.accepted,1);assert.equal(own.passed,2,'Zero-XP accepted report participates in acceptance rate');assert.equal(own.xp,80);assert.equal(own.rank,0,'Unchanged XP and accepted-test requirements');
  console.log('PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used.');
+}
+
+async function recruitmentChecks(){
+ await sql(await readFile('supabase/tests/v10-fixture.sql','utf8'));
+ for(const f of(await readdir('supabase/migrations')).filter(f=>/^20261028000[1-9]_/.test(f)).sort())await sql(await readFile('supabase/migrations/'+f,'utf8'));
+ await sql(await readFile('supabase/migrations/202610280012_tester_reservations.sql','utf8'));
+ await sql(await readFile('supabase/migrations/202610290015_public_recruitment.sql','utf8'));
+ for(let n=1;n<=8;n++)await sql(`insert into profiles(id,roles,preferred_genres) values('${id(n)}',array['tester','developer'],array['Action'])`);
+ await sql(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,game_link,ai_type,status,steam_app_id) values
+ ('${id(101)}','${id(1)}','Same title','Dev','Action','Fixture','https://example.test','Unknown','Approved','12345'),
+ ('${id(102)}','${id(2)}','Same title','Dev','Action','Fixture','https://example.test','Unknown','Approved',null),
+ ('${id(103)}','${id(2)}','Same title','Dev','Action','Fixture','https://example.test','Unknown','Pending Review',null);
+ insert into imported_games(id,title,steam_app_id,catalogue_eligible,steam_url)values('${id(201)}','Different title','12345',true,'https://example.test'),('${id(202)}','Same title','12346',false,'https://example.test');
+ insert into approved_games(id,title,steam_app_id)values('${id(301)}','Alias title','12345');
+ insert into community_playtests(id,developer_id,submission_id,title,access_link,instructions,status,audience)values('${id(501)}','${id(1)}','${id(101)}','Campaign','https://example.test/private','Test','open','playtested_testers'),('${id(502)}','${id(2)}','${id(102)}','Draft','https://example.test/private','Test','draft','both');`);
+ const games=[{source_type:'approved',game_id:id(101)},{source_type:'approved',game_id:id(102)},{source_type:'approved',game_id:id(103)},{source_type:'steam',game_id:id(201)},{source_type:'steam',game_id:id(202)},{source_type:'approved',game_id:id(301)}];
+ const summary=async()=> (await db.query('select * from public.get_public_recruitment($1::jsonb)',[JSON.stringify(games)])).rows;
+ const recruiting=async()=> (await summary()).find(r=>r.game_id===id(101)).recruiting;
+ let rows=await summary();assert.equal(rows.length,4,'Non-public records excluded');assert(rows.find(r=>r.game_id===id(201)).recruiting);assert(rows.find(r=>r.game_id===id(301)).recruiting);assert.equal(rows.find(r=>r.game_id===id(102)).recruiting,false,'No title matching or draft badge');
+ assert(rows.every(row=>Object.keys(row).sort().join(',')==='game_id,recruiting,source_type'),'Only public booleans/IDs');
+ await sql(`alter table community_playtests disable trigger check_testing_audience_availability;update community_playtests set minimum_rank=3,genre_restricted=true,testing_genre='Horror' where id='${id(501)}';alter table community_playtests enable trigger check_testing_audience_availability`);await as(3);assert.equal((await one(`select campaign_eligible('${id(501)}','${id(3)}') ok`)).ok,false);assert(await recruiting(),'Recruitment does not promise eligibility');
+ await sql(`update community_playtests set minimum_rank=0,genre_restricted=false,audience='both' where id='${id(501)}'`);assert(await recruiting(),'Mixed audience');
+ await sql(`update community_playtests set audience='own_community' where id='${id(501)}'`);assert.equal(await recruiting(),false);await sql(`update community_playtests set audience='both',status='paused' where id='${id(501)}'`);assert.equal(await recruiting(),false);await sql(`update community_playtests set status='open' where id='${id(501)}'`);
+ const claims=[];for(const n of[3,4,5,6]){await as(n);claims.push((await one(`select claim_community_game_test('${id(501)}') id`)).id);}assert.equal(await recruiting(),false,'All places reserved');
+ for(let i=0;i<3;i++){await as(i+3);await sql(`select submit_community_game_test('${claims[i]}',7,7,'No issues','Useful feedback',1,8,'probably','probably','Movement','None','Controls','{}')`);}assert.equal(await recruiting(),false,'Three submitted plus one reserved');
+ // Boundary simulation in this disposable DB only; production uses server time without cleanup.
+ await sql(`alter table community_game_tests disable trigger aa_testing_reservation;update community_game_tests set reservation_expires_at=clock_timestamp() where id='${claims[3]}';alter table community_game_tests enable trigger aa_testing_reservation`);assert(await recruiting(),'Expired unsubmitted reservation reopens capacity');assert.equal((await one(`select status from community_game_tests where id='${claims[3]}'`)).status,'claimed','No cleanup job required');
+ await as(6);await one(`select claim_community_game_test('${id(501)}')`);await sql(`select submit_community_game_test('${claims[3]}',7,7,'No issues','Useful feedback',1,8,'probably','probably','Movement','None','Controls','{}')`);assert.equal(await recruiting(),false,'Four submitted');
+ await sql(`update community_game_tests set reservation_expires_at=clock_timestamp()-interval '1 day' where playtest_id='${id(501)}'`);assert.equal(await recruiting(),false,'Submitted places never expire');await sql(`update community_playtests set status='closed' where id='${id(501)}'`);assert.equal(await recruiting(),false);
+ await assert.rejects(db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify(Array(13).fill(games[0]))]),/At most 12/);
+ assert((await one("select has_function_privilege('anon','public.get_public_recruitment(jsonb)','execute') ok")).ok);await sql('set role anon');assert.equal((await summary()).length,4);await sql('reset role');
+ console.log('PASS public recruitment SQL: open/mixed/draft/paused/closed/community-only, canonical aliases/no title match, private records excluded, rank-independent summary, reserved/submitted/full/expiry boundary/reclaim, anon permission and batch bound. Disposable PGlite; expiry is simulated, no live writes.');
 }

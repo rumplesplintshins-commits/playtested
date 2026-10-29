@@ -1,3 +1,5 @@
+import {publicIntentCounts} from "@/lib/intent-counts";
+import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -84,7 +86,7 @@ export default async function SubmissionPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: game, error } = await supabase
+  const { data: originalGame, error } = await supabase
     .from("approved_games")
     .select(
       "id, title, developer_name, genre, description, game_link, image_url, ai_type, ai_areas, ai_explanation, evidence_link"
@@ -92,9 +94,14 @@ export default async function SubmissionPage({
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !game) {
+  if (error || !originalGame) {
     notFound();
   }
+
+  const updates=await listingUpdates(supabase,[{kind:"approved",id}]);
+  const listingUpdate=updates?.[0];
+  const game={...originalGame,...listingUpdate?.fields};
+  const disclosureNotice=listingNotice(listingUpdate);
 
   const { data: submission } = await supabase
     .from("game_submissions")
@@ -103,7 +110,7 @@ export default async function SubmissionPage({
     .maybeSingle();
 
   const steamUrl =
-    submission?.steam_url ?? null;
+    listingUpdate&&Object.hasOwn(listingUpdate.fields,"steam_url")?(listingUpdate.fields.steam_url||null):(submission?.steam_url ?? null);
 
   const externalUrl =
     steamUrl || game.game_link;
@@ -112,7 +119,7 @@ export default async function SubmissionPage({
     ? "Visit Steam page ↗"
     : "Visit or play game ↗";
 
-  const { data: verification } = await supabase
+  const { data: recordedVerification } = await supabase
     .from("published_game_verifications")
     .select(
       "verification_status, ai_status, quality_status, quality_score, public_summary, evidence_summary, ai_claims_checked, evidence_checked, game_launched, core_gameplay_tested, bugs_recorded, performance_checked, limitations, updated_at"
@@ -120,6 +127,7 @@ export default async function SubmissionPage({
     .eq("game_id", id)
     .maybeSingle();
 
+  const verification=updates===null||listingUpdate?.reassessment||listingUpdate?.disputed?null:recordedVerification;
   /*
    * BUILD-SPECIFIC COMMUNITY RECEPTION
    *
@@ -151,9 +159,13 @@ export default async function SubmissionPage({
     (playtestHistoryData ??
       []) as PublicPlaytestHistoryRow[];
 
+  const intentData=await publicIntentCounts(supabase,[{kind:"approved",id}]);
+  const intentGame=intentData?.[0];
   const receptionBuilds: CommunityReceptionBuild[] =
     historyRows.map((row) => ({
       id: row.playtest_id,
+      recommendCounts:intentGame?.builds.find(build=>build.playtest_id===row.playtest_id)?.recommend,
+      continueCounts:intentGame?.builds.find(build=>build.playtest_id===row.playtest_id)?.continue,
 
       releaseLabel:
         row.release_label ||
@@ -372,6 +384,7 @@ export default async function SubmissionPage({
                 </div>
 
                 <span className="rounded-full border border-violet-300/35 bg-violet-300/[0.08] px-3 py-1.5 text-xs font-bold text-violet-200">
+                  {disclosureNotice&&<span className="mb-2 block text-amber-200">{disclosureNotice}</span>}
                   {game.ai_type ||
                     "Not specified"}
                 </span>

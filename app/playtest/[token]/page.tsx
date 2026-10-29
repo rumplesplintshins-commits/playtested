@@ -3,10 +3,12 @@ import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase-server";
 import CommunityPlaytestJoin from "./CommunityPlaytestJoin";
+import {carryJourney} from "@/lib/share-links";
 
 export const instant = false;
 
 type CommunityPlaytestPageProps = {
+  searchParams?:Promise<{pt_visit?:string}>;
   params: Promise<{
     token: string;
   }>;
@@ -88,6 +90,7 @@ function UnavailablePlaytest() {
 
 export default async function CommunityPlaytestPage({
   params,
+  searchParams,
 }: CommunityPlaytestPageProps) {
   await connection();
 
@@ -123,7 +126,9 @@ export default async function CommunityPlaytestPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const returnPath = `/playtest/${token}`;
+  const query=await searchParams;
+  const visit=typeof query?.pt_visit==="string"&&/^[a-f0-9]{64}$/.test(query.pt_visit)?query.pt_visit:null;
+  const returnPath = carryJourney(`/playtest/${token}`,visit);
   const encodedReturnPath = encodeURIComponent(returnPath);
 
   return (

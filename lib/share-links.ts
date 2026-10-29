@@ -10,7 +10,7 @@ export function journeyToken(search:string){const value=new URLSearchParams(sear
 export function taggedPath(path:string,tags:ShareTags,token?:string|null){
  if(!path.startsWith("/")||path.startsWith("//")||/[\\\u0000-\u0020]/.test(path))throw new Error("Invalid internal destination");
  const url=new URL(path,"https://playtested.invalid");
- if(url.origin!=="https://playtested.invalid"||!(/^\/games\/steam-[0-9]+$/.test(url.pathname)||/^\/submissions\/[0-9a-f-]{36}$/i.test(url.pathname)||url.pathname==="/tester"))throw new Error("Invalid internal destination");
+ if(url.origin!=="https://playtested.invalid"||!(/^\/games\/steam-[0-9]+$/.test(url.pathname)||/^\/(?:submissions|playtest)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(url.pathname)||url.pathname==="/tester"))throw new Error("Invalid internal destination");
  url.searchParams.set("utm_source",tags.source);url.searchParams.set("utm_medium",tags.medium);url.searchParams.set("utm_campaign",tags.campaign);
  if(token&&/^[a-f0-9]{64}$/.test(token))url.searchParams.set("pt_visit",token);
  return url.pathname+url.search+url.hash;

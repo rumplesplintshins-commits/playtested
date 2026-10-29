@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
+import Link from "next/link";
 
 type SignupRole = "player" | "tester" | "developer";
 
@@ -318,6 +319,7 @@ export default function LoginPage() {
               />
             </div>
 
+            {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
             {message && (
               <p
                 role="status"

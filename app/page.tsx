@@ -59,24 +59,23 @@ export default function Home() {
               THE IDEA
             </p>
             <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-              Judge the game.
+              Let machines handle the repetitive work.
               <br />
-              Not the hype.
+              Keep people at the heart of gaming.
             </h2>
           </div>
 
-          <p className="max-w-xl text-sm leading-7 text-zinc-400">
-            Players care about gameplay, performance, originality and whether
-            a game respects their time. Playtested brings player feedback and
-            testing evidence together, with transparent labels and reviews.
-            AI-made games are welcome. Quality is what matters.
-          </p>
+          <div className="max-w-xl space-y-4 text-sm leading-7 text-zinc-400">
+            <p>Playtested uses automation to handle repetitive technical checks,
+              leaving people to judge what matters: how a game feels to play.</p>
+            <p>Developers get structured feedback to help improve their games.
+              Players share honest experiences, discover games through community
+              ratings, and help shape a community they want to be part of.
+              Thoughtful criticism matters just as much as praise.</p>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
-        PLAYTESTED_ · A prototype for players, by players.
-      </footer>
     </main>
   );
 }

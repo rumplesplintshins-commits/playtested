@@ -2109,7 +2109,7 @@ export default function SubmitGamePage() {
 
 
 
-  if(correctionId)return <SubmissionCorrection key={correctionId} id={correctionId}/>;
+  if(correctionId){const kind=new URLSearchParams(window.location.search).get("listing");return <SubmissionCorrection key={correctionId} id={correctionId} listingKind={kind==="imported"||kind==="approved"||kind==="submission"?kind:undefined}/>;}
   return (
 
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
@@ -3991,7 +3991,7 @@ export default function SubmitGamePage() {
 
               <label className={labelClass}>
 
-                Supporting evidence or documentation link
+                Supporting evidence link (optional)
 
                 <input
 
@@ -4009,9 +4009,7 @@ export default function SubmitGamePage() {
 
                 <span className="mt-2 block text-xs leading-5 text-zinc-500">
 
-                  For disclosed AI-generated or AI-assisted work, include an explanation and supporting evidence. No-AI disclosures do not require proof of absence. Evidence might include tool disclosures, production notes or
-
-                  asset records.
+                  Add a relevant link if you’d like to provide more context.
 
                 </span>
 
@@ -4099,11 +4097,7 @@ export default function SubmitGamePage() {
 
 
 
-      <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
 
-        PLAYTESTED · Prototype
-
-      </footer>
 
     </main>
 

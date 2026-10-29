@@ -11,7 +11,7 @@ export const SUBMISSION_FIELDS=[
  {field:"release_date",label:"Release date"},
  {field:"ai_type",label:"AI classification",required:true},
  {field:"ai_explanation",label:"AI-use explanation",ai:true},
- {field:"evidence_link",label:"Supporting evidence link",ai:true,url:true},
+ {field:"evidence_link",label:"Supporting evidence link (optional)",url:true},
 ] as const;
 export const AI_CLASSIFICATIONS=["AI-generated","AI-assisted","No AI disclosed"];
 export const AI_AREAS=["Programming or code","Artwork or textures","Writing or dialogue","Voice or audio","Music or sound effects","Animation or video","Testing or development tools","Other"];
@@ -34,3 +34,7 @@ export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[
  });
 }
 export function completenessMessage(issues:SubmissionIssue[]){return issues.length?`Please complete these details before we can review your game:\n${issues.map(issue=>`• ${issue.label}: ${issue.reason}`).join("\n")}\nUpdate your submission, then select Resubmit for review.`:"";}
+export function listingEditIssues(before:Record<string,unknown>,after:Record<string,unknown>):SubmissionIssue[]{
+ const changed=new Set(SUBMISSION_FIELDS.filter(rule=>String(before[rule.field]??"")!==String(after[rule.field]??"")).map(rule=>rule.field as string));
+ return submissionIssues(after).filter(issue=>issue.field==="title"||changed.has(issue.field)||(changed.has("ai_type")&&issue.field==="ai_explanation")||((changed.has("release_status")||changed.has("release_date"))&&issue.field==="release_date"));
+}

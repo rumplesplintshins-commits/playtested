@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
+import {listingUpdates,listingNotice} from "@/lib/listing-updates";
+import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
+import IntentSummary from "./IntentSummary";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -26,6 +29,10 @@ type CatalogueGame = {
   verificationStatus: VerificationStatus | null;
   submittedAt?: string;
   communityReception: CommunityReception | null;
+  recruiting: boolean;
+  listingNotice: string;
+  assessmentUnavailable: boolean;
+  recommendationCounts?:IntentCounts;
 };
 
 type VerificationRow = {
@@ -232,10 +239,11 @@ function GameCardContent({
         <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
 
         <div className="flex flex-wrap items-center gap-2">
-          <VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />
+          {game.listingNotice||game.assessmentUnavailable?<span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">{game.listingNotice||"Assessment status unavailable"}</span>:<VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />}
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
-            {disclosure === "AI use unknown" && <span aria-hidden="true">?</span>}{disclosure}
+            {disclosure === "AI use unknown" ? "AI Use Unknown" : disclosure}
           </span>
+          {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
 
         {game.description ? <details className="group text-sm leading-6 text-white/75">
@@ -270,11 +278,7 @@ function GameCardContent({
                   {game.communityReception.ratedTestCount.toLocaleString()}{" "}
                   {game.communityReception.ratedTestCount === 1 ? "rating" : "ratings"}
                 </span>
-                {game.communityReception.recommendPositivePercent !== null && (
-                  <span>
-                    {Math.round(game.communityReception.recommendPositivePercent)}% recommend
-                  </span>
-                )}
+                <span>Would recommend <IntentSummary counts={game.recommendationCounts}/></span>
               </div>
             </div>
           ) : (
@@ -364,6 +368,19 @@ export default function GameCatalogue() {
       }
 
       const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
+      const recruiting = new Set<string>();
+      if(rows.length){
+        try{
+          const result=await supabase.rpc("get_public_recruitment",{p_games:rows.map(row=>({source_type:row.source_type,game_id:row.game_id}))});
+          if(cancelled)return;
+          if(result.error||!Array.isArray(result.data))console.warn("Catalogue recruitment summary unavailable",{rpc:"get_public_recruitment",code:result.error?.code||"invalid_response"});
+          else for(const row of result.data)if(row.recruiting===true)recruiting.add(`${row.source_type}:${row.game_id}`);
+        }catch{console.warn("Catalogue recruitment summary unavailable",{rpc:"get_public_recruitment",code:"request_failed"});}
+      }
+      if(cancelled)return;
+      const listingChanges=await listingUpdates(supabase,rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id})));
+      const intentData=await publicIntentCounts(supabase,rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id})));
+      if(cancelled)return;
       const receptionRows = (receptionResult.data ?? []) as CommunityReceptionRow[];
 
       const receptionByImportedGame = new Map<string, CommunityReception>();
@@ -392,7 +409,9 @@ export default function GameCatalogue() {
         if (row.submission_id) receptionBySubmission.set(row.submission_id, reception);
       }
 
-      const mappedGames: CatalogueGame[] = rows.map((row) => {
+      const mappedGames: CatalogueGame[] = rows.map((original) => {
+        const update=listingChanges?.find(item=>item.id===original.game_id&&item.kind===(original.source_type==="steam"?"imported":"approved"));
+        const row={...original,...update?.fields};
         const isImportedSteam = row.source_type === "steam";
         const steamAppId = normalizeSteamAppId(row.steam_app_id);
 
@@ -414,7 +433,7 @@ export default function GameCatalogue() {
           image: row.image_url ?? "",
           aiType: row.ai_type ?? "AI use unknown",
           score: Number(row.quality_score ?? 0),
-          gameLink: row.game_link ?? "",
+          gameLink: row.game_link || (isImportedSteam&&steamAppId?`https://store.steampowered.com/app/${steamAppId}/`:""),
           steamAppId,
           isSubmission: !isImportedSteam,
           isImportedSteam,
@@ -423,6 +442,10 @@ export default function GameCatalogue() {
           verificationStatus: row.verification_status ?? "Not yet verified",
           submittedAt: row.submitted_at ?? "",
           communityReception,
+          recruiting: recruiting.has(`${row.source_type}:${row.game_id}`),
+          listingNotice: listingNotice(update),
+          assessmentUnavailable: listingChanges===null,
+          recommendationCounts:intentData?.find(item=>item.id===row.game_id&&item.kind===(row.source_type==="steam"?"imported":"approved"))?.lifetime.recommend,
         };
       });
 

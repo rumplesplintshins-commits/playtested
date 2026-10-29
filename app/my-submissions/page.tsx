@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import SiteHeader from "../components/SiteHeader";
 import GameLinksEngagement from "../components/GameLinksEngagement";
 import StartPlaytest from "../components/StartPlaytest";
+import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
 import {submissionIssues,completenessMessage} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
@@ -231,6 +232,7 @@ type DeveloperReception = {
 };
 
 type LinkedGame = {
+  listingNotice?: string;
   approvedClaimIds: string[];
   identity: string;
   linkId: string;
@@ -1032,6 +1034,11 @@ async function DeveloperDashboard() {
     groups.set(key,{...representative,approvedClaimIds:[...new Set([...previous.approvedClaimIds,...game.approvedClaimIds])],playtests,latestPlaytest:active||playtests[0]||null,currentReception:representative.currentReception||previous.currentReception||game.currentReception});return groups;
   },new Map<string,LinkedGame>()).values());
 
+  for(let start=0;start<linkedGames.length;start+=12){
+    const batch=linkedGames.slice(start,start+12);
+    const changes=await listingUpdates(supabase,batch.map(game=>({kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!})));
+    for(const game of batch){const update=changes?.find(row=>row.id===(game.importedGameId||game.approvedGameId||game.submissionId));if(update){game.gameTitle=update.fields.title||game.gameTitle;game.developerName=update.fields.developer_name||game.developerName;game.genre=update.fields.genre||game.genre;game.imageUrl=Object.hasOwn(update.fields,"image_url")?update.fields.image_url:game.imageUrl;game.listingNotice=listingNotice(update);}}
+  }
   const developerXp =
     typeof profile.developer_xp === "number"
       ? profile.developer_xp
@@ -1104,7 +1111,7 @@ async function DeveloperDashboard() {
                           game.verificationStatus
                         )}`}
                       >
-                        {game.verificationStatus}
+                        {game.listingNotice||game.verificationStatus}
                       </span>
 
                     </div>
@@ -1191,6 +1198,7 @@ async function DeveloperDashboard() {
                   </p>
                 </div>}
 
+                  <a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>
                   <StartPlaytest
                     gameTitle={game.gameTitle}
                     gameSource={{

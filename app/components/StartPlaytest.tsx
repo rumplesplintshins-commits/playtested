@@ -1,4 +1,5 @@
 "use client";
+import {intentCounts,intentText} from "@/lib/intent-counts";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -6,7 +7,8 @@ import { createClient } from "../../lib/supabase";
 
 import { CampaignPlaces, FeedbackSignal, DeveloperQualityReports, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
-import {useDeveloperPlan} from "./DeveloperPlan";
+import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
+import GameLinksEngagement,{openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
@@ -128,13 +130,15 @@ function CampaignAllowancePanel({
   loading,
   error,
   currentPlaytest,
+  onRetry,
 }: {
   eligibility: PlaytestEligibility | null;
   loading: boolean;
   error: string;
   currentPlaytest: ExistingPlaytest | null;
+  onRetry: () => void;
 }) {
-  const {data:plan,loading:planLoading}=useDeveloperPlan();
+  const {data:plan,loading:planLoading,error:planError}=useDeveloperPlan();
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -226,8 +230,8 @@ function CampaignAllowancePanel({
             </div>
           </details>
         </div>
-      ) : !loading ? (
-        <p className="mt-2 text-xs leading-5 text-amber-200">We couldn’t confirm your allowance. Reload before launching a campaign.</p>
+      ) : !loading && !planLoading ? (
+        <div role="alert" className="mt-2 space-y-2 text-xs leading-5 text-amber-200"><p>{planError || error || "We could not confirm your allowance. Retry before launching a campaign."} Existing campaigns and feedback remain available.</p><button type="button" onClick={onRetry} className="rounded border border-amber-200/30 px-3 py-1 focus-visible:outline-2" disabled={loading || planLoading}>Retry allowance</button></div>
       ) : null}
     </section>
   );
@@ -961,11 +965,11 @@ function ResultsDashboard({
 
   const continueAnswers = displayedAcceptedFeedback
     .map((response) => response.continue_playing?.trim().toLowerCase())
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => ["definitely","probably","maybe","probably_not","definitely_not"].includes(value||""));
 
   const recommendAnswers = displayedAcceptedFeedback
     .map((response) => response.recommend_game?.trim().toLowerCase())
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => ["definitely","probably","maybe","probably_not","definitely_not"].includes(value||""));
 
   function positiveIntentPercent(values: string[]) {
     if (values.length === 0) {
@@ -1150,7 +1154,7 @@ function ResultsDashboard({
             <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.035] p-4">
               <p className="text-xs text-zinc-500">Would continue playing</p>
               <p className="mt-2 text-xl font-semibold text-cyan-200">
-                {continueAnswers.length === 0 ? "—" : `${continueAnswers.filter((value) => value === "definitely" || value === "probably").length} of ${continueAnswers.length} positive`}
+                {intentText(intentCounts(continueAnswers))}
               </p>
               <p className="mt-1 text-[11px] text-zinc-500">
                 {continueAnswers.length === 0
@@ -1163,7 +1167,7 @@ function ResultsDashboard({
             <div className="rounded-xl border border-violet-300/20 bg-violet-300/[0.035] p-4">
               <p className="text-xs text-zinc-500">Would recommend</p>
               <p className="mt-2 text-xl font-semibold text-violet-200">
-                {recommendAnswers.length === 0 ? "—" : `${recommendAnswers.filter((value) => value === "definitely" || value === "probably").length} of ${recommendAnswers.length} positive`}
+                {intentText(intentCounts(recommendAnswers))}
               </p>
               <p className="mt-1 text-[11px] text-zinc-500">
                 {recommendAnswers.length === 0
@@ -1806,6 +1810,8 @@ export default function StartPlaytest({
   const router = useRouter();
   const capacityPolicy=useTestingCapacityPolicy();
   const developerPlan=useDeveloperPlan();
+  const [eligibilityRetry,setEligibilityRetry]=useState(0);
+  const retryAllowance=()=>{void developerPlan.refresh();setEligibilityRetry(v=>v+1);};
 
   const [historicalPlaytests, setHistoricalPlaytests] = useState<
     ExistingPlaytest[]
@@ -1851,7 +1857,7 @@ export default function StartPlaytest({
   const [acceptedIndependentFeedback, setAcceptedIndependentFeedback] =
     useState<AcceptedIndependentFeedback[]>([]);
   const [setupExpanded, setSetupExpanded] = useState(false);
-  const [sharingExpanded, setSharingExpanded] = useState(true);
+  const [sharingExpanded, setSharingExpanded] = useState(false);
   const [resultsExpanded, setResultsExpanded] = useState(true);
   const [eligibility, setEligibility] = useState<PlaytestEligibility | null>(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
@@ -1865,6 +1871,9 @@ export default function StartPlaytest({
   const audienceBlocked = needsAudienceCheck && (audienceAvailability?.key !== selectedAudienceKey || !audienceAvailability.available);
   const testerHubBlocked =
     testerHubSelected && (
+      developerPlan.loading ||
+      Boolean(developerPlan.error) ||
+      developerPlan.data === null ||
       eligibilityLoading ||
       Boolean(eligibilityError) ||
       eligibility === null ||
@@ -1892,13 +1901,14 @@ export default function StartPlaytest({
 
       if (error) {
         setEligibility(null);
-        setEligibilityError(error.message);
+        setEligibilityError(allowanceError("get_playtest_eligibility",error));
         setEligibilityLoading(false);
         return;
       }
 
-      const rows = (data ?? []) as PlaytestEligibility[];
-      setEligibility(rows[0] ?? null);
+      const rows = Array.isArray(data) ? data as PlaytestEligibility[] : [];
+      const row=rows[0];
+      if(!row||typeof row.tester_hub_eligible!=="boolean"||typeof row.has_active_playtest!=="boolean"){setEligibility(null);setEligibilityError("Allowance unavailable: unexpected get_playtest_eligibility response. Check the deployed RPC version.");}else setEligibility(row);
       setEligibilityLoading(false);
     }
 
@@ -1914,6 +1924,7 @@ export default function StartPlaytest({
     existingPlaytest?.id,
     existingPlaytest?.status,
     developerPlan.data,
+    eligibilityRetry,
   ]);
 
   useEffect(() => {
@@ -2163,7 +2174,7 @@ export default function StartPlaytest({
   }
 
   function getCommunityPlaytestPath(shareToken: string) {
-    return `/playtest/${shareToken}`;
+    return existingPlaytest&&!includesOwnCommunity(existingPlaytest.audience)?`/tester?campaign=${existingPlaytest.id}`:`/playtest/${shareToken}`;
   }
 
   function getCommunityPlaytestUrl(shareToken: string) {
@@ -2194,7 +2205,7 @@ export default function StartPlaytest({
       }, 2000);
     } catch {
       setMessage(
-        "Could not copy the community link. You can copy it manually instead."
+        "Copy the playtest link manually: "+getCommunityPlaytestUrl(existingPlaytest.shareToken)
       );
       setMessageType("error");
     }
@@ -2264,8 +2275,8 @@ export default function StartPlaytest({
 
     if (publish && audienceBlocked) { setMessage(audienceAvailability?.key === selectedAudienceKey ? audienceAvailability.message : "Wait for the tester availability check before publishing."); setMessageType("error"); return; }
     if (publish && includesPlaytestedTesters(audience)) {
-      if (eligibilityLoading || eligibilityError || !eligibility) {
-        setMessage("Your launch allowance could not be confirmed. Reload the page and try again.");
+      if (developerPlan.loading || developerPlan.error || !developerPlan.data || eligibilityLoading || eligibilityError || !eligibility) {
+        setMessage("Your launch allowance could not be confirmed. Use Retry allowance before publishing.");
         setMessageType("error");
         return;
       }
@@ -2424,6 +2435,8 @@ export default function StartPlaytest({
     setEditing(false);
   }
 
+  const shareSource={kind:gameSource.importedGameId?'imported' as const:gameSource.approvedGameId?'approved' as const:'submission' as const,id:(gameSource.importedGameId||gameSource.approvedGameId||gameSource.submissionId)!};
+  const shareControls=existingPlaytest?.status==='open'&&existingPlaytest.publishedAt?<section aria-label="Share this playtest" className="my-5 rounded-xl border border-white/10 p-4"><h3 className="font-semibold">Share this playtest</h3><p className="mt-2 text-sm text-zinc-400">Create a separate link for each place you share your playtest. Results appear in Traffic &amp; playtest results.</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={()=>void copyCommunityLink()} className="rounded-lg border border-white/25 px-3 py-2 text-sm">{communityLinkCopied?'Copied':'Copy playtest link'}</button><button type="button" aria-expanded={sharingExpanded} onClick={()=>setSharingExpanded(v=>!v)} className="rounded-lg border border-emerald-300/30 px-3 py-2 text-sm text-emerald-200">Create tracked sharing link</button><button type="button" onClick={event=>{if(!openGameTraffic(event.currentTarget,shareSource,existingPlaytest.id)){setMessage('Reporting is not available in this view. Open Traffic & playtest results in My Games.');setMessageType('error');}}} className="rounded-lg border border-white/25 px-3 py-2 text-sm">View traffic &amp; results</button></div>{sharingExpanded&&<GameLinksEngagement source={shareSource} sharingCampaign={existingPlaytest}/>}</section>:null;
   if (existingPlaytest && editing) {
     return (
       <div className="mt-5 rounded-xl border border-[#77f29b]/20 bg-black/20 p-5 lg:p-6">
@@ -2456,7 +2469,9 @@ export default function StartPlaytest({
           loading={eligibilityLoading}
           error={eligibilityError}
           currentPlaytest={existingPlaytest}
+          onRetry={retryAllowance}
         />
+        {shareControls}
 
         <div className="mt-6 grid items-start gap-5">
           <div className="space-y-4">
@@ -2480,7 +2495,7 @@ export default function StartPlaytest({
                 </span>
               </button>
 
-              <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} publishedTargeting={existingPlaytest?.publishedAt&&savedAudienceKey?JSON.parse(savedAudienceKey) as [number,string,boolean]:undefined} />
+              <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} publishedTargeting={existingPlaytest?.publishedAt&&includesPlaytestedTesters(existingPlaytest.audience)&&savedAudienceKey?JSON.parse(savedAudienceKey) as [number,string,boolean]:undefined} />
               {setupExpanded && (
                 <form
                   className="space-y-6 border-t border-white/10 p-5"
@@ -2817,57 +2832,7 @@ export default function StartPlaytest({
               )}
             </section>
 
-            {includesOwnCommunity(audience) && (
-              <section className="rounded-xl border border-violet-300/20 bg-violet-300/[0.04]">
-                <button
-                  type="button"
-                  onClick={() => setSharingExpanded((current) => !current)}
-                  className="flex w-full items-center justify-between gap-4 p-5 text-left"
-                >
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
-                      Community sharing
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-400">
-                      Share this Playtested link with your own players.
-                    </p>
-                  </div>
 
-                  <span className="text-lg text-zinc-400">
-                    {sharingExpanded ? "−" : "+"}
-                  </span>
-                </button>
-
-                {sharingExpanded && (
-                  <div className="border-t border-white/10 p-5">
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="text"
-                        readOnly
-                        value={getCommunityPlaytestUrl(
-                          existingPlaytest.shareToken
-                        )}
-                        onFocus={(event) => event.currentTarget.select()}
-                        className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-zinc-300 outline-none"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => void copyCommunityLink()}
-                        className="rounded-lg border border-violet-300/25 px-4 py-3 text-sm font-semibold text-violet-200 transition hover:border-violet-300/50 hover:text-violet-100"
-                      >
-                        {communityLinkCopied ? "Copied" : "Copy link"}
-                      </button>
-                    </div>
-
-                    <p className="mt-3 text-xs leading-5 text-zinc-500">
-                      Share it in Discord, Reddit, social media, email or your
-                      existing community.
-                    </p>
-                  </div>
-                )}
-              </section>
-            )}
           </div>
 
           <section className="rounded-xl border border-white/10 bg-white/[0.02]">
@@ -2897,7 +2862,7 @@ export default function StartPlaytest({
               <div className="border-t border-white/10 p-5">
                 <BuildResultsPanel
                   currentPlaytest={existingPlaytest}
-                  playtests={[existingPlaytest, ...historicalPlaytests]}
+          playtests={[existingPlaytest, ...historicalPlaytests]}
                 />
               </div>
             )}
@@ -2969,7 +2934,9 @@ export default function StartPlaytest({
           loading={eligibilityLoading}
           error={eligibilityError}
           currentPlaytest={existingPlaytest}
+          onRetry={retryAllowance}
         />
+        {shareControls}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
@@ -3009,43 +2976,7 @@ export default function StartPlaytest({
           </div>
         </div>
 
-        {includesOwnCommunity(existingPlaytest.audience) && (
-          <div className="mt-5 rounded-lg border border-violet-300/20 bg-violet-300/[0.05] p-4">
-            <p className="font-semibold text-violet-200">
-              Community testing link
-            </p>
 
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Share this Playtested link in Discord, Reddit, social
-              media, email or anywhere else your community gathers.
-            </p>
-
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                readOnly
-                value={getCommunityPlaytestUrl(
-                  existingPlaytest.shareToken
-                )}
-                onFocus={(event) => event.currentTarget.select()}
-                className="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-zinc-300 outline-none"
-              />
-
-              <button
-                type="button"
-                onClick={() => void copyCommunityLink()}
-                className="rounded-lg border border-violet-300/25 px-4 py-3 text-sm font-semibold text-violet-200 transition hover:border-violet-300/50 hover:text-violet-100"
-              >
-                {communityLinkCopied ? "Copied" : "Copy link"}
-              </button>
-            </div>
-
-            <p className="mt-2 text-xs leading-5 text-amber-200/80">
-              The public playtest page is being added next. Keep this
-              link private until that page is ready.
-            </p>
-          </div>
-        )}
 
         {existingPlaytest.focusAreas.length > 0 && (
           <div className="mt-5">
@@ -3084,7 +3015,7 @@ export default function StartPlaytest({
         <div className="mt-6 border-t border-white/10 pt-6">
           <BuildResultsPanel
             currentPlaytest={existingPlaytest}
-            playtests={[existingPlaytest, ...historicalPlaytests]}
+          playtests={[existingPlaytest, ...historicalPlaytests]}
           />
         </div>
 
@@ -3169,7 +3100,9 @@ export default function StartPlaytest({
           loading={eligibilityLoading}
           error={eligibilityError}
           currentPlaytest={existingPlaytest}
+          onRetry={retryAllowance}
         />
+        {shareControls}
 
         <label className="block">
           <span className="text-sm font-medium text-zinc-200">

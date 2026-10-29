@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import SubmissionCompletenessBatch from "../../components/SubmissionCompletenessBatch";
-import {submissionIssues} from "../../../lib/submission-completeness";
+import ListingRevisionQueue from "../../components/ListingRevisionQueue";
+import {submissionIssues,completenessMessage} from "../../../lib/submission-completeness";
 import { FeedbackReviewQueue } from "../../components/FeedbackReviewQueue";
 import { needsFeedbackReview, type FeedbackReviewItem } from "../../../lib/feedback-review";
 import SiteHeader from "../../components/SiteHeader";
@@ -441,7 +442,7 @@ export default function AdminSubmissionsPage() {
 
       const mapped: Submission[] = (data ?? []).map((row) => ({
         id: row.id,
-        steamUrl:row.steam_url??"",releaseStatus: row.release_status ?? "",releaseDate:row.release_date??"",completenessMessage:row.completeness_message??"",
+        steamUrl:row.steam_url??"",releaseStatus: row.release_status ?? "",releaseDate:row.release_date??"",completenessMessage:completenessMessage(submissionIssues(row)),
         title: row.title ?? "",
         developer: row.developer_name ?? "",
         genre: row.genre ?? "",
@@ -1480,6 +1481,7 @@ export default function AdminSubmissionsPage() {
       <SiteHeader />
 
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+        <ListingRevisionQueue/>
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
             Playtested Admin

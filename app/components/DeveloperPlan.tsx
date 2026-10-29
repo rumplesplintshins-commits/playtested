@@ -2,11 +2,23 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from "react";
 import {createClient} from "@/lib/supabase";
 export type DeveloperPlan={plan:"free"|"pro";launch_limit:number;window_hours:number;gap_hours:number;rank_targeting:boolean;genre_targeting:boolean;rounds_used:number;cooldown_until:string|null;quota_until:string|null;next_at:string|null;server_now:string;can_assign:boolean};
+export function allowanceError(rpc:string,error:{code?:string;message?:string}){
+ const code=error.code||"network";
+ const reason=["PGRST202","42883"].includes(code)?"Function unavailable: check migration 014 and the API schema cache before applying SQL.":["42501","PGRST301","PGRST302"].includes(code)||/sign|auth|permission|developer account/i.test(error.message||"")?"Access could not be verified. Sign in again with your developer account.":"Request failed. Check your connection and retry.";
+ return `Plan unavailable. ${reason} (${rpc}: ${code})`;
+}
+export function parseDeveloperPlan(value:unknown):DeveloperPlan{
+ if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Plan unavailable. Unexpected get_my_developer_plan response; check the deployed RPC version.");
+ const p=value as DeveloperPlan;
+ if(!["free","pro"].includes(p.plan)||!Number.isInteger(p.rounds_used)||p.rounds_used<0||!Number.isInteger(p.launch_limit)||p.launch_limit<1||typeof p.rank_targeting!=="boolean"||typeof p.genre_targeting!=="boolean"||!Number.isFinite(Date.parse(p.server_now))||[p.next_at,p.quota_until,p.cooldown_until].some(v=>v!==null&&(typeof v!=="string"||!Number.isFinite(Date.parse(v)))))throw new Error("Plan unavailable. Invalid allowance response; check the deployed RPC contract.");
+ if(p.window_hours!==720||p.launch_limit!==(p.plan==="pro"?15:1)||p.gap_hours!==(p.plan==="pro"?48:0))throw new Error("Plan unavailable. Server policy differs from the configured Free/Pro release policy; review configuration before launching.");
+ return p;
+}
 const Context=createContext<{data:DeveloperPlan|null;loading:boolean;error:string;refresh:()=>Promise<void>}>({data:null,loading:false,error:"Plan unavailable",refresh:async()=>{}});
 export function useDeveloperPlan(){return useContext(Context);}
 export function DeveloperPlanProvider({children,enabled=true}:{children:ReactNode;enabled?:boolean}){
  const [data,setData]=useState<DeveloperPlan|null>(null),[loading,setLoading]=useState(enabled),[error,setError]=useState("");const request=useRef(0);
- const load=useCallback(()=>{const sequence=++request.current;return Promise.resolve().then(()=>createClient().rpc("get_my_developer_plan")).then(result=>{if(sequence!==request.current)return;if(result.error||!result.data)throw new Error("Plan unavailable. Enable migration 014, then refresh plan and allowance.");setData(result.data);setError("");}).catch(e=>{if(sequence===request.current){setData(null);setError(e instanceof Error?e.message:"Plan unavailable.");}}).finally(()=>{if(sequence===request.current)setLoading(false);});},[]);
+ const load=useCallback(()=>{const sequence=++request.current;return Promise.resolve().then(()=>createClient().rpc("get_my_developer_plan")).then(result=>{if(sequence!==request.current)return;if(result.error)throw new Error(allowanceError("get_my_developer_plan",result.error));setData(parseDeveloperPlan(result.data));setError("");}).catch(e=>{if(sequence===request.current){setData(null);setError(e instanceof Error?e.message:"Plan unavailable.");}}).finally(()=>{if(sequence===request.current)setLoading(false);});},[]);
  useEffect(()=>{const pending=request;if(enabled)void load();return()=>{pending.current++;};},[enabled,load]);
  const refresh=useCallback(async()=>{setLoading(true);await load();},[load]);
  return <Context.Provider value={{data,loading,error,refresh}}>{children}</Context.Provider>;

@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import IntentSummary from "./IntentSummary";
+import type {IntentCounts} from "@/lib/intent-counts";
 
 export type CommunityReceptionBuild = {
+  recommendCounts?:IntentCounts|null;
+  continueCounts?:IntentCounts|null;
   id: string;
   releaseLabel: string;
   createdAt: string;
@@ -120,10 +124,7 @@ function scoreText(value: number | null) {
   return `${value.toFixed(1)}/10`;
 }
 
-function percentageText(value: number | null) {
-  if (value === null) return "—";
-  return `${Math.round(value)}%`;
-}
+
 
 export default function CommunityReception({
   builds,
@@ -351,13 +352,11 @@ export default function CommunityReception({
           </p>
 
           <p className="mt-1 text-2xl font-bold text-zinc-100">
-            {percentageText(
-              selectedBuild.recommendPositivePercent
-            )}
+            <IntentSummary counts={selectedBuild.recommendCounts}/>
           </p>
 
           <p className="mt-1 text-xs text-zinc-500">
-            positive tester intent
+            Accepted independent tester answers
           </p>
         </div>
 
@@ -367,13 +366,11 @@ export default function CommunityReception({
           </p>
 
           <p className="mt-1 text-2xl font-bold text-zinc-100">
-            {percentageText(
-              selectedBuild.continuePositivePercent
-            )}
+            <IntentSummary counts={selectedBuild.continueCounts}/>
           </p>
 
           <p className="mt-1 text-xs text-zinc-500">
-            positive tester intent
+            Accepted independent tester answers
           </p>
         </div>
 
@@ -564,9 +561,7 @@ export default function CommunityReception({
                       </p>
 
                       <p className="mt-1 text-sm font-semibold text-zinc-100">
-                        {percentageText(
-                          build.recommendPositivePercent
-                        )}
+                        <IntentSummary counts={build.recommendCounts}/>
                       </p>
                     </div>
 
@@ -576,9 +571,7 @@ export default function CommunityReception({
                       </p>
 
                       <p className="mt-1 text-sm font-semibold text-zinc-100">
-                        {percentageText(
-                          build.continuePositivePercent
-                        )}
+                        <IntentSummary counts={build.continueCounts}/>
                       </p>
                     </div>
                   </button>

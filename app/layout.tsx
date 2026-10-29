@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Rajdhani, Inter } from "next/font/google";
 import "./globals.css";
+import SiteFooter from "./components/SiteFooter";
 
 const displayFont = Rajdhani({
   variable: "--font-display",
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
         {children}
+        <SiteFooter />
       </body>
     </html>
   );

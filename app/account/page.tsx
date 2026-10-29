@@ -4,6 +4,7 @@ import { TesterRankPanel, GenrePreferences } from "../components/TestingPolicy";
 import { useEffect, useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import { createClient } from "../../lib/supabase";
+import PasswordSettings from "../components/PasswordSettings";
 
 const availableRoles = [
   {
@@ -268,6 +269,7 @@ export default function AccountPage() {
                 </div>
               </div>
 
+              <details className="my-5 border-y border-white/10 py-4"><summary className="cursor-pointer font-semibold">Change password</summary><div className="mt-5"><PasswordSettings mode="change"/></div></details>
               <div className="my-7 border-t border-white/10" />
 
               <div className="flex items-start gap-4 sm:gap-5">

@@ -39,6 +39,7 @@ export function CampaignAudienceFields({ minimumRank, setMinimumRank, genre, set
       },200);
       return()=>{active=false;clearTimeout(timeout);};
     },[key,minimumRank,genre,restricted,onAvailability,retry,enabled]);
+    if(!enabled)return null;
     return <fieldset aria-describedby={description} className="my-4 space-y-3 rounded-xl border border-white/10 p-4"><legend>Tester Hub eligibility</legend>
  <p id={description} className="text-xs leading-5 text-zinc-400">{planLoading?"Checking plan targeting...":!plan?"Plan targeting unavailable. Refresh your plan before changing advanced settings.":plan.rank_targeting?"Pro targeting: choose a minimum rank or require a genre-interest match.":publishedTargeting?"Free: keep or lower this published round's existing restrictions. You cannot add or strengthen Pro targeting. Remove a required match before changing its genre.":"Free: Bronze Tester (all ranks qualify) and any genre interests. Pro lets you limit participation to Silver Tester and above, Gold Tester and above, or Platinum Tester, and require matching genre interests."}</p>
  <label className="block">Minimum tester rank <select className="mt-1 block w-full max-w-full rounded border border-white/15 bg-black p-2" disabled={!plan} value={minimumRank} onChange={e => setMinimumRank(Number(e.target.value))}>{RANKS.map((r, i) => <option key={r} value={i} disabled={i>maximumRank}>{testerRankPresentation(i).label}{i === 0 ? " — all ranks qualify" : " and above"}</option>)}</select></label>

@@ -1,3 +1,6 @@
+import IntentSummary from "@/app/components/IntentSummary";
+import {publicIntentCounts} from "@/lib/intent-counts";
+import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";
 import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
@@ -143,7 +146,11 @@ export default async function GamePage({
       .eq("steam_app_id", steamAppId)
       .maybeSingle();
 
-    const importedGame = importedGameData as ImportedGame | null;
+    const originalImportedGame = importedGameData as ImportedGame | null;
+    const updates=originalImportedGame?await listingUpdates(supabase,[{kind:"imported",id:originalImportedGame.id}]):[];
+    const listingUpdate=updates?.[0];
+    const importedGame=originalImportedGame?{...originalImportedGame,...listingUpdate?.fields}:null;
+    const disclosureNotice=listingNotice(listingUpdate);
 
     if (importedGameError || !importedGame) {
       return (
@@ -290,12 +297,6 @@ export default async function GamePage({
     );
     const lifetimePerformanceScore = toOptionalNumber(
       communityReception?.average_performance_score
-    );
-    const lifetimeRecommendPercent = toOptionalNumber(
-      communityReception?.recommend_positive_percent
-    );
-    const lifetimeContinuePercent = toOptionalNumber(
-      communityReception?.continue_positive_percent
     );
     const lifetimeAverageHours = toOptionalNumber(
       communityReception?.average_hours_played
@@ -477,12 +478,6 @@ export default async function GamePage({
       currentReceptionRound?.averageGameplay ?? lifetimeGameplayScore;
     const performanceScore =
       currentReceptionRound?.averagePerformance ?? lifetimePerformanceScore;
-    const recommendPercent =
-      currentReceptionRound?.recommendPositivePercent ??
-      lifetimeRecommendPercent;
-    const continuePercent =
-      currentReceptionRound?.continuePositivePercent ??
-      lifetimeContinuePercent;
     const averageHours =
       currentReceptionRound?.averageHours ?? lifetimeAverageHours;
     const bugReportCount =
@@ -523,6 +518,9 @@ export default async function GamePage({
         )
       : detailedFeedback;
 
+    const intentData=await publicIntentCounts(supabase,[{kind:"imported",id:importedGame.id}]);
+    const intentGame=intentData?.[0];
+    const selectedIntent=currentReceptionRound?intentGame?.builds.find(build=>build.playtest_id===currentReceptionRound.id):intentGame?.lifetime;
     const verificationStatus: VerificationStatus = "Not yet verified";
     const steamUrl =
       importedGame.steam_url ||
@@ -542,7 +540,7 @@ export default async function GamePage({
                 {verificationStatus}
               </span>
               <span className="inline-flex rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-3 py-1.5 text-xs font-semibold text-violet-200">
-                AI use unknown
+                {listingUpdate?.fields.ai_type||"AI Use Unknown"}
               </span>
               <span className="inline-flex rounded-full border border-[#77f29b]/25 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs font-semibold text-[#b9f9ca]">
                 Developer claimed
@@ -665,12 +663,10 @@ export default async function GamePage({
                     <div className="rounded-lg border border-white/10 bg-black/20 p-4">
                       <p className="text-xs text-zinc-500">Would recommend</p>
                       <p className="mt-1 text-2xl font-bold text-zinc-100">
-                        {recommendPercent !== null
-                          ? `${Math.round(recommendPercent)}%`
-                          : "—"}
+                        <IntentSummary counts={selectedIntent?.recommend}/>
                       </p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        positive tester intent
+                        Accepted independent tester answers
                       </p>
                     </div>
 
@@ -679,12 +675,10 @@ export default async function GamePage({
                         Would continue playing
                       </p>
                       <p className="mt-1 text-2xl font-bold text-zinc-100">
-                        {continuePercent !== null
-                          ? `${Math.round(continuePercent)}%`
-                          : "—"}
+                        <IntentSummary counts={selectedIntent?.continue}/>
                       </p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        positive tester intent
+                        Accepted independent tester answers
                       </p>
                     </div>
 
@@ -862,9 +856,7 @@ export default async function GamePage({
                               Recommend
                             </p>
                             <p className="mt-1 text-sm font-semibold text-zinc-100">
-                              {round.recommendPositivePercent != null
-                                ? `${round.recommendPositivePercent}%`
-                                : "—"}
+                              <IntentSummary counts={intentGame?.builds.find(build=>build.playtest_id===round.id)?.recommend}/>
                             </p>
                           </div>
 
@@ -873,9 +865,7 @@ export default async function GamePage({
                               Continue
                             </p>
                             <p className="mt-1 text-sm font-semibold text-zinc-100">
-                              {round.continuePositivePercent != null
-                                ? `${round.continuePositivePercent}%`
-                                : "—"}
+                              <IntentSummary counts={intentGame?.builds.find(build=>build.playtest_id===round.id)?.continue}/>
                             </p>
                           </div>
 
@@ -1081,10 +1071,9 @@ export default async function GamePage({
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
                 AI transparency
               </p>
-              <h2 className="mt-3 text-lg font-bold">AI use unknown</h2>
+              <h2 className="mt-3 text-lg font-bold">{listingUpdate?.fields.ai_type||"AI Use Unknown"}</h2>{disclosureNotice&&<p className="mt-2 text-amber-200">{disclosureNotice}</p>}
               <p className="mt-3 text-sm leading-6 text-zinc-400">
-                No reviewed AI-use disclosure is currently published for this
-                game. Playtested does not infer AI use from a Steam listing.
+                {listingUpdate?.fields.ai_type?"This is a developer declaration, not independent verification.":"No developer AI-use disclosure is currently available. Playtested does not infer AI use from a Steam listing."}
               </p>
             </div>
 
@@ -1100,10 +1089,10 @@ export default async function GamePage({
           </aside>
         </div>
 
-        <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
+        <p className="px-6 py-6 text-center text-xs text-zinc-400">
           PLAYTESTED_ · Game information sourced from the catalogue. Playtested
           activity reflects activity recorded on Playtested.
-        </footer>
+        </p>
       </main>
     );
   }
@@ -1304,9 +1293,7 @@ export default async function GamePage({
         </aside>
       </div>
 
-      <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
-        PLAYTESTED_ · Prototype, not connected to live player data.
-      </footer>
+
     </main>
   );
 }

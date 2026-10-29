@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "../../../lib/supabase";
+import {currentJourney} from "@/lib/share-links";
+import {TrackedAccessLink} from "@/app/components/ShareJourney";
 
 type CommunityPlaytestJoinProps = {
   token: string;
@@ -113,6 +115,7 @@ export default function CommunityPlaytestJoin({
   const [joinedPlaytest, setJoinedPlaytest] =
     useState<JoinedPlaytest | null>(null);
   const [error, setError] = useState("");
+  const [trackingWarning,setTrackingWarning]=useState("");
 
   const [showFeedbackForm, setShowFeedbackForm] =
     useState(false);
@@ -298,11 +301,7 @@ export default function CommunityPlaytestJoin({
     try {
       const supabase = createClient();
 
-      const {
-        error: feedbackError,
-      } = await supabase.rpc(
-        "submit_community_playtest_feedback",
-        {
+      const feedbackFields={
           p_participant_id:
             joinedPlaytest.participant_id,
           p_overall_score: Number(overallScore),
@@ -321,8 +320,14 @@ export default function CommunityPlaytestJoin({
           p_bugs: bugs,
           p_recommendation: recommendation,
           p_additional_comments: additionalComments,
-        }
-      );
+      };
+      const visit=currentJourney();
+      let result=await supabase.rpc(visit?"submit_community_feedback_with_attribution":"submit_community_playtest_feedback",visit?{...feedbackFields,p_visit:visit}:feedbackFields);
+      if(visit&&result.error&&["PGRST202","42883"].includes(result.error.code)){
+        result=await supabase.rpc("submit_community_playtest_feedback",feedbackFields);
+        if(!result.error)setTrackingWarning("Feedback saved. Link reporting is unavailable for this submission; the developer may need the campaign-sharing update.");
+      }
+      const feedbackError=result.error;
 
       if (feedbackError) {
         setError(formatRpcError(feedbackError));
@@ -387,6 +392,7 @@ export default function CommunityPlaytestJoin({
             feedback has been recorded for the developer.
           </p>
 
+          {trackingWarning&&<p role="status" className="mt-3 text-sm text-amber-200">{trackingWarning}</p>}
           <div className="mt-5 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.05] px-4 py-3 text-sm text-zinc-300">
             Thanks for testing. Community feedback is kept
             separate from independent Playtested verification
@@ -415,14 +421,14 @@ export default function CommunityPlaytestJoin({
 
         {!showFeedbackForm && (
           <div className="mt-5 flex flex-wrap gap-3">
-            <a
+            <TrackedAccessLink campaignId={joinedPlaytest.playtest_id}
               href={joinedPlaytest.access_link}
               target="_blank"
               rel="noreferrer"
               className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4]"
             >
               Open game / build ↗
-            </a>
+            </TrackedAccessLink>
 
             <button
               type="button"
