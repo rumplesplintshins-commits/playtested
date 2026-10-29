@@ -6,9 +6,48 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--claims')){try{await ownershipClaimChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--maintenance')){try{await listingChecks(true);}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--listings')){try{await listingChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 async function as(n){await run(`reset role;set test.uid='${id(n)}'`);}
+async function ownershipClaimChecks(){
+ await run(fs.readFileSync('supabase/tests/v10-fixture.sql','utf8'));
+ for(const n of [1,2,3])await run(`insert into auth.users values('${id(n)}');insert into profiles(id,roles,role) values('${id(n)}',array['developer'],'${n===3?'admin':'user'}')`);
+ // Narrow claim fixture reproduces the supplied deployed columns, broad grants and
+ // exact INSERT/SELECT/UPDATE RLS predicates. No live credentials/connections.
+ await run(`create table public.game_claims(id uuid primary key default gen_random_uuid(),claimant_id uuid not null,status text not null default 'Pending',admin_notes text,reviewed_at timestamptz,reviewed_by uuid,verification_status text default 'Not Submitted');
+ alter table public.game_claims enable row level security;
+ grant usage on schema public,auth to authenticated,anon;
+ grant all on public.game_claims to authenticated,anon;
+ create policy "Developers can create their own claims" on public.game_claims for insert to authenticated with check(claimant_id=auth.uid());
+ create policy "Developers can view their own claims" on public.game_claims for select to authenticated using(claimant_id=auth.uid());
+ create policy "Admins can view all game claims" on public.game_claims for select to authenticated using(exists(select 1 from public.profiles where id=auth.uid() and role='admin'));
+ create policy "Admins can update game claims" on public.game_claims for update to authenticated using(exists(select 1 from public.profiles where id=auth.uid() and role='admin')) with check(exists(select 1 from public.profiles where id=auth.uid() and role='admin'));`);
+ await as(1);await run('set role authenticated');
+ await run(`insert into public.game_claims(id,claimant_id,status,admin_notes) values('${id(10)}','${id(1)}','Approved','Existing row: preserved')`);
+ await run('reset role');const before=(await db.query('select * from public.game_claims order by id')).rows;
+ const updatePolicy=await one(`select qual,with_check from pg_policies where tablename='game_claims' and cmd='UPDATE'`);
+ await run(fs.readFileSync('supabase/migrations/202610290019_ownership_claim_permissions.sql','utf8'));
+ assert.deepEqual((await db.query('select * from public.game_claims order by id')).rows,before,'Migration preserves all existing claim fields');
+ assert.deepEqual(await one(`select qual,with_check from pg_policies where tablename='game_claims' and cmd='UPDATE'`),updatePolicy,'Existing admin UPDATE policy preserved');
+ await as(1);await run('set role authenticated');
+ await run(`insert into public.game_claims(id,claimant_id) values('${id(11)}','${id(1)}')`);
+ assert.equal((await one(`select status from public.game_claims where id='${id(11)}'`)).status,'Pending');
+ await assert.rejects(run(`insert into public.game_claims(claimant_id) values('${id(2)}')`),/row-level security/);
+ for(const [column,value] of [['status',"'Approved'"],['status',"'Rejected'"],['admin_notes',"'Forged review'"],['reviewed_by',`'${id(3)}'`],['reviewed_at',"now()"],['verification_status',"'Verified'"]]){
+  await assert.rejects(run(`insert into public.game_claims(claimant_id,${column}) values('${id(1)}',${value})`),/row-level security/,`Reject forged ${column}`);
+ }
+ assert.equal((await db.query(`update public.game_claims set status='Approved',reviewed_by='${id(1)}',reviewed_at=now() where id='${id(11)}' returning id`)).rows.length,0,'Owner cannot self-approve by UPDATE');
+ assert.equal((await one(`select status from public.game_claims where id='${id(11)}'`)).status,'Pending');
+ assert.equal((await db.query(`update public.game_claims set admin_notes='Forged' where id='${id(11)}' returning id`)).rows.length,0);
+ await as(2);await run('set role authenticated');
+ assert.equal((await db.query(`update public.game_claims set status='Approved' where id='${id(11)}' returning id`)).rows.length,0,'Unrelated user cannot approve');
+ await as(3);await run('set role authenticated');
+ assert.equal((await db.query(`update public.game_claims set status='Approved',admin_notes='Reviewed by admin',reviewed_by=auth.uid(),reviewed_at=now(),verification_status='Verified' where id='${id(11)}' returning id`)).rows.length,1);
+ assert.equal((await one(`select reviewed_by from public.game_claims where id='${id(11)}'`)).reviewed_by,id(3));
+ await run('reset role');assert.deepEqual((await db.query(`select * from public.game_claims where id='${id(10)}'`)).rows,before);
+ console.log('PASS isolated PostgreSQL RLS: own Pending INSERT; rejects other owner, forged approval/reviewer/verification fields; owner/unrelated UPDATE cannot approve; authorised admin UPDATE succeeds; historical rows and admin policy preserved. No hosted writes or full campaign integration tested.');
+}
 async function insert(n,fields){const data={...valid,...fields};return one(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,game_link,ai_type,ai_explanation,evidence_link,release_status) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning *`,[id(n),id(1),data.title,data.developer_name,data.genre,data.description,data.game_link,data.ai_type,data.ai_explanation||'',data.evidence_link||'',data.release_status]);}
 async function save(n,fields,revision,resubmit){return (await one('select save_my_submission_correction($1,$2::jsonb,$3,$4) result',[id(n),JSON.stringify(fields),revision,resubmit])).result;}
 try{

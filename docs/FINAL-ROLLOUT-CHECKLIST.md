@@ -1,5 +1,117 @@
 # Playtested rollout preparation
 
+## Beta fixture/claim execution status — 29 October 2026
+
+**Completed in Supabase:** existing reversible pause mechanism applied only to the three confirmed campaign IDs below, with matching submission-ID predicates, in one targeted API PATCH. Read-back confirms all three `paused`; authorised public summary confirms `recruiting=false` for all three. No migrations were replayed, no records deleted, and no claims/feedback/XP were updated. Their public campaign-specific share contexts require open status, so they no longer recruit. Existing test history/relationships remain; active claims were not released or reset. To reverse, explicitly resume only these same campaigns after reviewing the current fixture-hiding decision; no automatic republishing was added.
+
+| Confirmed listing ID | Confirmed campaign ID | Live status |
+| --- | --- | --- |
+| `d3100000-0000-4000-8000-000000000001` | `d3100000-0000-4000-8000-000000000101` | Paused; not recruiting |
+| `d3100000-0000-4000-8000-000000000002` | `d3100000-0000-4000-8000-000000000102` | Paused; not recruiting |
+| `d3100000-0000-4000-8000-000000000003` | `d3100000-0000-4000-8000-000000000103` | Paused; not recruiting |
+
+**Completed locally, not deployed:** `/demo-games/neon-courier`, `/demo-games/mosslight-grove`, `/demo-games/orbit-foundry` return HTTP **404** under the built production server. Only that route is gated on production; local development fixtures remain usable. Production build and isolated claim-permission tests pass. No deployment/install/build seeding hook exists. Reporting still defaults to real data; its explicit labelled sample control remains development-only inside the ownership-authorised reporting workspace, with no sample data sent to reporting/claims/rewards. No sample storage or production preview was introduced.
+
+**019 application blocked:** project identity again confirmed as `qtcmzckdhgahuqqilmzj`. Existing service-role API access can read/update authorised rows, but no authenticated SQL connection, CLI-linked project/token or database-password environment is available. The API does not offer arbitrary schema SQL. Therefore migration **019 has NOT been applied or live-verified**. It remains exactly the isolated-tested file, SHA-256 **`0B84A6FBFD055E32CADD963170C7F8C278CA7B346E6503AF5051B6D7DA681D2E`**. The owner has authorised only that migration; run its exact transaction (shown under the claim correction below) in this project's SQL Editor. Then inspect, without synthetic live claims:
+
+```sql
+begin read only;
+select policyname,cmd,roles,qual,with_check
+from pg_policies
+where schemaname='public' and tablename='game_claims'
+  and cmd in ('INSERT','UPDATE')
+order by cmd,policyname;
+commit;
+```
+
+**Full public listing/count exclusion remains BLOCKED, not completed:** pausing hides recruitment/Tester Hub availability, but does not exclude approved listings or historical synthetic results from every public catalogue/statistic. No suitable cross-source approved-listing visibility mechanism was established. The server-side paginated `get_public_catalogue` definition and underlying `approved_games` relation/view were not included in the earlier inspection or repository; filtering cards only after pagination would give incorrect counts/empty pages and is not an acceptable fix. No real imported record or legitimate listing was changed.
+
+Smallest proposed follow-up: an exact-ID reversible public suppression predicate integrated before catalogue counting/pagination and in corresponding public detail/share/reception/aggregate outputs, while preserving owner/admin/tester history. A new migration may be necessary; **none has been applied or guessed from unknown SQL**. To prepare its exact integration safely, run this focused definition-only query in the same SQL Editor and provide its one JSON result:
+
+```sql
+begin read only;
+select jsonb_build_object(
+ 'functions',(select jsonb_agg(jsonb_build_object(
+   'signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid)))
+   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.prokind='f' and p.proname in (
+    'get_public_catalogue','get_game_community_reception',
+    'get_available_community_test_games','get_public_community_playtest',
+    'get_public_submission_playtest_history','get_public_submission_playtest_feedback')),
+ 'approved_relation',(select jsonb_build_object('kind',c.relkind,
+   'definition',case when c.relkind in ('v','m') then pg_get_viewdef(c.oid,true) else null end)
+   from pg_class c join pg_namespace n on n.oid=c.relnamespace
+   where n.nspname='public' and c.relname='approved_games')
+) as public_fixture_visibility_inspection;
+commit;
+```
+
+Read-only exact-ID inspection found **one independent test**, **zero community feedback**, **zero community participants** and **one tracked link** associated with these fixtures. All were preserved; the tracked link was not deleted/relabelled (general-game links still need the public suppression gate). A shared fixture owner is not proof of a disposable account; no other accounts or feedback on real listings were classified as synthetic without provenance. No title-word matching or broad account scan was used.
+
+All three confirmed fixture listing/access/artwork destinations contain localhost. They are QA destinations to hide, not blindly rewrite to production. No hard-coded localhost navigation was found in the inspected runtime app/lib; Auth and sharing use the current origin. Worker-local defaults and localhost seed configuration remain deliberate development/worker configuration, not deployment seeding. Real-listing database URLs outside these three IDs were not audited or rewritten.
+
+**Next owner actions (blocking information bundled):** run exact migration 019 plus its read-only policy verification, and the definition-only visibility query above; return only sanitised policy/definition output. Do not supply credentials. Fixture catalogue/count suppression cannot be claimed complete until the targeted SQL change is prepared, reviewed and separately applied. SMTP/Auth configuration, legal operator details and PULSE hosting remain unresolved. Deployment/DNS/Auth settings were untouched.
+
+Manual checks once remaining setup is authorised/completed:
+1. Confirm the three campaign statuses are paused and no public recruitment badge/Tester Hub invitation appears; existing participants can still see their history.
+2. After visibility integration, confirm these exact IDs are absent from catalogue/search, direct detail/share pages and public counts, while a known genuine Steam and approved developer listing remain visible. This exclusion is still pending, not an already-passed check.
+3. Run the production app and verify all three `/demo-games/*` pages return 404. In reporting, real data is the default and production has no sample toggle; authorised local preview is explicitly labelled and returns to real results without changing totals.
+4. After 019 is applied and its policy inspected, exercise normal Pending claim submission/admin approval with controlled accounts; retain malicious INSERT/UPDATE attempts in the isolated harness (`node tests/test-submission-corrections.mjs --claims`), not synthetic live records.
+
+## Deployed-state comparison — inspection received 29 October 2026
+
+This section supersedes the earlier “unknown implementation” gate below. User-supplied SQL inspection captured **2026-10-29 15:28:34 UTC**, `transaction_read_only=on`; 86 function definitions, relevant table/column/constraint/index/RLS/grant/trigger definitions and policy configuration were supplied. Attachment SHA-256: `bceb2b62c087bd0a8189e5e3dd3637a41214c222343803c790eefabfeef42822`. Raw output was not copied into Git. All requested table/function names were present. Project selection relies on the user's SQL Editor selection plus the earlier matching API project check; the JSON itself does not identify the project. Migration history remains unavailable and need not be reconstructed.
+
+### Required deployed behaviour confirmed from definitions/configuration
+
+| Area | Comparison result |
+| --- | --- |
+| 006–009 interests/eligibility/allowance integration | Canonical interest functions and server rank/genre checks present. Discovery's expiry predicate matches 012's amendment. Audience/launch guards enabled. |
+| 010 submission correction and 016–017 listing/admission | Completeness and owner/admin guards present, including later optional-evidence/admitted-listing maintenance changes. Admission trigger enabled; imported ownership requires an approved claim plus authorised developer link. Later definitions, not superseded 016 review policy, were compared. |
+| 007/014/018 developer allowance | Free **1/720 hours**, no gap; Pro **15/720 hours**, **48-hour gap**; plan targeting flags correct. Account-wide launch lock/window functions match source. 018 community-only targeting exception and Hub-specific grandfathering are present. |
+| 012 places/reservations | New campaign default **4**; policy **72 hours**. Activation is recorded at **2026-10-28 21:50:03 UTC**: do not reactivate. Capacity counts submitted/reviewed plus unexpired reservations, excluding audited replacements. Tester/capacity locks, reclaim/expiry guards, wrapper signatures and enabled one-active/submission triggers are present. Existing per-campaign capacities/legacy rows were deliberately not read. |
+| 013 graded XP | Active rubric **v2**, maximum **100**, separate originality/relevance eligibility and five scored criteria. Admin-only review function uses row locking and actual-award deltas; audit columns and access restrictions present. No historical rescore is needed. |
+| 011/015/018 tracking and recruitment | Owner-checked reporting/creation, private service ingestion, current-journey checks, campaign/build binding, community wrapper and dedup indexes match source. Claim/submission triggers enabled. Public recruitment uses authoritative capacity; bounded public summary grants present. |
+| Critical write boundaries | Profiles/independent tests/private tracking cannot be directly written by anon/authenticated; RLS/policies and protected helpers match expected boundaries. Community RPCs check signed-in identity/participant ownership; anonymous EXECUTE alone does not bypass those internal checks. |
+
+Direct stored-function body comparisons against repository SQL were supplemented by review of dynamically amended definitions from 012/017/018. Earlier/baseline renamed community/reservation helpers were inspected for ownership and flow compatibility. These are static enforcement/configuration confirmations, **not live mutation, race or full browser tests**; completed isolated rehearsal evidence is reused.
+
+### Concrete mismatch: ownership-claim INSERT can forge reviewer fields
+
+`game_claims` has RLS enabled, but the permissive INSERT policy **Developers can create their own claims** checks only `claimant_id = auth.uid()`. Authenticated users have table INSERT and there is no additional claim-admission guard: the only claim trigger fills a verification code. A crafted direct INSERT can therefore set `status='Approved'`, `reviewed_by`, `reviewed_at`, `admin_notes` or a claimed verification outcome. This violates reviewer-only ownership decisions even though it does **not**, by itself, create the separate admin-controlled `game_developer_links` row or satisfy the campaign admission path.
+
+The current app inserts `status='Pending'` and omits reviewer fields, so the following smallest policy correction preserves its normal request. Prepared as **`supabase/migrations/202610290019_ownership_claim_permissions.sql`**. **Verified in isolated PostgreSQL; NOT applied live:**
+
+```sql
+begin;
+alter policy "Developers can create their own claims"
+on public.game_claims
+with check (
+  claimant_id = auth.uid()
+  and status = 'Pending'
+  and admin_notes is null
+  and reviewed_at is null
+  and reviewed_by is null
+  and coalesce(verification_status, 'Not Submitted') = 'Not Submitted'
+);
+commit;
+```
+
+This changes future INSERT acceptance only; it does not update/delete historical claims, grant ownership or alter the existing admin UPDATE policy. No historical live claims were read, so whether any forged rows exist is unknown. Do not rewrite old claims based on this finding. Before application, recheck this policy has not changed and review the exact diff. If reverting were ever necessary, restore the captured original owner-only WITH CHECK policy deliberately; that restores the known gap and is not a recommended public-beta state.
+
+Verification command: **`node tests/test-submission-corrections.mjs --claims`**. Extended the existing PGlite harness with a narrow fixture reproducing the supplied claim grants/RLS predicates and relevant columns. Passed: legitimate own Pending INSERT; other claimant rejection; forged Approved/Rejected, notes, reviewer, review timestamp and verification-outcome rejection; developer's Pending→Approved UPDATE and notes UPDATE affect zero rows; unrelated developer UPDATE affects zero rows; authenticated admin approval/reviewer-field UPDATE succeeds. Existing seeded claim fields and original admin UPDATE policy remain unchanged. Real PostgreSQL RLS runs under `SET ROLE authenticated`, not mocked permission assertions. The reduced fixture does not reproduce every baseline trigger or execute the hosted admin approval RPC/campaign journey; those remain manual integration checks. Campaign access code, admission functions and developer-link policies are untouched. No new UPDATE policy is needed: the inspected existing admin-only UPDATE policy already prevents owner self-approval and passed the isolated tests.
+
+### Still unverified / next action
+
+The inspection did not include `get_available_community_test_games()` (used internally by discovery), signup-trigger/Auth settings, existing record validity, actual historical capacities/deadlines or real hosted race/browser outcomes. No missing migration is inferred. The supplied capacity/claim enforcement is confirmed statically; do not claim full available-list execution was tested. Public `approved_games` includes SELECT access to its `evidence_link` field and the existing public detail page renders it: this is an existing public field, not a protected private-evidence store; do not place confidential evidence there. No user data was inspected.
+
+**Single next action:** review and separately authorise application of migration **019** after confirming the deployed policy remains the inspected version. It requires the existing `game_claims` table, named owner INSERT policy and reviewed-field columns; it does not require migration-history reconstruction or replaying 006–018. Missing/renamed policy or incompatible schema makes ALTER POLICY fail and the transaction must be rolled back. SMTP/Auth, confirmed-fixture hiding, legal operator details and separate PULSE hosting remain unresolved as previously recorded. No live SQL, commit or push was performed for this fix.
+
+Manual verification after separately authorised correction/testing:
+1. Confirm the SQL Editor project is `qtcmzckdhgahuqqilmzj`; review the policy against the captured definition before any write is authorised.
+2. Reproduce the isolated verification if needed with `node tests/test-submission-corrections.mjs --claims`; all requested cases already passed. After separately authorised application, submit a legitimate Pending claim through the app, review it with an admin account, and confirm the approved developer relationship behaves normally; an unrelated developer must remain blocked. Use isolated accounts/environment for malicious INSERT/UPDATE attempts rather than creating forged production rows.
+3. After hosted setup is ready, run the existing controlled-account allowance/reservation/partial-XP/community-link smoke checks below. Do not repeat reservation activation or old migrations.
+
 ## First Vercel beta gate — 29 October 2026
 
 This section supersedes the historical release identity and gates below for the first hosted beta. Branch: **v11**, starting HEAD **04a0c46**. The build fixes/checklist are authorised for the commit `V11: prepare production build for beta` and push to the existing v11 branch; no tag change. Read-only authenticated metadata was inspected as recorded below. No deployment, migration application or Auth/DNS setting change was performed. Earlier recovery evidence remains historical evidence, not a current schema audit.
@@ -53,26 +165,63 @@ Authenticated read-only inspection on 29 October reached **qtcmzckdhgahuqqilmzj.
 
 These are metadata observations, not execution/permission tests or proof that all objects, definitions and data transitions match each file. **No genuinely missing migration is identified, so there is no authorised or justified migration-application list.** Do not rerun these non-idempotent files based on unknown history.
 
-**Single next database action:** in the Supabase Dashboard SQL Editor for project **qtcmzckdhgahuqqilmzj**, run this read-only existence query:
+**Required behaviour confirmed:** the prior authenticated GET metadata check established project identity and presence of feature RPCs, not implementation/permissions. **Concrete mismatch found:** none established. **Still unverified:** deployed function bodies/signatures, effective grants/RLS/triggers, allowance rows, reservation activation/defaults/locks, current rubric/XP adjustments and attribution constraints.
+
+The owner now confirms `to_regclass('supabase_migrations.schema_migrations')` returned NULL in SQL Editor. History is unavailable; no reconstruction, history entries or migration reruns are needed to establish the required deployed state. The table above records application provenance only, not missing behaviour.
+
+**Single next action:** open the SQL Editor for project **qtcmzckdhgahuqqilmzj** and run the following one focused inspection. It returns one JSON row of definitions, effective permissions and three non-user policy/rubric configuration tables. It does not invoke application RPCs, activation, cleanup, repair, scoring or attribution functions, and reads no user/game/claim/report/event records. Transaction read-only is enforced. Save/export the full JSON outside Git so it can be compared with the current source; do not truncate function bodies. No connection string, key or token is requested. If a deployed function unexpectedly contains an embedded credential, redact that literal before sharing.
 
 ```sql
 begin read only;
-select to_regclass('supabase_migrations.schema_migrations') as migration_history;
+set local statement_timeout = '20s';
+with wanted_functions(name) as (
+ select unnest(array['_assert_developer_targeting','_developer_plan','_intent_counts','_listing_base','_listing_current_claim','_listing_edit_validation','_listing_has_admission','_lock_test_reservation','_playtested_developer_launch_window_at','_playtested_guard_launch','_playtested_limit_active_tests','_pre_admission_eligibility','_share_campaign_key','_share_conversion','_share_key','_share_link_context','_share_owned_key','_share_prune','_share_public_path','_share_rate','_start_reserved_test','_submit_reserved_test','_testing_audience_exists','activate_testing_reservations','admin_assign_developer_plan','audit_submission_corrections','campaign_eligible','campaign_places','claim_community_game_test','claim_with_share_attribution','confirm_listing_reassessment','create_share_link','fix_free_target','game_genres','genre_key','get_campaign_testing_details','get_developer_quality_reports','get_discoverable_community_test_games','get_feedback_quality_rubric','get_listing_revision_queue','get_my_developer_plan','get_my_listing_edit','get_my_submission_correction','get_my_test_reservations','get_playtest_eligibility','get_public_intent_counts','get_public_listing_updates','get_public_recruitment','get_share_context','get_share_engagement','get_testing_audience_availability','get_testing_capacity_policy','get_testing_genres','guard_listing_admission','guard_submission_corrections','guard_tester_places','guard_testing_audience_availability','join_community_playtest','normalize_testing_genres','preview_listing_admission_repairs','preview_submission_completeness','record_share_access','record_share_visit','release_community_game_test','repair_listing_admissions','request_test_reconsideration','review_listing_revision','review_test_quality','route_incomplete_submissions','save_my_listing_edit','save_my_submission_correction','share_journey_context','start_community_game_test','submission_completeness','submission_trim','submit_community_feedback_with_attribution','submit_community_game_test','submit_community_playtest_feedback','tester_rank','testing_genre_options','update_my_testing_genres']::text[])
+), wanted_tables(name) as (
+ select unnest(array['profiles','game_submissions','approved_games','imported_games','game_claims','game_developer_links','community_playtests','community_game_tests','community_playtest_participants','community_playtest_feedback','testing_policy','campaign_build_locks','test_review_events','submission_review_events','feedback_quality_rubrics','developer_plan_policy','developer_entitlements','developer_entitlement_events','listing_states','listing_revisions','listing_admissions','engagement_games','engagement_aliases','engagement_links','engagement_visits','engagement_events','engagement_claims','engagement_limits','engagement_dedup']::text[])
+), relations as (
+ select c.* from pg_class c join pg_namespace n on n.oid=c.relnamespace
+ where n.nspname='public' and c.relname in(select name from wanted_tables)
+), triggers as (
+ select t.* from pg_trigger t where t.tgrelid in(select oid from relations) and not t.tgisinternal
+), functions as (
+ select p.* from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname='public' and p.prokind='f'
+ and (p.proname in(select name from wanted_functions) or p.oid in(select tgfoid from triggers))
+)
+select jsonb_build_object(
+ 'transaction_read_only',current_setting('transaction_read_only'),
+ 'captured_at',current_timestamp,
+ 'missing_function_names',(select coalesce(jsonb_agg(name),'[]') from wanted_functions w where not exists(select 1 from functions f where f.proname=w.name)),
+ 'missing_tables',(select coalesce(jsonb_agg(name),'[]') from wanted_tables w where not exists(select 1 from relations r where r.relname=w.name)),
+ 'functions',(select coalesce(jsonb_agg(jsonb_build_object(
+   'signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),
+   'owner',pg_get_userbyid(p.proowner),'security_definer',p.prosecdef,'settings',p.proconfig,
+   'anon_execute',has_function_privilege('anon',p.oid,'execute'),
+   'authenticated_execute',has_function_privilege('authenticated',p.oid,'execute'),
+   'service_execute',has_function_privilege('service_role',p.oid,'execute')) order by p.proname,p.oid),'[]') from functions p),
+ 'tables',(select coalesce(jsonb_agg(jsonb_build_object('name',r.relname,'rls',r.relrowsecurity,'force_rls',r.relforcerowsecurity,
+   'columns',(select jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid)) order by a.attnum)
+     from pg_attribute a left join pg_attrdef d on d.adrelid=a.attrelid and d.adnum=a.attnum where a.attrelid=r.oid and a.attnum>0 and not a.attisdropped),
+   'constraints',(select jsonb_agg(jsonb_build_object('name',c.conname,'definition',pg_get_constraintdef(c.oid))) from pg_constraint c where c.conrelid=r.oid),
+   'indexes',(select jsonb_agg(indexdef) from pg_indexes where schemaname='public' and tablename=r.relname),
+   'privileges',(select jsonb_agg(jsonb_build_object('role',role_name,'select',has_table_privilege(role_name,r.oid,'select'),'insert',has_table_privilege(role_name,r.oid,'insert'),'update',has_table_privilege(role_name,r.oid,'update'),'delete',has_table_privilege(role_name,r.oid,'delete'),'any_column_select',has_any_column_privilege(role_name,r.oid,'select'),'any_column_insert',has_any_column_privilege(role_name,r.oid,'insert'),'any_column_update',has_any_column_privilege(role_name,r.oid,'update'))) from unnest(array['anon','authenticated','service_role']) role_name)
+ ) order by r.relname),'[]') from relations r),
+ 'triggers',(select coalesce(jsonb_agg(jsonb_build_object('table',t.tgrelid::regclass::text,'name',t.tgname,'enabled',t.tgenabled,'definition',pg_get_triggerdef(t.oid))),'[]') from triggers t),
+ 'policies',(select coalesce(jsonb_agg(to_jsonb(p)),'[]') from pg_policies p where p.schemaname='public' and p.tablename in(select name from wanted_tables)),
+ 'configuration',(select jsonb_object_agg(name,case when to_regclass('public.'||name) is null then null else query_to_xml(format('select * from public.%I',name),true,false,'')::text end)
+   from unnest(array['testing_policy','developer_plan_policy','feedback_quality_rubrics']) name)
+) as deployment_inspection;
 commit;
 ```
 
-If non-null, run the following in the same project's SQL Editor and share only version/name rows (no credentials):
+Review the final deployed definitions, including renamed private helpers and enabled triggers, rather than comparing each historical function version independently: 014 supersedes 007 allowances; 017 supersedes 010/016 listing behaviour; 018 supersedes 011 sharing and amends 014 targeting. Expected configuration: Free 1/720h, Pro 15/720h plus 48h spacing; new campaigns 4 places, 72h reservations, historical capacity preserved; rubric v2 maximum 100 with two eligibility gates and five 20-XP criteria. Expect one-active-test and final-place locking, server rank/genre checks, admission/ownership restrictions, moderator-only actual-award delta accounting, private tracking tables/service-only ingestion and deduplicated community attribution. Existing claims may have null legacy deadlines before explicit activation; that alone is not a mismatch. Missing helper names in the output are candidates for comparison, not automatic evidence that a migration must run.
 
-```sql
-begin read only;
-select version, name
-from supabase_migrations.schema_migrations
-where version between '202610280006' and '202610290018'
-order by version;
-commit;
-```
+Once output is available, classify each required behaviour as confirmed, mismatch or unverified. Static definitions can establish enforcement paths; no live concurrency/write tests are authorised. Reuse isolated concurrency evidence, but do not claim live behaviour testing. **No corrective SQL is prepared now because no concrete mismatch has been demonstrated.** Any correction must target only the demonstrated difference and preserve data/history; do not replay migration files.
 
-If history is null, empty or partial, do not infer missing SQL: manual Dashboard execution may not register history. The next targeted read-only comparison is `pg_get_functiondef`/column/constraint/trigger/grant inspection for only unrecorded feature groups, against their files. Stop for that evidence rather than applying or repairing history. No new audit script is required.
+Manual verification:
+1. Confirm SQL Editor project ref matches **qtcmzckdhgahuqqilmzj**.
+2. Run the complete query; verify `transaction_read_only` is `on` and export the one full JSON result outside the repository.
+3. Provide that result for the focused source comparison; do not activate reservations, rerun migrations or repair history. SMTP/Auth, fixtures, legal details and PULSE hosting remain unresolved.
 
 If a genuinely absent migration is later established, prepare only that file and its absent dependencies in numeric order after checking existing objects for conflicts. Concrete policy/data risks to review: 006 canonicalises existing interests; 007/014 change account launch/targeting policy; 010 changes submission routing; 012 changes new-campaign default/reservation enforcement and has a separate explicit legacy-claim activation; 013 changes new quality awards/ledger adjustments; 016/017 change listing maintenance/admission policy; 018 changes attribution and audience entitlement handling. Re-executing already present CREATE/ALTER statements can conflict; do not bulk-apply 006–018 or alter existing migration history.
 
