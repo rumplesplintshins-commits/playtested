@@ -6,6 +6,7 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--community-votes')){try{await communityVoteChecks();}catch(e){console.error(e.message);process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--review')){try{await reviewScopeChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--visibility')){try{await visibilityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--claims')){try{await ownershipClaimChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
@@ -346,4 +347,20 @@ async function reviewScopeChecks(){
  await as(1);await run('set role authenticated');assert.equal((await one('select count(*) n from game_verifications')).n,0);assert.equal((await db.query('update game_verifications set reviewer_notes=$1 returning id',['forge'])).rows.length,0);
  await assert.rejects(one('select reviewer_notes from published_game_verifications'),/does not exist/);
  console.log('PASS isolated review scope: actual archived approval RPC plus current completeness guards permit complete no-evidence/no-assessment approval; incomplete approval rolls back XP side effects; admin/reason guards, private-note RLS/exposure and note-only preservation, assessment publishing/score constraints retained. Not a fresh live-schema inspection.');
+}
+
+async function communityVoteChecks(){
+ // Reduced real PostgreSQL fixture reproduces the captured vote constraints/RLS.
+ await run(`create role anon;create role authenticated;create schema auth;create function auth.uid()returns uuid language sql stable as $$select nullif(current_setting('test.uid',true),'')::uuid$$;create table community_posts(id bigint primary key);insert into community_posts values(99);create table community_votes(id bigint generated always as identity primary key,post_id bigint references community_posts(id)on delete cascade,user_id uuid not null,value smallint not null check(value in(-1,1)),unique(post_id,user_id));alter table community_votes enable row level security;grant usage on schema auth to anon,authenticated;grant select on community_votes to anon,authenticated;grant insert,update,delete on community_votes to authenticated;grant usage on sequence community_votes_id_seq to authenticated;create policy vote_read on community_votes for select to anon,authenticated using(true);create policy vote_insert on community_votes for insert to authenticated with check(user_id=auth.uid());create policy vote_update on community_votes for update to authenticated using(user_id=auth.uid())with check(user_id=auth.uid());create policy vote_delete on community_votes for delete to authenticated using(user_id=auth.uid());`);
+ await as(1);await run('set role authenticated');let current=0,score=0;
+ for(const [direction,expected]of[[1,1],[1,0],[-1,-1],[-1,0],[-1,-1],[1,1],[-1,-1]]){
+  if(current===direction)await one('delete from community_votes where post_id=99 and user_id=auth.uid() returning value');else await one('insert into community_votes(post_id,user_id,value)values(99,auth.uid(),$1)on conflict(post_id,user_id)do update set value=excluded.value returning value',[direction]);
+  current=current===direction?0:direction;score=Number((await one('select coalesce(sum(value),0)n from community_votes where post_id=99')).n);assert.equal(score,expected);
+ }
+ await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,auth.uid(),1)'),/unique/);
+ await assert.rejects(one('update community_votes set value=0 where user_id=auth.uid()'),/check constraint/);
+ await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,$1,1)',[id(2)]),/row-level security/);
+ await as(2);await run('set role authenticated');assert.equal((await db.query('delete from community_votes where post_id=99 returning id')).rows.length,0);assert.equal((await db.query('update community_votes set value=1 where post_id=99 returning id')).rows.length,0);
+ await run('reset role;set role anon');assert.equal(Number((await one('select sum(value)n from community_votes')).n),-1);await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,$1,1)',[id(2)]),/permission denied/);
+ console.log('PASS isolated vote constraints: all six toggle/switch transitions, unique account/post vote, -1/+1 check, own-write RLS and anonymous read-only access. Captured schema fixture; no live votes.');
 }

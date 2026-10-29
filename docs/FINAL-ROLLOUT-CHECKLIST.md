@@ -1,5 +1,17 @@
 # Playtested rollout preparation
 
+## Pending community voting / My Games layout patch
+
+Prepared separately on `fix/community-voting-feedback-layout` from `origin/v11` merge `df2f594`. No production code, schema, records, XP, quotas or historical capacities changed. No release tag or merge is authorised for this patch.
+
+**Live cleanup not performed:** read-only inspection resolves post **2**, title **Best engine?**, body **Which one is best to use?**. It has **2 votes, 0 comments**, and public score **0**. The inspected table has no soft-delete/moderation column and no existing moderation UI was found. Captured foreign keys cascade hard deletion to votes/comments; irreversible deletion was therefore withheld pending a specific decision. Post **1**, actually spelled **Favourite Final Fantasy?**, and its votes/comments were preserved; its inspected public score was **-2** from 2 votes. No automatic live voting was performed.
+
+Voting already mapped Up to +1 and Down to -1; a second Up removes an existing Up, legitimately decreasing the score. No reversed-arrow bug was established. The patch makes removal/selection explicit, adds a synchronous lock, discards stale feed loads, reads vote totals in ordered batches, resynchronises after uncertain failures and uses the existing unique account/post upsert constraint. No optimistic score is invented and failed refresh prevents further voting until refreshed. Existing captured unique/value constraints and own-vote RLS pass isolated PostgreSQL tests; live mutation tests were deliberately not run. No voting migration is indicated.
+
+My Games retains one account-level allowance summary with unclamped recorded usage, plan limit and one authoritative next date. Campaign forms retain only true game-specific open/paused-round warnings and necessary errors. Sharing is first inside one default-collapsed traffic panel; ordinary collapse preserves inputs without another fetch and explicit Share/View traffic opens/focuses it. Only eligible context campaigns expose normal invitation links. Selected-build focus appears once outside the snapshot. Only Show/Hide results toggles the snapshot; counts are plain text. Compact capacity and quality-review information stays separate, with one rules/status disclosure and navigation to the existing Individual responses tab. The mobile picker is height-limited; feedback retains its width, tabs and drafts. Development sample previews remain explicit and production uses actual records.
+
+Passed: production build/TypeScript; isolated six-transition vote/unique/RLS checks; mocked vote persistence, failures/uncertain commits, selected arrows, same-tick double clicks and sign-in; allowance over-limit fixture (13 recorded on Free), plan/targeting and game-specific warning; sharing/copy/reporting/attribution and collapse preservation; selected historical focus, explicit snapshot control, capacity versus quality, response navigation and desktop/mobile layouts. Existing tests were extended, no new scripts/dependencies. The dependency-junction worktree required a temporary local Turbopack root for tests/build, restored before commit. No live traffic, feedback, emails or votes were created.
+
 ## v11.1 SEO/Auth and submission-review patch — review before release
 
 Prepared on `fix/v11.1-seo-auth` from `origin/v11` (`cb43cda`), in an isolated worktree. The original v11 working tree/title edit and release tag remain untouched. No database, email, DNS/Auth or production deployment actions are part of this patch.

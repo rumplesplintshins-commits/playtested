@@ -1189,7 +1189,7 @@ async function DeveloperDashboard() {
                     existingPlaytest={game.latestPlaytest}
                     playtests={game.playtests}
                   />
-                  <GameLinksEngagement source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
+                  <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
                 </div>
               </article>
               );

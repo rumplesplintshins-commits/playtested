@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {chromium, expect} from 'playwright/test';
 
+if(process.argv.includes('--votes')){await voteBrowser();process.exit(0);}
 if(process.argv.includes('--information')){
  const browser=await chromium.launch({headless:true});
  try{
@@ -87,3 +88,22 @@ try {
  fail=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-generated');await expect(page.getByText(/The catalogue could not be loaded/)).toBeVisible();await expect(page.getByRole('heading',{name:'No games found'})).toHaveCount(0);
  console.log('PASS catalogue: density, disclosure/missing data, small sample, full description, filter/page preservation, mobile and 640px reflow, empty/error. Backend mocked; no live access.');
 }finally{await browser.close();fs.unlinkSync(dir+'/page.tsx');fs.rmdirSync(dir);}
+
+async function voteBrowser(){
+ const {default:env}=await import('@next/env');env.loadEnvConfig(process.cwd(),false,{info(){},error(){}});
+ const browser=await chromium.launch({headless:true});const user={id:'c9000000-0000-4000-8000-000000000001',email:'fixture@example.test',aud:'authenticated',role:'authenticated'};let value=0,writes=0,fail=false,commitThenFail=false,release=null,hold=false;
+ try{const context=await browser.newContext();const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');const expiry=Math.floor(Date.now()/1000)+3600;const session={access_token:encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:user.id,exp:expiry,role:'authenticated'})+'.fixture',refresh_token:'fixture',expires_in:3600,expires_at:expiry,token_type:'bearer',user};await context.addCookies([{name:'sb-'+new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname.split('.')[0]+'-auth-token',value:'base64-'+encode(session),url:origin}]);await context.route('**/*',async route=>{const req=route.request(),url=new URL(req.url());if(url.origin===origin)return route.continue({headers:{...req.headers(),cookie:''}});const name=url.pathname.split('/').at(-1),headers={'access-control-allow-origin':'*','access-control-allow-headers':'*'};if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});let data=[];
+ if(name==='user')data=user;else if(name==='community_posts')data=[{id:99,user_id:user.id,community:'general',title:'Isolated vote fixture',body:'Not the retained live post',created_at:'2026-10-29'}];else if(name==='profiles')data=[{id:user.id,display_name:'Fixture'}];else if(name==='community_votes'){
+  if(req.method()==='GET')data=[{post_id:99,user_id:'other',value:1},...(value?[{post_id:99,user_id:user.id,value}]:[])];else{writes++;if(hold)await new Promise(resolve=>release=resolve);if(!fail||commitThenFail)value=req.method()==='DELETE'?0:req.postDataJSON().value;if(fail){fail=false;commitThenFail=false;return route.fulfill({status:503,headers,json:{message:'fixture failed'}});}data=null;}}
+ return route.fulfill({headers,json:data});});const page=await context.newPage();await page.goto(origin+'/community');const article=page.locator('article').filter({hasText:'Isolated vote fixture'}),up=()=>article.getByRole('button',{name:/[Uu]pvote/}),down=()=>article.getByRole('button',{name:/[Dd]ownvote/});const score=()=>article.locator('span').filter({has:page.locator('.sr-only')}).first();
+ await expect(up()).toHaveAttribute('aria-pressed','false');
+ for(const [direction,expected,pressed]of[[1,2,1],[1,1,0],[-1,0,-1],[-1,1,0],[-1,0,-1],[1,2,1],[-1,0,-1]]){await(direction===1?up():down()).click();await expect(score()).toContainText(String(expected));await expect(up()).toHaveAttribute('aria-pressed',String(pressed===1));await expect(down()).toHaveAttribute('aria-pressed',String(pressed===-1));await expect(direction===1?up():down()).toBeEnabled();}
+ await page.reload();await expect(down()).toHaveAttribute('aria-pressed','true');await expect(score()).toContainText('0');
+ fail=true;await up().click();await expect(page.getByRole('alert').filter({hasText:'Your vote request failed'})).toBeVisible();await expect(down()).toHaveAttribute('aria-pressed','true');await expect(score()).toContainText('0');
+ fail=true;commitThenFail=true;await up().click();await expect(up()).toHaveAttribute('aria-pressed','true');await expect(score()).toContainText('2');
+ hold=true;const before=writes;await up().evaluate(button=>{button.click();button.click();});await expect(up()).toBeDisabled();await expect.poll(()=>writes).toBe(before+1);hold=false;release();await expect(up()).toBeEnabled();assert.equal(writes,before+1);await expect(up()).toHaveAttribute('aria-pressed','false');
+ await page.setViewportSize({width:390,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ const out=await browser.newContext();await out.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(u.origin===origin)return route.continue({headers:{...req.headers(),cookie:''}});const n=u.pathname.split('/').at(-1);return route.fulfill({status:n==='user'?401:200,json:n==='community_posts'?[{id:99,user_id:null,community:'general',title:'Signed out fixture',body:'Fixture',created_at:'2026-10-29'}]:[]});});const signedOut=await out.newPage();await signedOut.goto(origin+'/community');await signedOut.getByRole('button',{name:'Sign in to upvote Signed out fixture',exact:true}).click();await expect(signedOut).toHaveURL(origin+'/login?next=/community');
+ console.log('PASS vote browser: six transitions, selected arrow/removal labels, persistence, failed and ambiguously committed requests, synchronous double-click lock, signed-out sign-in and mobile. All votes mocked on post 99 only.');
+ }finally{await browser.close();}
+}

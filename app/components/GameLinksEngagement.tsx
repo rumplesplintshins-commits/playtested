@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useState,useRef} from "react";
+import {useCallback,useEffect,useState,useRef,useId} from "react";
 import {createClient} from "@/lib/supabase";
 import {marketingTag,type ShareSource} from "@/lib/share-links";
 type SavedLink={id:string;source:string;medium:string;campaign:string;label:string;destination:string;build:string|null;available:boolean;campaign_id?:string|null;audience?:string};
@@ -7,7 +7,7 @@ type Row={link_id:string;snapshot:{source:string;label:string;destination:string
 type Report={links:SavedLink[];breakdown:Row[]};
 type Context={public_path:string|null;campaigns:{id:string;label:string;audience?:string}[]};
 type ShareCampaign={id:string;audience:string};
-export function openGameTraffic(element:HTMLElement,source:ShareSource,campaignId:string){const root=element.closest('[data-workspace-item]')||document;const region=Array.from(root.querySelectorAll<HTMLElement>('[data-traffic-game]')).find(node=>node.dataset.trafficGame===source.kind+':'+source.id);if(!region)return false;region.dispatchEvent(new CustomEvent('playtested:report-campaign',{detail:{campaignId}}));return true;}
+export function openGameTraffic(element:HTMLElement,source:ShareSource,campaignId:string,target:"share"|"traffic"="traffic"){const root=element.closest('[data-workspace-item]')||document;const region=Array.from(root.querySelectorAll<HTMLElement>('[data-traffic-game]')).find(node=>node.dataset.trafficGame===source.kind+':'+source.id);if(!region)return false;region.dispatchEvent(new CustomEvent('playtested:report-campaign',{detail:{campaignId,target}}));return true;}
 const day=(offset=0)=>new Date(Date.now()+offset*86400000).toISOString().slice(0,10);
 const field="w-full rounded-lg border border-white/20 bg-[#090b0a] px-3 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-emerald-300";
 const button="rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200 disabled:opacity-50";
@@ -23,24 +23,31 @@ function sampleReport(from:string,to:string):Report{
  const scale=span<=7?1:3;
  return {links:[],breakdown:[["reddit",72,24,3,2],["discord",40,18,1,1],["steam",25,7,0,0],["newsletter",0,0,0,0]].map(([source,visits,access,claims,submitted],i)=>({link_id:`sample-${i}`,snapshot:{source:String(source),label:["Demo announcement","Community playtest","Store update","Next newsletter"][i],destination:"game",build:null},visits:Number(visits)*scale,access_clicks:Number(access)*scale,claims:Number(claims),submissions:Number(submitted)}))};
 }
-export default function GameLinksEngagement({source,sharingCampaign}:{source:ShareSource;sharingCampaign?:ShareCampaign}){return <GameTraffic key={source.kind+source.id+(sharingCampaign?.id||'')} source={source} sharingCampaign={sharingCampaign}/>;}
-function GameTraffic({source,sharingCampaign}:{source:ShareSource;sharingCampaign?:ShareCampaign}){
+type PlaytestLink=ShareCampaign&{shareToken:string;status:string;publishedAt?:string|null;releaseLabel?:string|null};
+type TrafficNavigation={campaignId:string;target?:"share"|"traffic"};
+export default function GameLinksEngagement({source,sharingCampaign,playtest}:{source:ShareSource;sharingCampaign?:ShareCampaign;playtest?:PlaytestLink}){return <TrafficPanel key={source.kind+source.id+(sharingCampaign?.id||'')} source={source} sharingCampaign={sharingCampaign} playtest={playtest}/>;}
+function TrafficPanel({source,sharingCampaign,playtest}:{source:ShareSource;sharingCampaign?:ShareCampaign;playtest?:PlaytestLink}){
+ const [expanded,setExpanded]=useState(false),[mounted,setMounted]=useState(false),[navigation,setNavigation]=useState<TrafficNavigation|null>(null);const root=useRef<HTMLElement|null>(null),id=useId();
+ useEffect(()=>{const node=root.current;if(!node)return;const open=(event:Event)=>{setNavigation((event as CustomEvent<TrafficNavigation>).detail);setMounted(true);setExpanded(true);};node.addEventListener('playtested:report-campaign',open);return()=>node.removeEventListener('playtested:report-campaign',open);},[]);
+ useEffect(()=>{if(!expanded||!navigation)return;const frame=requestAnimationFrame(()=>{root.current?.focus({preventScroll:true});root.current?.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});});return()=>cancelAnimationFrame(frame);},[expanded,navigation]);
+ return <section ref={root} tabIndex={-1} data-traffic-game={source.kind+':'+source.id} aria-label={sharingCampaign?'Tracked playtest links':'Traffic & playtest results'} className="mt-5 min-w-0 scroll-mt-24 border-t border-white/10 pt-4 focus-visible:outline-2 focus-visible:outline-emerald-300"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-semibold">Traffic &amp; playtest results</h3><p className="mt-1 text-sm text-zinc-400">Share this playtest and review real tracked traffic by source and build.</p></div><button type="button" aria-expanded={expanded} aria-controls={id} onClick={()=>{setMounted(true);setExpanded(value=>!value);}} className={button}>{expanded?'Hide sharing and traffic':'Show sharing and traffic'} <span aria-hidden="true">{expanded?'-':'+'}</span></button></div><div id={id} hidden={!expanded}>{mounted&&<GameTraffic source={source} sharingCampaign={sharingCampaign} playtest={playtest} requested={navigation}/>}</div></section>;
+}
+function GameTraffic({source,sharingCampaign,playtest,requested}:{source:ShareSource;sharingCampaign?:ShareCampaign;playtest?:PlaytestLink;requested:TrafficNavigation|null}){
  const [context,setContext]=useState<Context|null>(null),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(""),[notice,setNotice]=useState(""),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false);
  const [from,setFrom]=useState(""),[to,setTo]=useState(""),[network,setNetwork]=useState("reddit"),[custom,setCustom]=useState(""),[label,setLabel]=useState(""),[medium,setMedium]=useState(""),[destination,setDestination]=useState(""),[campaign,setCampaign]=useState(""),[copyUrl,setCopyUrl]=useState("");
  const [today,setToday]=useState("");
  const [preset,setPreset]=useState("30"),[preview,setPreview]=useState(false);
- const [campaignFilter,setCampaignFilter]=useState(""),[navigation,setNavigation]=useState(0),[refreshRequest,setRefreshRequest]=useState(0);
+ const [campaignFilter,setCampaignFilter]=useState("");
  const region=useRef<HTMLElement|null>(null);
- useEffect(()=>{const node=region.current;if(!node||sharingCampaign)return;const open=(event:Event)=>{const id=(event as CustomEvent<{campaignId:string}>).detail?.campaignId;if(id){setCampaignFilter(id);setPreview(false);setNavigation(v=>v+1);setRefreshRequest(v=>v+1);}};node.addEventListener('playtested:report-campaign',open);return()=>node.removeEventListener('playtested:report-campaign',open);},[sharingCampaign]);
- useEffect(()=>{if(!navigation)return;const frame=requestAnimationFrame(()=>{region.current?.focus({preventScroll:true});region.current?.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});});return()=>cancelAnimationFrame(frame);},[navigation]);
+ useEffect(()=>{let active=true;queueMicrotask(()=>{if(!active||!requested)return;setCampaignFilter(requested.campaignId);setPreview(false);if(requested.target==='share'){setCampaign(requested.campaignId);setDestination("");}});return()=>{active=false;};},[requested]);
  useEffect(()=>{let active=true;queueMicrotask(()=>{if(active){setFrom(day(-29));setTo(day());setToday(day());}});return()=>{active=false;};},[]);
  const request=useRef(0);
  const invalidate=useCallback(()=>{request.current++;},[]);
  const load=useCallback(async()=>{const run=++request.current;setLoading(true);setError("");setReport(null);setContext(null);try{if(!from||!to||from>to||from<day(-89)||to>day())throw new Error("Choose dates within the last 90 UTC calendar days.");const client=createClient();const [ctx,result]=await Promise.all([client.rpc("get_share_context",{p_kind:source.kind,p_id:source.id}),client.rpc("get_share_engagement",{p_kind:source.kind,p_id:source.id,p_from:from,p_to:to})]);if(run!==request.current)return;if(ctx.error)throw new Error(reportingError("get_share_context",ctx.error));if(result.error)throw new Error(reportingError("get_share_engagement",result.error));setContext(ctx.data);setReport(result.data);}catch(e){if(run!==request.current)return;setError(e instanceof Error?e.message:"Reporting is unavailable. Please retry.");}finally{if(run===request.current)setLoading(false);}},[source.kind,source.id,from,to]);
- useEffect(()=>{if(!from||!to)return;const timer=setTimeout(()=>void load(),0);return()=>{clearTimeout(timer);invalidate();};},[load,from,to,invalidate,refreshRequest]);
+ useEffect(()=>{if(!from||!to)return;const timer=setTimeout(()=>void load(),0);return()=>{clearTimeout(timer);invalidate();};},[load,from,to,invalidate]);
  const chosenCampaign=sharingCampaign?.id||campaign||context?.campaigns[0]?.id||"";
  const audience=sharingCampaign?.audience||context?.campaigns.find(c=>c.id===chosenCampaign)?.audience;
- const selected=destination||(sharingCampaign?(audience==='playtested_testers'?'campaign':'community'):context?.public_path?"game":audience==='own_community'?'community':'campaign');
+ const selected=destination||((sharingCampaign||requested?.target==='share')?(audience==='playtested_testers'?'campaign':'community'):context?.public_path?"game":audience==='own_community'?'community':'campaign');
  async function create(){setSaving(true);setNotice("");try{const tag=marketingTag(network==="other"?custom:network);if(network==="other"&&!custom.trim())throw new Error("Enter a source name, such as newsletter. Do not include personal information.");const {error}=await createClient().rpc("create_share_link",{p_kind:source.kind,p_id:source.id,p_source:tag,p_label:label,p_medium:marketingTag(medium,network==="reddit"||network==="discord"?"social":"referral"),p_destination:selected,p_campaign:selected!=="game"?(chosenCampaign||null):null});if(error)throw new Error(error.message);setNotice("Share link created. Copy it below.");await load();}catch(e){setNotice(e instanceof Error?e.message:"Could not create the link. Please retry.");}finally{setSaving(false);}}
  async function copy(link:SavedLink){const url=address(link);setCopyUrl(url);try{await navigator.clipboard.writeText(url);setNotice("Link copied.");}catch{setNotice("Copy the link from the field below.");}}
  const metrics=[['Tracked visits','visits'],['Game-access clicks','access_clicks'],['Tests claimed','claims'],['Feedback submitted','submissions']] as const;
@@ -50,16 +57,17 @@ function GameTraffic({source,sharingCampaign}:{source:ShareSource;sharingCampaig
  const shown=raw?{links:raw.links.filter(link=>!filter||link.campaign_id===filter),breakdown:raw.breakdown.filter(row=>!filter||row.campaign_id===filter)}:null;
  const metric=(row:Row,key:typeof metrics[number][1])=>Number(row[key]||0)+(key==='submissions'?Number(row.community_submissions||0):0);
  const communityOnly=!!filter&&reportCampaigns.find(c=>c.id===filter)?.audience==='own_community'||!!shown?.links.length&&shown.links.every(link=>link.destination==='community');
- const missingCampaign=!!sharingCampaign&&!!context&&!context.campaigns.some(c=>c.id===sharingCampaign.id);
- return <section ref={region} tabIndex={-1} data-traffic-game={sharingCampaign?undefined:source.kind+':'+source.id} aria-label={sharingCampaign?"Tracked playtest links":"Traffic & playtest results"} className="mt-6 min-w-0 scroll-mt-24 border-t border-white/10 pt-5 focus-visible:outline-2 focus-visible:outline-emerald-300">
-  {!sharingCampaign&&<><h3 className="text-lg font-semibold">Traffic &amp; playtest results</h3><p className="mt-1 text-sm text-zinc-400">See which shared links bring visitors and testers to this game.</p></>}
+ const sharingId=sharingCampaign?.id||(requested?.target==='share'?requested.campaignId:null);
+ const missingCampaign=!!sharingId&&!!context&&!context.campaigns.some(c=>c.id===sharingId);
+ return <section ref={region} tabIndex={-1} data-traffic-content aria-label={undefined} className="mt-6 min-w-0 scroll-mt-24 border-t border-white/10 pt-5 focus-visible:outline-2 focus-visible:outline-emerald-300">
+  <h4 className="font-semibold">Share this playtest</h4>{playtest&&<p className="mt-1 break-words text-sm text-zinc-400">Build: {playtest.releaseLabel||playtest.id}</p>}{playtest?.status==='open'&&playtest.publishedAt&&context?.campaigns.some(c=>c.id===playtest.id)&&<button type="button" className={button+' mt-3'} onClick={()=>{const url=new URL('/playtest/'+playtest.shareToken,window.location.origin).toString();void navigator.clipboard.writeText(url).then(()=>setNotice('Playtest link copied.'),()=>{setCopyUrl(url);setNotice('Copy the playtest link below.');});}}>Copy playtest link</button>}
   <p className="mt-2 text-xs text-zinc-400">Visits are approximate. Access clicks do not prove gameplay.</p>
   {!sharingCampaign&&process.env.NODE_ENV==="development"&&<button className={`${button} mt-3`} onClick={()=>setPreview(value=>!value)}>{preview?"Return to real results":"Preview sample data"}</button>}
   {preview&&process.env.NODE_ENV==="development"&&<p role="status" className="mt-3 text-sm font-semibold text-amber-200">Sample data — not real traffic</p>}
   {loading&&<p role="status" className="mt-4 text-sm text-zinc-400">Loading links and engagement…</p>}
   {error&&<div role="alert" className="mt-4 text-sm text-amber-200">{error} <button className={button} onClick={()=>void load()}>Retry</button></div>}
   {missingCampaign&&<p role="alert" className="mt-3 text-sm text-amber-200">This campaign is unavailable for tracked sharing. Check its published status and migration 018, then retry.</p>}
-  {context&&!preview&&<details open={sharingCampaign?true:undefined} className="mt-5 rounded-lg border border-white/10 p-4"><summary className="cursor-pointer font-semibold">Create a share link</summary><form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={e=>{e.preventDefault();void create();}}>
+  {context&&!preview&&<details open className="mt-5 rounded-lg border border-white/10 p-4"><summary className="cursor-pointer font-semibold">Create a share link</summary><form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={e=>{e.preventDefault();void create();}}>
    <label className="text-sm">Where will you share it?<select className={field} value={network} onChange={e=>setNetwork(e.target.value)}>{['Reddit','Discord','Steam','Newsletter','Other'].map(n=><option key={n} value={n.toLowerCase()}>{n}</option>)}</select></label>
    {network==="other"&&<label className="text-sm">Source name<input required maxLength={64} className={field} value={custom} onChange={e=>setCustom(e.target.value)}/></label>}
    <label className="text-sm">Campaign label (optional)<input maxLength={80} className={field} placeholder="e.g. demo announcement" value={label} onChange={e=>setLabel(e.target.value)}/></label>

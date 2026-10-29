@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase";
 
-import { CampaignPlaces, FeedbackSignal, DeveloperQualityReports, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
+import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
 import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
-import GameLinksEngagement,{openGameTraffic} from "./GameLinksEngagement";
+import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
@@ -125,118 +125,10 @@ type PlaytestEligibility = {
   tester_hub_rounds_last_30_days: number;
 };
 
-function CampaignAllowancePanel({
-  eligibility,
-  loading,
-  error,
-  currentPlaytest,
-  onRetry,
-}: {
-  eligibility: PlaytestEligibility | null;
-  loading: boolean;
-  error: string;
-  currentPlaytest: ExistingPlaytest | null;
-  onRetry: () => void;
-}) {
-  const {data:plan,loading:planLoading,error:planError}=useDeveloperPlan();
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const available = !loading && !error && !planLoading && plan!==null && eligibility !== null;
-  const used = available ? plan!.rounds_used : null;
-  const active = available && (
-    eligibility.has_active_playtest ||
-    currentPlaytest?.status === "open" ||
-    currentPlaytest?.status === "paused"
-  );
-  const nextAt = available && plan?.next_at
-    ? Date.parse(plan.next_at)
-    : NaN;
-  const remaining = now !== null && Number.isFinite(nextAt)
-    ? Math.max(0, nextAt - now)
-    : null;
-  const days = remaining === null ? 0 : Math.floor(remaining / 86_400_000);
-  const hours = remaining === null ? 0 : Math.floor((remaining % 86_400_000) / 3_600_000);
-  const minutes = remaining === null ? 0 : Math.floor((remaining % 3_600_000) / 60_000);
-  const countdown = days > 0
-    ? `${days} ${days === 1 ? "day" : "days"}${hours > 0 ? ` ${hours}h` : ""}`
-    : hours > 0
-      ? `${hours} ${hours === 1 ? "hour" : "hours"}`
-      : `${Math.max(1, minutes)} ${minutes === 1 ? "minute" : "minutes"}`;
-  const eligible = available && !plan?.next_at && !active &&
-    (remaining === null || remaining === 0);
-
-  return (
-    <section
-      aria-label="Tester Hub campaign allowance"
-      className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Tester Hub allowance - Your account
-          </p>
-          <p className="mt-1 text-sm font-semibold text-zinc-100">
-            {loading || planLoading ? "Checking launch allowance…" : !available
-              ? "Launch allowance unavailable"
-              : <>{used} of {plan?.launch_limit} {plan?.launch_limit===1?"launch":"launches"} used</>}
-          </p>
-        </div>
-        {available && (
-          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-            eligible
-              ? "border-[#77f29b]/25 bg-[#77f29b]/[0.07] text-[#b9f9ca]"
-              : "border-amber-300/25 bg-amber-300/[0.07] text-amber-200"
-          }`}>
-            {active ? "Campaign in progress" : eligible ? "Launch available" : "Launch restricted"}
-          </span>
-        )}
-      </div>
-      {available ? (
-        <div className="mt-2 space-y-1 text-xs leading-5">
-          {used !== null && used > (plan?.launch_limit??0) && (
-            <p className="text-zinc-400">{used} earlier launches are recorded in this window. Existing campaigns are preserved; new launches follow your current account plan.</p>
-          )}
-          {remaining !== null && remaining > 0 && (
-            <p className="text-zinc-300">
-              Next launch date in <span className="font-semibold text-zinc-100">{countdown}</span>
-              {" · "}<span className="text-zinc-500">{historyFormatDate(plan!.next_at!)} (local time)</span>
-            </p>
-          )}
-          {active && (
-            <p className="text-amber-200">This game's current round must be closed before another round for this game.</p>
-          )}
-          {!active && !eligible && remaining === null && (
-            <p className="text-zinc-400">{eligibility.tester_hub_reason || "Your launch allowance is currently restricted."}</p>
-          )}
-          {!eligible && remaining === 0 && (
-            <p className="text-zinc-400">The scheduled wait has ended. Reload to confirm your latest eligibility.</p>
-          )}
-          {eligible && <p className="text-[#b9f9ca]">You can launch a new Tester Hub campaign.</p>}
-          <details className="pt-1 text-zinc-500">
-            <summary className="w-fit cursor-pointer text-xs transition hover:text-zinc-200">How limits work</summary>
-            <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
-              <p>{plan?.launch_limit} Tester Hub {plan?.launch_limit===1?"launch":"launches"} across all your games per rolling {plan?plan.window_hours/24:30} days{plan?.gap_hours?`, with at least ${plan.gap_hours} elapsed hours between launches`:""}. Drafts and community-only campaigns do not consume the allowance.</p>
-              <p>Only one draft, open or paused campaign can occupy this game’s active slot. Pausing keeps the slot; closing a campaign does not remove its launch from your allowance.</p>
-              <p>The next date is the later applicable rolling allowance or launch-spacing restriction. Capacity permits recruitment, not guaranteed participation.</p>
-              {!eligible && eligibility.tester_hub_reason && (
-                <p>Eligibility check: {eligibility.tester_hub_reason}</p>
-              )}
-            </div>
-          </details>
-        </div>
-      ) : !loading && !planLoading ? (
-        <div role="alert" className="mt-2 space-y-2 text-xs leading-5 text-amber-200"><p>{planError || error || "We could not confirm your allowance. Retry before launching a campaign."} Existing campaigns and feedback remain available.</p><button type="button" onClick={onRetry} className="rounded border border-amber-200/30 px-3 py-1 focus-visible:outline-2" disabled={loading || planLoading}>Retry allowance</button></div>
-      ) : null}
-    </section>
-  );
+function CampaignAllowancePanel({eligibility,loading,error,currentPlaytest,onRetry}:{eligibility:PlaytestEligibility|null;loading:boolean;error:string;currentPlaytest:ExistingPlaytest|null;onRetry:()=>void}){
+ const active=currentPlaytest?.status==="open"||currentPlaytest?.status==="paused"||(eligibility?.has_active_playtest&&["open","paused"].includes(eligibility.active_playtest_status||""));
+ return <>{active&&<p className="my-3 text-sm text-amber-200">This game's current round must be closed before another round can launch.</p>}{error&&<p role="alert" className="my-3 text-sm text-amber-200">{error} <button type="button" onClick={onRetry} disabled={loading} className="rounded border border-amber-300/30 px-3 py-2">Retry eligibility</button></p>}</>;
 }
-
 
 const focusOptions = [
   "Overall experience",
@@ -464,23 +356,7 @@ function HistoricalPlaytestCard({
             </div>
           </div>
 
-          {playtest.focusAreas.length > 0 && (
-            <div className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Testing focus
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {playtest.focusAreas.map((focus) => (
-                  <span
-                    key={focus}
-                    className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-2.5 py-1 text-xs text-[#b9f9ca]"
-                  >
-                    {focus}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {loading && (
             <p className="mt-5 text-sm text-zinc-400">
@@ -907,6 +783,7 @@ function ResultsDashboard({
   acceptedFeedback: AcceptedIndependentFeedback[];
   feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
 }) {
+  const [snapshotExpanded,setSnapshotExpanded]=useState(true);
   const [localTab,setLocalTab]=useState<FeedbackTab>('said');
   const [localActionFilter,setLocalActionFilter]=useState('All reports');
   const activeTab=feedbackTab??localTab;
@@ -923,7 +800,7 @@ function ResultsDashboard({
   useEffect(()=>{if(!navigation||navigation===handledNavigation.current)return;const target=navigation.target==='issues'?issueResponsesRef.current:feedbackPanelRef.current;if(!target)return;handledNavigation.current=navigation;target.focus({preventScroll:true});target.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});},[navigation,activeTab,playtest.id]);
 
   const isFeedbackStressTest =
-    playtest.id === FEEDBACK_STRESS_TEST_PLAYTEST_ID;
+    process.env.NODE_ENV === "development" && playtest.id === FEEDBACK_STRESS_TEST_PLAYTEST_ID;
 
   const displayedAcceptedFeedback = isFeedbackStressTest
     ? [...acceptedFeedback, ...feedbackStressTestReviews]
@@ -935,7 +812,7 @@ function ResultsDashboard({
   const totalResponses = independentCount + communityCount;
   // Real accepted evidence only: preview fixtures never complete a target.
   const acceptedForTarget = independentProgress?.accepted_count ?? acceptedFeedback.length;
-  const hasAcceptedFeedback = acceptedForTarget > 0;
+
 
 
   const averageGameplay = averageScore([
@@ -1071,42 +948,14 @@ function ResultsDashboard({
 
   return (
     <div className="space-y-5">
-      <details open className="overflow-hidden rounded-2xl border border-[#77f29b]/20 bg-[#0c100e]">
-        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#77f29b]/[0.035] px-5 py-4 text-left">
-          <div className="min-w-0">
-            <h5 className="text-sm font-semibold text-[#77f29b]">Results snapshot</h5>
-            <p className="mt-1 break-words text-xs text-zinc-400">
-              {playtest.releaseLabel
-                ? `Build: ${playtest.releaseLabel}`
-                : "Current playtest round"}
-            </p>
-            <p className="mt-1 text-[11px] text-zinc-500">
-              {independentCount} accepted independent · {communityCount} community
-              {isFeedbackStressTest ? " · Includes labelled preview responses" : ""}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs font-semibold text-[#b9f9ca]">
-                {totalResponses} {totalResponses === 1 ? "response" : "responses"}
-              </span>
-              {isFeedbackStressTest && (
-                <span className="rounded-full border border-amber-300/25 bg-amber-300/[0.07] px-3 py-1.5 text-xs font-semibold text-amber-200">
-                  Preview data
-                </span>
-              )}
-              {playtest.focusAreas.length > 0 && (
-                <span className="rounded-full border border-sky-300/20 bg-sky-300/[0.05] px-3 py-1.5 text-xs text-sky-200">
-                  {playtest.focusAreas.length} focus{" "}
-                  {playtest.focusAreas.length === 1 ? "area" : "areas"}
-                </span>
-              )}
-            </div>
-            <span aria-hidden="true" className="text-lg text-zinc-400">±</span>
-          </div>
-        </summary>
+      {playtest.focusAreas.length>0&&<div aria-label="Testing focus" className="flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-zinc-300">Testing focus</span>{playtest.focusAreas.map(focus=><span key={focus} className="rounded bg-white/5 px-2 py-1 text-zinc-300">{focus}</span>)}</div>}
+      <section aria-label="Results snapshot" className="overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#0c100e]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
+          <div className="min-w-0"><h5 className="text-sm font-semibold text-[#77f29b]">Results snapshot</h5><p className="mt-1 break-words text-sm text-zinc-400">{playtest.releaseLabel?`Build: ${playtest.releaseLabel}`:"Current playtest round"}</p><p className="mt-1 text-sm text-zinc-400">{independentCount} accepted independent | {communityCount} community{isFeedbackStressTest?" | Includes labelled preview responses":""}</p></div>
+          <button type="button" aria-expanded={snapshotExpanded} aria-controls={feedbackId+'-snapshot'} onClick={()=>setSnapshotExpanded(value=>!value)} className="rounded-lg border border-white/20 px-4 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300">{snapshotExpanded?"Hide results":"Show results"} <span aria-hidden="true">{snapshotExpanded?'\u25b4':'\u25be'}</span></button>
+        </div>
+        <div id={feedbackId+'-snapshot'} hidden={!snapshotExpanded} className="p-3 sm:p-4">
 
-        <div className="p-5">
           {poorReception && (
             <div className="mb-4 rounded-xl border border-red-400/25 bg-red-400/[0.06] p-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -1124,21 +973,7 @@ function ResultsDashboard({
             </div>
           )}
 
-          <div className="flex flex-wrap justify-end gap-3">
-            <p className="text-xs text-zinc-500">
-              <span className="font-semibold text-amber-200">
-                {totalResponses < 10 ? "Early feedback" : "Feedback sample"}
-              </span>
-              {" · "}
-              {totalResponses} response{totalResponses === 1 ? "" : "s"}
-              {totalResponses < 10 && (
-                <>
-                  {" · "}
-                  Results are directional while the sample is small.
-                </>
-              )}
-            </p>
-          </div>
+          <p className="mt-2 text-sm text-zinc-500">{totalResponses<10?"Early feedback: results are directional while the sample is small.":"Feedback sample for this build."}</p>
 
           <div className="mt-3 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))]">
             <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4">
@@ -1230,77 +1065,18 @@ function ResultsDashboard({
             </div>
           </div>
 
-          {playtest.focusAreas.length > 0 && (
-            <div className="mt-4 rounded-xl border border-sky-300/15 bg-sky-300/[0.025] p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200">
-                  Developer focus
-                </span>
-                {playtest.focusAreas.map((focus) => (
-                  <span
-                    key={focus}
-                    className="rounded-full border border-sky-300/20 bg-sky-300/[0.05] px-2.5 py-1 text-xs text-sky-100"
-                  >
-                    {focus}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {includesPlaytestedTesters(playtest.audience) && (
-            <section className={`mt-4 rounded-xl border p-4 ${hasAcceptedFeedback
-              ? "border-[#77f29b]/25 bg-[#77f29b]/[0.04]"
-              : "border-white/10 bg-black/20"}`} aria-label="Tester Hub feedback progress">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <CampaignPlaces id={playtest.id} />
-                  <p className="text-sm font-semibold text-zinc-100">
-                    {hasAcceptedFeedback ? "Quality-accepted feedback" : "Tester Hub feedback progress"}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {acceptedForTarget} quality-accepted reports
-                    {independentProgress && ` · ${independentProgress.total_testers} participating`}
-                  </p>
-                </div>
-                {acceptedFeedback.length > 0 && (
-                  <button
-                    type="button"
-                    aria-controls={individualResponsesId}
-                    onClick={() => revealFeedback("individual")}
-                    className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-[#77f29b]/40 hover:text-[#77f29b]"
-                  >
-                    Review responses
-                  </button>
-                )}
-              </div>
-              {hasAcceptedFeedback && (
-                <p className="mt-2 text-xs leading-5 text-zinc-400">
-                  {playtest.status === "closed"
-                    ? "This round is closed. Use the feedback to plan improvements for your next build."
-                    : "Review the feedback before deciding whether to close this round. Reports do not close the campaign automatically."}
-                </p>
-              )}
-              {independentProgress && (
-                <details className="mt-3 text-xs text-zinc-500">
-                  <summary className="w-fit cursor-pointer hover:text-zinc-200">View tester status breakdown</summary>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-                    <span>Current reservations and places are shown above.</span>
 
-                    <span>Submitted status: {independentProgress.submitted_count}</span>
-                    <span className="text-[#77f29b]">Accepted: {independentProgress.accepted_count}</span>
-                    <span>Not accepted: {independentProgress.rejected_count}</span>
-                  </div>
-                  <p className="mt-2 leading-5">These are the statuses reported by the Tester Hub. The submitted-status count is shown separately from accepted and rejected responses.</p>
-                </details>
-              )}
-            </section>
-          )}
         </div>
-      </details>
+      </section>
+      {includesPlaytestedTesters(playtest.audience)&&<section aria-label="Tester Hub feedback progress" className="space-y-2 border-y border-white/10 py-3 text-sm">
+        <CampaignPlaces id={playtest.id} compact/>
+        <div className="flex flex-wrap items-center justify-between gap-3"><p>{acceptedForTarget} quality-accepted reports{independentProgress&&independentProgress.total_testers!==acceptedForTarget?` | ${independentProgress.total_testers} participating testers`:""}</p><button type="button" aria-controls={individualResponsesId} onClick={()=>revealFeedback('individual')} className="rounded-lg border border-white/20 px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300">View individual responses</button></div>
+        <details className="text-sm text-zinc-400"><summary className="w-fit cursor-pointer py-2 font-semibold">How places and review work</summary><PlacesRules inline/><p className="mt-2">Quality review measures feedback usefulness. Submitted reports consume capacity regardless of acceptance; community responses are separate.</p>{independentProgress&&<p className="mt-2">Tester Hub statuses: {independentProgress.submitted_count} submitted | {independentProgress.accepted_count} accepted | {independentProgress.rejected_count} not accepted.</p>}<p className="mt-2">Campaigns do not close automatically. {playtest.status==='closed'?'This round is closed.':'Review the responses before deciding when to close this round.'}</p></details>
+      </section>}
 
       <div role="tablist" aria-label="Build feedback" className="grid grid-cols-3 gap-1 border-b border-white/10">{feedbackTabs.map(([tab,label],index)=><button key={tab} ref={node=>{feedbackTabRefs.current[index]=node;}} type="button" role="tab" id={feedbackId+'-tab-'+tab} aria-selected={activeTab===tab} aria-controls={feedbackId+'-panel-'+tab} tabIndex={activeTab===tab?0:-1} onClick={()=>changeTab(tab)} onKeyDown={event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?2:(index+(event.key==='ArrowRight'?1:2))%3;changeTab(feedbackTabs[next][0]);feedbackTabRefs.current[next]?.focus();}} className={`min-w-0 whitespace-normal border-b-2 px-2 py-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300 sm:text-sm ${activeTab===tab?'border-emerald-300 text-emerald-200':'border-transparent text-zinc-400 hover:text-white'}`}>{label}</button>)}</div>
-      <section key={playtest.id+activeTab} ref={feedbackPanelRef} role="tabpanel" id={feedbackId+'-panel-'+activeTab} aria-labelledby={feedbackId+'-tab-'+activeTab} tabIndex={0} className="min-w-0 w-full scroll-mt-6 rounded-xl border border-white/10 p-4 focus-visible:outline-2 focus-visible:outline-emerald-300 sm:p-5">
+      <section key={playtest.id+activeTab} ref={feedbackPanelRef} role="tabpanel" id={feedbackId+'-panel-'+activeTab} aria-labelledby={feedbackId+'-tab-'+activeTab} tabIndex={0} className="min-w-0 w-full scroll-mt-6 py-4 focus-visible:outline-2 focus-visible:outline-emerald-300 sm:py-5">
        {activeTab==='said'&&<><p className="text-xs leading-5 text-zinc-400">Verbatim feedback for this build, grouped without rewriting tester responses.</p><div className="mt-4 grid gap-4">
           <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#77f29b]">
@@ -1719,8 +1495,8 @@ function BuildResultsPanel({
   }, [selectedId]);
 
   return (
-    <section ref={resultsRoot} data-build-feedback tabIndex={-1} className="scroll-mt-6 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
-      <div className="border-b border-white/10 p-5">
+    <section ref={resultsRoot} data-build-feedback tabIndex={-1} className="min-w-0 scroll-mt-6">
+      <div className="border-b border-white/10 py-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h4 className="text-base font-semibold text-zinc-100">
@@ -1778,7 +1554,7 @@ function BuildResultsPanel({
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="py-4">
         {error && loadedBuildId===selectedPlaytest.id && (
           <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
             {error}
@@ -1847,7 +1623,7 @@ export default function StartPlaytest({
   const [messageType, setMessageType] = useState<
     "success" | "error" | ""
   >("");
-  const [communityLinkCopied, setCommunityLinkCopied] = useState(false);
+
   const [playtestResults, setPlaytestResults] =
     useState<CommunityPlaytestResults | null>(null);
   const [resultsLoading, setResultsLoading] = useState(false);
@@ -1857,7 +1633,7 @@ export default function StartPlaytest({
   const [acceptedIndependentFeedback, setAcceptedIndependentFeedback] =
     useState<AcceptedIndependentFeedback[]>([]);
   const [setupExpanded, setSetupExpanded] = useState(false);
-  const [sharingExpanded, setSharingExpanded] = useState(false);
+
   const [resultsExpanded, setResultsExpanded] = useState(true);
   const [eligibility, setEligibility] = useState<PlaytestEligibility | null>(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
@@ -2173,43 +1949,9 @@ export default function StartPlaytest({
     };
   }
 
-  function getCommunityPlaytestPath(shareToken: string) {
-    return existingPlaytest&&!includesOwnCommunity(existingPlaytest.audience)?`/tester?campaign=${existingPlaytest.id}`:`/playtest/${shareToken}`;
-  }
 
-  function getCommunityPlaytestUrl(shareToken: string) {
-    const path = getCommunityPlaytestPath(shareToken);
 
-    if (typeof window === "undefined") {
-      return path;
-    }
 
-    return `${window.location.origin}${path}`;
-  }
-
-  async function copyCommunityLink() {
-    if (!existingPlaytest) {
-      return;
-    }
-
-    clearMessage();
-
-    try {
-      await navigator.clipboard.writeText(
-        getCommunityPlaytestUrl(existingPlaytest.shareToken)
-      );
-      setCommunityLinkCopied(true);
-
-      window.setTimeout(() => {
-        setCommunityLinkCopied(false);
-      }, 2000);
-    } catch {
-      setMessage(
-        "Copy the playtest link manually: "+getCommunityPlaytestUrl(existingPlaytest.shareToken)
-      );
-      setMessageType("error");
-    }
-  }
 
   async function loadPlaytestResults(playtestId: string) {
     setResultsLoading(true);
@@ -2419,7 +2161,7 @@ export default function StartPlaytest({
 
   function startManaging() {
     clearMessage();
-    setCommunityLinkCopied(false);
+
     setSetupExpanded(false);
     setResultsExpanded(true);
     setEditing(true);
@@ -2431,12 +2173,12 @@ export default function StartPlaytest({
 
   function cancelManaging() {
     clearMessage();
-    setCommunityLinkCopied(false);
+
     setEditing(false);
   }
 
   const shareSource={kind:gameSource.importedGameId?'imported' as const:gameSource.approvedGameId?'approved' as const:'submission' as const,id:(gameSource.importedGameId||gameSource.approvedGameId||gameSource.submissionId)!};
-  const shareControls=existingPlaytest?.status==='open'&&existingPlaytest.publishedAt?<section aria-label="Share this playtest" className="my-5 rounded-xl border border-white/10 p-4"><h3 className="font-semibold">Share this playtest</h3><p className="mt-2 text-sm text-zinc-400">Create a separate link for each place you share your playtest. Results appear in Traffic &amp; playtest results.</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={()=>void copyCommunityLink()} className="rounded-lg border border-white/25 px-3 py-2 text-sm">{communityLinkCopied?'Copied':'Copy playtest link'}</button><button type="button" aria-expanded={sharingExpanded} onClick={()=>setSharingExpanded(v=>!v)} className="rounded-lg border border-emerald-300/30 px-3 py-2 text-sm text-emerald-200">Create tracked sharing link</button><button type="button" onClick={event=>{if(!openGameTraffic(event.currentTarget,shareSource,existingPlaytest.id)){setMessage('Reporting is not available in this view. Open Traffic & playtest results in My Games.');setMessageType('error');}}} className="rounded-lg border border-white/25 px-3 py-2 text-sm">View traffic &amp; results</button></div>{sharingExpanded&&<GameLinksEngagement source={shareSource} sharingCampaign={existingPlaytest}/>}</section>:null;
+  const shareControls=existingPlaytest?.status==='open'&&existingPlaytest.publishedAt?<div className="my-3 flex flex-wrap gap-3">{(['share','traffic'] as const).map(target=><button key={target} type="button" onClick={event=>{if(!openGameTraffic(event.currentTarget,shareSource,existingPlaytest.id,target)){setMessage('Open Traffic & playtest results in My Games.');setMessageType('error');}}} className="rounded-lg border border-white/25 px-3 py-2 text-sm">{target==='share'?'Share':'View traffic & results'}</button>)}</div>:null;
   if (existingPlaytest && editing) {
     return (
       <div className="mt-5 rounded-xl border border-[#77f29b]/20 bg-black/20 p-5 lg:p-6">
@@ -2857,7 +2599,7 @@ export default function StartPlaytest({
               </span>
             </button>
 
-            <DeveloperQualityReports campaignId={existingPlaytest.id} />
+
             {resultsExpanded && (
               <div className="border-t border-white/10 p-5">
                 <BuildResultsPanel
@@ -2978,24 +2720,7 @@ export default function StartPlaytest({
 
 
 
-        {existingPlaytest.focusAreas.length > 0 && (
-          <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Testing focus
-            </p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {existingPlaytest.focusAreas.map((area) => (
-                <span
-                  key={area}
-                  className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs text-[#b9f9ca]"
-                >
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {message && (
           <div
