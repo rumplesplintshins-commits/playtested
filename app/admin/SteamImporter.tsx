@@ -206,7 +206,7 @@ export default function SteamImporter() {
 
       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
         Discover public Steam game listings, then enrich them with available
-        metadata. Imported listings remain Not yet verified until they go
+        metadata. Imported listings remain without an independent assessment until they go
         through Playtested&apos;s own assessment process.
       </p>
 

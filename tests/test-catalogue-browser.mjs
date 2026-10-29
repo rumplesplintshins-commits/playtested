@@ -1,3 +1,4 @@
+const origin=process.env.TEST_APP_URL||'http://localhost:3000';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {chromium, expect} from 'playwright/test';
@@ -14,7 +15,7 @@ if(process.argv.includes('--information')){
   });
   const page=await context.newPage();
   for(const path of ['/','/terms','/privacy','/contact','/login']){
-   await page.goto('http://localhost:3000'+path);
+   await page.goto(origin+path);
    await expect(page.getByRole('contentinfo')).toHaveCount(1);
    const nav=page.getByRole('navigation',{name:'Legal and support'});
    for(const [name,href]of [['Terms of Use','/terms'],['Privacy Notice','/privacy'],['Contact/Support','/contact']])await expect(nav.getByRole('link',{name,exact:true})).toHaveAttribute('href',href);
@@ -60,11 +61,11 @@ try {
   if(url.pathname.endsWith('/rpc/get_public_listing_updates'))return route.fulfill({json:[{kind:'approved',id:'0',fields:{},disputed:true,pending:true,reassessment:false}]});
   return route.abort();
  });
- await page.goto('http://localhost:3000/catalogue-fixture');
+ await page.goto(origin+'/catalogue-fixture');
  const compact=page.getByRole('button',{name:'Compact',exact:true}),comfortable=page.getByRole('button',{name:'Comfortable',exact:true});
  await expect(page.locator('article')).toHaveCount(12);
  await expect(compact).toHaveAttribute('aria-pressed','true');
- await expect(page.locator('article').first()).toContainText('Disclosure update pending review');await expect(page.locator('article').first()).not.toContainText('Not yet verified');
+ await expect(page.locator('article').first()).toContainText('Disclosure update pending review');await expect(page.locator('article').first()).not.toContainText('Independent assessment: not completed');
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);
  assert.equal(recruitmentCalls.length,1);assert.equal(recruitmentCalls[0].p_games.length,12);
  await page.locator('[aria-label^="Recruiting testers."]').first().focus();await expect(page.locator('[aria-label^="Recruiting testers."]').first()).toBeFocused();await expect(page.locator('[aria-label^="Recruiting testers."]').first()).toHaveAttribute('aria-label',/Eligibility requirements apply/);

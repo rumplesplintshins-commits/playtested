@@ -542,7 +542,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
+        window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`);
 
         return;
 
@@ -971,7 +971,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
+        window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`);
 
         return;
 
@@ -1371,7 +1371,7 @@ export default function SubmitGamePage() {
 
       if (authError || !user) {
 
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`;
+        window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`);
 
         return;
 

@@ -328,20 +328,6 @@ function pulseStatusClasses(status: string) {
   return "border-sky-300/30 bg-sky-300/10 text-sky-200";
 }
 
-function verificationStatusClasses(
-  status: "Verified" | "Assessed" | "Not yet verified"
-) {
-  if (status === "Verified") {
-    return "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]";
-  }
-
-  if (status === "Assessed") {
-    return "border-sky-300/30 bg-sky-300/10 text-sky-200";
-  }
-
-  return "border-white/10 bg-white/[0.04] text-zinc-300";
-}
-
 function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
   return {
     id: playtest.id,
@@ -1106,13 +1092,7 @@ async function DeveloperDashboard() {
                   </div>
 
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`rounded-md border px-3 py-2 text-xs font-medium ${verificationStatusClasses(
-                          game.verificationStatus
-                        )}`}
-                      >
-                        {game.listingNotice||game.verificationStatus}
-                      </span>
+                      {game.listingNotice&&<span className="text-xs text-zinc-500">{game.listingNotice}</span>}
 
                     </div>
                   </div>
@@ -1194,7 +1174,7 @@ async function DeveloperDashboard() {
                   <p className="mt-2 text-sm leading-6 text-zinc-400">
                     Your developer claim for this game was approved.
                     Playtesting is separate from
-                    Playtested assessment and verification.
+                    optional independent gameplay assessment.
                   </p>
                 </div>}
 
@@ -1374,7 +1354,7 @@ async function DeveloperDashboard() {
 
                       <p className="mt-2 text-xs leading-5 text-zinc-500">
                         Ownership approval does not mean the game
-                        itself is Assessed or Verified.
+                        has a completed independent gameplay assessment.
                       </p>
                     </div>
                   )}

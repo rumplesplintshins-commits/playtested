@@ -1,5 +1,7 @@
 "use client";
 
+import {assessmentLabel} from "../../lib/review-labels";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -156,7 +158,7 @@ function VerificationBadge({
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles[status]}`}
     >
-      {status}
+      {assessmentLabel(status)}
     </span>
   );
 }
@@ -241,7 +243,7 @@ function GameCardContent({
         <div className="flex flex-wrap items-center gap-2">
           {game.listingNotice||game.assessmentUnavailable?<span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">{game.listingNotice||"Assessment status unavailable"}</span>:<VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />}
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
-            {disclosure === "AI use unknown" ? "AI Use Unknown" : disclosure}
+            {disclosure === "AI use unknown" ? "AI Use Unknown" : `Developer-declared: ${disclosure}`}
           </span>
           {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
@@ -561,7 +563,7 @@ export default function GameCatalogue() {
           </select>
 
           <select
-            aria-label="Filter by verification status"
+            aria-label="Filter by independent assessment"
             value={verificationFilter}
             onChange={(event) => {
               setVerificationFilter(event.target.value);
@@ -571,7 +573,7 @@ export default function GameCatalogue() {
           >
             {verificationOptions.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {item==="All verification statuses"?"All independent assessments":["Verified","Assessed","Not yet verified"].includes(item)?assessmentLabel(item):item}
               </option>
             ))}
           </select>
@@ -690,7 +692,7 @@ export default function GameCatalogue() {
           <div className="rounded-xl border border-white/10 bg-[#151815] px-5 py-12 text-center">
             <h3 className="text-lg font-semibold">No games found</h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-white/60">
-              Try another verification status or clear your filters. Steam
+              Try another independent assessment filter or clear your filters. Steam
               listings only appear after they meet the preliminary catalogue
               eligibility and metadata requirements.
             </p>

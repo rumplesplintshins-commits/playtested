@@ -1,3 +1,4 @@
+import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {ShareJourneyBanner,TrackedAccessLink} from "@/app/components/ShareJourney";
@@ -378,8 +379,7 @@ export default async function SubmissionPage({
                   </h2>
 
                   <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    AI-use information declared
-                    by the developer.
+                    {disclosureExplanation}
                   </p>
                 </div>
 
@@ -450,14 +450,14 @@ export default async function SubmissionPage({
                     </p>
 
                     <h2 className="mt-1 text-xl font-bold">
-                      Playtested Verification
+                      Independent gameplay assessment
                     </h2>
                   </div>
 
                   <span
                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusStyle}`}
                   >
-                    {verificationLabel}
+                    {assessmentLabel(verificationLabel)}
                   </span>
                 </div>
 
@@ -648,12 +648,12 @@ export default async function SubmissionPage({
             ) : (
               <section className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                  Playtested Verification
+                  Independent gameplay assessment
                 </p>
 
                 <h2 className="mt-2 text-lg font-semibold">
-                  Not yet independently
-                  assessed
+                  No independent
+                  assessment
                 </h2>
 
                 <p className="mt-2 text-sm leading-5 text-zinc-400">
@@ -669,4 +669,8 @@ export default async function SubmissionPage({
       </div>
     </main>
   );
+}
+import {gameMetadata} from "@/lib/public-game-seo";
+export async function generateMetadata({params}:{params:Promise<{id:string}>}) {
+  return gameMetadata("approved",(await params).id);
 }

@@ -312,6 +312,9 @@ export default function AdminSubmissionsPage() {
   const [selectedClaimId, setSelectedClaimId] =
     useState<string | null>(null);
 
+  const [submissionSearch,setSubmissionSearch]=useState("");
+  const [notesSaving,setNotesSaving]=useState(false);
+  const [notesResult,setNotesResult]=useState("");
   const [filter, setFilter] =
     useState<SubmissionFilter>("Needs attention");
 
@@ -422,10 +425,15 @@ export default function AdminSubmissionsPage() {
     async function loadSubmissions() {
       setLoaded(false);
 
-      const { data, error } = await supabase
-        .from("game_submissions")
-        .select("*")
-        .order("submitted_at", { ascending: false });
+      const readPage=(offset:number)=>supabase.from("game_submissions").select("*")
+        .order("submitted_at",{ascending:false,nullsFirst:false}).order("id",{ascending:true}).range(offset,offset+99);
+      const first=await readPage(0);
+      const data=first.data?[...first.data]:[];let error=first.error;
+      for(let offset=100;!error&&data.length===offset;offset+=100){
+        if(!mounted)return;
+        const next=await readPage(offset);error=next.error;data.push(...(next.data||[]));
+        if((next.data?.length||0)<100)break;
+      }
 
       if (!mounted) return;
 
@@ -782,6 +790,7 @@ export default function AdminSubmissionsPage() {
       setVerificationLoaded(false);
       setVerificationError("");
       setVerificationMessage("");
+      setNotesResult("");
 
       const { data, error } = await supabase
         .from("game_verifications")
@@ -828,7 +837,7 @@ export default function AdminSubmissionsPage() {
         setVerification(emptyVerification);
       }
 
-      setVerificationLoaded(true);
+      setVerificationLoaded(!error);
     }
 
     loadVerification();
@@ -837,6 +846,13 @@ export default function AdminSubmissionsPage() {
       mounted = false;
     };
   }, [isAdmin, selectedId]);
+
+  async function savePrivateNotes(){
+    if(!selectedId||!verificationLoaded||notesSaving)return;
+    setNotesSaving(true);setNotesResult("");
+    const {error}=await createClient().from("game_verifications").upsert({submission_id:selectedId,reviewer_notes:verification.reviewer_notes.trim()},{onConflict:"submission_id"});
+    setNotesSaving(false);setNotesResult(error?"Private notes could not be saved. Your edits remain here.":"Private admin notes saved. Listing and assessment decisions were not changed.");
+  }
 
   async function updateStatus(
     id: string,
@@ -1112,13 +1128,6 @@ export default function AdminSubmissionsPage() {
     (item) => item.complete
   ).length;
 
-  const priorityOrder: Record<SubmissionStatus, number> = {
-    "Pending Review": 0,
-    "Needs More Information": 1,
-    Approved: 2,
-    Rejected: 3,
-  };
-
   const claimPriorityOrder: Record<ClaimStatus, number> = {
     Pending: 0,
     "Needs More Information": 1,
@@ -1150,19 +1159,8 @@ export default function AdminSubmissionsPage() {
           : submissions.filter(
               (submission) => submission.status === filter
             )
-  ).sort((a, b) => {
-    const priorityDifference =
-      priorityOrder[a.status] - priorityOrder[b.status];
-
-    if (priorityDifference !== 0) {
-      return priorityDifference;
-    }
-
-    return (
-      new Date(a.submittedAt).getTime() -
-      new Date(b.submittedAt).getTime()
-    );
-  });
+  ).filter(submission=>[submission.title,submission.developer].some(value=>value.toLocaleLowerCase().includes(submissionSearch.trim().toLocaleLowerCase())))
+   .sort((a,b)=>(Date.parse(b.submittedAt)||0)-(Date.parse(a.submittedAt)||0)||a.id.localeCompare(b.id));
 
   const filteredClaims = (
     claimFilter === "All"
@@ -1709,6 +1707,13 @@ export default function AdminSubmissionsPage() {
               ))}
             </div>
 
+            <div className="mb-4 flex flex-wrap items-end gap-3">
+              <label className="min-w-0 flex-1 text-sm text-zinc-300" htmlFor="submission-search">Search submissions
+                <input id="submission-search" type="search" value={submissionSearch} onChange={event=>setSubmissionSearch(event.target.value)} placeholder="Game title or developer/studio" className={inputClass}/>
+              </label>
+              <button type="button" className="rounded-lg border border-zinc-700 px-4 py-3 text-sm" onClick={()=>setSubmissionSearch("")} disabled={!submissionSearch}>Clear search</button>
+              <p role="status" className="w-full text-xs text-zinc-400">{loaded?`${filteredSubmissions.length} of ${submissions.length} submissions match the search and status filter.`:"Loading all submissions..."} The completeness tool below keeps its own scope and selection.</p>
+            </div>
             <SubmissionCompletenessBatch onCompleted={()=>setCompletenessRefresh(value=>value+1)}/>
             {!loaded ? (
               <p className="py-10 text-zinc-400">
@@ -1839,8 +1844,7 @@ export default function AdminSubmissionsPage() {
                         className={`${panelClass} p-5`}
                       >
                         <p className="text-sm text-zinc-400">
-                          No submissions match this
-                          filter.
+                          No submissions match the current filters.
                         </p>
                       </div>
                     )}
@@ -1897,7 +1901,7 @@ export default function AdminSubmissionsPage() {
 
                       <CollapsibleSection
                         title="Listing review"
-                        description="Review developer-supplied details here. Reviewer assessment tasks are separate below."
+                        description="Approve the listing and developer-provided disclosure, request information or reject. Optional independent gameplay assessment is separate and never required for listing approval."
                         defaultOpen
                       >
                         <label className={labelClass}>
@@ -1905,6 +1909,7 @@ export default function AdminSubmissionsPage() {
                         </label>
 
                         <select
+                          aria-label="Listing review status"
                           value={draftStatus}
                           disabled={
                             savingId ===
@@ -1925,7 +1930,7 @@ export default function AdminSubmissionsPage() {
                                 key={status}
                                 value={status}
                               >
-                                {status}
+                                {status==="Approved"?"Approve listing":status==="Needs More Information"?"Request information":status==="Rejected"?"Reject listing":status}
                               </option>
                             )
                           )}
@@ -1941,8 +1946,7 @@ export default function AdminSubmissionsPage() {
                               </p>
 
                               <p className="mt-2 text-xs leading-5 text-red-200">
-                                You are approving a
-                                listing with the
+                                Approval is blocked by the
                                 following missing
                                 fields:
                               </p>
@@ -1965,15 +1969,16 @@ export default function AdminSubmissionsPage() {
                             "Needs More Information") && (
                           <div className="mt-4">
                             <label
-                              className={labelClass}
+                              className={labelClass} htmlFor="submission-review-reason"
                             >
                               {draftStatus ===
                               "Rejected"
                                 ? "Reason for rejection"
-                                : "Information required"}
+                                : "Information requested"}
                             </label>
 
-                            <textarea
+                            <p className="mb-2 text-xs text-zinc-400">Visible to the developer as the reason for correction or rejection.</p>
+                            <textarea id="submission-review-reason" placeholder="Please explain which parts used AI and how you reviewed the generated output."
                               rows={4}
                               value={
                                 reviewReasonDraft
@@ -2001,6 +2006,7 @@ export default function AdminSubmissionsPage() {
                           disabled={
                             savingId ===
                               selectedSubmission.id ||
+                            (draftStatus === "Approved" && draftMissingInformation.length>0) ||
                             ((draftStatus ===
                               "Rejected" ||
                               draftStatus ===
@@ -2014,13 +2020,22 @@ export default function AdminSubmissionsPage() {
                             ? "Saving decision..."
                             : "Save listing decision"}
                         </button>
+                        <div className="mt-5 border-t border-zinc-800 pt-4">
+                          <label htmlFor="private-admin-notes" className={labelClass}>Private admin notes</label>
+                          <p className="mb-2 text-xs text-zinc-400">Admin-only notes, excluded from the public assessment view and developer correction message. Saving notes does not mark a disclosure reviewed or publish an assessment.</p>
+                          <textarea id="private-admin-notes" rows={3} disabled={!verificationLoaded} className={inputClass} placeholder="Disclosure reviewed; requested clarification about AI-generated artwork." value={verification.reviewer_notes} onChange={event=>updateVerification("reviewer_notes",event.target.value)}/>
+                          <button type="button" disabled={!verificationLoaded||notesSaving} onClick={()=>void savePrivateNotes()} className="mt-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm">{notesSaving?"Saving notes...":"Save private notes"}</button>
+                          {notesResult&&<p role="status" className="mt-2 text-sm text-zinc-300">{notesResult}</p>}
+                          {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
+                        </div>
                       </CollapsibleSection>
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 
                       <CollapsibleSection
                         title="Game details & disclosure"
-                        description="Developer-supplied listing information and AI disclosure."
+                        description="AI use is declared by the developer. Review does not independently prove how the game was made."
+                        defaultOpen
                       >
                         {(() => {
                           const missing =
@@ -2117,7 +2132,7 @@ export default function AdminSubmissionsPage() {
                                       labelClass
                                     }
                                   >
-                                    AI classification
+                                    Developer-declared AI category
                                   </p>
                                   <p className="text-sm">
                                     {selectedSubmission.aiType ||
@@ -2224,20 +2239,19 @@ export default function AdminSubmissionsPage() {
                       </CollapsibleSection>
 
                       <CollapsibleSection
-                        title="Independent assessment"
-                        description={`Internal assessment tasks: ${readinessCount}/${readinessChecks.length} complete. These do not request developer corrections.`}
+                        title="Optional independent gameplay assessment"
+                        description="Separate optional testing and publication. None of these fields blocks listing approval. Published summaries, evidence summaries, limitations and checklist results can be public; testing notes remain admin-only."
                       >
                         {!verificationLoaded ? (
                           <p className="text-sm text-zinc-400">
-                            Loading verification
-                            record...
+                            {verificationError||"Loading optional assessment..."}
                           </p>
                         ) : (
                           <div className="space-y-5">
                             <div className="rounded-xl border border-zinc-800 bg-[#090b0a] p-4">
                               <div className="flex items-center justify-between">
                                 <h3 className="font-semibold">
-                                  {readinessCount === readinessChecks.length ? "Internal assessment complete" : "Assessment pending: internal tasks"}</h3>
+                                  Independent assessment publication readiness</h3>
 
                                 <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs">
                                   {readinessCount}/
@@ -2273,8 +2287,7 @@ export default function AdminSubmissionsPage() {
                               <label
                                 className={labelClass}
                               >
-                                AI disclosure
-                                assessment
+                                AI evidence assessment
                               </label>
 
                               <select
@@ -2538,31 +2551,7 @@ export default function AdminSubmissionsPage() {
                               />
                             </div>
 
-                            <div>
-                              <label
-                                className={labelClass}
-                              >
-                                Private reviewer
-                                notes
-                              </label>
 
-                              <textarea
-                                rows={4}
-                                value={
-                                  verification.reviewer_notes
-                                }
-                                onChange={(event) =>
-                                  updateVerification(
-                                    "reviewer_notes",
-                                    event.target
-                                      .value
-                                  )
-                                }
-                                className={
-                                  inputClass
-                                }
-                              />
-                            </div>
 
                             <div className="rounded-lg border border-zinc-800 bg-[#090b0a] p-4">
                               <label className="flex cursor-pointer items-start gap-3">
@@ -2639,7 +2628,7 @@ export default function AdminSubmissionsPage() {
                             >
                               {verificationSaving
                                 ? "Saving assessment..."
-                                : "Save verification assessment"}
+                                : "Save independent assessment"}
                             </button>
                           </div>
                         )}
@@ -3039,10 +3028,9 @@ export default function AdminSubmissionsPage() {
         )}
 
         <p className="mt-10 border-t border-zinc-800 pt-5 text-xs leading-5 text-zinc-500">
-          Developer ownership claims, listing approval
-          and Playtested verification are separate
-          decisions. Approving a claim does not make a
-          game Assessed or Verified.
+          Developer ownership approval, listing approval, developer-declared AI use,
+          independent gameplay assessment, PULSE diagnostics and community reception
+          are separate. Ownership or listing approval does not certify AI use or gameplay quality.
         </p>
       </div>
     </main>
