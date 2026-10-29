@@ -3,7 +3,11 @@ import {connection} from "next/server";
 import {notFound} from "next/navigation";
 import {shareService} from "@/lib/share-server";
 import {ShareEntry} from "@/app/components/ShareJourney";
-export default async function SharedGame({params}:{params:Promise<{id:string}>}){
+import {Suspense} from "react";
+export default function SharedGamePage(props:{params:Promise<{id:string}>}){
+ return <Suspense fallback={<main className="p-8 text-zinc-400" role="status">Loading shared playtest...</main>}><SharedGame {...props}/></Suspense>;
+}
+async function SharedGame({params}:{params:Promise<{id:string}>}){
  await connection();const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))notFound();
  let context;
  try{const result=await shareService().rpc("_share_link_context",{p_link:id});if(!result.error)context=result.data;}catch{}
