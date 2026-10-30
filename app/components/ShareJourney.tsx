@@ -1,19 +1,13 @@
 "use client";
-import {useEffect,useState,useSyncExternalStore,type AnchorHTMLAttributes} from "react";
+import type {AnchorHTMLAttributes} from "react";
 import Link from "next/link";
-import {currentJourney,subscribeJourney,carryJourney,taggedPath,type ShareTags} from "@/lib/share-links";
+import type {ShareTags} from "@/lib/share-links";
 type Context={title:string;path:string;tester_path:string|null;tags:ShareTags};
-export function ShareEntry({id,context}:{id:string;context:Context}){
- const [path,setPath]=useState(()=>taggedPath(context.path,context.tags));const [notice,setNotice]=useState("Preparing this tagged journey…");
- useEffect(()=>{let active=true;void fetch("/api/engagement",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"visit",link:id}),cache:"no-store"}).then(response=>response.json()).then(data=>{if(!active)return;if(data.nextPath){setPath(data.nextPath);setNotice(data.preview?"Developer preview: this visit is not counted.":"This journey can be attributed for up to 30 minutes. No analytics cookies or browser storage are used.");}else setNotice("You can continue without attribution. Reporting is unavailable.");}).catch(()=>{if(active)setNotice("You can continue without attribution. Reporting is unavailable.");});return()=>{active=false;};},[id]);
- return <main className="min-h-screen bg-[#090b0a] px-5 py-16 text-white"><section className="mx-auto max-w-xl rounded-2xl border border-white/10 p-7"><p className="text-xs uppercase tracking-widest text-emerald-300">Shared on Playtested</p><h1 className="mt-4 text-3xl font-bold">{context.title}</h1><p className="mt-4 text-sm leading-6 text-zinc-400">Discover this game and any available testing opportunities. Signing in does not bypass testing requirements or guarantee a place.</p><Link prefetch={false} href={path} className="mt-6 block rounded-lg bg-emerald-400 px-5 py-3 text-center text-sm font-semibold text-black">{context.path.startsWith("/tester")||context.path.startsWith("/playtest/")?"View this playtest":"View game page"}</Link><p role="status" className="mt-4 text-xs leading-5 text-zinc-400">{notice}</p><p className="mt-2 text-xs text-zinc-500">Leaving the tagged journey ends attribution. Clicks do not prove gameplay.</p></section></main>;
+export function ShareEntry({context}:{id:string;context:Context}){
+ return <main className="min-h-screen bg-[#090b0a] px-5 py-16 text-white"><section className="mx-auto max-w-xl rounded-2xl border border-white/10 p-7"><p className="text-xs uppercase tracking-widest text-emerald-300">Shared on Playtested</p><h1 className="mt-4 text-3xl font-bold">{context.title}</h1><p className="mt-4 text-sm leading-6 text-zinc-400">Discover this game and any available testing opportunities. Signing in does not bypass testing requirements or guarantee a place.</p><Link prefetch={false} href={context.path} className="mt-6 block rounded-lg bg-emerald-400 px-5 py-3 text-center text-sm font-semibold text-black">{context.path.startsWith("/tester")||context.path.startsWith("/playtest/")?"View this playtest":"View game page"}</Link><p role="status" className="mt-4 text-xs leading-5 text-zinc-400">This share link opens the normal Playtested destination without journey attribution.</p></section></main>;
 }
-export function ShareJourneyBanner(){
- const token=useSyncExternalStore(subscribeJourney,currentJourney,()=>null);const [result,setResult]=useState<{token:string;context:Context}|null>(null);
- useEffect(()=>{if(!token)return;let active=true;void fetch("/api/engagement",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"context",token,path:window.location.pathname}),cache:"no-store"}).then(response=>response.json()).then(context=>{if(active&&context.title)setResult({token,context});}).catch(()=>{});return()=>{active=false;};},[token]);
- if(!token||result?.token!==token)return null;
- return <aside className="mx-auto my-4 max-w-5xl rounded-xl border border-emerald-300/20 px-5 py-4 text-sm text-zinc-300"><p>Shared game: <strong>{result.context.title}</strong></p>{result.context.tester_path?<Link prefetch={false} href={carryJourney(result.context.tester_path,token)} className="mt-2 inline-block font-semibold text-emerald-300 underline">Find a playtest for this game</Link>:<p className="mt-2 text-zinc-400">No open Tester Hub campaign is available for this game right now.</p>}<p className="mt-2 text-xs text-zinc-500">Current-journey attribution only; no analytics cookies or browser storage.</p></aside>;
-}
-export function TrackedAccessLink({campaignId,children,...props}:AnchorHTMLAttributes<HTMLAnchorElement>&{campaignId?:string}){
- return <a {...props} onClick={event=>{props.onClick?.(event);if(event.defaultPrevented)return;const token=currentJourney();if(token)void fetch("/api/engagement",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"access",token,campaign:campaignId,path:window.location.pathname}),keepalive:true}).catch(()=>{});}}>{children}</a>;
+export function ShareJourneyBanner(){return null;}
+export function TrackedAccessLink({children,...props}:AnchorHTMLAttributes<HTMLAnchorElement>&{campaignId?:string}){
+ const {campaignId:_campaignId,...anchorProps}=props;
+ return <a {...anchorProps}>{children}</a>;
 }
