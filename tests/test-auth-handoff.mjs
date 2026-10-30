@@ -184,6 +184,8 @@ async function pulseApiChecks(){
  delete process.env.PULSE_ENABLED;assert.equal((await(await route.GET()).json()).state,'available');
  for(const mode of['available','busy','unavailable','unsupported']){state=mode;const result=await(await route.POST(request)).json();assert.equal(!!result.job,['available','busy'].includes(mode));assert(pulse.pulseMessage(result.state,result.job).includes(result.job?'queued':mode==='unsupported'?'ZIP':'unavailable'));}
  assert(calls.filter(c=>c.name==='enqueue_available_pulse_job').every(c=>c.args.p_actor==='owner'));
+ assert(calls.filter(c=>c.name==='enqueue_available_pulse_job').every(c=>c.args.p_retry_of===null),'Automatic requests never carry retry targets');
+ const retryId='10000000-0000-4000-8000-000000000002';await route.POST({...request,json:async()=>({submissionId:'10000000-0000-4000-8000-000000000001',retryOf:retryId})});assert.equal(calls.at(-1).args.p_retry_of,retryId);assert.equal(calls.at(-1).args.p_actor,'owner');assert.equal((await route.POST({...request,json:async()=>({submissionId:'10000000-0000-4000-8000-000000000001',retryOf:true})})).status,400);
  rpcError={code:'PGRST202'};assert.equal((await(await route.GET()).json()).state,'unknown');assert.equal((await route.POST(request)).status,503);rpcError=null;
  process.env.PULSE_ENABLED='false';const before=calls.length;assert.equal((await(await route.POST(request)).json()).state,'disabled');assert.equal(calls.length,before);delete process.env.PULSE_ENABLED;
  verified=false;assert.equal((await route.POST(request)).status,401);verified=true;

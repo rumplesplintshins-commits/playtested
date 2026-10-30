@@ -400,9 +400,9 @@ async function pulseChecks(){
  await run(`insert into pulse_jobs(submission_id,developer_id,status,build_url,report_json)values('${id(99)}','${id(1)}','COMPLETE','https://example.test/history.zip','{"history":true}')`);
  const historical=(await one('select to_jsonb(j) row from pulse_jobs j')).row;
  await run(fs.readFileSync('supabase/migrations/202610300024_pulse_availability.sql','utf8'));
- assert.deepEqual((await one("select to_jsonb(j)-'input_key' row from pulse_jobs j")).row,historical);
+ assert.deepEqual((await one("select to_jsonb(j)-'input_key'-'retry_of' row from pulse_jobs j")).row,historical);
  assert.equal((await one('select get_pulse_availability() state')).state,'unavailable');
- const queue=async(n,actor=id(1))=>(await one('select enqueue_available_pulse_job($1,$2) result',[id(10+n),actor])).result;
+ const queue=async(n,actor=id(1),retryOf=null)=>(await one('select enqueue_available_pulse_job($1,$2,$3) result',[id(10+n),actor,retryOf])).result;
  assert.equal((await queue(1)).state,'unavailable');assert.equal(Number((await one('select count(*) n from game_submissions')).n),4,'Unavailable preserves saved submissions');
  await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);
  assert.equal((await one('select get_pulse_availability() state')).state,'available');const first=await queue(1);assert.equal(first.state,'queued');assert.equal((await queue(1)).job.id,first.job.id);
@@ -411,5 +411,30 @@ async function pulseChecks(){
  await run(`update game_submissions set game_link='https://store.steampowered.com/app/123' where id='${id(14)}'`);assert.equal((await queue(4)).state,'unsupported');
  await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);assert.equal((await queue(3)).state,'queued','Worker return permits new request');await run(`insert into game_submissions values('${id(15)}','${id(1)}','Concurrent fixture','https://example.test/other.zip')`);const raced=await Promise.all([queue(5),queue(5)]);assert.equal(raced[0].job.id,raced[1].job.id);assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(15)])).n),1);
  await assert.rejects(queue(1,id(2)),/access denied/);await run('set role authenticated');await assert.rejects(run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`),/permission denied/);await assert.rejects(run(`select enqueue_available_pulse_job('${id(11)}','${id(1)}')`),/permission denied/);await assert.rejects(run(`insert into pulse_jobs(submission_id,developer_id)values('${id(11)}','${id(1)}')`),/permission denied/);await run('reset role;set role anon');assert.equal((await one('select get_pulse_availability() state')).state,'available');await assert.rejects(run('select * from pulse_worker_heartbeats'),/permission denied/);await run('reset role');assert.equal((await one('select tester_xp from profiles')).tester_xp,100);
- console.log('PASS PULSE SQL: fresh/busy/stale/missing/return availability, equivalent input reuse, unsupported/foreign rejection, service-only heartbeat/enqueue/claim permissions, public status privacy, saved submissions/history/XP preserved. Isolated PostgreSQL only.');
+
+ // Explicit retries preserve the failed parent and provide durable retry-intent idempotency.
+ await run(`update pulse_jobs set status='FAILED',report_json='{"failedEvidence":true}',error_message='Original failure',technical_run_id='${id(88)}' where id='${first.job.id}'`);
+ const parentBefore=(await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row;
+ assert.equal((await queue(1)).job.status,'FAILED','Automatic submission never retries failure');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',false,false)`);assert.equal((await queue(1,id(1),first.job.id)).state,'unavailable');
+ assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(11)])).n),1);
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,true)`);
+ const retryPair=await Promise.all([queue(1,id(1),first.job.id),queue(1,id(1),first.job.id)]);const child=retryPair[0].job;
+ assert.notEqual(child.id,first.job.id);assert.equal(child.retry_of,first.job.id);assert.equal(retryPair[1].job.id,child.id);assert.equal(child.report_json,null);assert.equal(child.technical_run_id,null);
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row,parentBefore,'Failed parent/report unchanged');
+ assert.equal((await queue(1)).job.id,child.id,'Automatic request reuses active retry');await db.query('update pulse_jobs set status=$1 where id=$2',['TESTING',child.id]);assert.equal((await queue(1)).job.id,child.id,'Running equivalent is reused');
+ await assert.rejects(run(`insert into pulse_jobs(submission_id,developer_id,build_url,input_key)values('${id(11)}','${id(1)}','https://example.test/build1.zip','${child.input_key}')`),/unique/);
+ await run(`insert into pulse_jobs(id,submission_id,developer_id,build_url,input_key,status)values('${id(777)}','${id(11)}','${id(1)}','https://example.test/build1.zip','${child.input_key}','FAILED')`);
+ assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Different failed target coalesces into active equivalent');
+ await run(`update pulse_jobs set status='FAILED',report_json='{"secondFailure":true}' where id='${child.id}'`);const childBefore=(await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[child.id])).row;
+ assert.equal((await queue(1,id(1),first.job.id)).job.id,child.id,'Lost response replay returns same child even after it fails');
+ assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Coalesced lost response replays the same child after failure');assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(11)])).n),3);
+ const later=await queue(1,id(1),child.id);assert.equal(later.state,'queued');assert.equal(later.job.retry_of,child.id);assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Coalesced retry never silently advances to a later attempt');assert.notEqual(later.job.id,child.id);
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[child.id])).row,childBefore);
+ await assert.rejects(queue(2,id(1),child.id),/owned failed/);await assert.rejects(queue(1,id(2),child.id),/access denied/);await assert.rejects(queue(1,id(1),later.job.id),/owned failed/);
+ await run(`update pulse_jobs set status='COMPLETE' where id='${later.job.id}'`);assert.equal((await queue(1)).job.id,later.job.id,'Successful result reused');
+ assert.equal((await queue(1,id(1),child.id)).job.id,later.job.id,'Repeated later retry returns its same successful child');
+ await run(`update game_submissions set game_link='https://example.test/new-version.zip' where id='${id(11)}'`);assert.equal((await queue(1,id(1),first.job.id)).state,'input_changed','Cannot retry old input as current build');
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row,parentBefore);
+ console.log('PASS PULSE SQL: explicit retry chains, automatic failure reuse, lost/coalesced-response replay, concurrent retry dedup/active uniqueness, preserved parent reports, fresh/busy/stale/missing/return availability, equivalent input reuse, unsupported/foreign rejection, service-only heartbeat/enqueue/claim permissions, public status privacy, saved submissions/history/XP preserved. Isolated PostgreSQL only.');
 }

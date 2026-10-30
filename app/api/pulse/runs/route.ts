@@ -14,8 +14,9 @@ export async function POST(request:NextRequest){
   const db=client();const {data:{user},error}=await db.auth.getUser(token);
   if(error||!user)return NextResponse.json({state:"unknown",error:"Session could not be verified."},{status:401});
   const body=await request.json();if(typeof body.submissionId!=="string"||! /^[0-9a-f-]{36}$/i.test(body.submissionId))return NextResponse.json({state:"unknown"},{status:400});
+  if(body.retryOf!=null&&(typeof body.retryOf!=="string"||! /^[0-9a-f-]{36}$/i.test(body.retryOf)))return NextResponse.json({state:"unknown"},{status:400});
   if(process.env.PULSE_ENABLED==="false")return NextResponse.json({state:"disabled"});
-  const result=await db.rpc("enqueue_available_pulse_job",{p_submission:body.submissionId,p_actor:user.id});
+  const result=await db.rpc("enqueue_available_pulse_job",{p_submission:body.submissionId,p_actor:user.id,p_retry_of:body.retryOf??null});
   if(result.error)return NextResponse.json({state:"unknown",error:"Optional automated checks could not be queued. Your submission is still saved."},{status:result.error.code==="42501"?403:503});
   const payload=result.data;
   return NextResponse.json({...payload,success:!!payload.job},{status:payload.state==="queued"?201:200,headers:{"Cache-Control":"no-store"}});
