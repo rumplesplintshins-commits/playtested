@@ -5,6 +5,15 @@ import {createRequire} from 'node:module';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {chromium,expect} from 'playwright/test';
 const require=createRequire(import.meta.url);
+const presentation={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/submission-completeness.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(presentation);
+for(const status of ['Rejected','Needs More Information','Pending Review','Approved'])for(const issues of [[],[{field:'title',label:'Game title',reason:'Required'}]]){
+ const copy=presentation.submissionReviewPresentation(status,issues);
+ assert.equal(copy.action,status==='Rejected'?'Edit and resubmit':status==='Needs More Information'?'Complete information':null);
+ assert.equal(copy.completeness.includes('Game title'),issues.length>0);
+ if(status==='Rejected'){assert(copy.summary.includes('rejected'));assert(!copy.summary.includes('Awaiting'));}
+ if(status==='Pending Review')assert(copy.summary.includes('Awaiting listing review'));
+}
+
 // Exercise the real allowance contract without mounting UI or contacting a database.
 const allowanceSource=fs.readFileSync('app/components/DeveloperPlan.tsx','utf8');
 const allowance={};new Function('exports',ts.transpileModule(allowanceSource.slice(allowanceSource.indexOf('export function allowanceError'),allowanceSource.indexOf('\nconst Context')),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(allowance);
@@ -45,6 +54,18 @@ assert.equal(result.type,Workspace);
 assert.equal(result.props.games.length,1,'Same-ID and known Steam aliases counted once');
 assert.equal(result.props.submissions.length,1);assert.equal(result.props.claims.length,1);
 assert.equal(result.props.games[0].status,'Playtest open');
+const originalSubmission={...tables.game_submissions[0]};
+for(const status of ['Rejected','Needs More Information','Pending Review','Approved'])for(const complete of [true,false]){
+ Object.assign(tables.game_submissions[0],{...originalSubmission,status,title:complete?'Alpha':'',description:'A game',release_status:'Not announced',ai_type:'No AI disclosed',review_reason:'Developer-visible decision',admin_notes:'PRIVATE ADMIN SENTINEL'});
+ const view=(await exports.dashboard()).props.submissions[0];const html=renderToStaticMarkup(view.content);
+ assert(html.includes('Developer-visible decision'));assert(!html.includes('PRIVATE ADMIN SENTINEL'));
+ assert.equal(!!view.correctionHref,['Rejected','Needs More Information'].includes(status));
+ if(status==='Rejected'){assert(html.includes('Rejection reason'));assert(html.includes('Edit and resubmit'));assert(!html.includes('Approval still requires admin review'));assert(html.indexOf('Rejection reason')<html.indexOf('Automatic completeness check'));}
+ if(status==='Needs More Information'){assert(html.includes('Information requested'));assert(html.includes('Complete information'));}
+ if(status==='Pending Review'){assert(html.includes('Awaiting listing review'));assert(!html.includes('href="/submit?edit='));}
+}
+tables.game_submissions[0]=originalSubmission;
+
 function find(element,type){if(!element||typeof element!=='object')return null;if(element.type===type)return element;const children=element.props?.children;for(const child of Array.isArray(children)?children:[children]){const found=find(child,type);if(found)return found;}return null;}
 const start=find(result.props.games[0].content,Start);
 assert.equal(start.props.existingPlaytest.id,'build-current');assert.equal(start.props.gameSource.importedGameId,'imported-a');
