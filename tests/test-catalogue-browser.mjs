@@ -26,6 +26,13 @@ if(process.argv.includes('--information')){
     await expect(page.getByRole('heading',{name:/Let machines handle the repetitive work/})).toBeVisible();
     assert(await page.evaluate(()=>{const about=document.querySelector('#about'),footer=document.querySelector('body > footer');return !!about&&!!footer&&about.parentElement.lastElementChild===about&&about.parentElement.nextElementSibling===footer;}),'Footer immediately follows homepage main / final idea section');
    }
+   if(path==='/privacy'){
+    await expect(page.getByRole('heading',{name:'Cookies and browser storage',exact:true})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Sign-in and recovery cookies',exact:true}).locator('..')).toContainText('400-day maximum');
+    await expect(page.getByRole('heading',{name:'Feedback drafts on your device',exact:true}).locator('..')).toContainText('no automatic time expiry');
+    await expect(page.getByRole('heading',{name:'Reporting records and your choices',exact:true}).locator('..')).toContainText('no in-app attribution opt-out');
+    await expect(page.getByRole('link',{name:'ICO guidance on cookies and other storage/access technologies'})).toHaveAttribute('href','https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-the-use-of-storage-and-access-technologies/');
+   }
    if(path==='/terms'||path==='/privacy'){
     await expect(page.getByText(/Draft — not final launch terms/)).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content',/noindex/);
