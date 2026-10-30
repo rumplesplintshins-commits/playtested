@@ -318,6 +318,32 @@ async function qaActivityChecks(){
  assert.equal((await db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify([{source_type:'steam',game_id:rail}])])).rows[0].recruiting,false);
  for(const[cid,,status]of campaigns){assert.equal((await one(`select status from community_playtests where id='${cid}'`)).status,status);assert.equal((await one(`select public.campaign_eligible('${cid}','${id(50)}') eligible`)).eligible,false);}
  await as(500);await run('set role authenticated');assert.equal(Number((await one(`select count(*) n from community_game_tests where tester_id=auth.uid()`)).n),1);await run('reset role');
+
+ // 023 extends the existing mechanism: exercise both submission and approved aliases.
+ const workflow=['0a954463-811a-42b7-98d6-8793e3c9b756','226cf8e7-4606-44f5-b7be-e0f46ce38dc3','38f54814-859c-461f-8602-8b6ba84f1e99','94483bd5-99e5-4126-bd01-c1a770a7f7b3'];
+ await run('set session_replication_role=replica');
+ for(const [i,gid]of workflow.entries())await run(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,status,game_link,ai_type)values('${gid}','${id(1)}','Confirmed QA ${i}','Studio','Action','QA description','Approved','https://example.test/build','No AI disclosed');insert into community_playtests(id,developer_id,${i%2?'approved_game_id':'submission_id'},title,access_link,instructions,status,audience,published_at,release_label)values('${id(800+i)}','${id(1)}','${gid}','QA campaign','https://example.test/build','Test','open','both',now(),'QA build');insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome,base_xp_amount,xp_awarded,overall_score)values('${id(900+i)}','${id(800+i)}','${id(2)}','reviewed','accepted',60,true,8)`);
+ await run('set session_replication_role=origin');
+ const workflowBefore=await state(),countWorkflow=Number((await one('select count(*) n from get_public_catalogue(1,100)')).n);
+ const oldDefinition=(await one(`select pg_get_functiondef('public.beta_fixture_hidden(uuid)'::regprocedure) definition`)).definition;
+ const workflowMeta=await helperMeta();
+ await run(fs.readFileSync('supabase/migrations/202610300023_hide_confirmed_workflow_fixtures.sql','utf8'));
+ assert.deepEqual(await state(),workflowBefore,'023 preserves all private rows, histories, campaign statuses, relationships and XP');assert.deepEqual(await helperMeta(),workflowMeta);assert.deepEqual(await one(`select reloptions,relowner,relacl from pg_class where oid='public.approved_games'::regclass`),viewBefore);
+ assert.equal(Number((await one('select count(*) n from get_public_catalogue(1,100)')).n),countWorkflow-4);
+ for(const [i,gid]of workflow.entries()){
+  assert.equal(Number((await one('select count(*) n from approved_games where id=$1',[gid])).n),0,'Public profile/sitemap source excludes exact ID');
+  assert.equal(Number((await one('select count(*) n from get_game_community_reception()where submission_id=$1 or approved_game_id=$1',[gid])).n),0);
+  assert.equal(Number((await one('select count(*) n from get_public_submission_playtest_history($1)',[gid])).n),0);
+  assert.equal(Number((await one('select count(*) n from get_public_submission_playtest_feedback($1)',[gid])).n),0);
+  assert.deepEqual((await one('select get_public_intent_counts($1::jsonb) result',[JSON.stringify([{kind:'approved',id:gid}])])).result,[]);
+  assert.deepEqual((await db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify([{source_type:'approved',game_id:gid}])])).rows,[]);
+  assert.equal((await one('select campaign_eligible($1,$2) eligible',[id(800+i),id(2)])).eligible,false);
+  const token=(await one('select share_token from community_playtests where id=$1',[id(800+i)])).share_token;
+  assert.equal(Number((await one('select count(*) n from get_public_community_playtest($1)',[token])).n),0);
+ }
+ await as(2);await run('set role authenticated');assert.equal(Number((await one('select count(*) n from community_game_tests where id=any($1::uuid[])',[workflow.map((_,i)=>id(900+i))])).n),4,'Private tester history retained');await run('reset role');
+ await run(oldDefinition);assert.equal(Number((await one('select count(*) n from approved_games where id=any($1::uuid[])',[workflow])).n),4,'Helper-only reversal restores just these profiles');assert.equal((await one('select beta_fixture_hidden($1) hidden',[neon])).hidden,true,'Previous fixture exclusions survive reversal');
+ console.log('PASS 023 isolated extension: four exact QA profiles/catalogue/reception/history/recruitment/invitations excluded; genuine listings and all private data/XP, helper/view metadata preserved; helper-only reversal verified. No live SQL.');
  console.log('PASS 022 isolated exact-ID cleanup: four QA listings excluded; three genuine Steam entries retained; both Rail QA rounds, recommendations, rating/build reception and recruitment excluded; all 29 reports/community feedback/history/recorded XP preserved; view security unchanged. No live application.');
 }
 
