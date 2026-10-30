@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 
 import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 
+import PulseAvailability from "../components/PulseAvailability";
 import SubmissionCorrection from "../components/SubmissionCorrection";
 import {submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
 import SiteHeader from "../components/SiteHeader";
@@ -498,6 +499,7 @@ export default function SubmitGamePage() {
 
     useState<ReleaseStatus | "">("");
 
+  const [savedSubmissionId,setSavedSubmissionId]=useState<string|undefined>();
   const [pulseOpen, setPulseOpen] = useState(false);
   const [pulseStage, setPulseStage] = useState<PulseStage>("idle");
   const [pulseReport, setPulseReport] = useState<PulseReport | null>(null);
@@ -1914,175 +1916,11 @@ export default function SubmitGamePage() {
 
       if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
-      const submittedGameLink = String(
-        formData.get("gameLink") ?? ""
-      ).trim();
-      const hasPulseBuildLink = /^https:\/\//i.test(submittedGameLink);
-
-      setSubmittedTitle(title);
-      setSubmitted(true);
-      resetDuplicateState();
-      setImageUrl("");
-      setImageStatus("empty");
-      setReleaseStatus("");
-      form.reset();
-
-      setPulseReport(null);
-      setPulseError("");
-      setShowPulseDetails(false);
-      setPulseDetailsPage(0);
-      setPulseProgress(5);
-
-      // PULSE is optional. Only start a technical run when the developer
-      // supplied an HTTPS game/build link. A submission without a build link
-      // is still valid and should complete normally without a PULSE error.
-      if (!hasPulseBuildLink) {
-        setPulseStage("idle");
-        setPulseOpen(false);
-        return;
-      }
-
-      setPulseStage("connecting");
-      setPulseOpen(true);
-
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError || !session?.access_token) {
-          throw new Error(
-            "Your application was saved, but PULSE could not authenticate this diagnostic run."
-          );
-        }
-
-        const jobResponse = await fetch("/api/pulse/runs", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            submissionId: insertedSubmission.id,
-          }),
-        });
-
-        const jobPayload = (await jobResponse.json().catch(() => null)) as
-          | {
-              success?: boolean;
-              job?: {
-                id?: string;
-                status?: string;
-              };
-              error?: string;
-            }
-          | null;
-
-        if (!jobResponse.ok || !jobPayload?.success || !jobPayload.job?.id) {
-          throw new Error(
-            jobPayload?.error ||
-              "Your submission was saved, but PULSE could not create the V9 diagnostic job."
-          );
-        }
-
-        console.info("PULSE V9 job created:", {
-          jobId: jobPayload.job.id,
-          status: jobPayload.job.status,
-        });
-
-        setPulseStage("running");
-
-        const jobId = jobPayload.job.id;
-        const pollStartedAt = Date.now();
-        const pollTimeoutMs = 15 * 60 * 1000;
-
-        while (true) {
-          if (Date.now() - pollStartedAt > pollTimeoutMs) {
-            throw new Error(
-              "Your submission was saved, but PULSE did not finish within 15 minutes."
-            );
-          }
-
-          const statusResponse = await fetch(
-            `/api/pulse/runs/${encodeURIComponent(jobId)}`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              cache: "no-store",
-            }
-          );
-
-          const statusPayload = (await statusResponse.json().catch(() => null)) as
-            | {
-                success?: boolean;
-                job?: {
-                  id?: string;
-                  status?: string;
-                  errorMessage?: string | null;
-                  pulse?: PulseReport | null;
-                };
-                error?: string;
-              }
-            | null;
-
-          if (!statusResponse.ok || !statusPayload?.success || !statusPayload.job) {
-            throw new Error(
-              statusPayload?.error ||
-                "PULSE could not read the status of this diagnostic job."
-            );
-          }
-
-          const jobStatus = statusPayload.job.status ?? "QUEUED";
-
-          if (jobStatus === "QUEUED") {
-            setPulseProgress((current) => Math.max(current, 8));
-          } else if (jobStatus === "ACQUIRING_BUILD") {
-            setPulseProgress((current) => Math.max(current, 18));
-          } else if (jobStatus === "SECURITY_SCAN") {
-            setPulseProgress((current) => Math.max(current, 28));
-          } else if (jobStatus === "TESTING") {
-            setPulseProgress((current) => Math.max(current, 40));
-          } else if (jobStatus === "PROCESSING_RESULTS") {
-            setPulseProgress((current) => Math.max(current, 92));
-          }
-
-          if (jobStatus === "COMPLETE") {
-            if (!statusPayload.job.pulse) {
-              throw new Error(
-                "PULSE completed, but its saved diagnostic report could not be loaded."
-              );
-            }
-
-            setPulseReport(statusPayload.job.pulse);
-            setPulseProgress(100);
-            setPulseStage("complete");
-            break;
-          }
-
-          if (jobStatus === "BLOCKED" || jobStatus === "FAILED") {
-            throw new Error(
-              statusPayload.job.errorMessage ||
-                (jobStatus === "BLOCKED"
-                  ? "PULSE blocked this build during the security gate."
-                  : "PULSE Worker could not complete this technical run.")
-            );
-          }
-
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        }
-      } catch (pulseRunError) {
-        console.error("PULSE Worker run failed:", pulseRunError);
-        setPulseError(
-          pulseRunError instanceof Error
-            ? pulseRunError.message
-            : "Your submission was saved, but PULSE Worker could not complete this technical run."
-        );
-        setPulseStage("error");
-      }
-
+      setSavedSubmissionId(insertedSubmission.id);
+      setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
+      setImageUrl("");setImageStatus("empty");setReleaseStatus("");form.reset();
+      setPulseOpen(false);setPulseStage("idle");
+      // The optional queue is handled independently after the successful save.
     } catch (err) {
 
       console.error("Unexpected submission error:", err);
@@ -2932,6 +2770,7 @@ export default function SubmitGamePage() {
 
 
 
+            <PulseAvailability key={savedSubmissionId} submissionId={savedSubmissionId} automatic/>
             <p className="mt-3 text-sm leading-6 text-zinc-500">
 
               Your submission has not yet been independently verified or
@@ -4019,6 +3858,7 @@ export default function SubmitGamePage() {
 
 
 
+            <PulseAvailability/>
             <div className="rounded-xl border border-amber-300/20 bg-amber-300/[0.04] p-5">
 
               <h3 className="font-semibold text-amber-200">

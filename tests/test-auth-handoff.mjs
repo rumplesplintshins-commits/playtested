@@ -5,6 +5,7 @@ import ts from 'typescript';
 import {chromium,expect} from 'playwright/test';
 const require=createRequire(import.meta.url);
 const origin=process.env.TEST_APP_URL||'http://localhost:3000';
+if(process.argv.includes('--pulse')){await pulseApiChecks();process.exit(0);}
 if(process.argv.includes('--seo-http')){await seoHttpChecks();process.exit(0);}
 if(process.argv.includes('--seo')){await seoChecks();process.exit(0);}
 if(process.argv.includes('--navigation')){await navigationChecks();process.exit(0);}
@@ -173,4 +174,30 @@ async function seoHttpChecks(){
  const login=await fetch(origin+'/login');assert(login.headers.get('x-robots-tag').includes('noindex'));
  const query=await(await fetch(origin+'/?page=2&sort=oldest')).text();assert(/rel="canonical" href="https:\/\/playtested.co.uk\/?"/.test(query));
  console.log('PASS built SEO HTTP: homepage title/canonical/visible offer/server links; safe WebSite JSON-LD; public social image; canonical accessible sitemap without invented dates/private routes; browser/Googlebot/social true 404s; login noindex and ignored-query canonical. Real public reads only.');
+}
+
+async function pulseApiChecks(){
+ const pulse=load('lib/pulse-availability.ts');let state='available',rpcError=null,verified=true;const calls=[];
+ const client={auth:{getUser:async()=>({data:{user:verified?{id:'owner'}:null},error:null})},rpc:async(name,args)=>{calls.push({name,args});return {data:name==='pulse_job_worker_alive'?false:name==='get_pulse_availability'?state:{state:state==='available'||state==='busy'?'queued':state,...(['available','busy'].includes(state)?{job:{id:'job',status:'QUEUED'}}:{})},error:rpcError};},from(){return{select(){return this},limit:async()=>({data:[],error:null})}}};
+ const route=load('app/api/pulse/runs/route.ts',name=>name==='@supabase/supabase-js'?{createClient:()=>client}:require(name));
+ const request={headers:new Headers({authorization:'Bearer fixture'}),json:async()=>({submissionId:'10000000-0000-4000-8000-000000000001'})};
+ delete process.env.PULSE_ENABLED;assert.equal((await(await route.GET()).json()).state,'available');
+ for(const mode of['available','busy','unavailable','unsupported']){state=mode;const result=await(await route.POST(request)).json();assert.equal(!!result.job,['available','busy'].includes(mode));assert(pulse.pulseMessage(result.state,result.job).includes(result.job?'queued':mode==='unsupported'?'ZIP':'unavailable'));}
+ assert(calls.filter(c=>c.name==='enqueue_available_pulse_job').every(c=>c.args.p_actor==='owner'));
+ assert(calls.filter(c=>c.name==='enqueue_available_pulse_job').every(c=>c.args.p_retry_of===null),'Automatic requests never carry retry targets');
+ const retryId='10000000-0000-4000-8000-000000000002';await route.POST({...request,json:async()=>({submissionId:'10000000-0000-4000-8000-000000000001',retryOf:retryId})});assert.equal(calls.at(-1).args.p_retry_of,retryId);assert.equal(calls.at(-1).args.p_actor,'owner');assert.equal((await route.POST({...request,json:async()=>({submissionId:'10000000-0000-4000-8000-000000000001',retryOf:true})})).status,400);
+ rpcError={code:'PGRST202'};assert.equal((await(await route.GET()).json()).state,'unknown');assert.equal((await route.POST(request)).status,503);rpcError=null;
+ process.env.PULSE_ENABLED='false';const before=calls.length;assert.equal((await(await route.POST(request)).json()).state,'disabled');assert.equal(calls.length,before);delete process.env.PULSE_ENABLED;
+ verified=false;assert.equal((await route.POST(request)).status,401);verified=true;
+ process.env.PULSE_RUNNER_SECRET='fixture-secret';process.env.NEXT_PUBLIC_SUPABASE_URL='https://fixture.supabase.test';process.env.SUPABASE_SERVICE_ROLE_KEY='fixture-service';
+ const util=require('node:util');let deps=false;const exec=()=>{};exec[util.promisify.custom]=async()=>{if(!deps)throw Error('Missing fixture dependency');return{stdout:'ClamAV 1.0\nKnown viruses: 1',stderr:''};};
+ const preflight=load('app/api/pulse/preflight/route.ts',name=>name==='@supabase/supabase-js'?{createClient:()=>client}:name==='node:child_process'?{execFile:exec}:name==='node:fs/promises'?{access:async()=>{},mkdtemp:async()=>'/fixture',writeFile:async()=>{},rm:async()=>{},readFile:async()=>''}:require(name));
+ const health={headers:new Headers({'x-pulse-runner-secret':'fixture-secret','x-pulse-project':require('node:crypto').createHash('sha256').update(process.env.NEXT_PUBLIC_SUPABASE_URL).digest('hex')})};
+ delete process.env.PULSE_EXECUTION_ENABLED;assert.equal((await preflight.POST(request)).status,503);assert.equal((await(await preflight.GET(health)).json()).ready,false);
+ process.env.PULSE_EXECUTION_ENABLED='true';assert.equal((await preflight.POST(request)).status,401);assert.equal((await(await preflight.GET(health)).json()).ready,false);deps=true;assert.equal((await(await preflight.GET(health)).json()).ready,true);delete process.env.PULSE_EXECUTION_ENABLED;
+ const fetchBefore=globalThis.fetch;let ready=true,alive=false,releaseRun;const writes=[];
+ globalThis.fetch=async(url,options={})=>{url=String(url);if(url.endsWith('/api/pulse/preflight')){if(options.method==='POST'){await new Promise(resolve=>releaseRun=resolve);return Response.json({success:true,pulse:{technicalRunId:'fixture-run'}});}return Response.json({ready});}if(url.includes('rpc/pulse_job_worker_alive'))return Response.json(alive);if(url.includes('pulse_jobs?select='))return Response.json([{id:'stale',status:'TESTING',updated_at:'2020-01-01'}]);writes.push({url,method:options.method,body:JSON.parse(options.body)});return Response.json(null);};
+ try{const worker=await import('../scripts/workers/pulse-job-runner-v9.mjs?pulse-test');assert.equal(await worker.reportReadiness(),true);assert.equal(writes.at(-1).body.p_ready,true);const running=worker.runJob({id:'busy-job',submission_id:'fixture'});await expect.poll(()=>typeof releaseRun).toBe('function');assert.equal(writes.at(-1).body.p_busy,true);assert.equal(writes.at(-1).body.p_job,'busy-job');releaseRun();await running;ready=false;assert.equal(await worker.reportReadiness(),false);assert.equal(writes.at(-1).body.p_ready,false);alive=true;const n=writes.length;await worker.recoverStaleJobs();assert.equal(writes.length,n,'Fresh busy heartbeat protects active work');alive=false;await worker.recoverStaleJobs();assert.equal(writes.at(-1).body.status,'FAILED');assert(writes.every(w=>w.method!=='DELETE'));}finally{globalThis.fetch=fetchBefore;}
+ assert(pulse.pulseMessage('existing',{status:'TESTING',updated_at:'2020-01-01'}).includes('not reported progress'));assert(!pulse.pulseMessage('unknown').includes('queued'));
+ console.log('PASS PULSE API/runner: authenticated owner enqueue, enabled/busy/disabled/unknown/unsupported/error states, no forged readiness, actual dependency-probe branches mocked, stopped-returning heartbeat, stale recovery vs live-job protection and truthful status. No live jobs/uploads.');
 }

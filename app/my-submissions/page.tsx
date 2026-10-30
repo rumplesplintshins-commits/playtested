@@ -1,3 +1,5 @@
+import PulseAvailability,{PulseJobStatus} from "../components/PulseAvailability";
+import {pulseMessage} from "@/lib/pulse-availability";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -56,6 +58,7 @@ type PulseJobRow = {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  updated_at?: string;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -648,7 +651,8 @@ async function DeveloperDashboard() {
           report_json,
           created_at,
           started_at,
-          completed_at
+          completed_at,
+          updated_at
         `
       )
       .eq("developer_id", user.id)
@@ -1055,7 +1059,7 @@ async function DeveloperDashboard() {
     (job) => job.status === "COMPLETE"
   );
 
-  return <DeveloperWorkspace showPlan feedbackCountsReady={!receptionError}
+  return <DeveloperWorkspace diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
  games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
@@ -1377,7 +1381,7 @@ async function DeveloperDashboard() {
  const latestPulseSummary=getPulseReportSummary(job.report_json);
  const completedPulseRuns=pulseJobs.filter(run=>run.submission_id===job.submission_id&&run.status==="COMPLETE");
  const gameJobs=pulseJobs.filter(run=>run.submission_id===job.submission_id);
- return {id:job.id,title:submissionTitleById.get(job.submission_id)||"Submitted game unavailable",status:job.status,context:formatDate(job.created_at)+(job.build_sha256?` | Build ${job.build_sha256.slice(0,12)}`:" | Build identifier not recorded"),content:(()=>{const pulseJobs=gameJobs;return (<details open className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
+ return {id:job.id,title:submissionTitleById.get(job.submission_id)||"Submitted game unavailable",status:job.status,context:pulseMessage("existing",job)+"\n"+formatDate(job.created_at)+(job.build_sha256?` | Build ${job.build_sha256.slice(0,12)}`:" | Build identifier not recorded"),content:(()=>{const pulseJobs=gameJobs;return (<details open className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -1406,6 +1410,7 @@ async function DeveloperDashboard() {
         <div className="border-t border-white/10 px-5 py-5 sm:px-6">
           {latestPulseRun ? (
             <>
+              <PulseJobStatus status={latestPulseRun.status} updatedAt={latestPulseRun.updated_at}/>
               <p className="mb-4 text-sm text-zinc-400">Technical diagnostics for this submitted game and stored build only. They are not a gameplay-quality assessment or a guarantee of safety.</p>
               <p className="mb-3 break-all text-xs text-zinc-400">Run: {latestPulseRun.id} | Build SHA-256: {latestPulseRun.build_sha256 || "Not recorded"}</p>
               {latestPulseRun.error_message && <p role="alert" className="mb-4 rounded-lg border border-red-300/30 p-3 text-sm text-red-200">{latestPulseRun.error_message}</p>}
