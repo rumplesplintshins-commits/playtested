@@ -577,6 +577,7 @@ export default async function GamePage({
                   {importedGame.description ||
                     "No description is currently available for this game."}
                 </p>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">Source: Steam catalogue metadata, with developer disclosures where supplied. Store information is separate from Playtested feedback and is not independent Playtested testing.</p>
 
                 <div className="mt-7 flex flex-wrap gap-3">
                   {steamUrl && (

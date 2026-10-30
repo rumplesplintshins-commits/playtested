@@ -53,6 +53,7 @@ try {
  let fail=false, empty=false, recruitmentFailure=false;
  const recruitmentCalls=[];
  const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-generated','AI-assisted','No AI disclosed',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:24}));
+ rows[10]={...rows[10],source_type:'steam',steam_app_id:'123',has_playtested_profile:false};rows[11]={...rows[11],source_type:'steam',steam_app_id:'456',has_playtested_profile:true};
  await page.route('**/*',async route=>{
   const url=new URL(route.request().url());
   if(url.hostname==='localhost')return route.continue({headers:{...route.request().headers(),cookie:''}});
@@ -66,6 +67,7 @@ try {
  await page.goto(origin+'/catalogue-fixture');
  const compact=page.getByRole('button',{name:'Compact',exact:true}),comfortable=page.getByRole('button',{name:'Comfortable',exact:true});
  await expect(page.locator('article')).toHaveCount(12);
+ await expect(page.locator('article').first().getByRole('link',{name:'View game details',exact:true})).toHaveAttribute('href','/submissions/0');await expect(page.locator('article').nth(10).getByRole('link',{name:/View Steam page/})).toHaveAttribute('href','https://store.steampowered.com/app/123/');await expect(page.locator('article').nth(11).getByRole('link',{name:'View game details',exact:true})).toHaveAttribute('href','/games/steam-456');
  await expect(compact).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('article').first()).toContainText('Disclosure update pending review');await expect(page.locator('article').first()).not.toContainText('Independent assessment: not completed');
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);

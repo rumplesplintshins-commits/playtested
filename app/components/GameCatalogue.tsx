@@ -3,7 +3,6 @@
 import {assessmentLabel} from "../../lib/review-labels";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -193,11 +192,11 @@ function GenreBadge({ genre }: { genre: string }) {
 
 function GameCardContent({
   game,
-  onOpen,
+  href,
   compact,
 }: {
   game: CatalogueGame;
-  onOpen: () => void;
+  href: string | undefined;
   compact: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -205,9 +204,8 @@ function GameCardContent({
   const disclosureStyle = disclosure === "AI-generated" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
     <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
-      <button
-        type="button"
-        onClick={onOpen}
+      <a
+        href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
         className="block aspect-video w-full overflow-hidden bg-[#202520] text-left"
         aria-label={`View ${game.title} details`}
       >
@@ -225,18 +223,18 @@ function GameCardContent({
             Game image
           </div>
         )}
-      </button>
+      </a>
 
       <div className={`flex flex-1 flex-col ${compact ? "gap-3 p-4" : "gap-4 p-5"}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <GenreBadge genre={game.genre} />
         </div>
 
-        <button type="button" onClick={onOpen} className="text-left">
+        <a href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined} className="text-left">
           <h3 className="text-lg font-semibold text-white hover:text-emerald-300">
             {game.title}
           </h3>
-        </button>
+        </a>
 
         <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
 
@@ -297,23 +295,25 @@ function GameCardContent({
 
         <div className="mt-auto space-y-3 pt-2">
 
-          <button
-            type="button"
-            onClick={onOpen}
-            className="w-full rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
+          <a
+            href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
+            className="block w-full rounded-md bg-emerald-400 px-3 py-2 text-center text-sm font-semibold text-black hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
           >
             {game.isImportedSteam && !game.hasPlaytestedProfile
               ? "View Steam page ↗"
               : "View game details"}
-          </button>
+          </a>
         </div>
       </div>
     </article>
   );
 }
 
+function gameHref(game:CatalogueGame){
+  return game.isImportedSteam&&!game.hasPlaytestedProfile ? game.gameLink : game.isSubmission ? `/submissions/${game.key}` : `/games/${game.slug}`;
+}
+
 export default function GameCatalogue() {
-  const router = useRouter();
   const [density, setDensity] = useState<"compact" | "comfortable">("compact");
 
   const [search, setSearch] = useState("");
@@ -492,26 +492,6 @@ export default function GameCatalogue() {
     setPage(1);
   }
 
-  function openGame(game: CatalogueGame) {
-    if (game.isImportedSteam) {
-      if (game.hasPlaytestedProfile) {
-        router.push(`/games/${game.slug}`);
-        return;
-      }
-
-      if (game.gameLink) {
-        window.open(game.gameLink, "_blank", "noopener,noreferrer");
-      }
-      return;
-    }
-
-    if (game.isSubmission) {
-      router.push(`/submissions/${game.key}`);
-    } else {
-      router.push(`/games/${game.slug}`);
-    }
-  }
-
   const fieldClass =
     "min-w-0 w-full rounded-lg border border-white/25 bg-[#151815] px-4 py-3.5 text-base font-medium text-white shadow-sm outline-none transition placeholder:text-white/45 hover:border-emerald-400/45 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/40";
 
@@ -684,7 +664,7 @@ export default function GameCatalogue() {
                 key={game.key}
                 game={game}
                 compact={density === "compact"}
-                onOpen={() => openGame(game)}
+                href={gameHref(game)}
               />
             ))}
           </div>

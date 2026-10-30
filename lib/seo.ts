@@ -16,3 +16,6 @@ export function publicMetadata(title:string,description:string,path:string):Meta
 export function noIndexPath(path:string) {
   return /^\/(?:login|forgot-password|reset-password|auth|account|my-submissions|submit|tester|admin|library|share|playtest|demo-games)(?:\/|$)/.test(path);
 }
+
+// Prevent public content from closing a JSON-LD script element.
+export function serializeJsonLd(value:unknown){return JSON.stringify(value).replace(/</g,"\\u003c");}
