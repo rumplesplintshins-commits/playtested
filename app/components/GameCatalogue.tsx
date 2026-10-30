@@ -8,6 +8,7 @@ import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
+import {publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -370,6 +371,8 @@ export default function GameCatalogue() {
       }
 
       const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
+      const publicLinks=await publicLinkedImportedIds(rows.filter(row=>row.source_type==="steam").map(row=>row.game_id));
+      if(cancelled)return;
       const recruiting = new Set<string>();
       if(rows.length){
         try{
@@ -435,11 +438,11 @@ export default function GameCatalogue() {
           image: row.image_url ?? "",
           aiType: row.ai_type ?? "AI use unknown",
           score: Number(row.quality_score ?? 0),
-          gameLink: row.game_link || (isImportedSteam&&steamAppId?`https://store.steampowered.com/app/${steamAppId}/`:""),
+          gameLink: isImportedSteam?steamStoreUrl(row.game_link,steamAppId):row.game_link,
           steamAppId,
           isSubmission: !isImportedSteam,
           isImportedSteam,
-          hasPlaytestedProfile: row.has_playtested_profile === true,
+          hasPlaytestedProfile: isImportedSteam&&/^[0-9]+$/.test(steamAppId)&&publicLinks?.has(row.game_id)===true,
           isNsfw: row.is_nsfw === true,
           verificationStatus: row.verification_status ?? "Not yet verified",
           submittedAt: row.submitted_at ?? "",

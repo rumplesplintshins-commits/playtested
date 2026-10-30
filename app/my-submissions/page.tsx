@@ -8,7 +8,7 @@ import GameLinksEngagement from "../components/GameLinksEngagement";
 import StartPlaytest from "../components/StartPlaytest";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
-import {submissionIssues,completenessMessage} from "../../lib/submission-completeness";
+import {submissionIssues,submissionReviewPresentation} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
 
 type ClaimStatus =
@@ -1209,7 +1209,7 @@ async function DeveloperDashboard() {
               </article>
               );
             })(game)}))}
- submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<>{((game) => (
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<>{((game) => (
               <article
                 key={game.id}
                 className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
@@ -1239,7 +1239,7 @@ async function DeveloperDashboard() {
                   </span>
                 </div>
               </article>
-            ))(game)}<aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{completenessMessage(submissionIssues(game as unknown as Record<string,unknown>))||"Required developer details are complete. Approval still requires admin review."}</p>{(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>Complete information</a>}</aside><div className="mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"><p className="font-semibold">Reviewer Notes</p><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p>{game.status==="Pending Review"&&<p className="mt-2 text-zinc-400">Awaiting listing review. No action is needed unless more information is requested.</p>}{game.status==="Approved"&&<p className="mt-2 text-zinc-400">Listing approval is separate from a game-quality assessment. Use My games to manage an approved developer relationship.</p>}</div></>}))}
+            ))(game)}<section className={game.status==="Rejected"?"mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-4 text-sm text-zinc-300":"mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"}><h3 className="font-semibold">{game.status==="Rejected"?"Rejection reason":game.status==="Needs More Information"?"Information requested":"Reviewer Notes"}</h3><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p><p className="mt-2">{submissionReviewPresentation(game.status).summary}</p>{submissionReviewPresentation(game.status).action&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>{submissionReviewPresentation(game.status).action}</a>}</section><aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{submissionReviewPresentation(game.status,submissionIssues(game as unknown as Record<string,unknown>)).completeness}</p></aside></>}))}
  claims={claims.map(claim=>({id:claim.id,title:claim.gameTitle,status:claim.status,context:claim.relationship,content:((claim) => (
               <article
                 key={claim.id}

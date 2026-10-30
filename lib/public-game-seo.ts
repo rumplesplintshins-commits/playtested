@@ -1,14 +1,11 @@
 import "server-only";
-import {createClient} from "@supabase/supabase-js";
+import {publicProfileClient as publicClient,publicLinkedImportedIds} from "./public-profile-links";
 import {cacheLife} from "next/cache";
 import type {MetadataRoute} from "next";
 import {notFound} from "next/navigation";
 import {listingUpdates} from "./listing-updates";
 import {publicMetadata,SITE_ORIGIN} from "./seo";
 
-function publicClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-}
 
 export async function gameMetadata(kind:"imported"|"approved",value:string) {
   const game=await publicGame(kind,value);
@@ -27,9 +24,9 @@ async function publicGame(kind:"imported"|"approved",value:string) {
   if(result.error)throw new Error("Public game metadata unavailable");
   if(!result.data)return null;
   if(kind==="imported") {
-    const link=await client.from("game_developer_links").select("id").eq("imported_game_id",result.data.id).limit(1).maybeSingle();
-    if(link.error)throw new Error("Public game relationship unavailable");
-    if(!link.data)return null;
+    const links=await publicLinkedImportedIds([result.data.id],client);
+    if(links===null)throw new Error("Public game relationship unavailable");
+    if(!links.has(result.data.id))return null;
   }
   const updates=await listingUpdates(client,[{kind,id:result.data.id}]);
   if(updates===null)throw new Error("Public listing metadata unavailable");
@@ -56,7 +53,9 @@ export async function publicProfileLinks() {
   for(const row of await pages("approved_games","id,title","id")) {
     if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.id))profiles.set("/submissions/"+row.id,{path:"/submissions/"+row.id,title:row.title||"Game profile"});
   }
-  const ids=[...new Set((await pages("game_developer_links","id,imported_game_id","id")).map(row=>row.imported_game_id).filter(Boolean))];
+  const links=await publicLinkedImportedIds(undefined,client);
+  if(links===null)throw new Error("Public sitemap unavailable");
+  const ids=[...links.keys()];
   for(let offset=0;offset<ids.length;offset+=100) {
     const result=await client.from("imported_games").select("steam_app_id,title").in("id",ids.slice(offset,offset+100)).eq("catalogue_eligible",true);
     if(result.error||!Array.isArray(result.data))throw new Error("Public sitemap unavailable");

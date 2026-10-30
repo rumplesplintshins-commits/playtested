@@ -38,3 +38,11 @@ export function listingEditIssues(before:Record<string,unknown>,after:Record<str
  const changed=new Set(SUBMISSION_FIELDS.filter(rule=>String(before[rule.field]??"")!==String(after[rule.field]??"")).map(rule=>rule.field as string));
  return submissionIssues(after).filter(issue=>issue.field==="title"||changed.has(issue.field)||(changed.has("ai_type")&&issue.field==="ai_explanation")||((changed.has("release_status")||changed.has("release_date"))&&issue.field==="release_date"));
 }
+
+// Presentation only; correction RPCs remain authoritative.
+export function submissionReviewPresentation(status:string,issues:SubmissionIssue[]=[]){
+ const action=status==="Rejected"?"Edit and resubmit":status==="Needs More Information"?"Complete information":null;
+ const summary=status==="Rejected"?"This submission was rejected. Editing does not change the decision until you resubmit for review.":status==="Needs More Information"?"Review the requested information below, update your submission and resubmit for review.":status==="Pending Review"?"Awaiting listing review. No action is needed unless more information is requested.":status==="Approved"?"This listing is approved. Use My games to edit the approved listing.":"Review status unavailable.";
+ const completeness=issues.length?completenessMessage(issues):"Required developer details are complete. Completeness does not change the review decision.";
+ return {action,summary,completeness};
+}
