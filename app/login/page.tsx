@@ -5,6 +5,7 @@ import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
 import Link from "next/link";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 type SignupRole = "player" | "tester" | "developer";
 
@@ -13,21 +14,9 @@ const roleOptions: {
   label: string;
   description: string;
 }[] = [
-  {
-    value: "player",
-    label: "Player",
-    description: "Discover Games",
-  },
-  {
-    value: "tester",
-    label: "Tester",
-    description: "Playtest Games and Earn XP",
-  },
-  {
-    value: "developer",
-    label: "Game Developer",
-    description: "Submit and Manage Games",
-  },
+  { value: "player", label: "Player", description: "Discover Games" },
+  { value: "tester", label: "Tester", description: "Playtest Games and Earn XP" },
+  { value: "developer", label: "Game Developer", description: "Submit and Manage Games" },
 ];
 
 function isSignupRole(value: string | null): value is SignupRole {
@@ -42,14 +31,11 @@ export default function LoginPage() {
   const [nextPath, setNextPath] = useState("/");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [confirmationFailed,setConfirmationFailed] = useState(false);
+  const [confirmationFailed, setConfirmationFailed] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
-    const requestedMode =
-      params.get("mode") === "signup" ? "signup" : "login";
-
+    const requestedMode = params.get("mode") === "signup" ? "signup" : "login";
     const requestedRole = params.get("role");
     const requestedNext = getSafeNextPath(params.get("next"));
 
@@ -72,31 +58,18 @@ export default function LoginPage() {
 
   function switchMode() {
     const nextMode = mode === "login" ? "signup" : "login";
-
     setMode(nextMode);
     setMessage("");
 
     const params = new URLSearchParams();
-
     if (nextMode === "signup") {
       params.set("mode", "signup");
-
-      if (signupRoles.length === 1) {
-        params.set("role", signupRoles[0]);
-      }
+      if (signupRoles.length === 1) params.set("role", signupRoles[0]);
     }
-
-    if (nextPath !== "/") {
-      params.set("next", nextPath);
-    }
+    if (nextPath !== "/") params.set("next", nextPath);
 
     const query = params.toString();
-
-    window.history.replaceState(
-      null,
-      "",
-      query ? `/login?${query}` : "/login"
-    );
+    window.history.replaceState(null, "", query ? `/login?${query}` : "/login");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -112,9 +85,7 @@ export default function LoginPage() {
     }
 
     if (mode === "signup" && isDisposableEmail(normalizedEmail)) {
-      setMessage(
-        "Please use a permanent email address. Temporary or disposable email services aren't supported."
-      );
+      setMessage("Please use a permanent email address. Temporary or disposable email services aren't supported.");
       return;
     }
 
@@ -124,30 +95,19 @@ export default function LoginPage() {
       const supabase = createClient();
 
       if (mode === "signup") {
-        const callbackUrl = new URL(
-          "/auth/callback",
-          window.location.origin
-        );
-
-        if (nextPath !== "/") {
-          callbackUrl.searchParams.set("next", nextPath);
-        }
+        const callbackUrl = new URL("/auth/callback", window.location.origin);
+        if (nextPath !== "/") callbackUrl.searchParams.set("next", nextPath);
 
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
           options: {
             emailRedirectTo: callbackUrl.toString(),
-            data: {
-              signup_roles: signupRoles,
-            },
+            data: { signup_roles: signupRoles },
           },
         });
 
-        if (error) {
-          throw error;
-        }
-
+        if (error) throw error;
         if (data.session) {
           window.location.replace(nextPath);
           return;
@@ -159,23 +119,12 @@ export default function LoginPage() {
             : "Registration received. Check your email to confirm your account."
         );
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
-
-        if (error) {
-          throw error;
-        }
-
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        if (error) throw error;
         window.location.replace(nextPath);
       }
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again."
-      );
+      setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -203,24 +152,26 @@ export default function LoginPage() {
                 : "Choose all the ways you want to use Playtested."}
           </p>
 
-          {confirmationFailed && <div role="alert" aria-labelledby="confirmation-error-heading" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100">
-            <h2 id="confirmation-error-heading" className="font-semibold">We couldn&apos;t confirm your email link</h2>
-            <p className="mt-1">The link may have expired, already been used, or confirmation may be temporarily unavailable.</p>
-            <p className="mt-2">If you already confirmed your account, sign in below. Otherwise, open the latest confirmation email in the browser where you registered. If it still fails, try again later.</p>
-            <p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p>
-          </div>}
+          {confirmationFailed && (
+            <div role="alert" aria-labelledby="confirmation-error-heading" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100">
+              <h2 id="confirmation-error-heading" className="font-semibold">We couldn&apos;t complete sign-in</h2>
+              <p className="mt-1">The sign-in link may have expired, already been used, or authentication may be temporarily unavailable.</p>
+              <p className="mt-2">Please try signing in again. If you used email confirmation, open the latest confirmation email in the browser where you registered.</p>
+              <p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p>
+            </div>
+          )}
 
-          {nextPath !== "/" && !nextPath.startsWith("/playtest/") && <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.</p>}
+          {nextPath !== "/" && !nextPath.startsWith("/playtest/") && (
+            <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">
+              After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.
+            </p>
+          )}
 
           {nextPath.startsWith("/playtest/") && (
             <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4">
-              <p className="text-sm font-semibold text-emerald-300">
-                Community playtest invitation
-              </p>
-
+              <p className="text-sm font-semibold text-emerald-300">Community playtest invitation</p>
               <p className="mt-1 text-xs leading-5 text-slate-400">
-                After you sign in or confirm your new account, you'll return
-                directly to the playtest.
+                After you sign in or confirm your new account, you&apos;ll return directly to the playtest.
               </p>
             </div>
           )}
@@ -228,22 +179,11 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} aria-busy={loading} className="mt-8 space-y-5">
             {mode === "signup" && (
               <fieldset className="space-y-3">
-                <legend className="mb-3 text-sm font-medium">
-                  Your Roles
-                </legend>
-
+                <legend className="mb-3 text-sm font-medium">Your Roles</legend>
                 {roleOptions.map((role) => {
                   const checked = signupRoles.includes(role.value);
-
                   return (
-                    <label
-                      key={role.value}
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
-                        checked
-                          ? "border-emerald-400 bg-emerald-400/5"
-                          : "border-slate-700 hover:border-slate-500"
-                      }`}
-                    >
+                    <label key={role.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${checked ? "border-emerald-400 bg-emerald-400/5" : "border-slate-700 hover:border-slate-500"}`}>
                       <input
                         type="checkbox"
                         disabled={loading}
@@ -251,31 +191,25 @@ export default function LoginPage() {
                         onChange={() => toggleRole(role.value)}
                         className="mt-1 h-4 w-4 accent-emerald-400"
                       />
-
-                      <span>
-                        <span className="block text-sm font-semibold">
-                          {role.label} - {role.description}
-                        </span>
-                      </span>
+                      <span><span className="block text-sm font-semibold">{role.label} - {role.description}</span></span>
                     </label>
                   );
                 })}
-
-                <p className="text-xs text-slate-500">
-                  Select one, two or all three roles. You can take part in
-                  multiple areas of Playtested.
-                </p>
+                <p className="text-xs text-slate-500">Select one, two or all three roles. You can take part in multiple areas of Playtested.</p>
               </fieldset>
             )}
 
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium"
-              >
-                Email address
-              </label>
+            <GoogleSignInButton
+              mode={mode}
+              signupRoles={signupRoles}
+              nextPath={nextPath}
+              loading={loading}
+              setLoading={setLoading}
+              setMessage={setMessage}
+            />
 
+            <div>
+              <label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label>
               <input
                 id="email"
                 disabled={loading}
@@ -283,51 +217,31 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setMessage("");
-                }}
+                onChange={(e) => { setEmail(e.target.value); setMessage(""); }}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium"
-              >
-                Password
-              </label>
-
+              <label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label>
               <input
                 id="password"
                 disabled={loading}
                 type="password"
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 minLength={8}
                 required
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setMessage("");
-                }}
+                onChange={(e) => { setPassword(e.target.value); setMessage(""); }}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400"
                 placeholder="At least 8 characters"
               />
             </div>
 
             {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
-            {message && (
-              <p
-                role="status"
-                className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200"
-              >
-                {message}
-              </p>
-            )}
+
+            {message && <p role="status" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
 
             <button
               type="submit"
@@ -337,19 +251,13 @@ export default function LoginPage() {
               {loading
                 ? "Please wait..."
                 : mode === "login"
-                  ? nextPath.startsWith("/playtest/")
-                    ? "Sign in and continue"
-                    : "Sign in"
-                  : nextPath.startsWith("/playtest/")
-                    ? "Create account and join"
-                    : "Create account"}
+                  ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in"
+                  : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-400">
-            {mode === "login"
-              ? "New to Playtested?"
-              : "Already have an account?"}{" "}
+            {mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}
             <button
               type="button"
               onClick={switchMode}
