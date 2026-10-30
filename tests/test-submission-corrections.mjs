@@ -6,6 +6,7 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--pulse')){try{await pulseChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--community-votes')){try{await communityVoteChecks();}catch(e){console.error(e.message);process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--review')){try{await reviewScopeChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--visibility')){try{await visibilityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
@@ -389,4 +390,26 @@ async function communityVoteChecks(){
  await as(2);await run('set role authenticated');assert.equal((await db.query('delete from community_votes where post_id=99 returning id')).rows.length,0);assert.equal((await db.query('update community_votes set value=1 where post_id=99 returning id')).rows.length,0);
  await run('reset role;set role anon');assert.equal(Number((await one('select sum(value)n from community_votes')).n),-1);await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,$1,1)',[id(2)]),/row-level security/);
  console.log('PASS isolated vote constraints: all six toggle/switch transitions, unique account/post vote, -1/+1 check, own-write RLS and anonymous read-only access. Captured schema fixture; no live votes.');
+}
+
+async function pulseChecks(){
+ await run(`create role anon;create role authenticated;create role service_role bypassrls;create table game_submissions(id uuid primary key,developer_id uuid,title text,game_link text);create table profiles(id uuid,tester_xp integer);insert into profiles values('${id(1)}',100);
+ create table pulse_jobs(id uuid primary key default gen_random_uuid(),submission_id uuid not null,developer_id uuid not null,technical_run_id uuid,status text not null default 'QUEUED',engine_version text default 'PULSE v1',worker_version text default 'v6.10',test_suite_version text default 'v6.10',build_url text,build_sha256 text,error_message text,created_at timestamptz default now(),updated_at timestamptz default now(),started_at timestamptz,completed_at timestamptz,report_json jsonb);
+ create function public.claim_next_pulse_job()returns setof public.pulse_jobs language sql as $$select * from public.pulse_jobs where false$$;grant usage on schema public to anon,authenticated,service_role;grant all on pulse_jobs to anon,authenticated,service_role;`);
+ for(const n of[1,2,3,4])await run(`insert into game_submissions values('${id(10+n)}','${id(1)}','Saved submission','https://example.test/build${n}.zip')`);
+ await run(`insert into pulse_jobs(submission_id,developer_id,status,build_url,report_json)values('${id(99)}','${id(1)}','COMPLETE','https://example.test/history.zip','{"history":true}')`);
+ const historical=(await one('select to_jsonb(j) row from pulse_jobs j')).row;
+ await run(fs.readFileSync('supabase/migrations/202610300024_pulse_availability.sql','utf8'));
+ assert.deepEqual((await one("select to_jsonb(j)-'input_key' row from pulse_jobs j")).row,historical);
+ assert.equal((await one('select get_pulse_availability() state')).state,'unavailable');
+ const queue=async(n,actor=id(1))=>(await one('select enqueue_available_pulse_job($1,$2) result',[id(10+n),actor])).result;
+ assert.equal((await queue(1)).state,'unavailable');assert.equal(Number((await one('select count(*) n from game_submissions')).n),4,'Unavailable preserves saved submissions');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);
+ assert.equal((await one('select get_pulse_availability() state')).state,'available');const first=await queue(1);assert.equal(first.state,'queued');assert.equal((await queue(1)).job.id,first.job.id);
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,true,'${first.job.id}')`);assert.equal((await one('select get_pulse_availability() state')).state,'busy');assert.equal((await one('select pulse_job_worker_alive($1) alive',[first.job.id])).alive,true);assert.equal((await queue(2)).state,'queued');
+ await run("update pulse_worker_heartbeats set received_at=clock_timestamp()-interval '91 seconds'");assert.equal((await queue(3)).state,'unavailable');assert.equal((await one('select pulse_job_worker_alive($1) alive',[first.job.id])).alive,false);
+ await run(`update game_submissions set game_link='https://store.steampowered.com/app/123' where id='${id(14)}'`);assert.equal((await queue(4)).state,'unsupported');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);assert.equal((await queue(3)).state,'queued','Worker return permits new request');await run(`insert into game_submissions values('${id(15)}','${id(1)}','Concurrent fixture','https://example.test/other.zip')`);const raced=await Promise.all([queue(5),queue(5)]);assert.equal(raced[0].job.id,raced[1].job.id);assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(15)])).n),1);
+ await assert.rejects(queue(1,id(2)),/access denied/);await run('set role authenticated');await assert.rejects(run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`),/permission denied/);await assert.rejects(run(`select enqueue_available_pulse_job('${id(11)}','${id(1)}')`),/permission denied/);await assert.rejects(run(`insert into pulse_jobs(submission_id,developer_id)values('${id(11)}','${id(1)}')`),/permission denied/);await run('reset role;set role anon');assert.equal((await one('select get_pulse_availability() state')).state,'available');await assert.rejects(run('select * from pulse_worker_heartbeats'),/permission denied/);await run('reset role');assert.equal((await one('select tester_xp from profiles')).tester_xp,100);
+ console.log('PASS PULSE SQL: fresh/busy/stale/missing/return availability, equivalent input reuse, unsupported/foreign rejection, service-only heartbeat/enqueue/claim permissions, public status privacy, saved submissions/history/XP preserved. Isolated PostgreSQL only.');
 }
