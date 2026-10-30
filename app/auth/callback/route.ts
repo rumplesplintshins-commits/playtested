@@ -15,8 +15,30 @@ function getSignupRoles(value: string | null): string[] {
   )];
 }
 
+function getPublicOrigin(request: Request): string {
+  const requestUrl = new URL(request.url);
+
+  if (process.env.NODE_ENV === "development") {
+    return requestUrl.origin;
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+
+  if (forwardedHost) {
+    const protocol = forwardedProto === "http" || forwardedProto === "https"
+      ? forwardedProto
+      : "https";
+    return `${protocol}://${forwardedHost}`;
+  }
+
+  return "https://playtested.co.uk";
+}
+
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const searchParams = requestUrl.searchParams;
+  const origin = getPublicOrigin(request);
   const code = searchParams.get("code");
   const next = getSafeNextPath(searchParams.get("next"));
   const signupRoles = getSignupRoles(searchParams.get("roles"));
