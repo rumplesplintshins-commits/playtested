@@ -35,6 +35,23 @@ function getPublicOrigin(request: Request): string {
   return "https://playtested.co.uk";
 }
 
+function wasUserCreatedByThisOAuthSignIn(
+  createdAt: string | undefined,
+  lastSignInAt: string | undefined
+): boolean {
+  if (!createdAt || !lastSignInAt) return false;
+
+  const created = Date.parse(createdAt);
+  const signedIn = Date.parse(lastSignInAt);
+
+  if (!Number.isFinite(created) || !Number.isFinite(signedIn)) return false;
+
+  // A genuinely new OAuth account is created as part of this sign-in, so these
+  // timestamps should be effectively identical. Existing accounts must never
+  // have their application roles replaced just because they used the signup UI.
+  return Math.abs(signedIn - created) <= 10_000;
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const searchParams = requestUrl.searchParams;
@@ -46,10 +63,15 @@ export async function GET(request: Request) {
   if (code) {
     try {
       const supabase = await createClient();
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (!error) {
-        if (signupRoles.length > 0) {
+        const isNewUser = wasUserCreatedByThisOAuthSignIn(
+          data.user?.created_at,
+          data.user?.last_sign_in_at
+        );
+
+        if (signupRoles.length > 0 && isNewUser) {
           const { error: roleError } = await supabase.rpc("update_my_roles", {
             p_roles: signupRoles,
           });
