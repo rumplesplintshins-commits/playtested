@@ -122,6 +122,13 @@ async function navigationChecks(){
   const target=flow==='submit'?'/submit':flow==='invitation'?invitation:'/';await expect(page).toHaveURL(origin+target);
   if(flow==='submit'){await expect(page.getByRole('heading',{name:'Submit your game.'})).toBeVisible();await expect(page.getByText('Checking account permissions...', {exact:true})).toHaveCount(0);assert(!/\uFFFD/.test(await page.locator('body').innerText()));}
   await page.goBack();await expect(page).toHaveURL(origin+'/');assert.equal(errors.length,0,errors.join('\n'));
+  if(flow==='login'){
+   const authCookies=(await context.cookies()).filter(c=>/^sb-.*-auth-token(?:[.]\d+)?$/.test(c.name));assert(authCookies.length>0,'Mocked sign-in uses SSR cookies');
+   for(const c of authCookies){assert.equal(c.path,'/');assert.equal(c.sameSite,'Lax');assert(!c.httpOnly);assert(c.expires>Date.now()/1000+399*86400);}
+   assert.equal(await page.evaluate(()=>localStorage.length+sessionStorage.length),0,'Ordinary login has no app local/session storage');
+   await page.getByRole('button',{name:'Log out',exact:true}).click();await expect.poll(async()=>(await context.cookies()).filter(c=>/^sb-.*-auth-token(?:[.]\d+)?$/.test(c.name)).length).toBe(0);
+  }
+
   await context.close();
  }
  console.log('PASS mocked navigation: default login/immediate signup -> Home; signed-out Submit -> intentional Submit; invitation token preserved; Back returns Home, no Auth trap or broken submit text. Existing browser history outside app-created entries is not rewritten. No live users/emails.');
