@@ -57,6 +57,7 @@ export default function CommunityPage() {
   const [votingPostId, setVotingPostId] = useState<number | null>(null);
 
   const voteLock=useRef(false),loadSequence=useRef(0);
+  const account=useRef<string|null|undefined>(undefined),accountEpoch=useRef(0),voteRequest=useRef(0);
   const [votesReady,setVotesReady]=useState(false);
 
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -67,6 +68,7 @@ export default function CommunityPage() {
 
   const loadPosts = useCallback(async () => {
     const sequence=++loadSequence.current;
+    const epoch=accountEpoch.current;
     setVotesReady(false);setLoading(true);
     const supabase = createClient();
 
@@ -75,9 +77,12 @@ export default function CommunityPage() {
 
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
 
-      if(sequence!==loadSequence.current)return false;
+      if(sequence!==loadSequence.current||epoch!==accountEpoch.current)return false;
+      if(authError&&authError.name!=="AuthSessionMissingError")throw authError;
+      account.current=user?.id??null;
       setUserId(user?.id ?? null);
 
       const { data: databasePosts, error: postsError } = await supabase
@@ -201,8 +206,15 @@ export default function CommunityPage() {
 
   useEffect(() => {
     const pending=loadSequence;
-    const timer=setTimeout(()=>void loadPosts(),0);
-    return()=>{clearTimeout(timer);pending.current++;};
+    let timer=setTimeout(()=>void loadPosts(),0);
+    const {data:{subscription}}=createClient().auth.onAuthStateChange((_event,session)=>{
+      const next=session?.user.id??null;
+      if(account.current===next)return;
+      account.current=next;accountEpoch.current++;pending.current++;voteRequest.current++;
+      voteLock.current=false;setVotingPostId(null);setVotes({});setVotesReady(false);setUserId(next);setPosts([]);setLoading(true);setError("");
+      clearTimeout(timer);timer=setTimeout(()=>void loadPosts(),0);
+    });
+    return()=>{clearTimeout(timer);subscription.unsubscribe();pending.current++;};
   }, [loadPosts]);
 
   async function castVote(postId: number, direction: number) {
@@ -215,6 +227,7 @@ export default function CommunityPage() {
 
     if(voteLock.current||!votesReady)return;
     voteLock.current=true;
+    const request=++voteRequest.current,epoch=accountEpoch.current;
 
     setVotingPostId(postId);
 
@@ -244,13 +257,15 @@ export default function CommunityPage() {
         if (insertError) throw insertError;
       }
 
-      await loadPosts();
+      if(epoch===accountEpoch.current)await loadPosts();
     } catch (err) {
+      if(epoch!==accountEpoch.current)return;
       console.error("Error saving vote:", err);
       const refreshed=await loadPosts();
+      if(epoch!==accountEpoch.current)return;
       setError(refreshed?"Your vote request failed or could not be confirmed. Refreshed totals are shown; check your selected arrow before retrying.":"Your vote could not be confirmed. Refresh the feed before voting again.");
     } finally {
-      voteLock.current=false;setVotingPostId(null);
+      if(request===voteRequest.current){voteLock.current=false;setVotingPostId(null);}
     }
   }
 
@@ -619,6 +634,7 @@ export default function CommunityPage() {
                             <span>{post.author}</span>
                             <span>·</span>
                             <span>{post.time}</span>
+                            {userId&&<span className={myVote===1?"text-[#77f29b]":myVote===-1?"text-orange-400":"text-zinc-400"}>{votesReady?`Your vote: ${myVote===1?"Up":myVote===-1?"Down":"none"}`:"Your vote: not confirmed"}</span>}
                           </div>
 
                           <button

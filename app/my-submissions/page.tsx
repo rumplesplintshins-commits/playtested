@@ -476,6 +476,17 @@ function receptionForGame(
   };
 }
 
+function sidebarFeedback(game: LinkedGame, rows: DeveloperReceptionRow[], unavailable: boolean) {
+  const feedback=receptionForGame(game,rows.filter(row=>requiredNumber(row.accepted_test_count)>0).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||a.playtest_id.localeCompare(b.playtest_id)));
+  return {
+    context: game.latestPlaytest ? `Current build: ${game.latestPlaytest.releaseLabel || "Unlabelled build"}` : undefined,
+    feedback: unavailable ? "Feedback unavailable" : feedback ? [
+      ...(feedback.playtestId!==game.latestPlaytest?.id ? [`Latest feedback: ${feedback.releaseLabel}`] : []),
+      `${feedback.acceptedTests} accepted Tester Hub report${feedback.acceptedTests===1?"":"s"}`,
+    ].join("\n") : game.latestPlaytest ? "No Tester Hub feedback yet for this build" : "No feedback yet",
+  };
+}
+
 function xpRequiredForNextLevel(level: number) {
   return 100 + (level - 1) * 50;
 }
@@ -1046,7 +1057,7 @@ async function DeveloperDashboard() {
 
   return <DeveloperWorkspace showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",context:game.relationship+(game.latestPlaytest?.releaseLabel?` ? ${game.latestPlaytest.releaseLabel}`:""),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,feedback:receptionError?undefined:game.currentReception?`${game.currentReception.acceptedTests} accepted independent ? ${game.currentReception.releaseLabel}. Community totals in results.`:undefined,content:((game) => {
+ games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1224,7 +1235,7 @@ async function DeveloperDashboard() {
                   </span>
                 </div>
               </article>
-            ))(game)}<aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{completenessMessage(submissionIssues(game as unknown as Record<string,unknown>))||"Required developer details are complete. Approval still requires admin review."}</p>{(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>Complete information</a>}</aside><div className="mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"><p className="font-semibold">Human reviewer notes</p><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p>{game.status==="Pending Review"&&<p className="mt-2 text-zinc-400">Awaiting listing review. No action is needed unless more information is requested.</p>}{game.status==="Approved"&&<p className="mt-2 text-zinc-400">Listing approval is separate from a game-quality assessment. Use My games to manage an approved developer relationship.</p>}</div></>}))}
+            ))(game)}<aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{completenessMessage(submissionIssues(game as unknown as Record<string,unknown>))||"Required developer details are complete. Approval still requires admin review."}</p>{(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>Complete information</a>}</aside><div className="mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"><p className="font-semibold">Reviewer Notes</p><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p>{game.status==="Pending Review"&&<p className="mt-2 text-zinc-400">Awaiting listing review. No action is needed unless more information is requested.</p>}{game.status==="Approved"&&<p className="mt-2 text-zinc-400">Listing approval is separate from a game-quality assessment. Use My games to manage an approved developer relationship.</p>}</div></>}))}
  claims={claims.map(claim=>({id:claim.id,title:claim.gameTitle,status:claim.status,context:claim.relationship,content:((claim) => (
               <article
                 key={claim.id}

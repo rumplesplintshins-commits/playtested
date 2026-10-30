@@ -1,4 +1,5 @@
 "use client";
+import DisclosureHeading from "./DisclosureHeading";
 import {intentCounts,intentText} from "@/lib/intent-counts";
 
 import { useRouter } from "next/navigation";
@@ -950,9 +951,9 @@ function ResultsDashboard({
     <div className="space-y-5">
       {playtest.focusAreas.length>0&&<div aria-label="Testing focus" className="flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-zinc-300">Testing focus</span>{playtest.focusAreas.map(focus=><span key={focus} className="rounded bg-white/5 px-2 py-1 text-zinc-300">{focus}</span>)}</div>}
       <section aria-label="Results snapshot" className="overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#0c100e]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
-          <div className="min-w-0"><h5 className="text-sm font-semibold text-[#77f29b]">Results snapshot</h5><p className="mt-1 break-words text-sm text-zinc-400">{playtest.releaseLabel?`Build: ${playtest.releaseLabel}`:"Current playtest round"}</p><p className="mt-1 text-sm text-zinc-400">{independentCount} accepted independent | {communityCount} community{isFeedbackStressTest?" | Includes labelled preview responses":""}</p></div>
-          <button type="button" aria-expanded={snapshotExpanded} aria-controls={feedbackId+'-snapshot'} onClick={()=>setSnapshotExpanded(value=>!value)} className="rounded-lg border border-white/20 px-4 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300">{snapshotExpanded?"Hide results":"Show results"} <span aria-hidden="true">{snapshotExpanded?'\u25b4':'\u25be'}</span></button>
+        <div className="border-b border-white/10 p-4">
+          <DisclosureHeading title="Results snapshot" expanded={snapshotExpanded} controls={feedbackId+'-snapshot'} onToggle={()=>setSnapshotExpanded(value=>!value)}/>
+          <p className="mt-1 break-words text-sm text-zinc-400">{playtest.releaseLabel?`Build: ${playtest.releaseLabel}`:"Current playtest round"}</p><p className="mt-1 text-sm text-zinc-400">{independentCount} accepted independent | {communityCount} community{isFeedbackStressTest?" | Includes labelled preview responses":""}</p>
         </div>
         <div id={feedbackId+'-snapshot'} hidden={!snapshotExpanded} className="p-3 sm:p-4">
 

@@ -31,7 +31,15 @@ const client={auth:{getUser:async()=>({data:{user:{id:owner}}})},rpc:async()=>({
 const Start=()=>null,Workspace=()=>null,Retry=()=>null;
 const exports={};
 const code=ts.transpileModule(fs.readFileSync('app/my-submissions/page.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-new Function('exports','require',code+'\nexports.dashboard=DeveloperDashboard;')(exports,name=>name==='next/server'?{connection:async()=>{}}:name==='next/navigation'?{redirect(path){throw new Error('redirect:'+path);}}:name.endsWith('/supabase-server')?{createClient:async()=>client}:name.endsWith('/SiteHeader')?{default:()=>null}:name.endsWith('/listing-updates')?{listingUpdates:async()=>[],listingNotice:()=>''}:name.endsWith('/GameLinksEngagement')?{default:()=>null}:name.endsWith('/StartPlaytest')?{default:Start}:name.endsWith('/DeveloperWorkspace')?{default:Workspace,WorkspaceRetry:Retry}:name.endsWith('/submission-completeness')?completeness:require(name));
+new Function('exports','require',code+'\nexports.dashboard=DeveloperDashboard;exports.sidebar=sidebarFeedback;')(exports,name=>name==='next/server'?{connection:async()=>{}}:name==='next/navigation'?{redirect(path){throw new Error('redirect:'+path);}}:name.endsWith('/supabase-server')?{createClient:async()=>client}:name.endsWith('/SiteHeader')?{default:()=>null}:name.endsWith('/listing-updates')?{listingUpdates:async()=>[],listingNotice:()=>''}:name.endsWith('/GameLinksEngagement')?{default:()=>null}:name.endsWith('/StartPlaytest')?{default:Start}:name.endsWith('/DeveloperWorkspace')?{default:Workspace,WorkspaceRetry:Retry}:name.endsWith('/submission-completeness')?completeness:require(name));
+const sidebarGame={submissionId:'game-side',latestPlaytest:{id:'current-side',releaseLabel:'Demo 0.8'}};
+const sidebarRow={submission_id:'game-side',playtest_id:'current-side',release_label:'Demo 0.8',accepted_test_count:1,created_at:'2026-10-28'};
+assert.deepEqual(exports.sidebar(sidebarGame,[sidebarRow],false),{context:'Current build: Demo 0.8',feedback:'1 accepted Tester Hub report'});
+assert.deepEqual(exports.sidebar(sidebarGame,[{...sidebarRow,playtest_id:'old-side',release_label:'Alpha 0.5 - Reception Test',accepted_test_count:3}],false),{context:'Current build: Demo 0.8',feedback:'Latest feedback: Alpha 0.5 - Reception Test\n3 accepted Tester Hub reports'});
+assert(exports.sidebar(sidebarGame,[{...sidebarRow,playtest_id:'different-id'}],false).feedback.startsWith('Latest feedback:'),'Equal labels do not imply the same campaign');
+assert(!exports.sidebar(sidebarGame,[{...sidebarRow,release_label:'Changed label'}],false).feedback.includes('Latest feedback:'),'Campaign ID, not label comparison, scopes counts');
+assert.equal(exports.sidebar(sidebarGame,[],false).feedback,'No Tester Hub feedback yet for this build');assert.equal(exports.sidebar(sidebarGame,[{...sidebarRow,accepted_test_count:0}],false).feedback,'No Tester Hub feedback yet for this build');assert.equal(exports.sidebar(sidebarGame,[],true).feedback,'Feedback unavailable');
+assert.equal(exports.sidebar({...sidebarGame,latestPlaytest:null},[],false).feedback,'No feedback yet');
 let result=await exports.dashboard();
 assert.equal(result.type,Workspace);
 assert.equal(result.props.games.length,1,'Same-ID and known Steam aliases counted once');
@@ -70,12 +78,13 @@ if(process.argv.includes('--server-only'))process.exit(0);
 if(process.argv.includes('--plans-browser')){await planBrowser();process.exit(0);}
 
 // Temporary local-only fixture exercises the actual client component through Next.
+const testOrigin=process.env.TEST_APP_URL||'http://localhost:3000';
 const fixture='app/workspace-review-fixture/page.tsx';
 if(fs.existsSync(fixture))throw new Error('Fixture path exists; refusing to overwrite.');
 fs.mkdirSync('app/workspace-review-fixture');
 fs.writeFileSync(fixture,`import Workspace,{WorkspaceRetry} from '../components/DeveloperWorkspace';
 export default async function Fixture({searchParams}:{searchParams:Promise<{scenario?:string}>}){const {scenario}=await searchParams;if(scenario==="empty")return <Workspace games={[]} submissions={[]} claims={[]}/>;if(scenario==="error")return <WorkspaceRetry message="Could not load developer games. Retry."/>;return <main className="min-h-screen bg-[#090b0a] p-4 text-white"><header style={{position:"sticky",top:0,height:70,background:"#090b0a",zIndex:10}}>Fixture sticky header</header><Workspace games={[
-{id:'alpha',title:'Alpha',status:'Playtest open',active:true,hasPlaytest:true,hasFeedback:true,feedback:'2 accepted independent · Build A. Community totals in results.',content:<section style={{minHeight:2200}}><h2>Alpha detail</h2><label>Unsaved instructions<input defaultValue="Original task"/></label><div data-build-feedback style={{marginTop:650}}>Alpha build feedback</div></section>},
+{id:'alpha',title:'Alpha',status:'Playtest open',active:true,hasPlaytest:true,hasFeedback:true,feedback:'2 accepted Tester Hub reports',content:<section style={{minHeight:2200}}><h2>Alpha detail</h2><label>Unsaved instructions<input defaultValue="Original task"/></label><div data-build-feedback style={{marginTop:650}}>Alpha build feedback</div></section>},
 {id:'beta',title:'Beta',status:'No playtest',content:<section style={{minHeight:2200}}><h2>Beta detail</h2><div data-build-feedback>Beta build feedback</div></section>} ]}
 submissions={[{id:'sub',title:'Gamma',status:'Needs More Information',content:<article><h2>Gamma review</h2><p>Add a browser build</p></article>}]}
 claims={[{id:'claim',title:'Delta',status:'Pending',content:<article><h2>Delta claim</h2><p>Awaiting admin review</p></article>}]} diagnostics={[{id:'run-alpha',title:'Alpha',status:'FAILED',context:'Build AAA',content:<article><h2>Alpha diagnostics</h2><p>Build AAA could not launch</p></article>},{id:'run-beta',title:'Beta',status:'COMPLETE',context:'Build BBB',content:<article><h2>Beta diagnostics</h2><p>Build BBB completed</p></article>}]}/></main>}`);
@@ -83,7 +92,7 @@ const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1280,height:900}});
  await page.route('**/*',route=>new URL(route.request().url()).hostname==='localhost'?route.continue():route.abort());
- await page.goto('http://localhost:3000/workspace-review-fixture');
+ await page.goto(testOrigin+'/workspace-review-fixture');
  await expect(page.getByRole('tab',{name:'My games 2'})).toHaveAttribute('aria-selected','true');
  await expect(page.getByRole('heading',{name:'Alpha detail'})).toBeVisible();
  await page.getByLabel('Unsaved instructions').fill('Keep my edited task');
@@ -102,12 +111,12 @@ try{
  await expect(page.getByRole('button',{name:/Beta No playtest/})).toBeVisible();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.screenshot({path:'.backup-tools/developer-workspace-mobile.png',fullPage:true});
  await page.setViewportSize({width:1280,height:900});await page.screenshot({path:'.backup-tools/developer-workspace-desktop.png',fullPage:true});
- await page.goto('http://localhost:3000/workspace-review-fixture?tab=claims&game=claim');await expect(page.getByRole('heading',{name:'Delta claim'})).toBeVisible();
+ await page.goto(testOrigin+'/workspace-review-fixture?tab=claims&game=claim');await expect(page.getByRole('heading',{name:'Delta claim'})).toBeVisible();
  await page.getByRole('tab',{name:'Developer claims 1'}).focus();await page.keyboard.press('End');await expect(page.getByRole('tab',{name:'Diagnostics 2'})).toBeFocused();await expect(page.getByRole('tab',{name:'Game submissions 1'}).locator('span')).toHaveClass(/bg-amber-400/);
  await page.getByLabel('Status filter').selectOption('FAILED');await expect(page.getByRole('status')).toContainText('1 of 2 shown');await expect(page.getByRole('heading',{name:'Alpha diagnostics'})).toBeVisible();await page.getByLabel('Status filter').selectOption('COMPLETE');await expect(page.getByRole('heading',{name:'Beta diagnostics'})).toBeVisible();
 
  // Selection scrolling: committed content, sticky headers, keyboard and no incidental re-scroll.
- await page.goto('http://localhost:3000/workspace-review-fixture');await page.emulateMedia({reducedMotion:'reduce'});
+ await page.goto(testOrigin+'/workspace-review-fixture');await page.emulateMedia({reducedMotion:'reduce'});
  await page.evaluate(()=>{window.__workspaceScrolls=[];const native=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(options){const list=document.querySelector('[aria-label="My games list"]');const before=list?.scrollTop;const result=native.call(this,options);window.__workspaceScrolls.push({text:this.textContent.slice(0,80),options,listBefore:before,listAfter:list?.scrollTop});return result}});
  await page.getByRole('button',{name:/Beta No playtest/}).focus();await page.keyboard.press('Enter');
  await expect(page.getByRole('heading',{name:'Beta detail'})).toBeVisible();
@@ -126,8 +135,8 @@ try{
  await page.getByRole('button',{name:/Beta No playtest/}).click();assert.equal(await page.evaluate(()=>document.querySelector('[role="tabpanel"]').parentElement.scrollTop),0,'Different game resets detail scrollport');
  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Back to list'}).click();await page.getByRole('button',{name:/Alpha Playtest open/}).click();await expect(page.getByRole('heading',{name:'Alpha detail'})).toBeVisible();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
- await page.goto('http://localhost:3000/workspace-review-fixture?scenario=empty');await expect(page.getByRole('heading',{name:'No my games yet'})).toBeVisible();
- await page.goto('http://localhost:3000/workspace-review-fixture?scenario=error');await expect(page.getByRole('button',{name:'Refresh workspace'})).toBeVisible();await expect(page.getByRole('heading',{name:'No my games yet'})).toHaveCount(0);
+ await page.goto(testOrigin+'/workspace-review-fixture?scenario=empty');await expect(page.getByRole('heading',{name:'No my games yet'})).toBeVisible();
+ await page.goto(testOrigin+'/workspace-review-fixture?scenario=error');await expect(page.getByRole('button',{name:'Refresh workspace'})).toBeVisible();await expect(page.getByRole('heading',{name:'No my games yet'})).toHaveCount(0);
  console.log('PASS: workspace selection after commit, Enter/Space, reduced motion, sticky headers, nested scrollport reset, independent list, no search scroll, unsaved edits, same-game feedback, URL/Back and desktop/mobile layout. No live requests.');
 }finally{await browser.close();fs.unlinkSync(fixture);fs.rmdirSync('app/workspace-review-fixture');}
 
