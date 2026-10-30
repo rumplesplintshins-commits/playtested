@@ -11,8 +11,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  if (!body || typeof body !== "object" || (body as { confirmation?: unknown }).confirmation !== "DELETE") {
-    return NextResponse.json({ error: "Type DELETE to confirm account deletion." }, { status: 400 });
+  if (
+    !body ||
+    typeof body !== "object" ||
+    (body as { confirmation?: unknown }).confirmation !== "DELETE"
+  ) {
+    return NextResponse.json(
+      { error: "Type DELETE to confirm account deletion." },
+      { status: 400 }
+    );
   }
 
   const supabase = await createClient();
@@ -25,12 +32,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
   }
 
-  const { data, error: eraseError } = await supabase.rpc("prepare_my_account_erasure");
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    console.error("Supabase admin client unavailable", error);
+    return NextResponse.json(
+      { error: "Account deletion is temporarily unavailable. Please try again later." },
+      { status: 503 }
+    );
+  }
+
+  const { data, error: eraseError } = await supabase.rpc(
+    "prepare_my_account_erasure"
+  );
 
   if (eraseError) {
     console.error("Account erasure preparation failed", eraseError);
     return NextResponse.json(
-      { error: "We could not safely prepare your account for deletion. Nothing was deleted from authentication." },
+      {
+        error:
+          "We could not safely prepare your account for deletion. Your sign-in account was not deleted.",
+      },
       { status: 500 }
     );
   }
@@ -39,17 +62,9 @@ export async function POST(request: Request) {
   const requestId = result?.request_id;
 
   if (!requestId) {
-    return NextResponse.json({ error: "Account deletion could not be verified." }, { status: 500 });
-  }
-
-  let admin;
-  try {
-    admin = createAdminClient();
-  } catch (error) {
-    console.error("Supabase admin client unavailable", error);
     return NextResponse.json(
-      { error: "Account deletion is temporarily unavailable. Your request has been retained for completion." },
-      { status: 503 }
+      { error: "Account deletion could not be verified." },
+      { status: 500 }
     );
   }
 
@@ -58,18 +73,26 @@ export async function POST(request: Request) {
   if (deleteAuthError) {
     console.error("Supabase Auth deletion failed", deleteAuthError);
     return NextResponse.json(
-      { error: "Your personal data was de-identified, but sign-in deletion needs administrator completion. Please contact support if you can still sign in." },
+      {
+        error:
+          "Your account data was prepared for deletion, but sign-in deletion could not be completed automatically. Please contact Playtested support.",
+      },
       { status: 500 }
     );
   }
 
   const { error: completeError } = await admin
     .from("account_deletion_requests")
-    .update({ status: "completed", completed_at: new Date().toISOString() })
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      user_id: null,
+      operator_notes: "Account erasure completed.",
+    })
     .eq("id", requestId);
 
   if (completeError) {
-    console.error("Could not mark deletion request complete", completeError);
+    console.error("Could not finalise deletion request audit record", completeError);
   }
 
   return NextResponse.json({ deleted: true });
