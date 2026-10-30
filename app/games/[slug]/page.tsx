@@ -2,6 +2,7 @@ import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
 import {notFound} from "next/navigation";
+import {publicLinkedImportedIds} from "@/lib/public-profile-links";
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;
   if(!slug.startsWith("steam-"))notFound();
@@ -176,12 +177,9 @@ export default async function GamePage({
       );
     }
 
-    const { data: developerLink, error: developerLinkError } = await supabase
-      .from("game_developer_links")
-      .select("id, relationship")
-      .eq("imported_game_id", importedGame.id)
-      .limit(1)
-      .maybeSingle();
+    const publicLinks=await publicLinkedImportedIds([importedGame.id]);
+    const developerLink=publicLinks?.has(importedGame.id)?{relationship:publicLinks.get(importedGame.id)}:null;
+    const developerLinkError=publicLinks===null;
 
     if (developerLinkError) {
       console.error(
