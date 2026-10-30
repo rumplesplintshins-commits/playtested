@@ -28,45 +28,6 @@ type DatabasePost = {
   created_at: string;
 };
 
-const initialPosts: Post[] = [
-  {
-    id: -1,
-    community: "general",
-    category: "Discussion",
-    author: "Playtested",
-    time: "Example",
-    title: "Welcome to the Playtested community",
-    body: "Discuss games, share discoveries and help build a catalogue where players can find games worth their time.",
-    votes: 12,
-    comments: 3,
-    tag: "Community",
-  },
-  {
-    id: -2,
-    community: "ai-gaming",
-    category: "AI Gaming",
-    author: "Playtested",
-    time: "Example",
-    title: "What should a trustworthy game verification system check?",
-    body: "Should verification focus on AI disclosure, gameplay quality, originality, security, or a combination of these?",
-    votes: 8,
-    comments: 2,
-    tag: "Verification",
-  },
-  {
-    id: -3,
-    community: "recommendations",
-    category: "Recommendations",
-    author: "Playtested",
-    time: "Example",
-    title: "Share an indie game that deserves more attention",
-    body: "Tell the community about a game you have enjoyed and explain what makes it worth playing.",
-    votes: 6,
-    comments: 1,
-    tag: "Indie Games",
-  },
-];
-
 function formatTime(dateString: string) {
   const date = new Date(dateString);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -85,7 +46,7 @@ function formatTime(dateString: string) {
 export default function CommunityPage() {
   const router = useRouter();
 
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [votes, setVotes] = useState<Record<number, number>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -106,11 +67,11 @@ export default function CommunityPage() {
 
   const loadPosts = useCallback(async () => {
     const sequence=++loadSequence.current;
-    setVotesReady(false);
+    setVotesReady(false);setLoading(true);
     const supabase = createClient();
 
     try {
-      setError("");
+
 
       const {
         data: { user },
@@ -130,7 +91,7 @@ export default function CommunityPage() {
       const rows = (databasePosts ?? []) as DatabasePost[];
 
       if (rows.length === 0) {
-        setPosts(initialPosts);
+        setPosts([]);setError("");
         setVotes({});setVotesReady(true);
         return true;
       }
@@ -150,7 +111,7 @@ export default function CommunityPage() {
           .select("post_id")
           .in("post_id", postIds),
 
-        authorIds.length > 0
+        user && authorIds.length > 0
           ? supabase
               .from("profiles")
               .select("id, display_name")
@@ -164,7 +125,7 @@ export default function CommunityPage() {
       ]);
 
       if (commentsResult.error) throw commentsResult.error;
-      if (profilesResult.error) throw profilesResult.error;
+      // Author names are optional: profile privacy must not block public posts.
       if (votesResult.error) throw votesResult.error;
 
       const voteRows=[...(votesResult.data||[])];
@@ -226,20 +187,22 @@ export default function CommunityPage() {
         };
       });
 
-      setPosts(loadedPosts);
+      setError("");setPosts(loadedPosts);
       setVotes(currentVotes);setVotesReady(true);return true;
     } catch (err) {
       if(sequence!==loadSequence.current)return false;
       console.error("Error loading community posts:", err);
-      setError("Couldn't load the community feed. Please try refreshing.");
+      const code=typeof err==="object"&&err&&"code" in err?String(err.code):"network";
+      setError(`Couldn't load the community feed (${code}). Please retry; if it persists, check your connection.`);
     } finally {
       if(sequence===loadSequence.current)setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const pending=loadSequence;void loadPosts();
-    return()=>{pending.current++;};
+    const pending=loadSequence;
+    const timer=setTimeout(()=>void loadPosts(),0);
+    return()=>{clearTimeout(timer);pending.current++;};
   }, [loadPosts]);
 
   async function castVote(postId: number, direction: number) {
@@ -402,7 +365,7 @@ export default function CommunityPage() {
             role="alert"
             className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
-            {error} <button type="button" onClick={()=>void loadPosts()} className="ml-3 rounded border border-white/30 px-3 py-2">Refresh feed</button>
+            {error} <button type="button" disabled={loading} onClick={()=>void loadPosts()} className="ml-3 rounded border border-white/30 px-3 py-2 disabled:opacity-50">{loading?"Refreshing feed...":"Refresh feed"}</button>{posts.length>0&&!votesReady&&<p className="mt-2">Showing previously loaded posts. Voting is paused until a refresh succeeds.</p>}
           </div>
         )}
 
@@ -553,9 +516,9 @@ export default function CommunityPage() {
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-[#11151c] p-10 text-center">
-                <p className="font-semibold">No posts found</p>
+                <p className="font-semibold">{error?"No community posts loaded":"No posts found"}</p>
                 <p className="mt-2 text-sm text-gray-500">
-                  Try another search or be the first to start a discussion.
+                  {error?"Use Refresh feed to retry loading real posts.":"Try another search or be the first to start a discussion."}
                 </p>
               </div>
             ) : (
