@@ -7,35 +7,25 @@ export default function SubmitNextSteps() {
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const headings = Array.from(document.querySelectorAll("h3"));
+    const headings = Array.from(document.querySelectorAll("form h3"));
     const oldHeading = headings.find(
       (heading) => heading.textContent?.trim() === "What happens next?"
     );
+
     const oldPanel = oldHeading?.parentElement as HTMLElement | null;
+    if (!oldPanel) return;
 
-    if (oldPanel) oldPanel.style.display = "none";
+    Array.from(oldPanel.children).forEach((child) => {
+      (child as HTMLElement).style.display = "none";
+    });
 
-    const buttons = Array.from(document.querySelectorAll("button"));
-    const submitButton = buttons.find(
-      (button) => button.textContent?.trim() === "Submit application"
-    );
-
-    if (!submitButton?.parentElement) {
-      return () => {
-        if (oldPanel) oldPanel.style.display = "";
-      };
-    }
-
-    const mount = document.createElement("div");
-    mount.dataset.submitNextSteps = "true";
-    mount.className = "w-full";
-    submitButton.parentElement.insertBefore(mount, submitButton);
-    setTarget(mount);
+    oldPanel.className = "";
+    setTarget(oldPanel);
 
     return () => {
-      setTarget(null);
-      mount.remove();
-      if (oldPanel) oldPanel.style.display = "";
+      Array.from(oldPanel.children).forEach((child) => {
+        (child as HTMLElement).style.display = "";
+      });
     };
   }, []);
 
@@ -60,7 +50,7 @@ export default function SubmitNextSteps() {
   ] as const;
 
   return createPortal(
-    <div className="mb-6 rounded-2xl border border-[#77f29b]/20 bg-[#0d120f] p-4 shadow-xl shadow-black/20 sm:p-5">
+    <div className="rounded-2xl border border-[#77f29b]/20 bg-[#0d120f] p-4 shadow-xl shadow-black/20 sm:p-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#77f29b]">
@@ -85,7 +75,9 @@ export default function SubmitNextSteps() {
               </span>
               <h3 className="font-semibold text-zinc-100">{title}</h3>
             </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">{description}</p>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">
+              {description}
+            </p>
             {index < 2 && (
               <span className="absolute -right-[11px] top-1/2 z-10 hidden -translate-y-1/2 bg-[#0d120f] px-1 font-mono text-sm text-[#77f29b]/50 md:block">
                 →
