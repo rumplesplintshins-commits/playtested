@@ -1,39 +1,53 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 
 export default function SubmitNextSteps() {
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
+    let oldPanel: HTMLElement | null = null;
 
-    const form = document.querySelector("form");
-    if (!form) return;
+    const mount = () => {
+      const form = document.querySelector("form");
+      if (!form) return false;
 
-    const oldHeading = Array.from(form.querySelectorAll("h3")).find(
-      (heading) => heading.textContent?.trim() === "What happens next?"
-    );
-    const oldPanel = oldHeading?.parentElement as HTMLElement | null;
+      const oldHeading = Array.from(form.querySelectorAll("h3")).find(
+        (heading) => heading.textContent?.trim() === "What happens next?"
+      );
 
-    const submitButton = Array.from(form.querySelectorAll("button")).find(
-      (button) =>
-        button.getAttribute("type") === "submit" &&
-        (button.textContent?.includes("Submit application") ||
-          button.textContent?.includes("Checking and submitting"))
-    );
+      oldPanel = oldHeading?.parentElement as HTMLElement | null;
+      if (!oldPanel) return false;
 
-    if (!submitButton?.parentElement) return;
+      Array.from(oldPanel.children).forEach((child) => {
+        (child as HTMLElement).style.display = "none";
+      });
 
-    if (oldPanel) oldPanel.style.display = "none";
+      oldPanel.className = "";
+      setTarget(oldPanel);
+      return true;
+    };
 
-    submitButton.parentElement.insertBefore(panel, submitButton);
+    if (mount()) return;
+
+    const observer = new MutationObserver(() => {
+      if (mount()) observer.disconnect();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      if (oldPanel) oldPanel.style.display = "";
+      observer.disconnect();
+      if (oldPanel) {
+        Array.from(oldPanel.children).forEach((child) => {
+          (child as HTMLElement).style.display = "";
+        });
+      }
     };
   }, []);
+
+  if (!target) return null;
 
   const steps = [
     [
@@ -53,11 +67,8 @@ export default function SubmitNextSteps() {
     ],
   ] as const;
 
-  return (
-    <div
-      ref={panelRef}
-      className="mb-6 rounded-2xl border border-[#77f29b]/20 bg-[#0d120f] p-4 shadow-xl shadow-black/20 sm:p-5"
-    >
+  return createPortal(
+    <div className="mb-6 rounded-2xl border border-[#77f29b]/20 bg-[#0d120f] p-4 shadow-xl shadow-black/20 sm:p-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-[#77f29b]">
@@ -103,6 +114,7 @@ export default function SubmitNextSteps() {
           You’ll create your playtest campaign after the game has been approved.
         </p>
       </div>
-    </div>
+    </div>,
+    target
   );
 }
