@@ -1,9 +1,11 @@
 begin;
 
 -- Duplicate discovery drives the developer "Claim this game" journey on the
--- submission page. Imported Steam rows are returned only when they satisfy the
--- same core displayability rules as the public catalogue. Internal/incomplete
--- Steam records therefore cannot surface as claim targets.
+-- submission page. A matching normalised title is enough to stop an accidental
+-- duplicate and ask the developer whether this is the existing game or a
+-- genuinely different game. Imported Steam rows are returned only when they
+-- satisfy the same core displayability rules as the public catalogue.
+-- Internal/incomplete Steam records therefore cannot surface as claim targets.
 create or replace function public.find_possible_game_duplicates(
   p_title text,
   p_developer_name text
@@ -28,9 +30,6 @@ as $function$
   where
     public.normalize_game_identity(gs.title)
       = public.normalize_game_identity(p_title)
-    and
-    public.normalize_game_identity(gs.developer_name)
-      = public.normalize_game_identity(p_developer_name)
     and gs.status not in ('Rejected', 'Needs More Information')
 
   union all
@@ -45,9 +44,6 @@ as $function$
   where
     public.normalize_game_identity(ag.title)
       = public.normalize_game_identity(p_title)
-    and
-    public.normalize_game_identity(ag.developer_name)
-      = public.normalize_game_identity(p_developer_name)
 
   union all
 
@@ -61,9 +57,6 @@ as $function$
   where
     public.normalize_game_identity(ig.title)
       = public.normalize_game_identity(p_title)
-    and
-    public.normalize_game_identity(ig.developer_name)
-      = public.normalize_game_identity(p_developer_name)
     and ig.catalogue_eligible = true
     and ig.metadata_backfill_status = 'complete'
     and ig.title is not null
@@ -75,7 +68,14 @@ as $function$
       from public.approved_games duplicate_ag
       where nullif(trim(duplicate_ag.steam_app_id::text), '') =
             trim(ig.steam_app_id::text)
-    );
+    )
+  order by
+    case source
+      when 'approved' then 1
+      when 'submission' then 2
+      when 'imported' then 3
+      else 4
+    end;
 $function$;
 
 commit;
