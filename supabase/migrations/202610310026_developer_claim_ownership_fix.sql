@@ -207,10 +207,14 @@ from public, anon;
 grant execute on function public.review_game_claim(uuid, text, text)
 to authenticated;
 
--- New claims must point at one real canonical game. Imported Steam targets must
--- already be catalogue eligible. This prevents an incomplete/discovered Steam
--- row from becoming newly claimable merely because it exists in imported_games.
--- Existing historical claims (including Pawntopia) are not changed.
+-- A Steam import is claimable only when it satisfies the SAME data-quality
+-- conditions used by the public catalogue for an ordinary imported listing.
+-- In other words: if the game is not displayable in the catalogue, it cannot
+-- be claimed. A developer must add/submit it instead.
+--
+-- The approved_games duplicate guard mirrors get_public_catalogue as well, so
+-- an imported row hidden behind its canonical approved listing cannot be
+-- claimed through the stale/duplicate imported record.
 alter policy "Developers can create their own claims"
 on public.game_claims
 with check (
@@ -229,6 +233,17 @@ with check (
         from public.imported_games ig
         where ig.id = imported_game_id
           and ig.catalogue_eligible = true
+          and ig.title is not null
+          and ig.metadata_backfill_status = 'complete'
+          and ig.developer_name is not null
+          and ig.genre is not null
+          and ig.image_url is not null
+          and not exists (
+            select 1
+            from public.approved_games duplicate_ag
+            where nullif(trim(duplicate_ag.steam_app_id::text), '') =
+                  trim(ig.steam_app_id::text)
+          )
       )
     )
     or (
@@ -250,10 +265,9 @@ with check (
   )
 );
 
--- Deliberately do NOT loosen get_public_catalogue here. The existing catalogue
--- already promotes complete imported games that have game_developer_links.
--- Developer ownership must not bypass metadata_backfill_status='complete' or
--- the required developer/genre/image metadata quality gate. Pawntopia remains
--- owned but hidden until its Steam metadata is processed successfully.
+-- Deliberately do NOT loosen get_public_catalogue here. Ownership never makes
+-- an incomplete Steam row public. Once an eligible displayed catalogue game is
+-- approved for a developer, the existing catalogue RPC sees its
+-- game_developer_links relationship and promotes it as a Playtested profile.
 
 commit;
