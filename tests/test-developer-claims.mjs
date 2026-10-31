@@ -18,11 +18,17 @@ assert.match(migration,/approved_game_claim/);
 assert.match(migration,/developer_xp = developer_xp \+ 100/);
 assert.match(migration,/developer_xp = greatest\(0, developer_xp - v_removed_xp\)/);
 
-// New imported claims must be for catalogue-eligible canonical records.
+// New imported claims must satisfy the same ordinary imported-game visibility
+// gate as the displayed public catalogue, not merely exist in imported_games.
 assert.match(migration,/ig\.catalogue_eligible = true/);
+assert.match(migration,/ig\.metadata_backfill_status = 'complete'/);
+assert.match(migration,/ig\.developer_name is not null/);
+assert.match(migration,/ig\.genre is not null/);
+assert.match(migration,/ig\.image_url is not null/);
+assert.match(migration,/from public\.approved_games duplicate_ag/);
 assert.match(migration,/num_nonnulls\([\s\S]*imported_game_id,[\s\S]*approved_game_id,[\s\S]*submission_id[\s\S]*\) = 1/);
 
-// The ownership fix must NOT weaken the existing catalogue metadata quality gate.
+// The ownership fix must NOT weaken or replace the existing catalogue RPC.
 assert.doesNotMatch(migration,/create or replace function public\.get_public_catalogue/i);
 assert.match(catalogueFixture,/ig\.metadata_backfill_status = 'complete'/);
 assert.match(catalogueFixture,/ig\.developer_name is not null/);
@@ -40,4 +46,4 @@ assert.match(submit,/claimant_id: user\.id/);
 assert.match(submit,/possibleDuplicate\.source === "imported"/);
 assert.match(submit,/claimError\.code === "23505"/);
 
-console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, canonical target guard, catalogue quality gate preservation, and existing claim UI wiring.');
+console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, displayed-catalogue claim gate, catalogue quality preservation, and existing claim UI wiring.');
