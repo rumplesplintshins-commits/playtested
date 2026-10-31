@@ -90,8 +90,7 @@ type PossibleDuplicate = {
 
 
 type DuplicateRpcRow = {
-
-  source: "submission" | "approved";
+  source: "submission" | "approved" | "imported";
 
   record_id: string;
 
