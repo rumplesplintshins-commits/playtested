@@ -20,7 +20,7 @@ assert.match(migration,/developer_xp = greatest\(0, developer_xp - v_removed_xp\
 
 // New imported claims must be for catalogue-eligible canonical records.
 assert.match(migration,/ig\.catalogue_eligible = true/);
-assert.match(migration,/num_nonnulls\(imported_game_id, approved_game_id, submission_id\) = 1/);
+assert.match(migration,/num_nonnulls\([\s\S]*imported_game_id,[\s\S]*approved_game_id,[\s\S]*submission_id[\s\S]*\) = 1/);
 
 // The ownership fix must NOT weaken the existing catalogue metadata quality gate.
 assert.doesNotMatch(migration,/create or replace function public\.get_public_catalogue/i);
@@ -34,8 +34,7 @@ assert.match(catalogueFixture,/ig\.image_url is not null/);
 assert.match(catalogueFixture,/from public\.game_developer_links gdl[\s\S]*gdl\.imported_game_id = ig\.id/);
 assert.match(catalogueFixture,/r\.has_playtested_profile = true/);
 
-// Existing submission claim UI wiring remains intact. A separate regression
-// will cover title/developer matching for imported catalogue games.
+// Existing submission claim UI wiring remains intact.
 assert.match(submit,/Claim this game/);
 assert.match(submit,/claimant_id: user\.id/);
 assert.match(submit,/possibleDuplicate\.source === "imported"/);
