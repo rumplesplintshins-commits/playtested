@@ -1587,6 +1587,15 @@ export default function SubmitGamePage() {
           )
 
           .eq("steam_app_id", steamAppId)
+          .eq("catalogue_eligible", true)
+
+          .eq("metadata_backfill_status", "complete")
+
+          .not("developer_name", "is", null)
+
+          .not("genre", "is", null)
+
+          .not("image_url", "is", null)
 
           .maybeSingle();
 
