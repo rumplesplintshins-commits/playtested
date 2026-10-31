@@ -29,10 +29,13 @@ assert.match(migration,/ig\.image_url is not null/);
 assert.match(migration,/from public\.approved_games duplicate_ag/);
 assert.match(migration,/num_nonnulls\([\s\S]*imported_game_id,[\s\S]*approved_game_id,[\s\S]*submission_id[\s\S]*\) = 1/);
 
-// Title/developer duplicate discovery includes imported Steam games only when
-// they satisfy that same displayed-catalogue gate. This is the 21 Days path.
+// Duplicate discovery catches a displayed catalogue game by normalised title
+// even when the entered developer name differs. This prevents an accidental
+// second 21 Days while still letting the developer choose "different game".
 assert.match(discoveryMigration,/create or replace function public\.find_possible_game_duplicates/);
 assert.match(discoveryMigration,/'imported'::text as source/);
+assert.match(discoveryMigration,/normalize_game_identity\(ig\.title\)[\s\S]*normalize_game_identity\(p_title\)/);
+assert.doesNotMatch(discoveryMigration,/normalize_game_identity\(ig\.developer_name\)[\s\S]*normalize_game_identity\(p_developer_name\)/);
 assert.match(discoveryMigration,/ig\.catalogue_eligible = true/);
 assert.match(discoveryMigration,/ig\.metadata_backfill_status = 'complete'/);
 assert.match(discoveryMigration,/ig\.developer_name is not null/);
@@ -60,4 +63,4 @@ assert.match(submit,/claimant_id: user\.id/);
 assert.match(submit,/possibleDuplicate\.source === "imported"/);
 assert.match(submit,/claimError\.code === "23505"/);
 
-console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, displayed-catalogue claim gate, imported duplicate discovery, catalogue quality preservation, and claim UI wiring.');
+console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, displayed-catalogue claim gate, title duplicate discovery, catalogue quality preservation, and claim UI wiring.');
