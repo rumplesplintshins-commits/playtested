@@ -3,8 +3,6 @@ import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
 import {SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION,serializeJsonLd} from "../lib/seo";
-import {publicProfileLinks} from "../lib/public-game-seo";
-import {Suspense} from "react";
 export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
 
 export default function Home() {
@@ -53,7 +51,6 @@ export default function Home() {
       <section id="discover-games">
         <GameCatalogue />
       </section>
-      <Suspense fallback={null}><PublicProfiles/></Suspense>
 
       <section
         id="about"
@@ -86,10 +83,4 @@ export default function Home() {
 
     </main>
   );
-}
-
-async function PublicProfiles(){
-  const profiles=await publicProfileLinks();
-  if(!profiles.length)return null;
-  return <section aria-labelledby="public-profiles" className="mx-auto max-w-7xl px-6 py-8"><h2 id="public-profiles" className="text-xl font-semibold">Explore game profiles</h2><p className="mt-2 text-sm text-zinc-400">Read game details and any available Playtested feedback. A profile does not mean a game has been independently assessed.</p><ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{profiles.slice(0,12).map(game=><li key={game.path}><Link href={game.path} className="block rounded-lg border border-white/10 px-4 py-3 text-emerald-300 underline-offset-4 hover:underline focus-visible:outline-2">{game.title}</Link></li>)}</ul><p className="mt-4 text-sm"><a href="#discover-games" className="text-emerald-300 underline underline-offset-4">Browse all games</a>{" · "}<Link href="/tester" className="text-emerald-300 underline underline-offset-4">Visit Tester Hub</Link> <span className="text-zinc-400">(sign in to participate)</span></p></section>;
 }
