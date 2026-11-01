@@ -67,7 +67,7 @@ begin
       feedback_usefulness_marked_by = auth.uid()
   where id = p_test_id;
 
-  -- A positive judgement is useful feedback for the tester, so surface it once.
+  -- Positive feedback is useful information for the tester, so surface it once.
   -- Negative judgements are stored for future quality/ranking analysis but are not
   -- pushed to the tester as a punitive notification.
   if p_usefulness = 'useful' and v_previous is distinct from 'useful' then
@@ -85,6 +85,26 @@ begin
 
   return p_usefulness;
 end;
+$$;
+
+create or replace function public.get_test_feedback_usefulness_for_developer(
+  p_test_id uuid
+)
+returns table(
+  usefulness text,
+  marked_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select t.feedback_usefulness, t.feedback_usefulness_marked_at
+  from public.community_game_tests t
+  join public.community_playtests c on c.id = t.playtest_id
+  where t.id = p_test_id
+    and t.review_outcome = 'accepted'
+    and c.developer_id = auth.uid();
 $$;
 
 create or replace function public.get_my_feedback_usefulness()
@@ -111,10 +131,12 @@ as $$
 $$;
 
 revoke all on function public.mark_test_feedback_usefulness(uuid,text),
+              public.get_test_feedback_usefulness_for_developer(uuid),
               public.get_my_feedback_usefulness()
 from public, anon;
 
 grant execute on function public.mark_test_feedback_usefulness(uuid,text),
+                  public.get_test_feedback_usefulness_for_developer(uuid),
                   public.get_my_feedback_usefulness()
 to authenticated;
 
