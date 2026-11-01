@@ -9,7 +9,7 @@ function replaceOnce(source, before, after, label) {
 }
 
 const startPath = "app/components/StartPlaytest.tsx";
-let start = fs.readFileSync(startPath, "utf8");
+let start = fs.readFileSync(startPath, "utf8").replace(/\r\n/g, "\n");
 
 start = replaceOnce(
   start,
@@ -22,7 +22,7 @@ const validationReturn = '    return {\n      error: "",\n      accessLink: trim
 start = replaceOnce(
   start,
   validationReturn,
-  '    if (developerPlan.data?.plan === "free" && minutes !== null && minutes > 30) {\n      return {\n        error: "Free campaigns can have an estimated test time of up to 30 minutes.",\n        accessLink: "",\n        instructions: "",\n        target: 0,\n        minutes: null as number | null,\n      };\n    }\n\n' + validationReturn,
+  '    if (developerPlan.data?.plan !== "pro" && minutes !== null && minutes > 30) {\n      return {\n        error: "Free campaigns can have an estimated test time of up to 30 minutes.",\n        accessLink: "",\n        instructions: "",\n        target: 0,\n        minutes: null as number | null,\n      };\n    }\n\n' + validationReturn,
   "Free duration validation"
 );
 
@@ -51,7 +51,7 @@ start = replaceOnce(
 fs.writeFileSync(startPath, start);
 
 const headerPath = "app/components/SiteHeader.tsx";
-let header = fs.readFileSync(headerPath, "utf8");
+let header = fs.readFileSync(headerPath, "utf8").replace(/\r\n/g, "\n");
 header = replaceOnce(
   header,
   '                  aria-expanded={notificationsOpen}\n',
