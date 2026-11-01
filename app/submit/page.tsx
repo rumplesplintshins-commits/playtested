@@ -1639,6 +1639,8 @@ export default function SubmitGamePage() {
 
           .eq("metadata_backfill_status", "complete")
 
+          .not("title", "is", null)
+
           .not("developer_name", "is", null)
 
           .not("genre", "is", null)

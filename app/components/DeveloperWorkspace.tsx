@@ -21,7 +21,8 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  const groups={games,submissions,claims,diagnostics};const items=groups[selection.tab];
  const statusFilters=selection.tab==="diagnostics"?["All",...new Set(diagnostics.map(run=>run.status))]:filters[selection.tab];
  const effectiveFilter=selection.tab==="diagnostics"&&!statusFilters.includes(selection.filter)?"All":selection.filter==="Current Hub feedback"&&!feedbackCountsReady?"All":selection.filter;
- const visible=items.filter(item=>item.title.toLowerCase().includes(selection.search.trim().toLowerCase())&&(effectiveFilter==="All"||(effectiveFilter==="Active playtest"?item.active:effectiveFilter==="Current Hub feedback"?item.hasFeedback:item.status===effectiveFilter)));
+ const priority=(status:string)=>status==="Needs More Information"?0:status==="Pending Review"||status==="Pending"?1:status==="Approved"?2:status==="Rejected"?3:4;
+ const visible=items.filter(item=>item.title.toLowerCase().includes(selection.search.trim().toLowerCase())&&(effectiveFilter==="All"||(effectiveFilter==="Active playtest"?item.active:effectiveFilter==="Current Hub feedback"?item.hasFeedback:item.status===effectiveFilter))).sort((a,b)=>selection.tab==="submissions"||selection.tab==="claims"?priority(a.status)-priority(b.status):0);
  const selected=visible.find(item=>item.id===selection.item)||visible[0];
  const [scrollRequest,setScrollRequest]=useState<{id:string;tab:Tab;feedback:boolean}|null>(null);
  const handledScroll=useRef<typeof scrollRequest>(null);
