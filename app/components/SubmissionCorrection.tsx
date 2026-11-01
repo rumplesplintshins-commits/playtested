@@ -16,7 +16,30 @@ export default function SubmissionCorrection({id,listingKind}:{id:string;listing
  useEffect(()=>{let active=true;void (async()=>{try{const result=await createClient().rpc(listingKind?"get_my_listing_edit":"get_my_submission_correction",{p_id:id,...(listingKind?{p_kind:listingKind}:{})});if(!active)return;if(result.error){setError("Your submission could not be loaded. Check that you are signed in as its developer and that the correction update is installed.");return;}const value=result.data as Correction;setData(value);setAreas(Array.isArray(value.submission.ai_areas)?value.submission.ai_areas.filter((area:unknown):area is string=>typeof area==="string"):[]);setFields(Object.fromEntries(SUBMISSION_FIELDS.map(rule=>{const stored=String(value.submission[rule.field]??"");return [rule.field,rule.field==="ai_type"&&!AI_CLASSIFICATIONS.includes(stored)?"":stored];})));setError("");}catch{if(active)setError("Your submission could not be loaded. Retry without changing your account.");}finally{if(active)setLoading(false);}})();return()=>{active=false;};},[id,retry,listingKind]);
  useEffect(()=>{if(!dirty)return;const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[dirty]);
  const issues=listingKind?listingEditIssues(data?.published||data?.submission||{},fields):submissionIssues(fields);const approved=data?.submission.status==="Approved";
+ async function correctionDuplicateMessage():Promise<string|null>{
+  const supabase=createClient();
+  const steamUrl=(fields.steam_url||"").trim();
+  let steamAppId:string|null=null;
+  if(steamUrl){try{const url=new URL(steamUrl);const match=url.pathname.match(/^\/app\/(\d+)(?:\/|$)/i);if(url.protocol==="https:"&&(url.hostname==="store.steampowered.com"||url.hostname==="www.store.steampowered.com")&&match)steamAppId=match[1];}catch{steamAppId=null;}}
+  if(steamAppId){
+   const {data:approved,error:approvedError}=await supabase.from("approved_games").select("id,title").eq("steam_app_id",steamAppId).maybeSingle();
+   if(approvedError)throw approvedError;
+   if(approved)return `This Steam game is already on Playtested as \"${String(approved.title||fields.title||"this game")}\". Resubmission is blocked. Use Submit a Game with this Steam URL to open the developer claim flow.`;
+   const {data:imported,error:importedError}=await supabase.from("imported_games").select("id,title").eq("steam_app_id",steamAppId).eq("catalogue_eligible",true).eq("metadata_backfill_status","complete").not("title","is",null).not("developer_name","is",null).not("genre","is",null).not("image_url","is",null).maybeSingle();
+   if(importedError)throw importedError;
+   if(imported)return `This Steam game is already in the Playtested catalogue as \"${String(imported.title||fields.title||"this game")}\". Resubmission is blocked. Use Submit a Game with this Steam URL to open the developer claim flow.`;
+  }
+  const title=(fields.title||"").trim();const developerName=(fields.developer_name||"").trim();
+  if(title){
+   const {data:rows,error:duplicateError}=await supabase.rpc("find_possible_game_duplicates",{p_title:title,p_developer_name:developerName});
+   if(duplicateError)throw duplicateError;
+   const duplicate=(Array.isArray(rows)?rows:[]).find((row:Record<string,unknown>)=>!(row.source==="submission"&&String(row.record_id)===id));
+   if(duplicate)return `\"${String(duplicate.title||title)}\" may already be on Playtested. Resubmission is blocked so an existing catalogue game cannot be created through the correction flow. Start a new submission to use the claim / different-game check.`;
+  }
+  return null;
+ }
  async function save(resubmit:boolean){if(busy||!data)return;setBusy(true);setError("");setNotice("");try{
+  if(resubmit&&!listingKind){const duplicateMessage=await correctionDuplicateMessage();if(duplicateMessage){setError(duplicateMessage);return;}}
   let payload:Record<string,unknown>={...fields,ai_areas:areas,release_date:fields.release_date||null,image_url:fields.image_url||null,steam_url:fields.steam_url||null};
   if(listingKind){const before=data.published||data.submission;payload=Object.fromEntries(Object.entries(payload).filter(([key,value])=>key==="ai_areas"?JSON.stringify(value)!==JSON.stringify(before[key]||[]):String(value??"")!==String(before[key]??"")));}
   const {data:result,error:failure}=await createClient().rpc(listingKind?"save_my_listing_edit":"save_my_submission_correction",{p_id:id,p_fields:payload,p_revision:data.submission.submission_revision,p_resubmit:resubmit,...(listingKind?{p_kind:listingKind,p_disputed:false}:{})});
