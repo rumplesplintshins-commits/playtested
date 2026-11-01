@@ -1,7 +1,9 @@
 import fs from "node:fs";
 
 const path = "app/components/GameCatalogue.tsx";
-let source = fs.readFileSync(path, "utf8");
+const original = fs.readFileSync(path, "utf8");
+const eol = original.includes("\r\n") ? "\r\n" : "\n";
+let source = original.replace(/\r\n/g, "\n");
 
 function replaceOnce(before, after, label) {
   const count = source.split(before).length - 1;
@@ -47,5 +49,5 @@ replaceOnce(
   "AI disclosure label"
 );
 
-fs.writeFileSync(path, source, "utf8");
+fs.writeFileSync(path, source.replace(/\n/g, eol), "utf8");
 console.log("Catalogue presentation cleanup applied successfully.");
