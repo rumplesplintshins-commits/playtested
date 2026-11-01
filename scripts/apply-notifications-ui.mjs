@@ -18,13 +18,6 @@ start = replaceOnce(
   "FeedbackUsefulness import"
 );
 
-start = replaceOnce(
-  start,
-  '    if (\n      minutes !== null &&\n      (!Number.isInteger(minutes) ||\n        minutes < 1 ||\n        minutes > 1440)\n    ) {',
-  '    if (\n      minutes !== null &&\n      (!Number.isInteger(minutes) ||\n        minutes < 1 ||\n        minutes > 1440)\n    ) {',
-  "duration validation anchor"
-);
-
 const validationReturn = '    return {\n      error: "",\n      accessLink: trimmedAccessLink,\n      instructions: trimmedInstructions,\n      target,\n      minutes,\n    };';
 start = replaceOnce(
   start,
@@ -34,7 +27,7 @@ start = replaceOnce(
 );
 
 const durationOptions = `                        <option value="">Not specified</option>\n                        <option value="15">15 minutes</option>\n                        <option value="30">30 minutes</option>\n                        <option value="45">45 minutes</option>\n                        <option value="60">1 hour</option>\n                        <option value="90">1 hour 30 minutes</option>\n                        <option value="120">2 hours</option>\n                        <option value="180">3+ hours</option>`;
-const lockedDurationOptions = `                        <option value="">Not specified</option>\n                        <option value="15">15 minutes</option>\n                        <option value="30">30 minutes</option>\n                        <option value="45" disabled={developerPlan.data?.plan !== "pro"}>45 minutes${"${developerPlan.data?.plan === \"pro\" ? \"\" : \" — Pro\"}"}</option>\n                        <option value="60" disabled={developerPlan.data?.plan !== "pro"}>1 hour${"${developerPlan.data?.plan === \"pro\" ? \"\" : \" — Pro\"}"}</option>\n                        <option value="90" disabled={developerPlan.data?.plan !== "pro"}>1 hour 30 minutes${"${developerPlan.data?.plan === \"pro\" ? \"\" : \" — Pro\"}"}</option>\n                        <option value="120" disabled={developerPlan.data?.plan !== "pro"}>2 hours${"${developerPlan.data?.plan === \"pro\" ? \"\" : \" — Pro\"}"}</option>\n                        <option value="180" disabled={developerPlan.data?.plan !== "pro"}>3+ hours${"${developerPlan.data?.plan === \"pro\" ? \"\" : \" — Pro\"}"}</option>`;
+const lockedDurationOptions = `                        <option value="">Not specified</option>\n                        <option value="15">15 minutes</option>\n                        <option value="30">30 minutes</option>\n                        <option value="45" disabled={developerPlan.data?.plan !== "pro"}>45 minutes{developerPlan.data?.plan === "pro" ? "" : " — Pro"}</option>\n                        <option value="60" disabled={developerPlan.data?.plan !== "pro"}>1 hour{developerPlan.data?.plan === "pro" ? "" : " — Pro"}</option>\n                        <option value="90" disabled={developerPlan.data?.plan !== "pro"}>1 hour 30 minutes{developerPlan.data?.plan === "pro" ? "" : " — Pro"}</option>\n                        <option value="120" disabled={developerPlan.data?.plan !== "pro"}>2 hours{developerPlan.data?.plan === "pro" ? "" : " — Pro"}</option>\n                        <option value="180" disabled={developerPlan.data?.plan !== "pro"}>3+ hours{developerPlan.data?.plan === "pro" ? "" : " — Pro"}</option>`;
 const durationCount = start.split(durationOptions).length - 1;
 if (durationCount < 1) throw new Error("Estimated duration options not found");
 start = start.split(durationOptions).join(lockedDurationOptions);
