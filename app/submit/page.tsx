@@ -458,6 +458,10 @@ export default function SubmitGamePage() {
 
     useState<ImageStatus>("empty");
 
+  const [imageUploading, setImageUploading] = useState(false);
+  const [description, setDescription] = useState("");
+  const [aiExplanation, setAiExplanation] = useState("");
+
 
 
   const [submitting, setSubmitting] = useState(false);
@@ -699,20 +703,64 @@ export default function SubmitGamePage() {
 
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-
     const url = event.target.value.trim();
-
-
-
     setImageUrl(url);
-
     setError("");
-
     setImageStatus(url ? "loading" : "empty");
-
   }
 
+  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
 
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(file.type)) {
+      setError("Upload a JPG, PNG or WebP thumbnail.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Thumbnail images must be 5 MB or smaller.");
+      return;
+    }
+
+    setImageUploading(true);
+    setError("");
+    setImageStatus("loading");
+
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        setError("Sign in again before uploading a thumbnail.");
+        setImageStatus("empty");
+        return;
+      }
+
+      const extension = file.name.split(".").pop()?.toLowerCase() ||
+        (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
+      const objectPath = user.id + "/" + crypto.randomUUID() + "." + extension;
+      const { error: uploadError } = await supabase.storage
+        .from("game-thumbnails")
+        .upload(objectPath, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+
+      if (uploadError) {
+        setError("Could not upload thumbnail: " + uploadError.message);
+        setImageStatus("empty");
+        return;
+      }
+
+      const { data } = supabase.storage.from("game-thumbnails").getPublicUrl(objectPath);
+      setImageUrl(data.publicUrl);
+      setImageStatus("loading");
+    } catch (uploadError) {
+      console.error("Unexpected thumbnail upload error:", uploadError);
+      setError("Could not upload the thumbnail. Please try again.");
+      setImageStatus("empty");
+    } finally {
+      setImageUploading(false);
+    }
+  }
 
   function openDatePicker(event: MouseEvent<HTMLInputElement>) {
 
@@ -1139,7 +1187,7 @@ export default function SubmitGamePage() {
     const form = event.currentTarget;
 
     const formData = new FormData(form);
-    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),evidence_link:String(formData.get('evidenceLink')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String)};
+    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String)};
 
 
 
@@ -1860,12 +1908,6 @@ export default function SubmitGamePage() {
 
           ).trim(),
 
-          evidence_link: String(
-
-            formData.get("evidenceLink") ?? ""
-
-          ).trim(),
-
           status: "Pending Review",
 
         })
@@ -1926,7 +1968,7 @@ export default function SubmitGamePage() {
 
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
-      setImageUrl("");setImageStatus("empty");setReleaseStatus("");form.reset();
+      setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");form.reset();
       setPulseOpen(false);setPulseStage("idle");
       // The optional queue is handled independently after the successful save.
     } catch (err) {
@@ -3112,6 +3154,10 @@ export default function SubmitGamePage() {
 
                         />
 
+                        <span className="mt-2 block text-right text-xs text-zinc-500">
+                          {claimReason.length.toLocaleString()} / 1,000
+                        </span>
+
 
 
                         <span className="mt-2 block text-xs leading-5 text-zinc-500">
@@ -3126,7 +3172,7 @@ export default function SubmitGamePage() {
 
                       <label className={labelClass}>
 
-                        Verification evidence
+                        Ownership evidence (optional)
 
                         <input
 
@@ -3154,11 +3200,7 @@ export default function SubmitGamePage() {
 
                         <span className="mt-2 block text-xs leading-5 text-zinc-500">
 
-                          Link to an official developer website, studio page,
-
-                          publisher page or another source that helps verify
-
-                          your relationship to the game.
+                          Link to something that helps confirm your connection to this game, such as your studio website, Steam developer page, publisher page or another public source.
 
                         </span>
 
@@ -3501,20 +3543,23 @@ export default function SubmitGamePage() {
                 Game description *
 
                 <textarea
-
                   required
-
                   name="description"
-
-                  rows={5}
-
-                  maxLength={1000}
-
+                  rows={8}
+                  maxLength={2000}
+                  value={description}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    event.currentTarget.style.height = "auto";
+                    event.currentTarget.style.height = Math.min(event.currentTarget.scrollHeight, 520) + "px";
+                  }}
                   placeholder="Describe the gameplay, key features and what makes your game different."
-
-                  className={inputClass}
-
+                  className={inputClass + " min-h-48 resize-y overflow-y-auto"}
                 />
+
+                <span className="mt-2 block text-right text-xs text-zinc-500">
+                  {description.length.toLocaleString()} / 2,000
+                </span>
 
               </label>
 
@@ -3581,113 +3626,33 @@ export default function SubmitGamePage() {
 
 
               <div>
-
-                <label htmlFor="imageUrl" className={labelClass}>
-
-                  Game thumbnail image URL
-
-                  <input
-
-                    id="imageUrl"
-
-                    name="imageUrl"
-
-                    type="url"
-
-                    value={imageUrl}
-
-                    onChange={handleImageChange}
-
-                    placeholder="https://example.com/game-cover.jpg"
-
-                    className={inputClass}
-
-                  />
-
-                </label>
-
-
-
+                <p className={labelClass}>Game thumbnail *</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-500">
-
-                  Paste a direct link to your game's image.
-
+                  Upload a JPG, PNG or WebP up to 5 MB, or paste a direct image URL. One thumbnail source is required.
                 </p>
 
+                <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
+                  <label className={"inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-[#101311] px-4 py-3 text-sm font-semibold text-zinc-200 hover:border-[#77f29b]/50 " + (imageUploading ? "pointer-events-none opacity-60" : "")}>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
+                    {imageUploading ? "Uploading..." : "Upload image"}
+                  </label>
+                  <span className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600 sm:text-left">or use an image URL</span>
+                </div>
 
+                <label htmlFor="imageUrl" className="mt-1 block">
+                  <span className="sr-only">Game thumbnail image URL</span>
+                  <input id="imageUrl" name="imageUrl" type="url" value={imageUrl} onChange={handleImageChange} placeholder="https://example.com/game-cover.jpg" className={inputClass} />
+                </label>
 
                 {imageUrl && (
-
                   <div className="mt-4 rounded-xl border border-white/10 bg-[#101311] p-4">
-
-                    <p className="mb-3 text-sm font-semibold text-zinc-300">
-
-                      Thumbnail preview
-
-                    </p>
-
-
-
-                    {imageStatus === "loading" && (
-
-                      <p className="text-sm text-amber-300">
-
-                        Checking image...
-
-                      </p>
-
-                    )}
-
-
-
-                    {imageStatus === "error" && (
-
-                      <p className="text-sm text-red-300">
-
-                        Image failed to load. Check the URL.
-
-                      </p>
-
-                    )}
-
-
-
-                    <img
-
-                      key={imageUrl}
-
-                      src={imageUrl}
-
-                      alt="Game thumbnail preview"
-
-                      className={`max-h-72 w-full rounded-lg object-contain ${
-
-                        imageStatus === "error" ? "hidden" : ""
-
-                      }`}
-
-                      onLoad={() => setImageStatus("loaded")}
-
-                      onError={() => setImageStatus("error")}
-
-                    />
-
-
-
-                    {imageStatus === "loaded" && (
-
-                      <p className="mt-3 text-sm text-[#77f29b]">
-
-                        Image loaded successfully.
-
-                      </p>
-
-                    )}
-
+                    <p className="mb-3 text-sm font-semibold text-zinc-300">Thumbnail preview</p>
+                    {imageStatus === "loading" && <p className="text-sm text-amber-300">Checking image...</p>}
+                    {imageStatus === "error" && <p className="text-sm text-red-300">Image failed to load. Check the URL or upload another image.</p>}
+                    <img key={imageUrl} src={imageUrl} alt="Game thumbnail preview" className={"max-h-72 w-full rounded-lg object-contain " + (imageStatus === "error" ? "hidden" : "")} onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />
+                    {imageStatus === "loaded" && <p className="mt-3 text-sm text-[#77f29b]">Image ready.</p>}
                   </div>
-
                 )}
-
               </div>
 
             </section>
@@ -3744,23 +3709,13 @@ export default function SubmitGamePage() {
 
                   </option>
 
-                  <option value="AI-generated">
+                  <option value="AI-assisted: Code only">AI-assisted: Code only</option>
 
-                    AI-generated content or code
+                  <option value="AI-assisted: Content only">AI-assisted: Content only</option>
 
-                  </option>
+                  <option value="AI-assisted: Code and content">AI-assisted: Code and content</option>
 
-                  <option value="AI-assisted">
-
-                    AI-assisted development
-
-                  </option>
-
-                  <option value="No AI disclosed">
-
-                    No AI use to disclose
-
-                  </option>
+                  <option value="No AI used">No AI used</option>
 
                 </select>
 
@@ -3819,48 +3774,26 @@ export default function SubmitGamePage() {
                 Explain how AI was used
 
                 <textarea
-
                   name="aiExplanation"
-
-                  rows={5}
-
+                  rows={6}
                   maxLength={2000}
-
+                  value={aiExplanation}
+                  onChange={(event) => {
+                    setAiExplanation(event.target.value);
+                    event.currentTarget.style.height = "auto";
+                    event.currentTarget.style.height = Math.min(event.currentTarget.scrollHeight, 520) + "px";
+                  }}
                   placeholder="Which tools were used, what did they produce, and how much was edited or created by humans?"
-
-                  className={inputClass}
-
+                  className={inputClass + " min-h-40 resize-y overflow-y-auto"}
                 />
 
-              </label>
-
-
-
-              <label className={labelClass}>
-
-                Supporting evidence link (optional)
-
-                <input
-
-                  name="evidenceLink"
-
-                  type="url"
-
-                  placeholder="https://..."
-
-                  className={inputClass}
-
-                />
-
-
-
-                <span className="mt-2 block text-xs leading-5 text-zinc-500">
-
-                  Add a relevant link if you’d like to provide more context.
-
+                <span className="mt-2 block text-right text-xs text-zinc-500">
+                  {aiExplanation.length.toLocaleString()} / 2,000
                 </span>
 
               </label>
+
+
 
             </section>
 
