@@ -6,20 +6,20 @@ export const SUBMISSION_FIELDS=[
  {field:"description",label:"Game description",required:true},
  {field:"game_link",label:"Game or build link",url:true},
  {field:"steam_url",label:"Steam store link",url:true},
- {field:"image_url",label:"Thumbnail URL",url:true},
+ {field:"image_url",label:"Game thumbnail",required:true,url:true},
  {field:"release_status",label:"Release status",required:true},
  {field:"release_date",label:"Release date"},
  {field:"ai_type",label:"AI classification",required:true},
  {field:"ai_explanation",label:"AI-use explanation",ai:true},
- {field:"evidence_link",label:"Supporting evidence link (optional)",url:true},
 ] as const;
-export const AI_CLASSIFICATIONS=["AI-generated","AI-assisted","No AI disclosed"];
+// Keep legacy values valid for existing records while new submissions use the clearer classifications.
+export const AI_CLASSIFICATIONS=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","No AI used","AI-generated","AI-assisted","No AI disclosed"];
 export const AI_AREAS=["Programming or code","Artwork or textures","Writing or dialogue","Voice or audio","Music or sound effects","Animation or video","Testing or development tools","Other"];
 export const RELEASE_STATUSES=["Released","Upcoming","Not announced"];
 export function submissionHttpUrl(value:string){const port=/^https?:\/\/[^/?#@:]+:([0-9]+)/i.exec(value)?.[1];return /^https?:\/\/[^\s/?#@:]+(?::[0-9]{1,5})?(?:[/?#][^\s]*)?$/i.test(value)&&(!port||Number(port)<=65535);}
 // Client guidance only. The matching SQL validator is authoritative on every write.
 export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[]{
- const ai=["AI-generated","AI-assisted"].includes(String(record.ai_type||"").trim());
+ const ai=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","AI-generated","AI-assisted"].includes(String(record.ai_type||"").trim());
  return SUBMISSION_FIELDS.flatMap(rule=>{
   const value=String(record[rule.field]??"").trim();let reason="";
   const required=("required" in rule&&rule.required)||("ai" in rule&&rule.ai&&ai)||(rule.field==="release_date"&&String(record.release_status||"").trim()==="Released");
