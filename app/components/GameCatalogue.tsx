@@ -104,6 +104,7 @@ const AI_PUBLIC_LABELS: Record<string, string> = {
   "AI-assisted: Content only": "AI Content Only",
   "AI-assisted: Code and content": "AI Code & Content",
   "No AI used": "No AI disclosed",
+  "No AI disclosed": "No AI disclosed",
 };
 
 const aiTypes = [
@@ -154,7 +155,7 @@ function VerificationBadge({
 }: {
   status: VerificationStatus | null;
 }) {
-  if (!status) {
+  if (!status || status === "Not yet verified") {
     return null;
   }
 
@@ -169,7 +170,7 @@ function VerificationBadge({
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles[status]}`}
     >
-      {assessmentLabel(status)}
+      Assessed
     </span>
   );
 }
@@ -212,7 +213,11 @@ function GameCardContent({
   compact: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
-  const disclosure = AI_CLASSIFICATIONS.includes(game.aiType.trim()) ? game.aiType.trim() : "AI use unknown";
+  const rawDisclosure = game.aiType.trim();
+  const disclosure =
+    AI_CLASSIFICATIONS.includes(rawDisclosure) || rawDisclosure === "No AI disclosed"
+      ? rawDisclosure
+      : "AI use unknown";
   const disclosureLabel = publicAiLabel(disclosure);
   const disclosureStyle = disclosure === "AI-assisted: Content only" || disclosure === "AI-assisted: Code and content" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted: Code only" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
@@ -252,9 +257,15 @@ function GameCardContent({
         <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
 
         <div className="flex flex-wrap items-center gap-2">
-          {game.listingNotice||game.assessmentUnavailable?<span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">{game.listingNotice||"Assessment status unavailable"}</span>:<VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />}
+          {game.listingNotice ? (
+            <span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">
+              {game.listingNotice}
+            </span>
+          ) : (
+            <VerificationBadge status={game.verificationStatus} />
+          )}
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
-            {disclosure === "AI use unknown" ? "AI Use Unknown" : `Developer-declared: ${disclosureLabel}`}
+            {disclosureLabel}
           </span>
           {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
