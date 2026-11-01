@@ -24,7 +24,7 @@ begin
         'admin_new_submission',
         'New submission: ' || v_title,
         v_title || ' has been submitted for review.',
-        '/admin',
+        '/admin/submissions',
         'submission',
         new.id,
         'submission:new:' || new.id::text || ':admin:' || v_admin_id::text
@@ -37,10 +37,10 @@ begin
     if new.status = 'Needs More Information' then
       perform public._create_notification(
         new.developer_id,
-        'developer_more_info',
+        'submission_needs_info',
         'Needs more information',
         v_title || ' needs more information. Review the request and update your submission.',
-        '/developer',
+        '/my-submissions',
         'submission',
         new.id,
         'submission:more-info:' || new.id::text || ':revision:' || coalesce(new.submission_revision, 0)::text
@@ -48,10 +48,10 @@ begin
     elsif new.status = 'Approved' then
       perform public._create_notification(
         new.developer_id,
-        'developer_approved',
+        'submission_approved',
         'Game approved',
         v_title || ' has been approved and added to the Playtested catalogue.',
-        '/developer',
+        '/my-submissions',
         'submission',
         new.id,
         'submission:approved:' || new.id::text
@@ -77,22 +77,24 @@ as $$
 declare
   v_tester_id uuid;
   v_title text;
-  v_genres text[];
   v_genre_label text;
 begin
-  -- The existing campaign model uses published as the tester-visible state.
-  if new.status is distinct from 'published' then
+  -- Tester Hub campaigns are actionable when open and aimed at Playtested testers.
+  if new.status is distinct from 'open'
+     or new.audience not in ('playtested_testers', 'both') then
     return new;
   end if;
-  if tg_op = 'UPDATE' and old.status is not distinct from 'published' then
+
+  -- Notify only on the transition into the actionable Tester Hub state.
+  if tg_op = 'UPDATE'
+     and old.status is not distinct from 'open'
+     and old.audience is not distinct from new.audience then
     return new;
   end if;
 
   v_title := coalesce(nullif(btrim(new.title), ''), 'A game');
-  v_genres := public.game_genres(new.testing_genre);
   v_genre_label := case
-    when new.genre_restricted and cardinality(array_remove(v_genres, 'Other')) > 0
-      then array_to_string(array_remove(v_genres, 'Other'), ', ')
+    when new.genre_restricted then nullif(btrim(new.testing_genre), '')
     else null
   end;
 
@@ -100,23 +102,25 @@ begin
     select p.id
     from public.profiles p
     where 'tester' = any(p.roles)
-      and public.tester_rank(p.id) >= new.minimum_rank
-      and (
-        not new.genre_restricted
-        or array_remove(v_genres, 'Other') && public.normalize_testing_genres(p.preferred_genres)
-      )
-      -- Playtested already enforces one active test. Do not alert someone who cannot act.
+      -- Reuse the production eligibility function for rank + genre targeting.
+      and public.campaign_eligible(new.id, p.id)
+      -- Playtested enforces one active test. Do not alert someone who cannot act.
       and not exists (
         select 1
         from public.community_game_tests t
         where t.tester_id = p.id
-          and t.status not in ('submitted', 'reviewed', 'released', 'cancelled')
+          and t.status in ('claimed', 'in_progress')
       )
+      -- Do not create alerts after the campaign has already filled.
+      and (select available from public.campaign_places(new.id)) > 0
   loop
     perform public._create_notification(
       v_tester_id,
       'tester_playtest_available',
-      case when v_genre_label is null then 'New playtest available' else 'New ' || v_genre_label || ' playtest available' end,
+      case
+        when v_genre_label is null then 'New playtest available'
+        else 'New ' || v_genre_label || ' playtest available'
+      end,
       v_title || ' is now looking for testers.',
       '/tester',
       'playtest',
@@ -131,9 +135,11 @@ $$;
 
 drop trigger if exists notify_playtest_available on public.community_playtests;
 create trigger notify_playtest_available
-after insert or update of status on public.community_playtests
+after insert or update of status, audience on public.community_playtests
 for each row execute function public.notify_playtest_available();
 
-revoke all on function public.notify_submission_lifecycle(), public.notify_playtest_available() from public, anon, authenticated;
+revoke all on function public.notify_submission_lifecycle(), public.notify_playtest_available()
+from public, anon, authenticated;
+
 notify pgrst, 'reload schema';
 commit;
