@@ -12,8 +12,9 @@ export const SUBMISSION_FIELDS=[
  {field:"ai_type",label:"AI classification",required:true},
  {field:"ai_explanation",label:"AI-use explanation",ai:true},
 ] as const;
-// Keep legacy values valid for existing records while new submissions use the clearer classifications.
-export const AI_CLASSIFICATIONS=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","No AI used","AI-generated","AI-assisted","No AI disclosed"];
+export const AI_CLASSIFICATIONS=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","No AI used"];
+export const LEGACY_AI_CLASSIFICATIONS=["AI-generated","AI-assisted","No AI disclosed"];
+export const ACCEPTED_AI_CLASSIFICATIONS=[...AI_CLASSIFICATIONS,...LEGACY_AI_CLASSIFICATIONS];
 export const AI_AREAS=["Programming or code","Artwork or textures","Writing or dialogue","Voice or audio","Music or sound effects","Animation or video","Testing or development tools","Other"];
 export const RELEASE_STATUSES=["Released","Upcoming","Not announced"];
 export function submissionHttpUrl(value:string){const port=/^https?:\/\/[^/?#@:]+:([0-9]+)/i.exec(value)?.[1];return /^https?:\/\/[^\s/?#@:]+(?::[0-9]{1,5})?(?:[/?#][^\s]*)?$/i.test(value)&&(!port||Number(port)<=65535);}
@@ -26,7 +27,7 @@ export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[
   if(required&&!value)reason="Required";
   else if(value&&"url" in rule&&!submissionHttpUrl(value))reason="Use a valid HTTP or HTTPS URL";
   else if(rule.field==="steam_url"&&value&&!/^https:\/\/store\.steampowered\.com\/app\/[0-9]+(?:[/?#][^\s]*)?$/i.test(value))reason="Use the game's Steam app store URL";
-  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value))reason="Select an available AI classification";
+  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value))reason="Please update this legacy AI disclosure using one of the current classifications";
   else if(rule.field==="release_status"&&value&&!RELEASE_STATUSES.includes(value))reason="Select an available release status";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Released"&&value>new Date().toISOString().slice(0,10))reason="A released game's release date cannot be in the future";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Upcoming"&&value<new Date().toISOString().slice(0,10))reason="An upcoming game's planned release date cannot be in the past";
