@@ -1,7 +1,7 @@
 import fs from "node:fs";
 
 const path = "app/submit/page.tsx";
-let s = fs.readFileSync(path, "utf8");
+let s = fs.readFileSync(path, "utf8").replace(/\r\n/g, "\n");
 
 function replaceOnce(label, pattern, replacement) {
   const before = s;
@@ -9,12 +9,15 @@ function replaceOnce(label, pattern, replacement) {
   if (s === before) throw new Error(`Patch failed: ${label}`);
 }
 
-function replaceBetween(label, startMarker, endMarker, replacement, keepEnd = true) {
-  const start = s.indexOf(startMarker);
-  if (start < 0) throw new Error(`Patch failed: ${label} start`);
-  const end = s.indexOf(endMarker, start + startMarker.length);
-  if (end < 0) throw new Error(`Patch failed: ${label} end`);
-  s = s.slice(0, start) + replacement + s.slice(keepEnd ? end : end + endMarker.length);
+function replaceBetween(label, startPattern, endPattern, replacement) {
+  const startMatch = startPattern.exec(s);
+  if (!startMatch) throw new Error(`Patch failed: ${label} start`);
+  const start = startMatch.index;
+  const remainder = s.slice(start + startMatch[0].length);
+  const endMatch = endPattern.exec(remainder);
+  if (!endMatch) throw new Error(`Patch failed: ${label} end`);
+  const end = start + startMatch[0].length + endMatch.index;
+  s = s.slice(0, start) + replacement + s.slice(end);
 }
 
 replaceOnce(
@@ -86,8 +89,8 @@ const imageHandlers = `  function handleImageChange(event: ChangeEvent<HTMLInput
 `;
 replaceBetween(
   "thumbnail upload handler",
-  "  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {",
-  "  function openDatePicker(event: MouseEvent<HTMLInputElement>) {",
+  /  function handleImageChange\(event: ChangeEvent<HTMLInputElement>\) \{/,
+  /  function openDatePicker\(event: MouseEvent<HTMLInputElement>\) \{/,
   imageHandlers
 );
 
@@ -156,11 +159,12 @@ const thumbnailBlock = `              <div>
                   </div>
                 )}
               </div>
+
 `;
 replaceBetween(
   "thumbnail block",
-  '              <div>\n\n                <label htmlFor="imageUrl"',
-  '            </section>\n\n\n\n            <div className="border-t border-white/10" />',
+  /              <div>\s*<label htmlFor="imageUrl" className=\{labelClass\}>/,
+  /            <\/section>\s*<div className="border-t border-white\/10" \/>/,
   thumbnailBlock
 );
 
