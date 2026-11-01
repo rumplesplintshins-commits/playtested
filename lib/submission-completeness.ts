@@ -27,7 +27,7 @@ export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[
   if(required&&!value)reason="Required";
   else if(value&&"url" in rule&&!submissionHttpUrl(value))reason="Use a valid HTTP or HTTPS URL";
   else if(rule.field==="steam_url"&&value&&!/^https:\/\/store\.steampowered\.com\/app\/[0-9]+(?:[/?#][^\s]*)?$/i.test(value))reason="Use the game's Steam app store URL";
-  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value))reason="Please update this legacy AI disclosure using one of the current classifications";
+  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value)&&value!=="No AI disclosed")reason="Please update this legacy AI disclosure using one of the current classifications";
   else if(rule.field==="release_status"&&value&&!RELEASE_STATUSES.includes(value))reason="Select an available release status";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Released"&&value>new Date().toISOString().slice(0,10))reason="A released game's release date cannot be in the future";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Upcoming"&&value<new Date().toISOString().slice(0,10))reason="An upcoming game's planned release date cannot be in the past";
