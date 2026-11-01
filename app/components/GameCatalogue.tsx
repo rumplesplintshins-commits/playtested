@@ -99,11 +99,22 @@ type CommunityReception = {
   receptionStatus: ReceptionStatus;
 };
 
+const AI_PUBLIC_LABELS: Record<string, string> = {
+  "AI-assisted: Code only": "AI Code Only",
+  "AI-assisted: Content only": "AI Content Only",
+  "AI-assisted: Code and content": "AI Code & Content",
+  "No AI used": "No AI disclosed",
+};
+
 const aiTypes = [
   "All AI types",
   ...AI_CLASSIFICATIONS,
   "AI use unknown",
 ];
+
+function publicAiLabel(value: string) {
+  return AI_PUBLIC_LABELS[value] ?? "AI Use Unknown";
+}
 
 const genres = [
   "All genres",
@@ -202,7 +213,8 @@ function GameCardContent({
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const disclosure = AI_CLASSIFICATIONS.includes(game.aiType.trim()) ? game.aiType.trim() : "AI use unknown";
-  const disclosureStyle = disclosure === "AI-generated" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
+  const disclosureLabel = publicAiLabel(disclosure);
+  const disclosureStyle = disclosure === "AI-assisted: Content only" || disclosure === "AI-assisted: Code and content" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted: Code only" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
     <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
       <a
@@ -242,7 +254,7 @@ function GameCardContent({
         <div className="flex flex-wrap items-center gap-2">
           {game.listingNotice||game.assessmentUnavailable?<span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">{game.listingNotice||"Assessment status unavailable"}</span>:<VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />}
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
-            {disclosure === "AI use unknown" ? "AI Use Unknown" : `Developer-declared: ${disclosure}`}
+            {disclosure === "AI use unknown" ? "AI Use Unknown" : `Developer-declared: ${disclosureLabel}`}
           </span>
           {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
