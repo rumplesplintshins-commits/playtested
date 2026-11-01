@@ -3628,7 +3628,7 @@ export default function SubmitGamePage() {
               <div>
                 <p className={labelClass}>Game thumbnail *</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-500">
-                  Upload a JPG, PNG or WebP up to 5 MB, or paste a direct image URL. One thumbnail source is required.
+                  Upload a JPG, PNG or WebP up to 5 MB, or paste a direct image URL. Recommended: 16:9, at least 1280 × 720. Other sizes may be cropped to fit.
                 </p>
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
