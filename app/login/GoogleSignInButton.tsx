@@ -8,6 +8,7 @@ type SignupRole = "player" | "tester" | "developer";
 type Props = {
   mode: "login" | "signup";
   signupRoles: SignupRole[];
+  ageConfirmed: boolean;
   nextPath: string;
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -25,73 +26,36 @@ function GoogleIcon() {
   );
 }
 
-export default function GoogleSignInButton({
-  mode,
-  signupRoles,
-  nextPath,
-  loading,
-  setLoading,
-  setMessage,
-}: Props) {
+export default function GoogleSignInButton({ mode, signupRoles, ageConfirmed, nextPath, loading, setLoading, setMessage }: Props) {
   async function signInWithGoogle() {
     if (loading) return;
-
     if (mode === "signup" && signupRoles.length === 0) {
       setMessage("Select at least one role to continue.");
+      return;
+    }
+    if (mode === "signup" && !ageConfirmed) {
+      setMessage("You must confirm that you are 18 or over to create a Playtested account.");
       return;
     }
 
     setMessage("");
     setLoading(true);
-
     try {
       const supabase = createClient();
       const callbackUrl = new URL("/auth/callback", window.location.origin);
       const safeNext = getSafeNextPath(nextPath);
-
-      if (safeNext !== "/") {
-        callbackUrl.searchParams.set("next", safeNext);
-      }
-
+      if (safeNext !== "/") callbackUrl.searchParams.set("next", safeNext);
       if (mode === "signup") {
         callbackUrl.searchParams.set("roles", signupRoles.join(","));
+        callbackUrl.searchParams.set("adult", "1");
       }
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: callbackUrl.toString(),
-        },
-      });
-
+      const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl.toString() } });
       if (error) throw error;
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Google sign-in could not be started. Please try again."
-      );
+      setMessage(error instanceof Error ? error.message : "Google sign-in could not be started. Please try again.");
       setLoading(false);
     }
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        disabled={loading}
-        onClick={signInWithGoogle}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-600 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <GoogleIcon />
-        {mode === "login" ? "Continue with Google" : "Create account with Google"}
-      </button>
-
-      <div className="flex items-center gap-3" aria-hidden="true">
-        <div className="h-px flex-1 bg-slate-700" />
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">or use email</span>
-        <div className="h-px flex-1 bg-slate-700" />
-      </div>
-    </>
-  );
+  return <><button type="button" disabled={loading} onClick={signInWithGoogle} className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-600 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"><GoogleIcon />{mode === "login" ? "Continue with Google" : "Create account with Google"}</button><div className="flex items-center gap-3" aria-hidden="true"><div className="h-px flex-1 bg-slate-700"/><span className="text-xs font-medium uppercase tracking-wider text-slate-500">or use email</span><div className="h-px flex-1 bg-slate-700"/></div></>;
 }

@@ -6,50 +6,33 @@ const allowedRoles = new Set(["player", "tester", "developer"]);
 
 function getSignupRoles(value: string | null): string[] {
   if (!value) return [];
-
-  return [...new Set(
-    value
-      .split(",")
-      .map((role) => role.trim())
-      .filter((role) => allowedRoles.has(role))
-  )];
+  return [...new Set(value.split(",").map((role) => role.trim()).filter((role) => allowedRoles.has(role)))];
 }
 
 function getPublicOrigin(request: Request): string {
   const requestUrl = new URL(request.url);
-
-  if (process.env.NODE_ENV === "development") {
-    return requestUrl.origin;
-  }
-
+  if (process.env.NODE_ENV === "development") return requestUrl.origin;
   const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-
   if (forwardedHost) {
-    const protocol = forwardedProto === "http" || forwardedProto === "https"
-      ? forwardedProto
-      : "https";
+    const protocol = forwardedProto === "http" || forwardedProto === "https" ? forwardedProto : "https";
     return `${protocol}://${forwardedHost}`;
   }
-
   return "https://playtested.co.uk";
 }
 
-function wasUserCreatedByThisOAuthSignIn(
-  createdAt: string | undefined,
-  lastSignInAt: string | undefined
-): boolean {
+function wasUserCreatedByThisOAuthSignIn(createdAt: string | undefined, lastSignInAt: string | undefined): boolean {
   if (!createdAt || !lastSignInAt) return false;
-
   const created = Date.parse(createdAt);
   const signedIn = Date.parse(lastSignInAt);
-
   if (!Number.isFinite(created) || !Number.isFinite(signedIn)) return false;
-
-  // A genuinely new OAuth account is created as part of this sign-in, so these
-  // timestamps should be effectively identical. Existing accounts must never
-  // have their application roles replaced just because they used the signup UI.
   return Math.abs(signedIn - created) <= 10_000;
+}
+
+function ageFailurePath(next: string): string {
+  const params = new URLSearchParams({ mode: "signup", error: "age_confirmation_required" });
+  if (next !== "/") params.set("next", next);
+  return `/login?${params.toString()}`;
 }
 
 export async function GET(request: Request) {
@@ -59,28 +42,39 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = getSafeNextPath(searchParams.get("next"));
   const signupRoles = getSignupRoles(searchParams.get("roles"));
+  const adultDeclared = searchParams.get("adult") === "1";
 
   if (code) {
     try {
       const supabase = await createClient();
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error && data.user) {
+        const isNewUser = wasUserCreatedByThisOAuthSignIn(data.user.created_at, data.user.last_sign_in_at);
+        const metadata = data.user.user_metadata ?? {};
+        const ageGateRequired = metadata.age_gate_required === true;
+        const alreadyConfirmed = metadata.age_18_confirmed === true;
 
-      if (!error) {
-        const isNewUser = wasUserCreatedByThisOAuthSignIn(
-          data.user?.created_at,
-          data.user?.last_sign_in_at
-        );
-
-        if (signupRoles.length > 0 && isNewUser) {
-          const { error: roleError } = await supabase.rpc("update_my_roles", {
-            p_roles: signupRoles,
-          });
-
-          if (roleError) {
-            return NextResponse.redirect(
-              new URL(confirmationFailurePath(next), origin)
-            );
+        if ((isNewUser || ageGateRequired) && !alreadyConfirmed) {
+          if (!adultDeclared) {
+            await supabase.auth.updateUser({ data: { ...metadata, age_gate_required: true } });
+            await supabase.auth.signOut();
+            return NextResponse.redirect(new URL(ageFailurePath(next), origin));
           }
+
+          const { error: ageError } = await supabase.auth.updateUser({
+            data: {
+              ...metadata,
+              age_18_confirmed: true,
+              age_18_confirmed_at: new Date().toISOString(),
+              age_gate_required: false,
+            },
+          });
+          if (ageError) return NextResponse.redirect(new URL(confirmationFailurePath(next), origin));
+        }
+
+        if (signupRoles.length > 0 && (isNewUser || ageGateRequired)) {
+          const { error: roleError } = await supabase.rpc("update_my_roles", { p_roles: signupRoles });
+          if (roleError) return NextResponse.redirect(new URL(confirmationFailurePath(next), origin));
         }
 
         return NextResponse.redirect(new URL(next, origin));
@@ -90,7 +84,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(
-    new URL(confirmationFailurePath(next), origin)
-  );
+  return NextResponse.redirect(new URL(confirmationFailurePath(next), origin));
 }

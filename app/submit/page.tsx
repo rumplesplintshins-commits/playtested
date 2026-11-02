@@ -459,7 +459,6 @@ export default function SubmitGamePage() {
     useState<ImageStatus>("empty");
 
   const [imageUploading, setImageUploading] = useState(false);
-  const imageIsUploaded = imageUrl.includes("/storage/v1/object/public/game-thumbnails/");
   const [description, setDescription] = useState("");
   const [aiExplanation, setAiExplanation] = useState("");
 
@@ -3636,51 +3635,16 @@ export default function SubmitGamePage() {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
                   <label className={"inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-[#101311] px-4 py-3 text-sm font-semibold text-zinc-200 hover:border-[#77f29b]/50 " + (imageUploading ? "pointer-events-none opacity-60" : "")}>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="sr-only"
-                      disabled={imageUploading}
-                      onChange={handleImageUpload}
-                    />
-                    {imageUploading
-                      ? "Uploading..."
-                      : imageIsUploaded
-                        ? "Replace image"
-                        : "Upload image"}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
+                    {imageUploading ? "Uploading..." : "Upload image"}
                   </label>
-
-                  {imageIsUploaded ? (
-                    <span className="text-sm font-semibold text-[#77f29b]">
-                      ✓ Image uploaded
-                    </span>
-                  ) : (
-                    <span className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600 sm:text-left">
-                      or use an image URL
-                    </span>
-                  )}
+                  <span className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600 sm:text-left">or use an image URL</span>
                 </div>
 
-                {!imageIsUploaded && (
-                  <label htmlFor="imageUrl" className="mt-1 block">
-                    <span className="sr-only">
-                      Game thumbnail image URL
-                    </span>
-                    <input
-                      id="imageUrl"
-                      name="imageUrl"
-                      type="url"
-                      value={imageUrl}
-                      onChange={handleImageChange}
-                      placeholder="https://example.com/game-cover.jpg"
-                      className={inputClass}
-                    />
-                  </label>
-                )}
-
-                {imageIsUploaded && (
-                  <input type="hidden" name="imageUrl" value={imageUrl} />
-                )}
+                <label htmlFor="imageUrl" className="mt-1 block">
+                  <span className="sr-only">Game thumbnail image URL</span>
+                  <input id="imageUrl" name="imageUrl" type="url" value={imageUrl} onChange={handleImageChange} placeholder="https://example.com/game-cover.jpg" className={inputClass} />
+                </label>
 
                 {imageUrl && (
                   <div className="mt-4 rounded-xl border border-white/10 bg-[#101311] p-4">
