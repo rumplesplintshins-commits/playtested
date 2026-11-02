@@ -27,6 +27,22 @@ source = source.replaceAll(
 );
 
 replaceOnce(
+  '  const enjoyedResponses = [',
+  '  type TesterFeedbackDisplayItem = { id: string; source: string; sourceClass: string; text: string; testId?: string; testerNumber?: number };\n\n  const enjoyedResponses: TesterFeedbackDisplayItem[] = [',
+  "enjoyed display item type"
+);
+replaceOnce(
+  '  const frustrationResponses = [',
+  '  const frustrationResponses: TesterFeedbackDisplayItem[] = [',
+  "frustration display item type"
+);
+replaceOnce(
+  '  const improvementResponses = [',
+  '  const improvementResponses: TesterFeedbackDisplayItem[] = [',
+  "improvement display item type"
+);
+
+replaceOnce(
   'source: `Playtested ${index + 1}`,\n        sourceClass: "text-[#77f29b]",\n        text: response.enjoyed_most as string,',
   'source: `Playtested ${index + 1}`,\n        sourceClass: "text-[#77f29b]",\n        testId: response.test_id,\n        testerNumber: index + 1,\n        text: response.enjoyed_most as string,',
   "enjoyed tester metadata"
@@ -44,7 +60,7 @@ replaceOnce(
 
 source = source.replaceAll(
   '{item.source}\n                    </p>',
-  '{"testId" in item && item.testId ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
+  '{item.testId && item.testerNumber ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
 );
 
 source = source.replaceAll(
