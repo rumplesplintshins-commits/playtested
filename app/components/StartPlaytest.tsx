@@ -13,6 +13,7 @@ import DurationPicker from "./DurationPicker";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import FeedbackUsefulness from "./FeedbackUsefulness";
+import AnonymousTesterLabel from "./AnonymousTesterLabel";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
 type GameSource = {
@@ -447,7 +448,7 @@ function HistoricalPlaytestCard({
                                 <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3">
                                   <p className="text-sm font-semibold text-zinc-200">
-                                    Playtested tester {index + 1}
+                                    <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
                                   </p>
                                   <p className="mt-1 text-xs font-normal text-zinc-500">
                                     {response.submitted_at
@@ -899,13 +900,17 @@ function ResultsDashboard({
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
-  const enjoyedResponses = [
+  type TesterFeedbackDisplayItem = { id: string; source: string; sourceClass: string; text: string; testId?: string; testerNumber?: number };
+
+  const enjoyedResponses: TesterFeedbackDisplayItem[] = [
     ...displayedAcceptedFeedback
       .filter((response) => response.enjoyed_most?.trim())
       .map((response, index) => ({
         id: `independent-enjoyed-${response.test_id}`,
         source: `Playtested ${index + 1}`,
         sourceClass: "text-[#77f29b]",
+        testId: response.test_id,
+        testerNumber: index + 1,
         text: response.enjoyed_most as string,
       })),
     ...communityResponses
@@ -918,13 +923,15 @@ function ResultsDashboard({
       })),
   ];
 
-  const frustrationResponses = [
+  const frustrationResponses: TesterFeedbackDisplayItem[] = [
     ...displayedAcceptedFeedback
       .filter((response) => response.frustrations?.trim())
       .map((response, index) => ({
         id: `independent-frustration-${response.test_id}`,
         source: `Playtested ${index + 1}`,
         sourceClass: "text-[#77f29b]",
+        testId: response.test_id,
+        testerNumber: index + 1,
         text: response.frustrations as string,
       })),
     ...communityResponses
@@ -937,13 +944,15 @@ function ResultsDashboard({
       })),
   ];
 
-  const improvementResponses = [
+  const improvementResponses: TesterFeedbackDisplayItem[] = [
     ...displayedAcceptedFeedback
       .filter((response) => response.biggest_improvement?.trim())
       .map((response, index) => ({
         id: `independent-improvement-${response.test_id}`,
         source: `Playtested ${index + 1}`,
         sourceClass: "text-[#77f29b]",
+        testId: response.test_id,
+        testerNumber: index + 1,
         text: response.biggest_improvement as string,
       })),
     ...communityResponses
@@ -1102,7 +1111,9 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.source}
+                      {item.testId && item.testerNumber !== undefined ? (
+                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                       {item.text}
@@ -1127,7 +1138,9 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.source}
+                      {item.testId && item.testerNumber !== undefined ? (
+                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                       {item.text}
@@ -1152,7 +1165,9 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.source}
+                      {item.testId && item.testerNumber !== undefined ? (
+                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                       {item.text}
@@ -1181,7 +1196,7 @@ function ResultsDashboard({
                       className="rounded-lg border border-white/10 bg-black/20 p-3"
                     >
                       <p className="text-[11px] font-semibold text-[#77f29b]">
-                        Playtested {index + 1}
+                        <AnonymousTesterLabel testId={response.test_id} number={index + 1} compact />
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                         {response.bugs_found}
@@ -1207,7 +1222,7 @@ function ResultsDashboard({
           </div>
         </div></>}
        {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
-        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
+        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
        {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
@@ -1220,7 +1235,7 @@ function ResultsDashboard({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-zinc-100">
-                      Playtested tester {index + 1}
+                      <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
                       {response.submitted_at
