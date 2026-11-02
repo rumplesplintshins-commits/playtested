@@ -47,5 +47,10 @@ source = source.replaceAll(
   '{"testId" in item && item.testId ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
 );
 
+source = source.replaceAll(
+  'source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`',
+  'sourceNode:<><AnonymousTesterLabel testId={response.test_id} number={index+1} />{isFeedbackStressTest ? " · includes preview data" : ""}</>,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`'
+);
+
 fs.writeFileSync(file, source);
-console.log("Tester rank labels wired into StartPlaytest.tsx for local testing.");
+console.log("Tester rank labels wired into all developer feedback tabs for local testing.");
