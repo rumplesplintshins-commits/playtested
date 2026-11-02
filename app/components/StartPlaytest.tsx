@@ -9,8 +9,10 @@ import { createClient } from "../../lib/supabase";
 import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
 import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
+import DurationPicker from "./DurationPicker";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
+import FeedbackUsefulness from "./FeedbackUsefulness";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
 type GameSource = {
@@ -443,8 +445,15 @@ function HistoricalPlaytestCard({
                                 className="rounded-lg border border-white/10 bg-black/20"
                               >
                                 <FeedbackSignal testId={response.test_id} />
-                                <summary className="cursor-pointer list-none p-3 text-sm font-semibold text-zinc-200">
-                                  Playtested tester {index + 1}
+                                <summary className="cursor-pointer list-none p-3">
+                                  <p className="text-sm font-semibold text-zinc-200">
+                                    Playtested tester {index + 1}
+                                  </p>
+                                  <p className="mt-1 text-xs font-normal text-zinc-500">
+                                    {response.submitted_at
+                                      ? historyFormatDate(response.submitted_at)
+                                      : "Submission date unavailable"}
+                                  </p>
                                 </summary>
 
                                 <div className="border-t border-white/10 p-3">
@@ -1317,6 +1326,9 @@ function ResultsDashboard({
                     </p>
                   </div>
                 )}
+                {!response.test_id.startsWith("preview-") && (
+                  <FeedbackUsefulness testId={response.test_id} />
+                )}
               </div>
             </details>
           ))}
@@ -1618,6 +1630,15 @@ export default function StartPlaytest({
   const [testingGenre,setTestingGenre] = useState("");
   const [genreRestricted,setGenreRestricted] = useState(false);
   const [estimatedMinutes, setEstimatedMinutes] = useState("30");
+  useEffect(() => {
+    if (
+      developerPlan.data?.plan !== "pro" &&
+      estimatedMinutes &&
+      Number(estimatedMinutes) > 30
+    ) {
+      setEstimatedMinutes("30");
+    }
+  }, [developerPlan.data?.plan, estimatedMinutes]);
   const [releaseLabel, setReleaseLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -1831,7 +1852,10 @@ export default function StartPlaytest({
     setEstimatedMinutes(
       existingPlaytest.estimatedMinutes === null
         ? ""
-        : String(existingPlaytest.estimatedMinutes)
+        : developerPlan.data?.plan !== "pro" &&
+            existingPlaytest.estimatedMinutes > 30
+          ? "30"
+          : String(existingPlaytest.estimatedMinutes)
     );
     setReleaseLabel(existingPlaytest.releaseLabel ?? "");
   }, [editing, existingPlaytest]);
@@ -1934,6 +1958,21 @@ export default function StartPlaytest({
       return {
         error:
           "Estimated testing time must be between 1 and 1440 minutes.",
+        accessLink: "",
+        instructions: "",
+        target: 0,
+        minutes: null as number | null,
+      };
+    }
+
+    if (
+      developerPlan.data?.plan !== "pro" &&
+      minutes !== null &&
+      minutes > 30
+    ) {
+      return {
+        error:
+          "Free campaigns can have an estimated test time of up to 30 minutes.",
         accessLink: "",
         instructions: "",
         target: 0,
@@ -2234,7 +2273,7 @@ export default function StartPlaytest({
                 </div>
 
                 <span className="text-lg text-zinc-400">
-                  {setupExpanded ? "−" : "+"}
+                  {setupExpanded ? "-" : "+"}
                 </span>
               </button>
 
@@ -2453,22 +2492,12 @@ export default function StartPlaytest({
                         Estimated test time
                       </span>
 
-                      <select
+                      <DurationPicker
                         value={estimatedMinutes}
-                        onChange={(event) =>
-                          setEstimatedMinutes(event.target.value)
-                        }
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-                      >
-                        <option value="">Not specified</option>
-                        <option value="15">15 minutes</option>
-                        <option value="30">30 minutes</option>
-                        <option value="45">45 minutes</option>
-                        <option value="60">1 hour</option>
-                        <option value="90">1 hour 30 minutes</option>
-                        <option value="120">2 hours</option>
-                        <option value="180">3+ hours</option>
-                      </select>
+                        onChange={setEstimatedMinutes}
+                        isPro={developerPlan.data?.plan === "pro"}
+                        className="mt-2"
+                      />
                     </label>
 
                     <label className="block">
@@ -2972,22 +3001,12 @@ export default function StartPlaytest({
               Estimated test time
             </span>
 
-            <select
+            <DurationPicker
               value={estimatedMinutes}
-              onChange={(event) =>
-                setEstimatedMinutes(event.target.value)
-              }
-              className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-            >
-              <option value="">Not specified</option>
-              <option value="15">15 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">1 hour</option>
-              <option value="90">1 hour 30 minutes</option>
-              <option value="120">2 hours</option>
-              <option value="180">3+ hours</option>
-            </select>
+              onChange={setEstimatedMinutes}
+              isPro={developerPlan.data?.plan === "pro"}
+              className="mt-2"
+            />
           </label>
         </div>
 
