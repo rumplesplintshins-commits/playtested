@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const SITE_ORIGIN = "https://playtested.co.uk";
-export const SITE_TITLE = "Playtested | Find Your Next Good Game";
-export const SITE_DESCRIPTION = "Discover games, share honest player feedback and help developers improve their games through structured community playtesting.";
-const image = {url:"/images/roles/player-role.png",width:2171,height:724,alt:"Playtested - game discovery and community playtesting"};
+export const SITE_TITLE = "Playtested | Discover Indie Games & Playtest New Releases";
+export const SITE_DESCRIPTION = "Discover promising indie games, read structured player feedback and join community playtests that help developers improve new releases.";
+const image = {url:"/images/roles/player-role.png",width:2171,height:724,alt:"Playtested - indie game discovery and community playtesting"};
 
 export function publicMetadata(title:string,description:string,path:string):Metadata {
   return {
