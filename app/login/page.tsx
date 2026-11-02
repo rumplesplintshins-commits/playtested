@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signupRoles, setSignupRoles] = useState<SignupRole[]>(["player"]);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [nextPath, setNextPath] = useState("/");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,7 @@ export default function LoginPage() {
     const nextMode = mode === "login" ? "signup" : "login";
     setMode(nextMode);
     setMessage("");
+    setAgeConfirmed(false);
 
     const params = new URLSearchParams();
     if (nextMode === "signup") {
@@ -84,6 +86,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signup" && !ageConfirmed) {
+      setMessage("You must confirm that you are 18 or over to create a Playtested account.");
+      return;
+    }
+
     if (mode === "signup" && isDisposableEmail(normalizedEmail)) {
       setMessage("Please use a permanent email address. Temporary or disposable email services aren't supported.");
       return;
@@ -103,7 +110,7 @@ export default function LoginPage() {
           password,
           options: {
             emailRedirectTo: callbackUrl.toString(),
-            data: { signup_roles: signupRoles },
+            data: { signup_roles: signupRoles, age_18_confirmed: true },
           },
         });
 
@@ -199,10 +206,26 @@ export default function LoginPage() {
               </fieldset>
             )}
 
+            {mode === "signup" && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 p-4 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  disabled={loading}
+                  checked={ageConfirmed}
+                  onChange={(event) => { setAgeConfirmed(event.target.checked); setMessage(""); }}
+                  className="mt-1 h-4 w-4 shrink-0 accent-emerald-400"
+                />
+                <span>
+                  I confirm that I am 18 or over and agree to the <Link href="/terms" className="font-semibold text-emerald-300 underline underline-offset-4">Terms</Link> and acknowledge the <Link href="/privacy" className="font-semibold text-emerald-300 underline underline-offset-4">Privacy Notice</Link>.
+                </span>
+              </label>
+            )}
+
             <GoogleSignInButton
               mode={mode}
               signupRoles={signupRoles}
               nextPath={nextPath}
+              ageConfirmed={ageConfirmed}
               loading={loading}
               setLoading={setLoading}
               setMessage={setMessage}
