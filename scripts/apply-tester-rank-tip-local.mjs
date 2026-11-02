@@ -48,8 +48,8 @@ source = source.replaceAll(
 );
 
 source = source.replaceAll(
-  'source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`',
-  'sourceNode:<><AnonymousTesterLabel testId={response.test_id} number={index+1} />{isFeedbackStressTest ? " · includes preview data" : ""}</>,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`'
+  'id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,date:',
+  'id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:'
 );
 
 fs.writeFileSync(file, source);
