@@ -47,6 +47,18 @@ type TestClaim = FeedbackQualityRecord & {
   review_outcome: "pending" | "accepted" | "rejected";
   review_reason: string | null;
   xp_awarded: boolean;
+  submitted_at?: string | null;
+  overall_score?: number | null;
+  gameplay_score?: number | null;
+  performance_score?: number | null;
+  continue_playing?: string | null;
+  recommend_game?: string | null;
+  enjoyed_most?: string | null;
+  frustrations?: string | null;
+  bugs_found?: string | null;
+  biggest_improvement?: string | null;
+  feedback?: string | null;
+  hours_played?: number | null;
 };
 
 function getAccessLabel(accessType: TestAccessType) {
@@ -633,6 +645,7 @@ export default function TesterPage() {
   useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
   const [reviewHistory,setReviewHistory]=useState<{id:number;test_id:string;kind:string;reason:string;xp_delta:number;rubric_version?:number|null;quality_score?:number|null;actual_xp_award?:number|null;created_at?:string}[]>([]);
   const [reviewHistoryError,setReviewHistoryError]=useState("");
+  const [feedbackUsefulness,setFeedbackUsefulness]=useState<Record<string,"useful"|"not_useful">>({});
   const [storedClaims, setClaims] = useState<TestClaim[]>([]);
   const capacityPolicy=useTestingCapacityPolicy();
   const [clock,setClock]=useState<{server:number;local:number}|null>(null);
@@ -755,7 +768,7 @@ export default function TesterPage() {
           if (!["PGRST202", "42883"].includes(discovery.error.code)) return discovery;
           return supabase.rpc("get_available_community_test_games");
         })(),
-        (async()=>{const result=await supabase.rpc("get_my_test_reservations");if(!result.error&&result.data?.server_now){setClock(receivedReservationClock(result.data.server_now));return {data:result.data.claims,error:null};}if(result.error&&!["PGRST202","42883"].includes(result.error.code))return result;return supabase.from("community_game_tests").select("id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded").eq("tester_id",user.id);})(),
+        (async()=>{const result=await supabase.rpc("get_my_test_reservations");if(!result.error&&result.data?.server_now){setClock(receivedReservationClock(result.data.server_now));return {data:result.data.claims,error:null};}if(result.error&&!["PGRST202","42883"].includes(result.error.code))return result;return supabase.from("community_game_tests").select("id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, submitted_at, overall_score, gameplay_score, performance_score, continue_playing, recommend_game, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback, hours_played").eq("tester_id",user.id);})(),
         supabase
           .from("profiles")
           .select("tester_xp, completed_tests")
@@ -788,6 +801,12 @@ export default function TesterPage() {
       setGames((gamesData ?? []) as TestGame[]);
       if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
       setClaims((claimsData ?? []) as TestClaim[]);
+      const usefulness=await supabase.rpc("get_my_feedback_usefulness");
+      if(active&&!usefulness.error){
+        const mapped:Record<string,"useful"|"not_useful">={};
+        for(const row of usefulness.data??[]){if(row?.test_id&&(row.usefulness==="useful"||row.usefulness==="not_useful"))mapped[row.test_id]=row.usefulness;}
+        setFeedbackUsefulness(mapped);
+      }
       if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id));if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
       setDraftOwnerId(user.id);
 
@@ -872,7 +891,7 @@ export default function TesterPage() {
     const { data: createdClaim, error: createdClaimError } = await supabase
       .from("community_game_tests")
       .select(
-        "id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, reservation_expires_at, reservation_started_at"
+        "id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, reservation_expires_at, reservation_started_at, submitted_at, overall_score, gameplay_score, performance_score, continue_playing, recommend_game, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback, hours_played"
       )
       .eq("id", data as string)
       .eq("tester_id", user.id)
@@ -1531,8 +1550,9 @@ export default function TesterPage() {
 
                 return (
                   <article
+                    id={`testing-activity-${claim.id}`}
                     key={claim.id}
-                    className="flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"
+                    className="scroll-mt-24 flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"
                   >
                     <div>
                       <h3 className="font-semibold">
@@ -1547,6 +1567,9 @@ export default function TesterPage() {
                       </p>
 
                       <p className="mt-2 text-sm text-zinc-300">{feedbackQualityLabel(claim)}</p>
+                      {feedbackUsefulness[claim.id]==="useful"&&<span className="mt-2 inline-flex rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">Developer marked this feedback useful</span>}
+                      {claim.submitted_at&&<p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}
+                      {claim.submitted_at&&<details className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-200">View my submitted feedback</summary><div className="mt-3 space-y-3 text-zinc-300">{claim.overall_score!=null&&<p><span className="text-zinc-500">Overall:</span> {claim.overall_score}/10</p>}{claim.gameplay_score!=null&&<p><span className="text-zinc-500">Gameplay:</span> {claim.gameplay_score}/10</p>}{claim.performance_score!=null&&<p><span className="text-zinc-500">Performance:</span> {claim.performance_score}/10</p>}{claim.hours_played!=null&&<p><span className="text-zinc-500">Time played:</span> {claim.hours_played} hours</p>}{claim.continue_playing&&<p><span className="text-zinc-500">Continue playing:</span> {claim.continue_playing.replaceAll("_"," ")}</p>}{claim.recommend_game&&<p><span className="text-zinc-500">Recommend:</span> {claim.recommend_game.replaceAll("_"," ")}</p>}{claim.enjoyed_most&&<div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}{claim.frustrations&&<div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}{claim.bugs_found&&<div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}{claim.biggest_improvement&&<div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}{claim.feedback&&<div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}</div></details>}
                       {accepted&&claim.review_reason&&<p className="mt-2 text-sm text-zinc-400">Admin reason: {claim.review_reason}</p>}
                       {reviewHistoryError&&<p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                       {reviewHistory.some(event=>event.test_id===claim.id)&&<details className="mt-3 text-xs text-zinc-400"><summary>XP and review history</summary>{reviewHistory.filter(event=>event.test_id===claim.id).map(event=><p key={event.id} className="mt-2 break-words">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"} · {event.kind} · XP change {event.xp_delta}{event.rubric_version!=null?` · Feedback quality ${event.quality_score}% · Award ${event.actual_xp_award} XP`:" · Legacy score not recorded"} · {event.reason}</p>)}</details>}
