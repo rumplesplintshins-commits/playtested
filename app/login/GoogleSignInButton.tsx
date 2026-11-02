@@ -9,6 +9,7 @@ type Props = {
   mode: "login" | "signup";
   signupRoles: SignupRole[];
   nextPath: string;
+  ageConfirmed: boolean;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setMessage: (message: string) => void;
@@ -29,6 +30,7 @@ export default function GoogleSignInButton({
   mode,
   signupRoles,
   nextPath,
+  ageConfirmed,
   loading,
   setLoading,
   setMessage,
@@ -38,6 +40,11 @@ export default function GoogleSignInButton({
 
     if (mode === "signup" && signupRoles.length === 0) {
       setMessage("Select at least one role to continue.");
+      return;
+    }
+
+    if (mode === "signup" && !ageConfirmed) {
+      setMessage("You must confirm that you are 18 or over to create a Playtested account.");
       return;
     }
 
@@ -55,6 +62,7 @@ export default function GoogleSignInButton({
 
       if (mode === "signup") {
         callbackUrl.searchParams.set("roles", signupRoles.join(","));
+        callbackUrl.searchParams.set("age18", "confirmed");
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
