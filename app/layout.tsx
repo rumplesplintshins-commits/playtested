@@ -4,6 +4,7 @@ import { Rajdhani, Inter } from "next/font/google";
 import "./globals.css";
 import SiteFooter from "./components/SiteFooter";
 import ToastHost from "./components/ToastHost";
+import PrivacyStorageMaintenance from "./components/PrivacyStorageMaintenance";
 import {publicMetadata,SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION} from "../lib/seo";
 
 const displayFont = Rajdhani({
@@ -34,6 +35,7 @@ export default function RootLayout({
         {children}
         <SiteFooter />
         <ToastHost />
+        <PrivacyStorageMaintenance />
       </body>
     </html>
   );
