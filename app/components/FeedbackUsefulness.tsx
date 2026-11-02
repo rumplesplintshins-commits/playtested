@@ -116,7 +116,7 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
           <div>
             <p className="text-sm font-semibold text-zinc-200">Want to reward this tester?</p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">
-              Tips will let developers reward especially useful feedback while the tester stays anonymous.
+              Tips will let you reward particularly useful feedback while keeping testers anonymous.
             </p>
           </div>
           <button
