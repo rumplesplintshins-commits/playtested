@@ -9,8 +9,10 @@ import { createClient } from "../../lib/supabase";
 import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
 import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
+import DurationPicker from "./DurationPicker";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
+import FeedbackUsefulness from "./FeedbackUsefulness";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
 type GameSource = {
@@ -322,7 +324,7 @@ function HistoricalPlaytestCard({
         </div>
 
         <span className="pt-1 text-lg text-zinc-400">
-          {expanded ? "−" : "+"}
+          {expanded ? "âˆ’" : "+"}
         </span>
       </button>
 
@@ -443,8 +445,11 @@ function HistoricalPlaytestCard({
                                 className="rounded-lg border border-white/10 bg-black/20"
                               >
                                 <FeedbackSignal testId={response.test_id} />
-                                <summary className="cursor-pointer list-none p-3 text-sm font-semibold text-zinc-200">
-                                  Playtested tester {index + 1}
+                                <summary className="cursor-pointer list-none p-3">
+                                  <p className="text-sm font-semibold text-zinc-200">Playtested tester {index + 1}</p>
+                                  <p className="mt-1 text-xs font-normal text-zinc-500">
+                                    {response.submitted_at ? historyFormatDate(response.submitted_at) : "Submission date unavailable"}
+                                  </p>
                                 </summary>
 
                                 <div className="border-t border-white/10 p-3">
@@ -576,7 +581,7 @@ function HistoricalPlaytestCard({
                                   className="rounded-lg border border-white/10 bg-black/20"
                                 >
                                   <summary className="cursor-pointer list-none p-3 text-sm font-semibold text-zinc-200">
-                                    Community tester {index + 1} ·{" "}
+                                    Community tester {index + 1} Â·{" "}
                                     {response.overall_score}/10
                                   </summary>
 
@@ -877,7 +882,7 @@ function ResultsDashboard({
     (recommendPercent ?? 100) < 40;
 
   function score(value: number | null) {
-    return value === null ? "—" : `${value}/10`;
+    return value === null ? "â€”" : `${value}/10`;
   }
 
   function intent(value: string | null) {
@@ -995,7 +1000,7 @@ function ResultsDashboard({
               <p className="mt-1 text-[11px] text-zinc-500">
                 {continueAnswers.length === 0
                   ? "No answers yet"
-                  : `${continueAnswers.filter((value) => value === "definitely").length} definitely · ${continueAnswers.filter((value) => value === "probably").length} probably`}
+                  : `${continueAnswers.filter((value) => value === "definitely").length} definitely Â· ${continueAnswers.filter((value) => value === "probably").length} probably`}
               </p>
               <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
             </div>
@@ -1008,7 +1013,7 @@ function ResultsDashboard({
               <p className="mt-1 text-[11px] text-zinc-500">
                 {recommendAnswers.length === 0
                   ? "No answers yet"
-                  : `${recommendAnswers.filter((value) => value === "definitely").length} definitely · ${recommendAnswers.filter((value) => value === "probably").length} probably`}
+                  : `${recommendAnswers.filter((value) => value === "definitely").length} definitely Â· ${recommendAnswers.filter((value) => value === "probably").length} probably`}
               </p>
               <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
             </div>
@@ -1060,7 +1065,7 @@ function ResultsDashboard({
                   onClick={() => revealFeedback("issues")}
                   className="mt-2 text-xs font-semibold text-red-200 underline underline-offset-4 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
                 >
-                  Read issue responses →
+                  Read issue responses â†’
                 </button>
               )}
             </div>
@@ -1198,7 +1203,7 @@ function ResultsDashboard({
           </div>
         </div></>}
        {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
-        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
+        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " Â· includes preview data" : ""}`,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
        {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
@@ -1220,7 +1225,7 @@ function ResultsDashboard({
                     </p>
                   </div>
                   <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
-                    Independent · Accepted
+                    Independent Â· Accepted
                   </span>
                 </div>
               </summary>
@@ -1317,6 +1322,9 @@ function ResultsDashboard({
                     </p>
                   </div>
                 )}
+                {!response.test_id.startsWith("preview-") && (
+                  <FeedbackUsefulness testId={response.test_id} />
+                )}
               </div>
             </details>
           ))}
@@ -1337,7 +1345,7 @@ function ResultsDashboard({
                     </p>
                   </div>
                   <span className="rounded-full border border-violet-300/20 bg-violet-300/[0.06] px-2.5 py-1 text-xs font-semibold text-violet-200">
-                    Community · {response.overall_score}/10
+                    Community Â· {response.overall_score}/10
                   </span>
                 </div>
               </summary>
@@ -1548,9 +1556,9 @@ function BuildResultsPanel({
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <span>{isCurrent ? "Current build" : "Historical build"}</span>
-          <span>·</span>
+          <span>Â·</span>
           <span>{playtestStatusLabel(selectedPlaytest.status)}</span>
-          <span>·</span>
+          <span>Â·</span>
           <span>{historyFormatDate(selectedPlaytest.publishedAt ?? selectedPlaytest.createdAt)}</span>
         </div>
       </div>
@@ -1618,6 +1626,7 @@ export default function StartPlaytest({
   const [testingGenre,setTestingGenre] = useState("");
   const [genreRestricted,setGenreRestricted] = useState(false);
   const [estimatedMinutes, setEstimatedMinutes] = useState("30");
+  useEffect(()=>{if(developerPlan.data?.plan !== "pro" && estimatedMinutes && Number(estimatedMinutes) > 30)setEstimatedMinutes("30");},[developerPlan.data?.plan,estimatedMinutes]);
   const [releaseLabel, setReleaseLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -1831,7 +1840,9 @@ export default function StartPlaytest({
     setEstimatedMinutes(
       existingPlaytest.estimatedMinutes === null
         ? ""
-        : String(existingPlaytest.estimatedMinutes)
+        : developerPlan.data?.plan !== "pro" && existingPlaytest.estimatedMinutes > 30
+          ? "30"
+          : String(existingPlaytest.estimatedMinutes)
     );
     setReleaseLabel(existingPlaytest.releaseLabel ?? "");
   }, [editing, existingPlaytest]);
@@ -1934,6 +1945,16 @@ export default function StartPlaytest({
       return {
         error:
           "Estimated testing time must be between 1 and 1440 minutes.",
+        accessLink: "",
+        instructions: "",
+        target: 0,
+        minutes: null as number | null,
+      };
+    }
+
+    if (developerPlan.data?.plan !== "pro" && minutes !== null && minutes > 30) {
+      return {
+        error: "Free campaigns can have an estimated test time of up to 30 minutes.",
         accessLink: "",
         instructions: "",
         target: 0,
@@ -2234,7 +2255,7 @@ export default function StartPlaytest({
                 </div>
 
                 <span className="text-lg text-zinc-400">
-                  {setupExpanded ? "−" : "+"}
+                  {setupExpanded ? "-" : "+"}
                 </span>
               </button>
 
@@ -2244,234 +2265,15 @@ export default function StartPlaytest({
                   className="space-y-6 border-t border-white/10 p-5"
                   onSubmit={handleUpdate}
                 >
-                  <label className="block">
-                    <span className="text-sm font-medium text-zinc-200">
-                      How will testers access this build?
-                    </span>
+                  <div className="block">
+                    <span className="text-sm font-medium text-zinc-200">Estimated testing time</span>
                     <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                      This controls the action testers see when they start testing.
+                      Set an expectation for how long testers should spend on this round.
                     </span>
-                    <select
-                      value={accessType}
-                      disabled={buildLocked}
-                      onChange={(event) =>
-                        setAccessType(event.target.value as PlaytestAccessType)
-                      }
-                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <option value="steam_demo">Steam demo</option>
-                      <option value="steam_game">Steam game</option>
-                      <option value="browser_game">Browser game</option>
-                      <option value="download_build">Downloadable build</option>
-                      <option value="other">Other external access</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm font-medium text-zinc-200">
-                      Tester access link
-                    </span>
-
-                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                      The exact page or download location testers should use for this round.
-                      Do not replace it with a materially different build once results have
-                      been collected. Start a new playtest for a new release instead.
-                    </span>
-
-                    <input
-                      type="url"
-                      required
-                      value={accessLink}
-                      disabled={buildLocked}
-                      onChange={(event) => setAccessLink(event.target.value)}
-                      placeholder="https://..."
-                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm font-medium text-zinc-200">
-                      Testing instructions
-                    </span>
-
-                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                      Explain what testers should play and anything they need
-                      to know.
-                    </span>
-
-                    <textarea
-                      required
-                      minLength={20}
-                      maxLength={5000}
-                      rows={4}
-                      value={instructions}
-                      onChange={(event) => setInstructions(event.target.value)}
-                      placeholder="For this test, please play through the opening section and focus on how clear the controls and objectives feel."
-                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-                    />
-                  </label>
-
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">
-                      What should testers focus on?
-                    </p>
-
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Select as many areas as you need.
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {focusOptions.map((area) => {
-                        const selected = focusAreas.includes(area);
-
-                        return (
-                          <button
-                            key={area}
-                            type="button"
-                            onClick={() => toggleFocusArea(area)}
-                            className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
-                              selected
-                                ? "border-[#77f29b]/40 bg-[#77f29b]/10 text-[#77f29b]"
-                                : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
-                            }`}
-                          >
-                            {area}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <DurationPicker value={estimatedMinutes} onChange={setEstimatedMinutes} isPro={developerPlan.data?.plan === "pro"} />
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">
-                      Testing audience
-                    </p>
-
-                    <p className="mt-1 text-xs leading-5 text-zinc-500">
-                      Choose independent Playtested testers, your own community,
-                      or both.
-                    </p>
-
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAudience(
-                            includesPlaytestedTesters(audience)
-                              ? audience === "both"
-                                ? "own_community"
-                                : "own_community"
-                              : "both"
-                          )
-                        }
-                        className={`rounded-lg border p-4 text-left transition ${
-                          includesPlaytestedTesters(audience)
-                            ? "border-[#77f29b]/40 bg-[#77f29b]/[0.07]"
-                            : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${
-                              includesPlaytestedTesters(audience)
-                                ? "border-[#77f29b] bg-[#77f29b] text-black"
-                                : "border-white/20 text-transparent"
-                            }`}
-                          >
-                            ✓
-                          </span>
-
-                          <div>
-                            <p className="text-sm font-semibold text-zinc-100">
-                              Playtested testers
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-zinc-500">
-                              Available in Tester Hub.
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAudience(
-                            includesOwnCommunity(audience)
-                              ? audience === "both"
-                                ? "playtested_testers"
-                                : "playtested_testers"
-                              : "both"
-                          )
-                        }
-                        className={`rounded-lg border p-4 text-left transition ${
-                          includesOwnCommunity(audience)
-                            ? "border-[#77f29b]/40 bg-[#77f29b]/[0.07]"
-                            : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${
-                              includesOwnCommunity(audience)
-                                ? "border-[#77f29b] bg-[#77f29b] text-black"
-                                : "border-white/20 text-transparent"
-                            }`}
-                          >
-                            ✓
-                          </span>
-
-                          <div>
-                            <p className="text-sm font-semibold text-zinc-100">
-                              My own community
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-zinc-500">
-                              Invite players with the share link.
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {includesPlaytestedTesters(audience) && (
-                    <label className="block">
-                      <span className="text-sm font-medium text-zinc-200">
-                        {existingPlaytest?.targetTesters ?? capacityPolicy?.places ?? "Checking"} Tester Hub places
-                      </span>
-
-                      <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                        Community responses are counted separately.
-                      </span>
-
-                      <PlacesRules/>
-                    </label>
-                  )}
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-sm font-medium text-zinc-200">
-                        Estimated test time
-                      </span>
-
-                      <select
-                        value={estimatedMinutes}
-                        onChange={(event) =>
-                          setEstimatedMinutes(event.target.value)
-                        }
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-                      >
-                        <option value="">Not specified</option>
-                        <option value="15">15 minutes</option>
-                        <option value="30">30 minutes</option>
-                        <option value="45">45 minutes</option>
-                        <option value="60">1 hour</option>
-                        <option value="90">1 hour 30 minutes</option>
-                        <option value="120">2 hours</option>
-                        <option value="180">3+ hours</option>
-                      </select>
-                    </label>
-
-                    <label className="block">
+                  <label className="block">
                       <span className="text-sm font-medium text-zinc-200">
                         Build / release label
                       </span>
@@ -2488,7 +2290,6 @@ export default function StartPlaytest({
                         className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </label>
-                  </div>
 
                   {buildLocked && (
                     <div className="rounded-lg border border-amber-300/25 bg-amber-300/[0.06] p-4">
@@ -2596,7 +2397,7 @@ export default function StartPlaytest({
               </div>
 
               <span className="text-lg text-zinc-400">
-                {resultsExpanded ? "−" : "+"}
+                {resultsExpanded ? "âˆ’" : "+"}
               </span>
             </button>
 
@@ -2627,7 +2428,7 @@ export default function StartPlaytest({
                 )}`}
               >
                 {existingPlaytest.status === "open" && (
-                  <span className="mr-1.5">●</span>
+                  <span className="mr-1.5">â—</span>
                 )}
 
                 {playtestStatusLabel(existingPlaytest.status)}
@@ -2830,165 +2631,23 @@ export default function StartPlaytest({
         />
         {shareControls}
 
-        <label className="block">
-          <span className="text-sm font-medium text-zinc-200">
-            How will testers access this build?
-          </span>
+        <CampaignAudienceFields
+          minimumRank={minimumRank}
+          setMinimumRank={setMinimumRank}
+          genre={testingGenre}
+          setGenre={setTestingGenre}
+          restricted={genreRestricted}
+          setRestricted={setGenreRestricted}
+          onAvailability={setAudienceAvailability}
+          enabled={testerHubSelected}
+        />
+
+        <div className="block">
+          <span className="text-sm font-medium text-zinc-200">Estimated testing time</span>
           <span className="mt-1 block text-xs leading-5 text-zinc-500">
-            Choose the access method so Playtested can show testers the right action.
+            Set an expectation for how long testers should spend on this round.
           </span>
-          <select
-            value={accessType}
-            onChange={(event) =>
-              setAccessType(event.target.value as PlaytestAccessType)
-            }
-            className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-          >
-            <option value="steam_demo">Steam demo</option>
-            <option value="steam_game">Steam game</option>
-            <option value="browser_game">Browser game</option>
-            <option value="download_build">Downloadable build</option>
-            <option value="other">Other external access</option>
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-zinc-200">
-            Tester access link
-          </span>
-
-          <span className="mt-1 block text-xs leading-5 text-zinc-500">
-            Paste the exact Steam page, browser game, private build or download
-            location testers should use for this playtest round.
-          </span>
-
-          <input
-            type="url"
-            required
-            value={accessLink}
-            onChange={(event) =>
-              setAccessLink(event.target.value)
-            }
-            placeholder="https://..."
-            className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-zinc-200">
-            Testing instructions
-          </span>
-
-          <span className="mt-1 block text-xs leading-5 text-zinc-500">
-            Explain what testers should play and anything they need
-            to know.
-          </span>
-
-          <textarea
-            required
-            minLength={20}
-            maxLength={5000}
-            rows={5}
-            value={instructions}
-            onChange={(event) =>
-              setInstructions(event.target.value)
-            }
-            placeholder="For this test, please play through the opening section and focus on how clear the controls and objectives feel."
-            className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-          />
-        </label>
-
-        <div>
-          <p className="text-sm font-medium text-zinc-200">
-            What should testers focus on?
-          </p>
-
-          <p className="mt-1 text-xs text-zinc-500">
-            Select as many areas as you need.
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {focusOptions.map((area) => {
-              const selected = focusAreas.includes(area);
-
-              return (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => toggleFocusArea(area)}
-                  className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
-                    selected
-                      ? "border-[#77f29b]/40 bg-[#77f29b]/10 text-[#77f29b]"
-                      : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
-                  }`}
-                >
-                  {area}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <label className="block">
-          <span className="text-sm font-medium text-zinc-200">
-            Testing audience
-          </span>
-
-          <select
-            value={audience}
-            onChange={(event) =>
-              setAudience(
-                event.target.value as PlaytestAudience
-              )
-            }
-            className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-          >
-            <option value="playtested_testers">
-              Playtested testers
-            </option>
-
-            <option value="own_community">
-              My own community
-            </option>
-
-            <option value="both">
-              Playtested testers + my community
-            </option>
-          </select>
-        </label>
-
-        <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {includesPlaytestedTesters(audience) && (<label className="block">
-            <span className="text-sm font-medium text-zinc-200">
-              {capacityPolicy?.places ?? "Checking"} Tester Hub places
-            </span>
-
-            <PlacesRules/>
-          </label>)}
-
-          <label className="block">
-            <span className="text-sm font-medium text-zinc-200">
-              Estimated test time
-            </span>
-
-            <select
-              value={estimatedMinutes}
-              onChange={(event) =>
-                setEstimatedMinutes(event.target.value)
-              }
-              className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
-            >
-              <option value="">Not specified</option>
-              <option value="15">15 minutes</option>
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">1 hour</option>
-              <option value="90">1 hour 30 minutes</option>
-              <option value="120">2 hours</option>
-              <option value="180">3+ hours</option>
-            </select>
-          </label>
+          <DurationPicker value={estimatedMinutes} onChange={setEstimatedMinutes} isPro={developerPlan.data?.plan === "pro"} />
         </div>
 
         <label className="block">

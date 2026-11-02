@@ -275,12 +275,13 @@ export default function SiteHeader() {
                   type="button"
                   aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
                   aria-expanded={notificationsOpen}
+                  aria-pressed={notificationsOpen}
                   onClick={() => {
                     const next = !notificationsOpen;
                     setNotificationsOpen(next);
                     if (next) void loadNotifications();
                   }}
-                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/15 text-zinc-300 transition hover:border-white/30 hover:bg-white/[0.04] hover:text-white"
+                  className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${notificationsOpen ? "border-[#77f29b]/60 bg-[#77f29b]/10 text-[#77f29b]" : "border-white/15 text-zinc-300 hover:border-white/30 hover:bg-white/[0.04] hover:text-white"}`}
                 >
                   <BellIcon />
                   {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#77f29b] px-1 text-[10px] font-bold leading-none text-[#09100b] ring-2 ring-[#0e110f]">{unreadCount > 9 ? "9+" : unreadCount}</span>}
