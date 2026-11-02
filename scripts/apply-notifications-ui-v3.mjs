@@ -1,0 +1,33 @@
+import fs from "node:fs";
+
+function replaceOnce(source,before,after,label){const count=source.split(before).length-1;if(count!==1)throw new Error(`${label}: expected exactly one match, found ${count}`);return source.replace(before,after);}
+
+// Duration: old campaigns may contain >30m. Free accounts must not retain/select that value when editing.
+const playtestPath="app/components/StartPlaytest.tsx";
+let playtest=fs.readFileSync(playtestPath,"utf8").replace(/\r\n/g,"\n");
+playtest=playtest.replaceAll('disabled={developerPlan.data?.plan !== "pro"}', 'disabled={developerPlan.data?.plan !== "pro"} className={developerPlan.data?.plan !== "pro" ? "text-zinc-500" : undefined}');
+// Clamp any Free edit form that is populated from a legacy >30 minute campaign.
+playtest=playtest.replaceAll('setEstimatedMinutes(playtest.estimatedMinutes === null ? "" : String(playtest.estimatedMinutes));','setEstimatedMinutes(playtest.estimatedMinutes === null ? "" : developerPlan.data?.plan !== "pro" && playtest.estimatedMinutes > 30 ? "30" : String(playtest.estimatedMinutes));');
+// Client guard must treat anything other than confirmed Pro as Free.
+playtest=playtest.replaceAll('developerPlan.data?.plan === "free" && minutes !== null && minutes > 30','developerPlan.data?.plan !== "pro" && minutes !== null && minutes > 30');
+fs.writeFileSync(playtestPath,playtest);
+
+// Tester history: load the tester's submitted answers, timestamp them, make each activity addressable,
+// and deep-link the positive usefulness notification to the exact activity entry.
+const testerPath="app/tester/page.tsx";
+let tester=fs.readFileSync(testerPath,"utf8").replace(/\r\n/g,"\n");
+const claimTypeNeedle='  xp_awarded: boolean;\n};';
+if(tester.includes(claimTypeNeedle)) tester=tester.replace(claimTypeNeedle,'  xp_awarded: boolean;\n  submitted_at?: string | null;\n  overall_score?: number | null;\n  gameplay_score?: number | null;\n  performance_score?: number | null;\n  continue_playing?: string | null;\n  recommend_game?: string | null;\n  enjoyed_most?: string | null;\n  frustrations?: string | null;\n  bugs_found?: string | null;\n  biggest_improvement?: string | null;\n  feedback?: string | null;\n  hours_played?: number | null;\n};');
+
+tester=tester.replaceAll('.select("id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded")','.select("id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, submitted_at, overall_score, gameplay_score, performance_score, continue_playing, recommend_game, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback, hours_played")');
+tester=tester.replaceAll('"id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, reservation_expires_at, reservation_started_at"','"id, submission_id, playtest_id, status, review_outcome, review_reason, xp_awarded, reservation_expires_at, reservation_started_at, submitted_at, overall_score, gameplay_score, performance_score, continue_playing, recommend_game, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback, hours_played"');
+
+const articleNeedle='                  <article\n                    key={claim.id}\n                    className="flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"';
+if(tester.includes(articleNeedle)) tester=tester.replace(articleNeedle,'                  <article\n                    id={`testing-activity-${claim.id}`}\n                    key={claim.id}\n                    className="scroll-mt-24 flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"');
+
+const badgeNeedle='{feedbackUsefulness[claim.id]==="useful"&&<span className="mt-2 inline-flex rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">Developer marked this feedback useful</span>}';
+const details=`{feedbackUsefulness[claim.id]==="useful"&&<span className="mt-2 inline-flex rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">Developer marked this feedback useful</span>}\n                      {claim.submitted_at&&<p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}\n                      {claim.submitted_at&&<details className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-200">View my submitted feedback</summary><div className="mt-3 space-y-3 text-zinc-300">{claim.overall_score!=null&&<p><span className="text-zinc-500">Overall:</span> {claim.overall_score}/10</p>}{claim.gameplay_score!=null&&<p><span className="text-zinc-500">Gameplay:</span> {claim.gameplay_score}/10</p>}{claim.performance_score!=null&&<p><span className="text-zinc-500">Performance:</span> {claim.performance_score}/10</p>}{claim.hours_played!=null&&<p><span className="text-zinc-500">Time played:</span> {claim.hours_played} hours</p>}{claim.continue_playing&&<p><span className="text-zinc-500">Continue playing:</span> {claim.continue_playing.replaceAll("_"," ")}</p>}{claim.recommend_game&&<p><span className="text-zinc-500">Recommend:</span> {claim.recommend_game.replaceAll("_"," ")}</p>}{claim.enjoyed_most&&<div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}{claim.frustrations&&<div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}{claim.bugs_found&&<div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}{claim.biggest_improvement&&<div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}{claim.feedback&&<div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}</div></details>}`;
+if(tester.includes(badgeNeedle)) tester=tester.replace(badgeNeedle,details);
+fs.writeFileSync(testerPath,tester);
+
+console.log("Applied Free duration clamp and tester feedback history/deep-link UI.");
