@@ -1,6 +1,6 @@
 export const FEEDBACK_ACTION_STATUSES = ["To investigate", "Planned", "Fixed", "Reviewed"] as const;
 export type FeedbackActionStatus = typeof FEEDBACK_ACTION_STATUSES[number];
-export type FeedbackActionReport = { id: string; source: string; date: string | null; enjoyed: string | null; frustration: string | null; improvement: string | null; bugs: string | null };
+export type FeedbackActionReport = { id: string; source: string; date: string | null; enjoyed: string | null; frustration: string | null; improvement: string | null; bugs: string | null; testId?: string; testerNumber?: number };
 export function readFeedbackActions(raw: string | null): Record<string, FeedbackActionStatus> {
   try {
     const parsed: unknown = JSON.parse(raw || "{}");

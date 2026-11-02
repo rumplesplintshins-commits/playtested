@@ -110,6 +110,27 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
           </button>
         </div>
       </div>
+
+      {value === "useful" && !loading && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
+          <div>
+            <p className="text-sm font-semibold text-zinc-200">Want to reward this tester?</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              Tips will let you reward particularly useful feedback while keeping testers anonymous.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Tester tips are coming soon"
+            className="cursor-not-allowed rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-3 py-2 text-xs font-semibold text-[#aef8c2]/65"
+          >
+            Send a tip · Coming soon
+          </button>
+        </div>
+      )}
+
       {error && <p role="alert" className="mt-2 text-xs text-red-200">{error}</p>}
     </div>
   );
