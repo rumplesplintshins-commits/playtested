@@ -59,8 +59,12 @@ replaceOnce(
 );
 
 source = source.replaceAll(
-  '{item.source}\n                    </p>',
-  '{item.testId && item.testerNumber ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
+  '{item.testId && item.testerNumber ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>',
+  '{item.testId && item.testerNumber !== undefined ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
+);
+source = source.replaceAll(
+  '{"testId" in item && item.testId ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>',
+  '{item.testId && item.testerNumber !== undefined ? (\n                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />\n                      ) : item.source}\n                    </p>'
 );
 
 source = source.replaceAll(
