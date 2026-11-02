@@ -9,7 +9,8 @@ export type DevNotification = {
   localOnly: true;
 };
 
-const STORAGE_KEY = "playtested-dev-notifications-v2";
+const STORAGE_KEY = "playtested-dev-notifications-v3";
+const BELL_HIDDEN_KEY = "playtested-bell-hidden-read-v2";
 export const NOTIFICATIONS_CHANGED_EVENT = "playtested-notifications-changed";
 
 function isLocalhost() {
@@ -46,7 +47,7 @@ function seed(): DevNotification[] {
   ] as const;
 
   return samples.map(([title, message, minutesAgo, read], index) => ({
-    id: -(index + 1), kind: "local_test", title, message, href: null,
+    id: -(1000 + index + 1), kind: "local_test", title, message, href: null,
     read_at: read ? new Date(now - Number(minutesAgo) * 60000 + 30000).toISOString() : null,
     created_at: new Date(now - Number(minutesAgo) * 60000).toISOString(), localOnly: true,
   }));
@@ -59,6 +60,7 @@ export function getDevNotifications(): DevNotification[] {
     if (stored) return JSON.parse(stored) as DevNotification[];
     const initial = seed();
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+    window.localStorage.removeItem(BELL_HIDDEN_KEY);
     return initial;
   } catch { return seed(); }
 }
