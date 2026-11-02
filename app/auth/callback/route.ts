@@ -46,9 +46,6 @@ function wasUserCreatedByThisOAuthSignIn(
 
   if (!Number.isFinite(created) || !Number.isFinite(signedIn)) return false;
 
-  // A genuinely new OAuth account is created as part of this sign-in, so these
-  // timestamps should be effectively identical. Existing accounts must never
-  // have their application roles replaced just because they used the signup UI.
   return Math.abs(signedIn - created) <= 10_000;
 }
 
@@ -59,6 +56,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = getSafeNextPath(searchParams.get("next"));
   const signupRoles = getSignupRoles(searchParams.get("roles"));
+  const age18Confirmed = searchParams.get("age18") === "confirmed";
 
   if (code) {
     try {
@@ -70,6 +68,19 @@ export async function GET(request: Request) {
           data.user?.created_at,
           data.user?.last_sign_in_at
         );
+
+        if (isNewUser && !age18Confirmed) {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(
+            new URL("/login?mode=signup&error=age_confirmation_required", origin)
+          );
+        }
+
+        if (isNewUser && age18Confirmed) {
+          await supabase.auth.updateUser({
+            data: { age_18_confirmed: true },
+          });
+        }
 
         if (signupRoles.length > 0 && isNewUser) {
           const { error: roleError } = await supabase.rpc("update_my_roles", {
