@@ -7,10 +7,9 @@ stable
 security definer
 set search_path = ''
 as $$
-  select public.tester_rank(p.tester_xp)
+  select public.tester_rank(t.tester_id)
   from public.community_game_tests t
   join public.community_playtests c on c.id = t.playtest_id
-  join public.profiles p on p.id = t.tester_id
   where t.id = p_test_id
     and t.review_outcome = 'accepted'
     and c.developer_id = auth.uid();
