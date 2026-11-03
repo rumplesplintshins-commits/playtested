@@ -134,6 +134,8 @@ function CampaignAllowancePanel({eligibility,loading,error,currentPlaytest,onRet
  return <>{active&&<p className="my-3 text-sm text-amber-200">This game's current round must be closed before another round can launch.</p>}{error&&<p role="alert" className="my-3 text-sm text-amber-200">{error} <button type="button" onClick={onRetry} disabled={loading} className="rounded border border-amber-300/30 px-3 py-2">Retry eligibility</button></p>}</>;
 }
 
+const RELEASE_LABEL_MAX_LENGTH = 30;
+
 const focusOptions = [
   "Overall experience",
   "Gameplay",
@@ -1911,6 +1913,17 @@ export default function StartPlaytest({
   function validateForm() {
     const trimmedAccessLink = accessLink.trim();
     const trimmedInstructions = instructions.trim();
+    const trimmedReleaseLabel = releaseLabel.trim();
+
+    if (trimmedReleaseLabel.length > RELEASE_LABEL_MAX_LENGTH) {
+      return {
+        error: "Build / release label must be 30 characters or fewer.",
+        accessLink: "",
+        instructions: "",
+        target: 0,
+        minutes: null as number | null,
+      };
+    }
 
     if (!trimmedAccessLink) {
       return {
@@ -1999,6 +2012,7 @@ export default function StartPlaytest({
       error: "",
       accessLink: trimmedAccessLink,
       instructions: trimmedInstructions,
+      releaseLabel: trimmedReleaseLabel,
       target,
       minutes,
     };
@@ -2104,9 +2118,9 @@ export default function StartPlaytest({
         p_minimum_rank: minimumRank, p_testing_genre: testingGenre || null, p_genre_restricted: genreRestricted,
         p_estimated_minutes: validated.minutes,
         p_release_label:
-          releaseLabel.trim() === ""
+          validated.releaseLabel === ""
             ? null
-            : releaseLabel.trim(),
+            : validated.releaseLabel,
         p_publish: publish,
       }
     );
@@ -2158,7 +2172,7 @@ export default function StartPlaytest({
         p_target_testers: existingPlaytest?.targetTesters ?? 0,
         p_minimum_rank: minimumRank, p_testing_genre: testingGenre || null, p_genre_restricted: genreRestricted,
         p_estimated_minutes: validated.minutes,
-        p_release_label: releaseLabel.trim(),
+        p_release_label: validated.releaseLabel,
         p_status: status,
       }
     );
@@ -2522,7 +2536,7 @@ export default function StartPlaytest({
 
                       <input
                         type="text"
-                        maxLength={100}
+                        maxLength={RELEASE_LABEL_MAX_LENGTH}
                         value={releaseLabel}
                         disabled={buildLocked}
                         onChange={(event) =>
@@ -2531,6 +2545,9 @@ export default function StartPlaytest({
                         placeholder="Demo 0.3"
                         className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:cursor-not-allowed disabled:opacity-60"
                       />
+              <span className="mt-1 block text-right text-xs text-zinc-500">
+                {releaseLabel.length}/{RELEASE_LABEL_MAX_LENGTH}
+              </span>
                     </label>
                   </div>
 
@@ -3037,7 +3054,7 @@ export default function StartPlaytest({
 
           <input
             type="text"
-            maxLength={100}
+            maxLength={RELEASE_LABEL_MAX_LENGTH}
             value={releaseLabel}
             onChange={(event) =>
               setReleaseLabel(event.target.value)
@@ -3045,6 +3062,9 @@ export default function StartPlaytest({
             placeholder="Demo 0.3"
             className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
           />
+              <span className="mt-1 block text-right text-xs text-zinc-500">
+                {releaseLabel.length}/{RELEASE_LABEL_MAX_LENGTH}
+              </span>
         </label>
 
         {message && (
