@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { Rajdhani, Inter } from "next/font/google";
 import "./globals.css";
 import SiteFooter from "./components/SiteFooter";
+import ToastHost from "./components/ToastHost";
+import PrivacyStorageMaintenance from "./components/PrivacyStorageMaintenance";
+import {publicMetadata,SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION} from "../lib/seo";
 
 const displayFont = Rajdhani({
   variable: "--font-display",
@@ -16,9 +19,9 @@ const bodyFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Playtested | Find Good Games",
-  description:
-    "Cut through the noise. Discover games worth your time, money and attention.",
+  ...publicMetadata(SITE_TITLE,SITE_DESCRIPTION,"/"),
+  metadataBase:new URL(SITE_ORIGIN),
+  alternates:undefined,
 };
 
 export default function RootLayout({
@@ -31,6 +34,8 @@ export default function RootLayout({
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
         {children}
         <SiteFooter />
+        <ToastHost />
+        <PrivacyStorageMaintenance />
       </body>
     </html>
   );

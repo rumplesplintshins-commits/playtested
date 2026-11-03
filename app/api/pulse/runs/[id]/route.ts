@@ -1,3 +1,4 @@
+import {pulseMessage} from "@/lib/pulse-availability";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -89,6 +90,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         submissionId: job.submission_id,
         technicalRunId: job.technical_run_id,
         status: job.status,
+        statusMessage:pulseMessage("existing",job),
         engineVersion: job.engine_version,
         workerVersion: job.worker_version,
         testSuiteVersion: job.test_suite_version,

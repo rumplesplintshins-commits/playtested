@@ -1,12 +1,14 @@
 "use client";
 
+import {assessmentLabel} from "../../lib/review-labels";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
+import {publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -97,11 +99,23 @@ type CommunityReception = {
   receptionStatus: ReceptionStatus;
 };
 
+const AI_PUBLIC_LABELS: Record<string, string> = {
+  "AI-assisted: Code only": "AI Code Only",
+  "AI-assisted: Content only": "AI Content Only",
+  "AI-assisted: Code and content": "AI Code & Content",
+  "No AI used": "No AI disclosed",
+  "No AI disclosed": "No AI disclosed",
+};
+
 const aiTypes = [
   "All AI types",
   ...AI_CLASSIFICATIONS,
   "AI use unknown",
 ];
+
+function publicAiLabel(value: string) {
+  return AI_PUBLIC_LABELS[value] ?? "AI Use Unknown";
+}
 
 const genres = [
   "All genres",
@@ -141,7 +155,7 @@ function VerificationBadge({
 }: {
   status: VerificationStatus | null;
 }) {
-  if (!status) {
+  if (!status || status === "Not yet verified") {
     return null;
   }
 
@@ -156,7 +170,7 @@ function VerificationBadge({
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles[status]}`}
     >
-      {status}
+      Assessed
     </span>
   );
 }
@@ -191,21 +205,25 @@ function GenreBadge({ genre }: { genre: string }) {
 
 function GameCardContent({
   game,
-  onOpen,
+  href,
   compact,
 }: {
   game: CatalogueGame;
-  onOpen: () => void;
+  href: string | undefined;
   compact: boolean;
 }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
-  const disclosure = AI_CLASSIFICATIONS.includes(game.aiType.trim()) ? game.aiType.trim() : "AI use unknown";
-  const disclosureStyle = disclosure === "AI-generated" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
+  const rawDisclosure = game.aiType.trim();
+  const disclosure =
+    AI_CLASSIFICATIONS.includes(rawDisclosure) || rawDisclosure === "No AI disclosed"
+      ? rawDisclosure
+      : "AI use unknown";
+  const disclosureLabel = publicAiLabel(disclosure);
+  const disclosureStyle = disclosure === "AI-assisted: Content only" || disclosure === "AI-assisted: Code and content" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted: Code only" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
     <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
-      <button
-        type="button"
-        onClick={onOpen}
+      <a
+        href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
         className="block aspect-video w-full overflow-hidden bg-[#202520] text-left"
         aria-label={`View ${game.title} details`}
       >
@@ -223,25 +241,31 @@ function GameCardContent({
             Game image
           </div>
         )}
-      </button>
+      </a>
 
       <div className={`flex flex-1 flex-col ${compact ? "gap-3 p-4" : "gap-4 p-5"}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <GenreBadge genre={game.genre} />
         </div>
 
-        <button type="button" onClick={onOpen} className="text-left">
+        <a href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined} className="text-left">
           <h3 className="text-lg font-semibold text-white hover:text-emerald-300">
             {game.title}
           </h3>
-        </button>
+        </a>
 
         <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
 
         <div className="flex flex-wrap items-center gap-2">
-          {game.listingNotice||game.assessmentUnavailable?<span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">{game.listingNotice||"Assessment status unavailable"}</span>:<VerificationBadge status={game.verificationStatus ?? "Not yet verified"} />}
+          {game.listingNotice ? (
+            <span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">
+              {game.listingNotice}
+            </span>
+          ) : (
+            <VerificationBadge status={game.verificationStatus} />
+          )}
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
-            {disclosure === "AI use unknown" ? "AI Use Unknown" : disclosure}
+            {disclosureLabel}
           </span>
           {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
@@ -295,23 +319,25 @@ function GameCardContent({
 
         <div className="mt-auto space-y-3 pt-2">
 
-          <button
-            type="button"
-            onClick={onOpen}
-            className="w-full rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-300"
+          <a
+            href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
+            className="block w-full rounded-md bg-emerald-400 px-3 py-2 text-center text-sm font-semibold text-black hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
           >
             {game.isImportedSteam && !game.hasPlaytestedProfile
               ? "View Steam page ↗"
               : "View game details"}
-          </button>
+          </a>
         </div>
       </div>
     </article>
   );
 }
 
+function gameHref(game:CatalogueGame){
+  return game.isImportedSteam&&!game.hasPlaytestedProfile ? game.gameLink : game.isSubmission ? `/submissions/${game.key}` : `/games/${game.slug}`;
+}
+
 export default function GameCatalogue() {
-  const router = useRouter();
   const [density, setDensity] = useState<"compact" | "comfortable">("compact");
 
   const [search, setSearch] = useState("");
@@ -368,6 +394,8 @@ export default function GameCatalogue() {
       }
 
       const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
+      const publicLinks=await publicLinkedImportedIds(rows.filter(row=>row.source_type==="steam").map(row=>row.game_id));
+      if(cancelled)return;
       const recruiting = new Set<string>();
       if(rows.length){
         try{
@@ -433,11 +461,11 @@ export default function GameCatalogue() {
           image: row.image_url ?? "",
           aiType: row.ai_type ?? "AI use unknown",
           score: Number(row.quality_score ?? 0),
-          gameLink: row.game_link || (isImportedSteam&&steamAppId?`https://store.steampowered.com/app/${steamAppId}/`:""),
+          gameLink: isImportedSteam?steamStoreUrl(row.game_link,steamAppId):row.game_link,
           steamAppId,
           isSubmission: !isImportedSteam,
           isImportedSteam,
-          hasPlaytestedProfile: row.has_playtested_profile === true,
+          hasPlaytestedProfile: isImportedSteam&&/^[0-9]+$/.test(steamAppId)&&publicLinks?.has(row.game_id)===true,
           isNsfw: row.is_nsfw === true,
           verificationStatus: row.verification_status ?? "Not yet verified",
           submittedAt: row.submitted_at ?? "",
@@ -488,26 +516,6 @@ export default function GameCatalogue() {
     setIncludeNsfw(false);
     setSort("Featured");
     setPage(1);
-  }
-
-  function openGame(game: CatalogueGame) {
-    if (game.isImportedSteam) {
-      if (game.hasPlaytestedProfile) {
-        router.push(`/games/${game.slug}`);
-        return;
-      }
-
-      if (game.gameLink) {
-        window.open(game.gameLink, "_blank", "noopener,noreferrer");
-      }
-      return;
-    }
-
-    if (game.isSubmission) {
-      router.push(`/submissions/${game.key}`);
-    } else {
-      router.push(`/games/${game.slug}`);
-    }
   }
 
   const fieldClass =
@@ -561,7 +569,7 @@ export default function GameCatalogue() {
           </select>
 
           <select
-            aria-label="Filter by verification status"
+            aria-label="Filter by independent assessment"
             value={verificationFilter}
             onChange={(event) => {
               setVerificationFilter(event.target.value);
@@ -571,7 +579,7 @@ export default function GameCatalogue() {
           >
             {verificationOptions.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {item==="All verification statuses"?"All independent assessments":["Verified","Assessed","Not yet verified"].includes(item)?assessmentLabel(item):item}
               </option>
             ))}
           </select>
@@ -682,7 +690,7 @@ export default function GameCatalogue() {
                 key={game.key}
                 game={game}
                 compact={density === "compact"}
-                onOpen={() => openGame(game)}
+                href={gameHref(game)}
               />
             ))}
           </div>
@@ -690,7 +698,7 @@ export default function GameCatalogue() {
           <div className="rounded-xl border border-white/10 bg-[#151815] px-5 py-12 text-center">
             <h3 className="text-lg font-semibold">No games found</h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-white/60">
-              Try another verification status or clear your filters. Steam
+              Try another independent assessment filter or clear your filters. Steam
               listings only appear after they meet the preliminary catalogue
               eligibility and metadata requirements.
             </p>

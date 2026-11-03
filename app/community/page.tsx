@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
 import { createClient } from "@/lib/supabase";
@@ -28,45 +28,6 @@ type DatabasePost = {
   created_at: string;
 };
 
-const initialPosts: Post[] = [
-  {
-    id: -1,
-    community: "general",
-    category: "Discussion",
-    author: "Playtested",
-    time: "Example",
-    title: "Welcome to the Playtested community",
-    body: "Discuss games, share discoveries and help build a catalogue where players can find games worth their time.",
-    votes: 12,
-    comments: 3,
-    tag: "Community",
-  },
-  {
-    id: -2,
-    community: "ai-gaming",
-    category: "AI Gaming",
-    author: "Playtested",
-    time: "Example",
-    title: "What should a trustworthy game verification system check?",
-    body: "Should verification focus on AI disclosure, gameplay quality, originality, security, or a combination of these?",
-    votes: 8,
-    comments: 2,
-    tag: "Verification",
-  },
-  {
-    id: -3,
-    community: "recommendations",
-    category: "Recommendations",
-    author: "Playtested",
-    time: "Example",
-    title: "Share an indie game that deserves more attention",
-    body: "Tell the community about a game you have enjoyed and explain what makes it worth playing.",
-    votes: 6,
-    comments: 1,
-    tag: "Indie Games",
-  },
-];
-
 function formatTime(dateString: string) {
   const date = new Date(dateString);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -85,7 +46,7 @@ function formatTime(dateString: string) {
 export default function CommunityPage() {
   const router = useRouter();
 
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [votes, setVotes] = useState<Record<number, number>>({});
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -95,6 +56,10 @@ export default function CommunityPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [votingPostId, setVotingPostId] = useState<number | null>(null);
 
+  const voteLock=useRef(false),loadSequence=useRef(0);
+  const account=useRef<string|null|undefined>(undefined),accountEpoch=useRef(0),voteRequest=useRef(0);
+  const [votesReady,setVotesReady]=useState(false);
+
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [newCommunity, setNewCommunity] = useState("general");
   const [newTitle, setNewTitle] = useState("");
@@ -102,15 +67,22 @@ export default function CommunityPage() {
   const [creatingPost, setCreatingPost] = useState(false);
 
   const loadPosts = useCallback(async () => {
+    const sequence=++loadSequence.current;
+    const epoch=accountEpoch.current;
+    setVotesReady(false);setLoading(true);
     const supabase = createClient();
 
     try {
-      setError("");
+
 
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
 
+      if(sequence!==loadSequence.current||epoch!==accountEpoch.current)return false;
+      if(authError&&authError.name!=="AuthSessionMissingError")throw authError;
+      account.current=user?.id??null;
       setUserId(user?.id ?? null);
 
       const { data: databasePosts, error: postsError } = await supabase
@@ -118,14 +90,15 @@ export default function CommunityPage() {
         .select("id, user_id, community, title, body, created_at")
         .order("created_at", { ascending: false });
 
+      if(sequence!==loadSequence.current)return false;
       if (postsError) throw postsError;
 
       const rows = (databasePosts ?? []) as DatabasePost[];
 
       if (rows.length === 0) {
-        setPosts(initialPosts);
-        setVotes({});
-        return;
+        setPosts([]);setError("");
+        setVotes({});setVotesReady(true);
+        return true;
       }
 
       const postIds = rows.map((post) => post.id);
@@ -143,7 +116,7 @@ export default function CommunityPage() {
           .select("post_id")
           .in("post_id", postIds),
 
-        authorIds.length > 0
+        user && authorIds.length > 0
           ? supabase
               .from("profiles")
               .select("id, display_name")
@@ -152,14 +125,22 @@ export default function CommunityPage() {
 
         supabase
           .from("community_votes")
-          .select("post_id, user_id, value")
-          .in("post_id", postIds),
+          .select("post_id, user_id, value").order("id")
+          .in("post_id", postIds).range(0,999),
       ]);
 
       if (commentsResult.error) throw commentsResult.error;
-      if (profilesResult.error) throw profilesResult.error;
+      // Author names are optional: profile privacy must not block public posts.
       if (votesResult.error) throw votesResult.error;
 
+      const voteRows=[...(votesResult.data||[])];
+      for(let offset=1000;voteRows.length===offset;offset+=1000){
+        const next=await supabase.from("community_votes").select("post_id,user_id,value").order("id").in("post_id",postIds).range(offset,offset+999);
+        if(sequence!==loadSequence.current)return false;
+        if(next.error)throw next.error;voteRows.push(...(next.data||[]));
+        if((next.data?.length||0)<1000)break;
+      }
+      if(sequence!==loadSequence.current)return false;
       const commentCounts: Record<number, number> = {};
 
       for (const comment of commentsResult.data ?? []) {
@@ -176,7 +157,7 @@ export default function CommunityPage() {
       const scores: Record<number, number> = {};
       const currentVotes: Record<number, number> = {};
 
-      for (const vote of votesResult.data ?? []) {
+      for (const vote of voteRows) {
         scores[vote.post_id] =
           (scores[vote.post_id] ?? 0) + Number(vote.value);
 
@@ -211,29 +192,42 @@ export default function CommunityPage() {
         };
       });
 
-      setPosts(loadedPosts);
-      setVotes(currentVotes);
+      setError("");setPosts(loadedPosts);
+      setVotes(currentVotes);setVotesReady(true);return true;
     } catch (err) {
+      if(sequence!==loadSequence.current)return false;
       console.error("Error loading community posts:", err);
-      setError("Couldn't load the community feed. Please try refreshing.");
+      const code=typeof err==="object"&&err&&"code" in err?String(err.code):"network";
+      setError(`Couldn't load the community feed (${code}). Please retry; if it persists, check your connection.`);
     } finally {
-      setLoading(false);
+      if(sequence===loadSequence.current)setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadPosts();
+    const pending=loadSequence;
+    let timer=setTimeout(()=>void loadPosts(),0);
+    const {data:{subscription}}=createClient().auth.onAuthStateChange((_event,session)=>{
+      const next=session?.user.id??null;
+      if(account.current===next)return;
+      account.current=next;accountEpoch.current++;pending.current++;voteRequest.current++;
+      voteLock.current=false;setVotingPostId(null);setVotes({});setVotesReady(false);setUserId(next);setPosts([]);setLoading(true);setError("");
+      clearTimeout(timer);timer=setTimeout(()=>void loadPosts(),0);
+    });
+    return()=>{clearTimeout(timer);subscription.unsubscribe();pending.current++;};
   }, [loadPosts]);
 
   async function castVote(postId: number, direction: number) {
     if (postId < 0) return;
 
     if (!userId) {
-      router.push("/login");
+      router.push("/login?next=/community");
       return;
     }
 
-    if (votingPostId !== null) return;
+    if(voteLock.current||!votesReady)return;
+    voteLock.current=true;
+    const request=++voteRequest.current,epoch=accountEpoch.current;
 
     setVotingPostId(postId);
 
@@ -248,35 +242,30 @@ export default function CommunityPage() {
           .from("community_votes")
           .delete()
           .eq("post_id", postId)
-          .eq("user_id", userId);
+          .eq("user_id", userId).eq("value",direction);
 
         if (deleteError) throw deleteError;
-      } else if (existingVote !== 0) {
-        const { error: updateError } = await supabase
-          .from("community_votes")
-          .update({ value: direction })
-          .eq("post_id", postId)
-          .eq("user_id", userId);
-
-        if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
           .from("community_votes")
-          .insert({
+          .upsert({
             post_id: postId,
             user_id: userId,
             value: direction,
-          });
+          },{onConflict:"post_id,user_id"});
 
         if (insertError) throw insertError;
       }
 
-      await loadPosts();
+      if(epoch===accountEpoch.current)await loadPosts();
     } catch (err) {
+      if(epoch!==accountEpoch.current)return;
       console.error("Error saving vote:", err);
-      setError("Your vote couldn't be saved. Please try again.");
+      const refreshed=await loadPosts();
+      if(epoch!==accountEpoch.current)return;
+      setError(refreshed?"Your vote request failed or could not be confirmed. Refreshed totals are shown; check your selected arrow before retrying.":"Your vote could not be confirmed. Refresh the feed before voting again.");
     } finally {
-      setVotingPostId(null);
+      if(request===voteRequest.current){voteLock.current=false;setVotingPostId(null);}
     }
   }
 
@@ -391,7 +380,7 @@ export default function CommunityPage() {
             role="alert"
             className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
-            {error}
+            {error} <button type="button" disabled={loading} onClick={()=>void loadPosts()} className="ml-3 rounded border border-white/30 px-3 py-2 disabled:opacity-50">{loading?"Refreshing feed...":"Refresh feed"}</button>{posts.length>0&&!votesReady&&<p className="mt-2">Showing previously loaded posts. Voting is paused until a refresh succeeds.</p>}
           </div>
         )}
 
@@ -535,15 +524,16 @@ export default function CommunityPage() {
               </span>
             </div>
 
+            <p className="mb-4 text-sm text-gray-400">Choose Up or Down to vote. Choose the highlighted arrow again to remove your vote. {!userId&&<a href="/login?next=/community" className="text-emerald-300 underline underline-offset-4">Sign in to vote</a>}</p>
             {loading ? (
               <div className="rounded-2xl border border-white/10 bg-[#11151c] p-10 text-center text-sm text-gray-400">
                 Loading community posts...
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-[#11151c] p-10 text-center">
-                <p className="font-semibold">No posts found</p>
+                <p className="font-semibold">{error?"No community posts loaded":"No posts found"}</p>
                 <p className="mt-2 text-sm text-gray-500">
-                  Try another search or be the first to start a discussion.
+                  {error?"Use Refresh feed to retry loading real posts.":"Try another search or be the first to start a discussion."}
                 </p>
               </div>
             ) : (
@@ -561,13 +551,13 @@ export default function CommunityPage() {
                         <div className="flex shrink-0 flex-col items-center gap-2 pt-1">
                           <button
                             onClick={() => void castVote(post.id, 1)}
-                            disabled={isSavingVote || post.id < 0}
-                            aria-label="Upvote post"
+                            disabled={votingPostId!==null || !votesReady || post.id < 0}
+                            aria-label={!userId?`Sign in to upvote ${post.title}`:myVote===1?`Remove your upvote for ${post.title}`:`Upvote ${post.title}`}
                             aria-pressed={myVote === 1}
                             title={
                               !userId
                                 ? "Sign in to vote"
-                                : "Upvote"
+                                : myVote===1?"Upvote selected; click again to remove":"Add an upvote"
                             }
                             className={`rounded-lg p-1.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
                               myVote === 1
@@ -600,17 +590,18 @@ export default function CommunityPage() {
                             }`}
                           >
                             {post.votes}
+                            <span className="sr-only"> total votes. Your vote: {myVote===1?"Up":myVote===-1?"Down":"none"}.</span>
                           </span>
 
                           <button
                             onClick={() => void castVote(post.id, -1)}
-                            disabled={isSavingVote || post.id < 0}
-                            aria-label="Downvote post"
+                            disabled={votingPostId!==null || !votesReady || post.id < 0}
+                            aria-label={!userId?`Sign in to downvote ${post.title}`:myVote===-1?`Remove your downvote for ${post.title}`:`Downvote ${post.title}`}
                             aria-pressed={myVote === -1}
                             title={
                               !userId
                                 ? "Sign in to vote"
-                                : "Downvote"
+                                : myVote===-1?"Downvote selected; click again to remove":"Add a downvote"
                             }
                             className={`rounded-lg p-1.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
                               myVote === -1
@@ -643,6 +634,7 @@ export default function CommunityPage() {
                             <span>{post.author}</span>
                             <span>·</span>
                             <span>{post.time}</span>
+                            {userId&&<span className={myVote===1?"text-[#77f29b]":myVote===-1?"text-orange-400":"text-zinc-400"}>{votesReady?`Your vote: ${myVote===1?"Up":myVote===-1?"Down":"none"}`:"Your vote: not confirmed"}</span>}
                           </div>
 
                           <button

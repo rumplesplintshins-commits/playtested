@@ -91,7 +91,7 @@ export function useTestingCapacityPolicy(){
  useEffect(()=>{let active=true;void createClient().rpc('get_testing_capacity_policy').then(({data,error})=>{if(active&&!error&&data)setData(data);});return()=>{active=false;};},[]);
  return data;
 }
-export function PlacesRules(){return <details className="mt-2 text-xs leading-5 text-zinc-400"><summary className="cursor-pointer">How places work</summary><p className="mt-2">A confirmed claim reserves one place for 72 hours. Starting or refreshing does not extend it. Release or expiry before submission frees the place, with no XP penalty. Expired drafts are kept; reclaim a place before submitting. Submitted feedback uses a place regardless of review outcome, except an audited moderator replacement. Community feedback is separate. Places do not guarantee participation or accepted feedback.</p></details>;}
+export function PlacesRules({inline=false}:{inline?:boolean}){const content=<p className="mt-2">A confirmed claim reserves one place for 72 hours. Starting or refreshing does not extend it. Release or expiry before submission frees the place, with no XP penalty. Expired drafts are kept; reclaim a place before submitting. Submitted feedback uses a place regardless of review outcome, except an audited moderator replacement. Community feedback is separate. Places do not guarantee participation or accepted feedback.</p>;return inline?content:<details className="mt-2 text-sm leading-6 text-zinc-400"><summary className="w-fit cursor-pointer py-2">How places work</summary>{content}</details>;}
 export function ReservationNotice({expiresAt,now,hours,claimed=false}:{expiresAt?:string|null;now:number|null;hours?:number;claimed?:boolean}){
  if(!expiresAt&&claimed)return <p className="mt-2 text-xs text-zinc-400">{hours?"Historical reservation: its 72-hour transition has not been activated yet.":"Reservation deadline unavailable. Your existing claim is unchanged."}</p>;
  if(!expiresAt)return <p className="mt-2 text-xs text-zinc-400">{now&&hours?`If claimed now: submit by ${new Date(now+hours*3600000).toLocaleString()}. ${hours}-hour reservation begins when confirmed.`:'Reservation deadline will be shown when server rules are available.'}</p>;
@@ -99,23 +99,12 @@ export function ReservationNotice({expiresAt,now,hours,claimed=false}:{expiresAt
  const remaining=Date.parse(expiresAt)-now;
  return <p role="status" className={`mt-2 text-sm ${remaining<=86400000?'text-amber-200':'text-zinc-400'}`}>{remaining<=0?'Reservation expired. Your draft is kept. Reclaim a place before submitting.':`${remaining<=86400000?'Final 24 hours · ':''}${Math.ceil(remaining/3600000)}h remaining · Submit by ${new Date(expiresAt).toLocaleString()}.`}</p>;
 }
-export function CampaignPlaces({ id,refreshKey }: {
-    id: string;
-    refreshKey?: string;
-}) {
-    const [data, setData] = useState<{
-        submitted: number;
-        testing: number;
-        available: number;
-        capacity?: number;
-    } | null>(null);
-    const [error, setError] = useState("");
-    const [revision,setRevision]=useState(0);
-    useEffect(() => { let active = true; void createClient().rpc("get_campaign_testing_details", { p_id: id }).then(({ data, error }) => { if (active) {
-        setData(data);
-        setError(error?.message || "");
-    } }); return () => { active = false; }; }, [id,refreshKey,revision]);
-    return <div className="my-2"><p className="text-sm text-zinc-400" role="status">{error ? `Places unavailable: ${error}` : data ? `${data.capacity??(data.submitted+data.testing+data.available)} places · ${data.submitted} submitted · ${data.testing} reserved · ${data.available} available${data.available===0?(data.submitted>=(data.capacity??(data.submitted+data.testing))?' · Feedback capacity reached':' · All places reserved'):''}` : 'Loading places…'}</p><button type="button" onClick={()=>setRevision(n=>n+1)} className="mt-1 text-xs text-zinc-400 underline">Refresh places</button><PlacesRules/></div>;
+export function CampaignPlaces({id,refreshKey,compact=false}:{id:string;refreshKey?:string;compact?:boolean}){
+ const [data,setData]=useState<{submitted:number;testing:number;available:number;capacity?:number}|null>(null),[error,setError]=useState(""),[revision,setRevision]=useState(0),[loading,setLoading]=useState(true),[loadedId,setLoadedId]=useState("");
+ useEffect(()=>{let active=true;void Promise.resolve().then(()=>{if(active)setLoading(true);return createClient().rpc("get_campaign_testing_details",{p_id:id});}).then(({data,error})=>{if(active){setLoadedId(id);setData(data);setError(error?.message||(!data?"Places data unavailable":""));}}).catch(()=>{if(active){setLoadedId(id);setData(null);setError("Request failed. Retry to check current places.");}}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[id,refreshKey,revision]);
+ const current=loadedId===id?data:null,problem=loadedId===id?error:"";
+ const capacityLabel=current?(compact?(current.available===0?(current.submitted>=(current.capacity??(current.submitted+current.testing))?'Capacity reached':'All places reserved'):'Places available'):`${current.capacity??(current.submitted+current.testing+current.available)} places`):"";
+ return <div className="my-2"><div className="flex flex-wrap items-center gap-x-4 gap-y-2"><p className="min-w-0 text-sm text-zinc-300" role={problem?'alert':'status'}>{problem?`Places unavailable: ${problem}`:current?`${capacityLabel} | ${current.submitted} submitted | ${current.testing} reserved | ${current.available} available`:"Loading places..."}</p><button type="button" disabled={loading} onClick={()=>{setLoading(true);setRevision(n=>n+1);}} className="rounded border border-white/20 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50">{loading?'Refreshing places...':'Refresh places'}</button></div>{!compact&&<PlacesRules/>}</div>;
 }
 export function FeedbackSignal({ testId }: {
     testId: string;

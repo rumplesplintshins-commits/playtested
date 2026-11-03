@@ -1,3 +1,5 @@
+import PulseAvailability,{PulseJobStatus} from "../components/PulseAvailability";
+import {pulseMessage} from "@/lib/pulse-availability";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -6,7 +8,7 @@ import GameLinksEngagement from "../components/GameLinksEngagement";
 import StartPlaytest from "../components/StartPlaytest";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
-import {submissionIssues,completenessMessage} from "../../lib/submission-completeness";
+import {submissionIssues,submissionReviewPresentation} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
 
 type ClaimStatus =
@@ -56,6 +58,7 @@ type PulseJobRow = {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  updated_at?: string;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -328,20 +331,6 @@ function pulseStatusClasses(status: string) {
   return "border-sky-300/30 bg-sky-300/10 text-sky-200";
 }
 
-function verificationStatusClasses(
-  status: "Verified" | "Assessed" | "Not yet verified"
-) {
-  if (status === "Verified") {
-    return "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]";
-  }
-
-  if (status === "Assessed") {
-    return "border-sky-300/30 bg-sky-300/10 text-sky-200";
-  }
-
-  return "border-white/10 bg-white/[0.04] text-zinc-300";
-}
-
 function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
   return {
     id: playtest.id,
@@ -487,6 +476,17 @@ function receptionForGame(
     continuePercent: nullableNumber(row.continue_positive_percent),
     technicalFeedbackCount: requiredNumber(row.technical_feedback_count),
     averageHoursPlayed: nullableNumber(row.average_hours_played),
+  };
+}
+
+function sidebarFeedback(game: LinkedGame, rows: DeveloperReceptionRow[], unavailable: boolean) {
+  const feedback=receptionForGame(game,rows.filter(row=>requiredNumber(row.accepted_test_count)>0).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||a.playtest_id.localeCompare(b.playtest_id)));
+  return {
+    context: game.latestPlaytest ? `Current build: ${game.latestPlaytest.releaseLabel || "Unlabelled build"}` : undefined,
+    feedback: unavailable ? "Feedback unavailable" : feedback ? [
+      ...(feedback.playtestId!==game.latestPlaytest?.id ? [`Latest feedback: ${feedback.releaseLabel}`] : []),
+      `${feedback.acceptedTests} accepted Tester Hub report${feedback.acceptedTests===1?"":"s"}`,
+    ].join("\n") : game.latestPlaytest ? "No Tester Hub feedback yet for this build" : "No feedback yet",
   };
 }
 
@@ -651,7 +651,8 @@ async function DeveloperDashboard() {
           report_json,
           created_at,
           started_at,
-          completed_at
+          completed_at,
+          updated_at
         `
       )
       .eq("developer_id", user.id)
@@ -1058,9 +1059,9 @@ async function DeveloperDashboard() {
     (job) => job.status === "COMPLETE"
   );
 
-  return <DeveloperWorkspace showPlan feedbackCountsReady={!receptionError}
+  return <DeveloperWorkspace diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",context:game.relationship+(game.latestPlaytest?.releaseLabel?` ? ${game.latestPlaytest.releaseLabel}`:""),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,feedback:receptionError?undefined:game.currentReception?`${game.currentReception.acceptedTests} accepted independent ? ${game.currentReception.releaseLabel}. Community totals in results.`:undefined,content:((game) => {
+ games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1106,13 +1107,7 @@ async function DeveloperDashboard() {
                   </div>
 
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`rounded-md border px-3 py-2 text-xs font-medium ${verificationStatusClasses(
-                          game.verificationStatus
-                        )}`}
-                      >
-                        {game.listingNotice||game.verificationStatus}
-                      </span>
+                      {game.listingNotice&&<span className="text-xs text-zinc-500">{game.listingNotice}</span>}
 
                     </div>
                   </div>
@@ -1194,7 +1189,7 @@ async function DeveloperDashboard() {
                   <p className="mt-2 text-sm leading-6 text-zinc-400">
                     Your developer claim for this game was approved.
                     Playtesting is separate from
-                    Playtested assessment and verification.
+                    optional independent gameplay assessment.
                   </p>
                 </div>}
 
@@ -1209,12 +1204,12 @@ async function DeveloperDashboard() {
                     existingPlaytest={game.latestPlaytest}
                     playtests={game.playtests}
                   />
-                  <GameLinksEngagement source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
+                  <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
                 </div>
               </article>
               );
             })(game)}))}
- submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<>{((game) => (
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<>{((game) => (
               <article
                 key={game.id}
                 className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
@@ -1244,7 +1239,7 @@ async function DeveloperDashboard() {
                   </span>
                 </div>
               </article>
-            ))(game)}<aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{completenessMessage(submissionIssues(game as unknown as Record<string,unknown>))||"Required developer details are complete. Approval still requires admin review."}</p>{(["Needs More Information","Rejected"].includes(game.status)||(game.status==="Pending Review"&&submissionIssues(game as unknown as Record<string,unknown>).length>0))&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>Complete information</a>}</aside><div className="mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"><p className="font-semibold">Human reviewer notes</p><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p>{game.status==="Pending Review"&&<p className="mt-2 text-zinc-400">Awaiting listing review. No action is needed unless more information is requested.</p>}{game.status==="Approved"&&<p className="mt-2 text-zinc-400">Listing approval is separate from a game-quality assessment. Use My games to manage an approved developer relationship.</p>}</div></>}))}
+            ))(game)}<section className={game.status==="Rejected"?"mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-4 text-sm text-zinc-300":"mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"}><h3 className="font-semibold">{game.status==="Rejected"?"Rejection reason":game.status==="Needs More Information"?"Information requested":"Reviewer Notes"}</h3><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p><p className="mt-2">{submissionReviewPresentation(game.status).summary}</p>{submissionReviewPresentation(game.status).action&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>{submissionReviewPresentation(game.status).action}</a>}</section><aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{submissionReviewPresentation(game.status,submissionIssues(game as unknown as Record<string,unknown>)).completeness}</p></aside></>}))}
  claims={claims.map(claim=>({id:claim.id,title:claim.gameTitle,status:claim.status,context:claim.relationship,content:((claim) => (
               <article
                 key={claim.id}
@@ -1374,7 +1369,7 @@ async function DeveloperDashboard() {
 
                       <p className="mt-2 text-xs leading-5 text-zinc-500">
                         Ownership approval does not mean the game
-                        itself is Assessed or Verified.
+                        has a completed independent gameplay assessment.
                       </p>
                     </div>
                   )}
@@ -1386,7 +1381,7 @@ async function DeveloperDashboard() {
  const latestPulseSummary=getPulseReportSummary(job.report_json);
  const completedPulseRuns=pulseJobs.filter(run=>run.submission_id===job.submission_id&&run.status==="COMPLETE");
  const gameJobs=pulseJobs.filter(run=>run.submission_id===job.submission_id);
- return {id:job.id,title:submissionTitleById.get(job.submission_id)||"Submitted game unavailable",status:job.status,context:formatDate(job.created_at)+(job.build_sha256?` | Build ${job.build_sha256.slice(0,12)}`:" | Build identifier not recorded"),content:(()=>{const pulseJobs=gameJobs;return (<details open className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
+ return {id:job.id,title:submissionTitleById.get(job.submission_id)||"Submitted game unavailable",status:job.status,context:pulseMessage("existing",job)+"\n"+formatDate(job.created_at)+(job.build_sha256?` | Build ${job.build_sha256.slice(0,12)}`:" | Build identifier not recorded"),content:(()=>{const pulseJobs=gameJobs;return (<details open className="group mt-8 overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.025]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -1415,6 +1410,7 @@ async function DeveloperDashboard() {
         <div className="border-t border-white/10 px-5 py-5 sm:px-6">
           {latestPulseRun ? (
             <>
+              <PulseJobStatus status={latestPulseRun.status} updatedAt={latestPulseRun.updated_at}/>
               <p className="mb-4 text-sm text-zinc-400">Technical diagnostics for this submitted game and stored build only. They are not a gameplay-quality assessment or a guarantee of safety.</p>
               <p className="mb-3 break-all text-xs text-zinc-400">Run: {latestPulseRun.id} | Build SHA-256: {latestPulseRun.build_sha256 || "Not recorded"}</p>
               {latestPulseRun.error_message && <p role="alert" className="mb-4 rounded-lg border border-red-300/30 p-3 text-sm text-red-200">{latestPulseRun.error_message}</p>}

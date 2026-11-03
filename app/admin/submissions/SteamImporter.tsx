@@ -385,7 +385,7 @@ export default function SteamImporter() {
       {expanded && (
         <div className="mt-6 border-t border-zinc-800 pt-5">
           <p className="max-w-2xl text-sm leading-6 text-zinc-400">
-            Imported games remain Not yet verified until they go through
+            Imported games remain without an independent assessment until they go through
             Playtested&apos;s own assessment process.
           </p>
 
@@ -443,7 +443,7 @@ export default function SteamImporter() {
 
             <p className="mt-2 text-sm leading-6 text-zinc-400">
               Import up to 20 public Steam game listings at a time. Imports
-              remain Not yet verified and do not approve developer submissions.
+              remain without an independent assessment and do not approve developer submissions.
             </p>
 
             <button

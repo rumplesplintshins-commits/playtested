@@ -1,6 +1,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {noIndexPath} from "./lib/seo";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -29,6 +30,8 @@ export async function proxy(request: NextRequest) {
   );
 
   await supabase.auth.getClaims();
+
+  if(noIndexPath(request.nextUrl.pathname))response.headers.set("X-Robots-Tag","noindex, follow");
 
   return response;
 }

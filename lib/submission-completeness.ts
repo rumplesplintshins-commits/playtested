@@ -6,27 +6,28 @@ export const SUBMISSION_FIELDS=[
  {field:"description",label:"Game description",required:true},
  {field:"game_link",label:"Game or build link",url:true},
  {field:"steam_url",label:"Steam store link",url:true},
- {field:"image_url",label:"Thumbnail URL",url:true},
+ {field:"image_url",label:"Game thumbnail",required:true,url:true},
  {field:"release_status",label:"Release status",required:true},
  {field:"release_date",label:"Release date"},
  {field:"ai_type",label:"AI classification",required:true},
  {field:"ai_explanation",label:"AI-use explanation",ai:true},
- {field:"evidence_link",label:"Supporting evidence link (optional)",url:true},
 ] as const;
-export const AI_CLASSIFICATIONS=["AI-generated","AI-assisted","No AI disclosed"];
+export const AI_CLASSIFICATIONS=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","No AI used"];
+export const LEGACY_AI_CLASSIFICATIONS=["AI-generated","AI-assisted","No AI disclosed"];
+export const ACCEPTED_AI_CLASSIFICATIONS=[...AI_CLASSIFICATIONS,...LEGACY_AI_CLASSIFICATIONS];
 export const AI_AREAS=["Programming or code","Artwork or textures","Writing or dialogue","Voice or audio","Music or sound effects","Animation or video","Testing or development tools","Other"];
 export const RELEASE_STATUSES=["Released","Upcoming","Not announced"];
 export function submissionHttpUrl(value:string){const port=/^https?:\/\/[^/?#@:]+:([0-9]+)/i.exec(value)?.[1];return /^https?:\/\/[^\s/?#@:]+(?::[0-9]{1,5})?(?:[/?#][^\s]*)?$/i.test(value)&&(!port||Number(port)<=65535);}
 // Client guidance only. The matching SQL validator is authoritative on every write.
 export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[]{
- const ai=["AI-generated","AI-assisted"].includes(String(record.ai_type||"").trim());
+ const ai=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","AI-generated","AI-assisted"].includes(String(record.ai_type||"").trim());
  return SUBMISSION_FIELDS.flatMap(rule=>{
   const value=String(record[rule.field]??"").trim();let reason="";
   const required=("required" in rule&&rule.required)||("ai" in rule&&rule.ai&&ai)||(rule.field==="release_date"&&String(record.release_status||"").trim()==="Released");
   if(required&&!value)reason="Required";
   else if(value&&"url" in rule&&!submissionHttpUrl(value))reason="Use a valid HTTP or HTTPS URL";
   else if(rule.field==="steam_url"&&value&&!/^https:\/\/store\.steampowered\.com\/app\/[0-9]+(?:[/?#][^\s]*)?$/i.test(value))reason="Use the game's Steam app store URL";
-  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value))reason="Select an available AI classification";
+  else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value)&&value!=="No AI disclosed")reason="Please update this legacy AI disclosure using one of the current classifications";
   else if(rule.field==="release_status"&&value&&!RELEASE_STATUSES.includes(value))reason="Select an available release status";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Released"&&value>new Date().toISOString().slice(0,10))reason="A released game's release date cannot be in the future";
   else if(rule.field==="release_date"&&value&&String(record.release_status||"").trim()==="Upcoming"&&value<new Date().toISOString().slice(0,10))reason="An upcoming game's planned release date cannot be in the past";
@@ -37,4 +38,12 @@ export function completenessMessage(issues:SubmissionIssue[]){return issues.leng
 export function listingEditIssues(before:Record<string,unknown>,after:Record<string,unknown>):SubmissionIssue[]{
  const changed=new Set(SUBMISSION_FIELDS.filter(rule=>String(before[rule.field]??"")!==String(after[rule.field]??"")).map(rule=>rule.field as string));
  return submissionIssues(after).filter(issue=>issue.field==="title"||changed.has(issue.field)||(changed.has("ai_type")&&issue.field==="ai_explanation")||((changed.has("release_status")||changed.has("release_date"))&&issue.field==="release_date"));
+}
+
+// Presentation only; correction RPCs remain authoritative.
+export function submissionReviewPresentation(status:string,issues:SubmissionIssue[]=[]){
+ const action=status==="Rejected"?"Edit and resubmit":status==="Needs More Information"?"Complete information":null;
+ const summary=status==="Rejected"?"This submission was rejected. Editing does not change the decision until you resubmit for review.":status==="Needs More Information"?"Review the requested information below, update your submission and resubmit for review.":status==="Pending Review"?"Awaiting listing review. No action is needed unless more information is requested.":status==="Approved"?"This listing is approved. Use My games to edit the approved listing.":"Review status unavailable.";
+ const completeness=issues.length?completenessMessage(issues):"Required developer details are complete. Completeness does not change the review decision.";
+ return {action,summary,completeness};
 }

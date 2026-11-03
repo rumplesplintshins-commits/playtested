@@ -2,11 +2,14 @@
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
+import {SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION,serializeJsonLd} from "../lib/seo";
+export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd({"@context":"https://schema.org","@type":"WebSite",name:"Playtested",alternateName:SITE_TITLE,url:SITE_ORIGIN+"/",description:SITE_DESCRIPTION})}}/>
 
       <section className="mx-auto max-w-7xl px-6 pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-w-3xl">
@@ -22,9 +25,9 @@ export default function Home() {
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 md:text-base">
-            Good games get better when people play them. Playtested brings
-            developers and players together to try games, share honest feedback
-            and work out what needs improving.
+            Discover games through player feedback. Developers gather structured,
+            build-specific feedback, and players find games recruiting testers.
+            Explore the catalogue without an account; sign in to take part in a playtest.
           </p>
 
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
@@ -66,12 +69,14 @@ export default function Home() {
           </div>
 
           <div className="max-w-xl space-y-4 text-sm leading-7 text-zinc-400">
-            <p>Playtested uses automation to handle repetitive technical checks,
-              leaving people to judge what matters: how a game feels to play.</p>
+            <p>Structured playtest questions keep feedback about gameplay,
+              controls and performance tied to the build people played.</p>
             <p>Developers get structured feedback to help improve their games.
               Players share honest experiences, discover games through community
               ratings, and help shape a community they want to be part of.
               Thoughtful criticism matters just as much as praise.</p>
+            <p>AI-use disclosures explain how developers say a game was made.
+              They are context, not a guarantee of quality or independent proof.</p>
           </div>
         </div>
       </section>

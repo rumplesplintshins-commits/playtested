@@ -1,5 +1,7 @@
 "use client";
 
+import {assessmentLabel} from "../../lib/review-labels";
+
 import { useMemo, useState } from "react";
 import IntentSummary from "./IntentSummary";
 import type {IntentCounts} from "@/lib/intent-counts";
@@ -171,7 +173,7 @@ export default function CommunityReception({
               verificationLabel
             )}`}
           >
-            {verificationLabel}
+            {assessmentLabel(verificationLabel)}
           </span>
         </div>
 
@@ -210,8 +212,7 @@ export default function CommunityReception({
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
             Community reception comes from accepted
             Playtested tester responses for the selected
-            build. It is separate from independent
-            Playtested assessment and verification.
+            build. It is separate from independent gameplay assessment.
           </p>
         </div>
 
@@ -229,7 +230,7 @@ export default function CommunityReception({
               verificationLabel
             )}`}
           >
-            {verificationLabel}
+            {assessmentLabel(verificationLabel)}
           </span>
         </div>
       </div>
@@ -701,7 +702,7 @@ export default function CommunityReception({
               These are accepted tester comments for{" "}
               {selectedBuild.releaseLabel}. They are not
               independently confirmed findings or a
-              Playtested verification verdict.
+              independent gameplay assessment.
             </p>
           </div>
         </details>

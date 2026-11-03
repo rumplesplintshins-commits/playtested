@@ -1,3 +1,6 @@
+import {randomUUID,createHash} from "node:crypto";
+import {resolve} from "node:path";
+import {fileURLToPath} from "node:url";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const RUNNER_SECRET = process.env.PULSE_RUNNER_SECRET?.trim();
@@ -15,15 +18,22 @@ const ACTIVE_JOB_STATUSES = [
   "PROCESSING_RESULTS",
 ];
 
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !RUNNER_SECRET) {
-  console.error(
-    "PULSE V9 runner requires NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and PULSE_RUNNER_SECRET."
-  );
-  process.exit(1);
-}
-
 let stopping = false;
 let activeJobId = null;
+
+const workerId=randomUUID();let heartbeatPending=false,processingReady=false;
+export async function reportReadiness(force=true){
+ if(heartbeatPending)return false;heartbeatPending=true;
+ let ready=false;
+ try{
+  if(force&&!stopping&&process.env.PULSE_ENABLED!=="false"){
+   const response=await fetch(PLAYTESTED_BASE_URL+"/api/pulse/preflight",{headers:{"X-PULSE-RUNNER-SECRET":RUNNER_SECRET,"X-PULSE-PROJECT":createHash("sha256").update(SUPABASE_URL).digest("hex")},signal:AbortSignal.timeout(25000)});
+   ready=response.ok&&(await response.json()).ready===true;
+  }
+  await supabaseRequest("rpc/record_pulse_worker_heartbeat",{method:"POST",body:JSON.stringify({p_worker:workerId,p_ready:ready,p_busy:!!activeJobId,p_job:activeJobId})});
+  processingReady=ready;return ready;
+ }catch{processingReady=false;return false;}finally{heartbeatPending=false;}
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,6 +41,7 @@ function sleep(ms) {
 
 async function supabaseRequest(path, options = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    signal:AbortSignal.timeout(10000),
     ...options,
     headers: {
       apikey: SERVICE_ROLE_KEY,
@@ -63,7 +74,7 @@ async function supabaseRequest(path, options = {}) {
   return payload;
 }
 
-async function recoverStaleJobs() {
+export async function recoverStaleJobs() {
   const cutoff = new Date(
     Date.now() - STALE_JOB_MINUTES * 60 * 1000
   ).toISOString();
@@ -87,6 +98,8 @@ async function recoverStaleJobs() {
   }
 
   for (const job of rows) {
+    const alive=await supabaseRequest("rpc/pulse_job_worker_alive",{method:"POST",body:JSON.stringify({p_job:job.id})});
+    if(alive===true)continue;
     const now = new Date().toISOString();
     const message =
       `PULSE job recovered after remaining in ${job.status} for more than ` +
@@ -148,8 +161,9 @@ async function failJob(jobId, message) {
   }
 }
 
-async function runJob(job) {
+export async function runJob(job) {
   activeJobId = job.id;
+  await reportReadiness();
 
   console.log(
     `[PULSE V9] Starting job ${job.id} for submission ${job.submission_id}`
@@ -157,6 +171,7 @@ async function runJob(job) {
 
   try {
     const response = await fetch(`${PLAYTESTED_BASE_URL}/api/pulse/preflight`, {
+      signal:AbortSignal.timeout(30*60*1000),
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -200,8 +215,20 @@ async function runJob(job) {
 }
 
 async function main() {
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !RUNNER_SECRET) {
+  console.error(
+    "PULSE V9 runner requires NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and PULSE_RUNNER_SECRET."
+  );
+  process.exit(1);
+}
+
+
+  const endpoint=new URL(PLAYTESTED_BASE_URL);
+  if(endpoint.protocol!=="https:"&&!(endpoint.protocol==="http:"&&["localhost","127.0.0.1","[::1]"].includes(endpoint.hostname)))throw Error("PLAYTESTED_BASE_URL requires HTTPS outside local development.");
+  await reportReadiness();
+  const heartbeat=setInterval(()=>void reportReadiness(),20000);
   console.log("PULSE V9 standalone runner online.");
-  console.log(`Playtested: ${PLAYTESTED_BASE_URL}`);
+  console.log("Execution endpoint configured; readiness required.");
   console.log("Waiting to atomically claim QUEUED jobs...");
   console.log(
     `Stale-job recovery enabled: ${STALE_JOB_MINUTES} minute timeout.`
@@ -218,6 +245,7 @@ async function main() {
         lastStaleCheckAt = now;
       }
 
+      if(!processingReady){await sleep(3000);continue;}
       const job = await claimNextQueuedJob();
 
       if (!job) {
@@ -227,6 +255,7 @@ async function main() {
 
       await runJob(job);
     } catch (error) {
+      await reportReadiness(false);
       console.error(
         "[PULSE V9] Queue polling error:",
         error instanceof Error ? error.message : error
@@ -235,6 +264,7 @@ async function main() {
     }
   }
 
+  clearInterval(heartbeat);await reportReadiness(false);
   console.log(
     activeJobId
       ? `PULSE V9 runner stopping after job ${activeJobId}.`
@@ -250,7 +280,7 @@ process.on("SIGTERM", () => {
   stopping = true;
 });
 
-main().catch((error) => {
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch((error) => {
   console.error("PULSE V9 runner fatal error:", error);
   process.exit(1);
 });

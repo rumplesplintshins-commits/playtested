@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { execFile } from "node:child_process";
 import { mkdtemp, rm, writeFile, access, readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -267,7 +267,7 @@ async function getClamVersion(clamscanPath: string): Promise<string | null> {
   }
 }
 
-async function runClamAvScan(zipPath: string): Promise<SecurityScanResult> {
+async function runClamAvScan(zipPath: string, timeout=5*60*1000): Promise<SecurityScanResult> {
   const clamscanPath = getClamScanPath();
   const databasePath = getClamDatabasePath();
   const startedAt = Date.now();
@@ -298,7 +298,7 @@ async function runClamAvScan(zipPath: string): Promise<SecurityScanResult> {
   try {
     const result = await execFileAsync(clamscanPath, args, {
       cwd: process.cwd(),
-      timeout: 5 * 60 * 1000,
+      timeout,
       maxBuffer: 10 * 1024 * 1024,
       windowsHide: true,
     });
@@ -785,7 +785,30 @@ function mapTechnicalRun(
   };
 }
 
+function trustedRunner(request:NextRequest){
+ const secret=process.env.PULSE_RUNNER_SECRET;const supplied=request.headers.get("x-pulse-runner-secret");
+ return !!secret&&!!supplied&&timingSafeEqual(createHash("sha256").update(secret).digest(),createHash("sha256").update(supplied).digest());
+}
+export async function GET(request:NextRequest){
+ if(!trustedRunner(request))return NextResponse.json({ready:false},{status:401});
+ if(process.env.PULSE_EXECUTION_ENABLED!=="true")return NextResponse.json({ready:false});
+ let probe:string|null=null;
+ try{
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!url||!secret||request.headers.get("x-pulse-project")!==createHash("sha256").update(url).digest("hex"))return NextResponse.json({ready:false});
+  const result=await createClient(url,secret,{auth:{persistSession:false}}).rpc("pulse_job_worker_alive",{p_job:"00000000-0000-0000-0000-000000000000"});if(result.error||typeof result.data!=="boolean")throw Error("Worker database permissions unavailable");
+  await access(resolve(process.cwd(),"scripts/workers/technical-test-worker-v6.10.mjs"));
+  probe=await mkdtemp(join(tmpdir(),"pulse-readiness-"));const file=join(probe,"probe.txt");await writeFile(file,"PULSE readiness probe");
+  const scan=await runClamAvScan(file,5000);if(scan.status!=="NO KNOWN THREATS DETECTED")throw Error("Scanner not ready");
+  // Launch only a blank browser to verify installed dependencies; no submitted code.
+  await execFileAsync(process.execPath,["--input-type=module","-e","import {chromium} from 'playwright'; import AdmZip from 'adm-zip'; const b=await chromium.launch({headless:true}); await b.close();"],{cwd:process.cwd(),timeout:15000,windowsHide:true});
+  return NextResponse.json({ready:true},{headers:{"Cache-Control":"no-store"}});
+ }catch{return NextResponse.json({ready:false},{headers:{"Cache-Control":"no-store"}});}finally{if(probe)await rm(probe,{recursive:true,force:true});}
+}
+
 export async function POST(request: NextRequest) {
+  if(process.env.PULSE_EXECUTION_ENABLED!=="true")return NextResponse.json({success:false,error:"PULSE execution is unavailable on this host."},{status:503});
+  if(!trustedRunner(request))return NextResponse.json({success:false,error:"Worker authentication required."},{status:401});
   let temporaryDirectory: string | null = null;
 
   try {
@@ -819,11 +842,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const runnerSecret = process.env.PULSE_RUNNER_SECRET?.trim() ?? "";
-    const suppliedRunnerSecret =
-      request.headers.get("x-pulse-runner-secret")?.trim() ?? "";
     const isTrustedRunner =
-      Boolean(runnerSecret) && suppliedRunnerSecret === runnerSecret;
+      trustedRunner(request);
 
     let authenticatedUserId = "";
 
@@ -837,7 +857,7 @@ export async function POST(request: NextRequest) {
 
       const { data: runnerJob, error: runnerJobError } = await supabase
         .from("pulse_jobs")
-        .select("id, submission_id, developer_id, status")
+        .select("id, submission_id, developer_id, status, build_url")
         .eq("id", jobId)
         .eq("submission_id", submissionId)
         .maybeSingle();
@@ -897,10 +917,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let queuedBuildUrl="";
     if (jobId) {
       const { data: pulseJob, error: pulseJobError } = await supabase
         .from("pulse_jobs")
-        .select("id, submission_id, developer_id, status")
+        .select("id, submission_id, developer_id, status, build_url")
         .eq("id", jobId)
         .maybeSingle();
 
@@ -921,6 +942,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      queuedBuildUrl=String(pulseJob.build_url||"");
       const allowedStartStatuses = isTrustedRunner
         ? ["ACQUIRING_BUILD"]
         : ["QUEUED"];
@@ -980,7 +1002,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sourceUrl = String(
-      submission.game_link || submission.steam_url || ""
+      queuedBuildUrl
     ).trim();
 
     if (!sourceUrl || !isHttpUrl(sourceUrl)) {

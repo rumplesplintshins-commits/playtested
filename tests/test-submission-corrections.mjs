@@ -6,6 +6,9 @@ const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/su
 const db=new PGlite();const id=n=>`c1000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const run=s=>db.exec(s);const one=async(s,args=[])=>(await db.query(s,args)).rows[0];
 const valid={title:'Game',developer_name:'Studio',genre:'Action',description:'A game to test',game_link:'',ai_type:'No AI disclosed',release_status:'Not announced'};
+if(process.argv.includes('--pulse')){try{await pulseChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
+if(process.argv.includes('--community-votes')){try{await communityVoteChecks();}catch(e){console.error(e.message);process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
+if(process.argv.includes('--review')){try{await reviewScopeChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--visibility')){try{await visibilityChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--claims')){try{await ownershipClaimChecks();}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
 if(process.argv.includes('--maintenance')){try{await listingChecks(true);}catch(e){console.error(e.message,e.where||'');process.exitCode=1;}finally{await db.close();}process.exit(process.exitCode||0);}
@@ -316,5 +319,122 @@ async function qaActivityChecks(){
  assert.equal((await db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify([{source_type:'steam',game_id:rail}])])).rows[0].recruiting,false);
  for(const[cid,,status]of campaigns){assert.equal((await one(`select status from community_playtests where id='${cid}'`)).status,status);assert.equal((await one(`select public.campaign_eligible('${cid}','${id(50)}') eligible`)).eligible,false);}
  await as(500);await run('set role authenticated');assert.equal(Number((await one(`select count(*) n from community_game_tests where tester_id=auth.uid()`)).n),1);await run('reset role');
+
+ // 023 extends the existing mechanism: exercise both submission and approved aliases.
+ const workflow=['0a954463-811a-42b7-98d6-8793e3c9b756','226cf8e7-4606-44f5-b7be-e0f46ce38dc3','38f54814-859c-461f-8602-8b6ba84f1e99','94483bd5-99e5-4126-bd01-c1a770a7f7b3'];
+ await run('set session_replication_role=replica');
+ for(const [i,gid]of workflow.entries())await run(`insert into game_submissions(id,developer_id,title,developer_name,genre,description,status,game_link,ai_type)values('${gid}','${id(1)}','Confirmed QA ${i}','Studio','Action','QA description','Approved','https://example.test/build','No AI disclosed');insert into community_playtests(id,developer_id,${i%2?'approved_game_id':'submission_id'},title,access_link,instructions,status,audience,published_at,release_label)values('${id(800+i)}','${id(1)}','${gid}','QA campaign','https://example.test/build','Test','open','both',now(),'QA build');insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome,base_xp_amount,xp_awarded,overall_score)values('${id(900+i)}','${id(800+i)}','${id(2)}','reviewed','accepted',60,true,8)`);
+ await run('set session_replication_role=origin');
+ const workflowBefore=await state(),countWorkflow=Number((await one('select count(*) n from get_public_catalogue(1,100)')).n);
+ const oldDefinition=(await one(`select pg_get_functiondef('public.beta_fixture_hidden(uuid)'::regprocedure) definition`)).definition;
+ const workflowMeta=await helperMeta();
+ await run(fs.readFileSync('supabase/migrations/202610300023_hide_confirmed_workflow_fixtures.sql','utf8'));
+ assert.deepEqual(await state(),workflowBefore,'023 preserves all private rows, histories, campaign statuses, relationships and XP');assert.deepEqual(await helperMeta(),workflowMeta);assert.deepEqual(await one(`select reloptions,relowner,relacl from pg_class where oid='public.approved_games'::regclass`),viewBefore);
+ assert.equal(Number((await one('select count(*) n from get_public_catalogue(1,100)')).n),countWorkflow-4);
+ for(const [i,gid]of workflow.entries()){
+  assert.equal(Number((await one('select count(*) n from approved_games where id=$1',[gid])).n),0,'Public profile/sitemap source excludes exact ID');
+  assert.equal(Number((await one('select count(*) n from get_game_community_reception()where submission_id=$1 or approved_game_id=$1',[gid])).n),0);
+  assert.equal(Number((await one('select count(*) n from get_public_submission_playtest_history($1)',[gid])).n),0);
+  assert.equal(Number((await one('select count(*) n from get_public_submission_playtest_feedback($1)',[gid])).n),0);
+  assert.deepEqual((await one('select get_public_intent_counts($1::jsonb) result',[JSON.stringify([{kind:'approved',id:gid}])])).result,[]);
+  assert.deepEqual((await db.query('select * from get_public_recruitment($1::jsonb)',[JSON.stringify([{source_type:'approved',game_id:gid}])])).rows,[]);
+  assert.equal((await one('select campaign_eligible($1,$2) eligible',[id(800+i),id(2)])).eligible,false);
+  const token=(await one('select share_token from community_playtests where id=$1',[id(800+i)])).share_token;
+  assert.equal(Number((await one('select count(*) n from get_public_community_playtest($1)',[token])).n),0);
+ }
+ await as(2);await run('set role authenticated');assert.equal(Number((await one('select count(*) n from community_game_tests where id=any($1::uuid[])',[workflow.map((_,i)=>id(900+i))])).n),4,'Private tester history retained');await run('reset role');
+ await run(oldDefinition);assert.equal(Number((await one('select count(*) n from approved_games where id=any($1::uuid[])',[workflow])).n),4,'Helper-only reversal restores just these profiles');assert.equal((await one('select beta_fixture_hidden($1) hidden',[neon])).hidden,true,'Previous fixture exclusions survive reversal');
+ console.log('PASS 023 isolated extension: four exact QA profiles/catalogue/reception/history/recruitment/invitations excluded; genuine listings and all private data/XP, helper/view metadata preserved; helper-only reversal verified. No live SQL.');
  console.log('PASS 022 isolated exact-ID cleanup: four QA listings excluded; three genuine Steam entries retained; both Rail QA rounds, recommendations, rating/build reception and recruitment excluded; all 29 reports/community feedback/history/recorded XP preserved; view security unchanged. No live application.');
+}
+
+async function reviewScopeChecks(){
+ await run(fs.readFileSync('supabase/tests/v10-fixture.sql','utf8'));
+ await run(fs.readFileSync('supabase/migrations/202610280010_submission_corrections.sql','utf8'));
+ const latest=fs.readFileSync('supabase/migrations/202610290017_admission_maintenance_intents.sql','utf8');
+ await run(latest.slice(latest.indexOf('create or replace function public.submission_completeness'),latest.indexOf('create function public._listing_has_admission')));
+ await run(`drop table approved_games cascade;create view approved_games as select id,title,developer_name from game_submissions where status='Approved';create table developer_xp_awards(id uuid default gen_random_uuid(),developer_id uuid,xp_amount integer,award_type text,source_type text,source_id uuid,description text,unique(developer_id,award_type,source_type,source_id));`);
+ await run(fs.readFileSync('supabase/tests/submission-review-fixture.sql','utf8'));
+ for(const n of [1,2,3])await run(`insert into auth.users values('${id(n)}');insert into profiles(id,roles,role)values('${id(n)}',array['developer'],'${n===3?'admin':'user'}')`);
+ await as(1);await insert(30,{ai_type:'AI-assisted',ai_explanation:'Edited generated artwork',evidence_link:''});await insert(31,{description:''});
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(30),'Approved',null]),/Admin access/);
+ await as(3);await one('select review_game_submission($1,$2,$3)',[id(30),'Approved',null]);
+ assert.equal((await one('select status from game_submissions where id=$1',[id(30)])).status,'Approved');assert.equal((await one('select count(*) n from game_verifications')).n,0);
+ const xp=(await one('select developer_xp from profiles where id=$1',[id(1)])).developer_xp;
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(31),'Approved',null]),/Please complete/);assert.equal((await one('select developer_xp from profiles where id=$1',[id(1)])).developer_xp,xp);
+ await assert.rejects(one('select review_game_submission($1,$2,$3)',[id(31),'Needs More Information','']),/reason is required/);
+ await one('select review_game_submission($1,$2,$3)',[id(31),'Needs More Information','Clarify disclosure']);
+ await run('grant select on profiles to authenticated;set role authenticated');
+ await one(`insert into game_verifications(submission_id,reviewer_notes)values($1,'Private review only')on conflict(submission_id)do update set reviewer_notes=excluded.reviewer_notes returning submission_id`,[id(30)]);
+ const before=await one('select * from game_verifications where submission_id=$1',[id(30)]);assert.equal(before.published,false);assert.equal(before.quality_status,'Not Tested');
+ await assert.rejects(one('update game_verifications set published=true where submission_id=$1',[id(30)]),/check constraint/);
+ await assert.rejects(one('update game_verifications set quality_score=8 where submission_id=$1',[id(30)]),/check constraint/);
+ await one(`update game_verifications set reviewer_notes='Changed private note' where submission_id=$1`,[id(30)]);
+ const after=await one('select * from game_verifications where submission_id=$1',[id(30)]);delete before.reviewer_notes;delete after.reviewer_notes;assert.deepEqual(after,before);
+ await as(1);await run('set role authenticated');assert.equal((await one('select count(*) n from game_verifications')).n,0);assert.equal((await db.query('update game_verifications set reviewer_notes=$1 returning id',['forge'])).rows.length,0);
+ await assert.rejects(one('select reviewer_notes from published_game_verifications'),/does not exist/);
+ console.log('PASS isolated review scope: actual archived approval RPC plus current completeness guards permit complete no-evidence/no-assessment approval; incomplete approval rolls back XP side effects; admin/reason guards, private-note RLS/exposure and note-only preservation, assessment publishing/score constraints retained. Not a fresh live-schema inspection.');
+}
+
+async function communityVoteChecks(){
+ // Reduced real PostgreSQL fixture reproduces the captured vote constraints/RLS.
+ await run(`create role anon;create role authenticated;create schema auth;create function auth.uid()returns uuid language sql stable as $$select nullif(current_setting('test.uid',true),'')::uuid$$;create table community_posts(id bigint primary key);insert into community_posts values(99);create table community_votes(id bigint generated always as identity primary key,post_id bigint references community_posts(id)on delete cascade,user_id uuid not null,value smallint not null check(value in(-1,1)),unique(post_id,user_id));alter table community_votes enable row level security;grant usage on schema auth to anon,authenticated;grant select on community_votes to anon,authenticated;grant all on community_votes to anon,authenticated;grant usage on sequence community_votes_id_seq to anon,authenticated;create policy vote_read on community_votes for select to anon,authenticated using(true);create policy vote_insert on community_votes for insert to authenticated with check(user_id=auth.uid());create policy vote_update on community_votes for update to authenticated using(user_id=auth.uid())with check(user_id=auth.uid());create policy vote_delete on community_votes for delete to authenticated using(user_id=auth.uid());`);
+ await as(1);await run('set role authenticated');let current=0,score=0;
+ for(const [direction,expected]of[[1,1],[1,0],[-1,-1],[-1,0],[-1,-1],[1,1],[-1,-1]]){
+  if(current===direction)await one('delete from community_votes where post_id=99 and user_id=auth.uid() returning value');else await one('insert into community_votes(post_id,user_id,value)values(99,auth.uid(),$1)on conflict(post_id,user_id)do update set value=excluded.value returning value',[direction]);
+  current=current===direction?0:direction;score=Number((await one('select coalesce(sum(value),0)n from community_votes where post_id=99')).n);assert.equal(score,expected);
+ }
+ await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,auth.uid(),1)'),/unique/);
+ await assert.rejects(one('update community_votes set value=0 where user_id=auth.uid()'),/check constraint/);
+ await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,$1,1)',[id(2)]),/row-level security/);
+ await as(2);await run('set role authenticated');assert.equal((await db.query('delete from community_votes where post_id=99 returning id')).rows.length,0);assert.equal((await db.query('update community_votes set value=1 where post_id=99 returning id')).rows.length,0);
+ await run('reset role;set role anon');assert.equal(Number((await one('select sum(value)n from community_votes')).n),-1);await assert.rejects(one('insert into community_votes(post_id,user_id,value)values(99,$1,1)',[id(2)]),/row-level security/);
+ console.log('PASS isolated vote constraints: all six toggle/switch transitions, unique account/post vote, -1/+1 check, own-write RLS and anonymous read-only access. Captured schema fixture; no live votes.');
+}
+
+async function pulseChecks(){
+ await run(`create role anon;create role authenticated;create role service_role bypassrls;create table game_submissions(id uuid primary key,developer_id uuid,title text,game_link text);create table profiles(id uuid,tester_xp integer);insert into profiles values('${id(1)}',100);
+ create table pulse_jobs(id uuid primary key default gen_random_uuid(),submission_id uuid not null,developer_id uuid not null,technical_run_id uuid,status text not null default 'QUEUED',engine_version text default 'PULSE v1',worker_version text default 'v6.10',test_suite_version text default 'v6.10',build_url text,build_sha256 text,error_message text,created_at timestamptz default now(),updated_at timestamptz default now(),started_at timestamptz,completed_at timestamptz,report_json jsonb);
+ create function public.claim_next_pulse_job()returns setof public.pulse_jobs language sql as $$select * from public.pulse_jobs where false$$;grant usage on schema public to anon,authenticated,service_role;grant all on pulse_jobs to anon,authenticated,service_role;`);
+ for(const n of[1,2,3,4])await run(`insert into game_submissions values('${id(10+n)}','${id(1)}','Saved submission','https://example.test/build${n}.zip')`);
+ await run(`insert into pulse_jobs(submission_id,developer_id,status,build_url,report_json)values('${id(99)}','${id(1)}','COMPLETE','https://example.test/history.zip','{"history":true}')`);
+ const historical=(await one('select to_jsonb(j) row from pulse_jobs j')).row;
+ await run(fs.readFileSync('supabase/migrations/202610300024_pulse_availability.sql','utf8'));
+ assert.deepEqual((await one("select to_jsonb(j)-'input_key'-'retry_of' row from pulse_jobs j")).row,historical);
+ assert.equal((await one('select get_pulse_availability() state')).state,'unavailable');
+ const queue=async(n,actor=id(1),retryOf=null)=>(await one('select enqueue_available_pulse_job($1,$2,$3) result',[id(10+n),actor,retryOf])).result;
+ assert.equal((await queue(1)).state,'unavailable');assert.equal(Number((await one('select count(*) n from game_submissions')).n),4,'Unavailable preserves saved submissions');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);
+ assert.equal((await one('select get_pulse_availability() state')).state,'available');const first=await queue(1);assert.equal(first.state,'queued');assert.equal((await queue(1)).job.id,first.job.id);
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,true,'${first.job.id}')`);assert.equal((await one('select get_pulse_availability() state')).state,'busy');assert.equal((await one('select pulse_job_worker_alive($1) alive',[first.job.id])).alive,true);assert.equal((await queue(2)).state,'queued');
+ await run("update pulse_worker_heartbeats set received_at=clock_timestamp()-interval '91 seconds'");assert.equal((await queue(3)).state,'unavailable');assert.equal((await one('select pulse_job_worker_alive($1) alive',[first.job.id])).alive,false);
+ await run(`update game_submissions set game_link='https://store.steampowered.com/app/123' where id='${id(14)}'`);assert.equal((await queue(4)).state,'unsupported');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`);assert.equal((await queue(3)).state,'queued','Worker return permits new request');await run(`insert into game_submissions values('${id(15)}','${id(1)}','Concurrent fixture','https://example.test/other.zip')`);const raced=await Promise.all([queue(5),queue(5)]);assert.equal(raced[0].job.id,raced[1].job.id);assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(15)])).n),1);
+ await assert.rejects(queue(1,id(2)),/access denied/);await run('set role authenticated');await assert.rejects(run(`select record_pulse_worker_heartbeat('${id(70)}',true,false)`),/permission denied/);await assert.rejects(run(`select enqueue_available_pulse_job('${id(11)}','${id(1)}')`),/permission denied/);await assert.rejects(run(`insert into pulse_jobs(submission_id,developer_id)values('${id(11)}','${id(1)}')`),/permission denied/);await run('reset role;set role anon');assert.equal((await one('select get_pulse_availability() state')).state,'available');await assert.rejects(run('select * from pulse_worker_heartbeats'),/permission denied/);await run('reset role');assert.equal((await one('select tester_xp from profiles')).tester_xp,100);
+
+ // Explicit retries preserve the failed parent and provide durable retry-intent idempotency.
+ await run(`update pulse_jobs set status='FAILED',report_json='{"failedEvidence":true}',error_message='Original failure',technical_run_id='${id(88)}' where id='${first.job.id}'`);
+ const parentBefore=(await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row;
+ assert.equal((await queue(1)).job.status,'FAILED','Automatic submission never retries failure');
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',false,false)`);assert.equal((await queue(1,id(1),first.job.id)).state,'unavailable');
+ assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(11)])).n),1);
+ await run(`select record_pulse_worker_heartbeat('${id(70)}',true,true)`);
+ const retryPair=await Promise.all([queue(1,id(1),first.job.id),queue(1,id(1),first.job.id)]);const child=retryPair[0].job;
+ assert.notEqual(child.id,first.job.id);assert.equal(child.retry_of,first.job.id);assert.equal(retryPair[1].job.id,child.id);assert.equal(child.report_json,null);assert.equal(child.technical_run_id,null);
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row,parentBefore,'Failed parent/report unchanged');
+ assert.equal((await queue(1)).job.id,child.id,'Automatic request reuses active retry');await db.query('update pulse_jobs set status=$1 where id=$2',['TESTING',child.id]);assert.equal((await queue(1)).job.id,child.id,'Running equivalent is reused');
+ await assert.rejects(run(`insert into pulse_jobs(submission_id,developer_id,build_url,input_key)values('${id(11)}','${id(1)}','https://example.test/build1.zip','${child.input_key}')`),/unique/);
+ await run(`insert into pulse_jobs(id,submission_id,developer_id,build_url,input_key,status)values('${id(777)}','${id(11)}','${id(1)}','https://example.test/build1.zip','${child.input_key}','FAILED')`);
+ assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Different failed target coalesces into active equivalent');
+ await run(`update pulse_jobs set status='FAILED',report_json='{"secondFailure":true}' where id='${child.id}'`);const childBefore=(await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[child.id])).row;
+ assert.equal((await queue(1,id(1),first.job.id)).job.id,child.id,'Lost response replay returns same child even after it fails');
+ assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Coalesced lost response replays the same child after failure');assert.equal(Number((await one('select count(*) n from pulse_jobs where submission_id=$1',[id(11)])).n),3);
+ const later=await queue(1,id(1),child.id);assert.equal(later.state,'queued');assert.equal(later.job.retry_of,child.id);assert.equal((await queue(1,id(1),id(777))).job.id,child.id,'Coalesced retry never silently advances to a later attempt');assert.notEqual(later.job.id,child.id);
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[child.id])).row,childBefore);
+ await assert.rejects(queue(2,id(1),child.id),/owned failed/);await assert.rejects(queue(1,id(2),child.id),/access denied/);await assert.rejects(queue(1,id(1),later.job.id),/owned failed/);
+ await run(`update pulse_jobs set status='COMPLETE' where id='${later.job.id}'`);assert.equal((await queue(1)).job.id,later.job.id,'Successful result reused');
+ assert.equal((await queue(1,id(1),child.id)).job.id,later.job.id,'Repeated later retry returns its same successful child');
+ await run(`update game_submissions set game_link='https://example.test/new-version.zip' where id='${id(11)}'`);assert.equal((await queue(1,id(1),first.job.id)).state,'input_changed','Cannot retry old input as current build');
+ assert.deepEqual((await one('select to_jsonb(j) row from pulse_jobs j where id=$1',[first.job.id])).row,parentBefore);
+ console.log('PASS PULSE SQL: explicit retry chains, automatic failure reuse, lost/coalesced-response replay, concurrent retry dedup/active uniqueness, preserved parent reports, fresh/busy/stale/missing/return availability, equivalent input reuse, unsupported/foreign rejection, service-only heartbeat/enqueue/claim permissions, public status privacy, saved submissions/history/XP preserved. Isolated PostgreSQL only.');
 }

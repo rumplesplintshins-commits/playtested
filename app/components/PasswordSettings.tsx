@@ -1,10 +1,19 @@
 "use client";
 import Link from "next/link";
 import {useEffect,useRef,useState} from "react";
-import {createClient} from "@/lib/supabase";
+import {createClient,recoveryRetrySeconds} from "@/lib/supabase";
 import {createClient as isolatedClient,type Session} from "@supabase/supabase-js";
 const field="mt-1 block w-full rounded-lg border border-white/25 bg-black p-3 text-white focus-visible:outline-2 focus-visible:outline-emerald-300";
 const button="rounded-lg border border-emerald-300/40 px-4 py-2 text-sm font-semibold text-emerald-200 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300";
+const retryKey="playtested-recovery-retry-at";
+const invalidLink="This recovery link is invalid, expired or already used. Request a fresh email and open only the newest link in the same browser and device.";
+function recoveryFailure(error:{code?:string;status?:number}|null,hasCode:boolean){
+ if(["bad_code_verifier","pkce_code_verifier_not_found"].includes(error?.code||""))return "This browser could not verify the recovery link. Request a fresh email, then open the newest link in the same browser and device where you requested it.";
+ if(["otp_expired","flow_state_expired","flow_state_not_found"].includes(error?.code||""))return invalidLink;
+ if(error?.status===429)return "Too many verification requests. Wait at least a minute before requesting a fresh recovery email; the provider may require a longer pause.";
+ if(error)return "Recovery could not be verified because the service is temporarily unavailable. Wait and try again; if needed, request a fresh email. This does not establish that your link expired.";
+ return hasCode?"This link could not be verified in this browser. Open the newest link in the same browser and device where you requested it. If it still fails, request a fresh recovery email.":invalidLink;
+}
 export default function PasswordSettings({mode}:{mode:"request"|"reset"|"change"}){
  const [email,setEmail]=useState(""),[password,setPassword]=useState(""),[confirm,setConfirm]=useState(""),[current,setCurrent]=useState(""),[nonce,setNonce]=useState("");
  const [visible,setVisible]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState(""),[ready,setReady]=useState(false),[done,setDone]=useState(false),[verify,setVerify]=useState(false),[cooldown,setCooldown]=useState(false);
@@ -12,17 +21,36 @@ export default function PasswordSettings({mode}:{mode:"request"|"reset"|"change"
  const [checking,setChecking]=useState(mode==="reset");
  useEffect(()=>{
   if(mode!=="reset")return;
+  let active=true;
+  const params=new URLSearchParams(window.location.search),fragment=new URLSearchParams(window.location.hash.slice(1));
+  const hasCode=params.has("code"),redirectError=params.get("error_code")||fragment.get("error_code");
   const client=createClient();
   const {data:{subscription}}=client.auth.onAuthStateChange((event,session)=>{
    if(event==="PASSWORD_RECOVERY"&&session){recovery.current=session;setEmail(session.user.email||"");setReady(true);setChecking(false);setError("");}
    else if(event==="SIGNED_OUT"||(session&&recovery.current&&session.user.id!==recovery.current.user.id)){recovery.current=null;setReady(false);}
   });
   // An ordinary signed-in session must never enable this recovery form.
-  void client.auth.getSession().then(()=>{window.history.replaceState(null,"","/reset-password");setChecking(false);if(!recovery.current)setError("This recovery link is invalid, expired or already used. Request a new email and open it in the same browser.");});
-  return()=>subscription.unsubscribe();
+  // The browser singleton owns code exchange. Await its existing initialization
+  // rather than exchanging again on effect replay/remount. It emits recovery
+  // after initialization; allow that queued notification before judging failure.
+  void client.auth.initialize().then(async({error})=>{
+   await client.auth.getSession();
+   await new Promise(resolve=>setTimeout(resolve,0));
+   if(!active)return;
+   window.history.replaceState(null,"","/reset-password");setChecking(false);
+   if(!recovery.current)setError(recoveryFailure(error||(redirectError?{code:redirectError}:null),hasCode));
+  }).catch(()=>{if(active){window.history.replaceState(null,"","/reset-password");setChecking(false);setError(recoveryFailure({status:503},hasCode));}});
+  return()=>{active=false;subscription.unsubscribe();};
  },[mode]);
  useEffect(()=>()=>{if(timer.current)clearTimeout(timer.current);},[]);
- function throttle(){setCooldown(true);if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>setCooldown(false),60000);}
+ useEffect(()=>{
+  if(mode!=="request")return;
+  const restore=setTimeout(()=>{
+   try{const remaining=Number(sessionStorage.getItem(retryKey))-Date.now();if(remaining>0){setCooldown(true);timer.current=setTimeout(()=>setCooldown(false),remaining);}}catch{/* Storage restrictions must not prevent recovery. */}
+  },0);
+  return()=>clearTimeout(restore);
+ },[mode]);
+ function throttle(seconds=60){setCooldown(true);if(timer.current)clearTimeout(timer.current);if(mode==="request")try{sessionStorage.setItem(retryKey,String(Date.now()+seconds*1000));}catch{/* Local cooldown still applies. */}timer.current=setTimeout(()=>setCooldown(false),seconds*1000);}
  async function submit(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();if(submitting.current||done||(mode==="request"&&cooldown))return;
   setError("");setMessage("");
@@ -32,8 +60,8 @@ export default function PasswordSettings({mode}:{mode:"request"|"reset"|"change"
    const client=createClient();
    if(mode==="request"){
     throttle();const {error}=await client.auth.resetPasswordForEmail(email.trim(),{redirectTo:new URL("/reset-password",window.location.origin).toString()});
-    if(error&&(error.status===429||error.code==="over_email_send_rate_limit"))setError("Too many requests. Wait before trying again; the email service may require a longer pause.");
-    else if(error&&(!error.status||error.status>=500))setError("Recovery is temporarily unavailable. Please wait and try again.");
+    if(error&&(error.status===429||["over_email_send_rate_limit","over_request_rate_limit"].includes(error.code||""))){const seconds=recoveryRetrySeconds();throttle(seconds);setError(`Too many requests. Wait at least ${seconds} seconds before trying again; the email service may require a longer pause. Use only the newest recovery email in this browser.`);}
+    else if(error&&error.code!=="user_not_found")setError("Recovery is temporarily unavailable. Please wait and try again.");
     else setMessage("If an account exists for that address, a password recovery email will be sent. Check your inbox and spam folder.");
    }else{
     const {data:{session}}=mode==="reset"?{data:{session:recovery.current}}:await client.auth.getSession();
@@ -62,7 +90,7 @@ export default function PasswordSettings({mode}:{mode:"request"|"reset"|"change"
  return <section aria-label={title} className="space-y-4">
   <Heading className="text-2xl font-semibold">{title}</Heading>
   {checking&&<p role="status" className="text-sm text-zinc-300">Checking recovery link...</p>}
-  {mode==="request"&&<p className="text-sm leading-6 text-zinc-300">Enter your account email. Open the recovery link in this browser to choose a new password.</p>}
+  {mode==="request"&&<p className="text-sm leading-6 text-zinc-300">Enter your account email. Request once, then open only the newest recovery link in this browser and device. A newer request can replace the browser verifier needed by an older link.</p>}
   {mode==="reset"&&ready&&<p className="break-words text-sm text-zinc-300">Resetting the password for {email}.</p>}
   {error&&<p role="alert" className="rounded-lg bg-amber-300/10 p-3 text-sm text-amber-100">{error}</p>}
   {message&&<p role="status" className="rounded-lg bg-emerald-300/10 p-3 text-sm text-emerald-100">{message}</p>}
