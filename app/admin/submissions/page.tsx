@@ -1,4 +1,5 @@
 "use client";
+import GameplayEditor from "../../components/GameplayEditor";
 
 import { useEffect, useState } from "react";
 import SubmissionCompletenessBatch from "../../components/SubmissionCompletenessBatch";
@@ -9,6 +10,7 @@ import { needsFeedbackReview, type FeedbackReviewItem } from "../../../lib/feedb
 import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase";
 import SteamImporter from "./SteamImporter";
+import SubmissionContact from "../../components/SubmissionContact";
 import ImportedSteamCatalogue from "./ImportedSteamCatalogue";
 
 type SubmissionStatus =
@@ -467,8 +469,11 @@ export default function AdminSubmissionsPage() {
       }));
 
       setSubmissions(mapped);
+      const requested=new URLSearchParams(window.location.search).get("submission");
+      if(requested&&mapped.some(s=>s.id===requested)){setFilter("All");setSubmissionSearch("");setReviewTab("submissions");}
 
       setSelectedId((currentId) => {
+        if(requested&&mapped.some(s=>s.id===requested))return requested;
         if (
           currentId &&
           mapped.some((submission) => submission.id === currentId)
@@ -1477,6 +1482,7 @@ export default function AdminSubmissionsPage() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
+      <a href="/admin/analytics" className="mx-5 block py-3 text-sm text-emerald-300 underline">Visitor &amp; acquisition analytics</a>
 
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
         <ListingRevisionQueue/>
@@ -1730,7 +1736,7 @@ export default function AdminSubmissionsPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+              <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                 <section>
                   <div className="mb-3 flex items-center justify-between">
                     <h2 className="font-semibold">
@@ -1857,7 +1863,7 @@ export default function AdminSubmissionsPage() {
                       <div
                         className={`${panelClass} p-5`}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex flex-wrap items-start gap-4">
                           {selectedSubmission.imageUrl ? (
                             <img
                               src={
@@ -2029,6 +2035,7 @@ export default function AdminSubmissionsPage() {
                           {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
                         </div>
                       </CollapsibleSection>
+                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} catalogueThumbnail={selectedSubmission.imageUrl} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 

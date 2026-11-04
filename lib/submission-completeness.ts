@@ -6,6 +6,7 @@ export const SUBMISSION_FIELDS=[
  {field:"description",label:"Game description",required:true},
  {field:"game_link",label:"Game or build link",url:true},
  {field:"steam_url",label:"Steam store link",url:true},
+ {field:"evidence_link",label:"Supporting evidence link (optional)",url:true},
  {field:"image_url",label:"Game thumbnail",required:true,url:true},
  {field:"release_status",label:"Release status",required:true},
  {field:"release_date",label:"Release date"},

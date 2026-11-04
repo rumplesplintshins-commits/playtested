@@ -43,8 +43,8 @@ try {
   await expect(page.getByRole('heading',{name:'Scroll fixture 0',exact:true})).toBeVisible();
   const right=page.getByText('Submission review',{exact:true}).locator('xpath=ancestor::section[1]');
   assert.equal(await right.evaluate(element=>getComputedStyle(element).position),'static');
-  await page.getByRole('heading',{name:'Independent assessment',exact:true}).click();
-  const save=page.getByRole('button',{name:'Save verification assessment',exact:true});
+  await page.getByRole('heading',{name:'Optional independent gameplay assessment',exact:true}).click();
+  const save=page.getByRole('button',{name:'Save independent assessment',exact:true});
   await save.scrollIntoViewIfNeeded();await expect(save).toBeInViewport();
   const fields=right.locator('textarea');const last=fields.last();await last.scrollIntoViewIfNeeded();await last.fill('Scroll verification: this unsaved field is reachable.');await expect(last).toHaveValue('Scroll verification: this unsaved field is reachable.');
   await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));

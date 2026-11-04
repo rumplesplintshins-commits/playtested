@@ -1,5 +1,7 @@
 # Database recovery point — live writes on hold
 
+**4 November 2026 status update:** the earlier sections below are a historical record, not current release evidence. The archived 28 October roles/schema/data files now have matching size/hash checks, but a fresh production backup and current-baseline restore rehearsal remain **explicitly BLOCKED by the owner**. No production database credentials may be requested/retrieved/stored in the current run. See [current gate audit](MERGE-24-GATE-AUDIT.md) and [prepared later-run procedure](MERGE-24-BACKUP-RESTORE-PROCEDURE.md). An old archive, historical rehearsal or current metadata snapshot does not prove a current recoverable production release point.
+
 As of 28 October 2026, the user reports a Free project without managed project backups. **A database backup has not yet been created or verified. No live migration or data change is authorised.** All current local source changes must be retained. Do not reset Git, undo files, reset database credentials, change the plan, or restore production automatically.
 
 ## Execution record

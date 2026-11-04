@@ -1,3 +1,4 @@
+import GameMediaGallery from "@/app/components/GameMediaGallery";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -293,6 +294,10 @@ export default async function SubmissionPage({
         ? "Some assessment work has been recorded, but the full criteria for Verified have not been met. Review the checks and limitations below."
         : "This game has an approved listing, but there is not yet enough recorded assessment work to classify it as independently assessed.";
 
+  const {data:footage} = await supabase.from("gameplay_footage").select("video_url").eq("submission_id",id).maybeSingle();
+
+  const {data:screenshots} = await supabase.from("game_screenshots").select("slot,revision").eq("submission_id",id).order("slot");
+
   const statusStyle =
     isVerified
       ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
@@ -305,11 +310,11 @@ export default async function SubmissionPage({
       <SiteHeader />
           <ShareJourneyBanner />
 
-      <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6">
+      <div className="mx-auto max-w-[1240px] px-4 py-4 sm:px-6">
         {/* GAME HEADER */}
-        <section className="mt-3 grid gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:grid-cols-[260px_1fr] sm:items-center lg:grid-cols-[320px_1fr]">
-          <div>
-            {game.image_url ? (
+        <section data-game-hero className="mt-3 grid items-start gap-5 rounded-xl border border-white/10 bg-white/[0.03] p-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
+            {footage?.video_url || screenshots?.length ? <GameMediaGallery id={id} videoUrl={footage?.video_url} screenshots={screenshots || []} catalogueThumbnail={game.image_url}/> : game.image_url ? (
               <img
                 src={game.image_url}
                 alt={`${game.title} artwork`}

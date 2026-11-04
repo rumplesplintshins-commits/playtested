@@ -9,7 +9,14 @@ import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 
 import PulseAvailability from "../components/PulseAvailability";
 import SubmissionCorrection from "../components/SubmissionCorrection";
-import {submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
+import ScreenshotPicker from "../components/ScreenshotPicker";
+import {uploadScreenshot} from "../components/ScreenshotManager";
+import ContactEmailInput from "../components/ContactEmailInput";
+import {contactEmailError,normalizeContactEmail} from "@/lib/contact-email";
+import {isHostedThumbnail,thumbnailExtension} from "@/lib/thumbnail";
+import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
+import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
+import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
 import SiteHeader from "../components/SiteHeader";
 
 import { createClient } from "../../lib/supabase";
@@ -459,6 +466,8 @@ export default function SubmitGamePage() {
     useState<ImageStatus>("empty");
 
   const [imageUploading, setImageUploading] = useState(false);
+  const [screenshotFiles,setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotSelecting,setScreenshotSelecting] = useState(false);
   const [description, setDescription] = useState("");
   const [aiExplanation, setAiExplanation] = useState("");
 
@@ -755,7 +764,7 @@ export default function SubmitGamePage() {
       setImageStatus("loading");
     } catch (uploadError) {
       console.error("Unexpected thumbnail upload error:", uploadError);
-      setError("Could not upload the thumbnail. Please try again.");
+      setError(uploadError instanceof Error ? uploadError.message : "Could not upload the thumbnail. Please try again.");
       setImageStatus("empty");
     } finally {
       setImageUploading(false);
@@ -1160,6 +1169,38 @@ export default function SubmitGamePage() {
 
 
 
+  async function savePrivateContact(supabase: ReturnType<typeof createClient>, submissionId: string, developerId: string, formData: FormData): Promise<string | null> {
+    for(let i=0;i<screenshotFiles.length;i++){
+      try{await uploadScreenshot(submissionId,i+1,screenshotFiles[i]);}
+      catch{return "Some screenshots could not be saved. Open Game submissions to retry for the saved game.";}
+    }
+    const footage = gameplayVideo(String(formData.get("gameplayVideo") || ""));
+    if (footage) {
+      const media = await supabase.from("gameplay_footage").upsert({submission_id:submissionId, video_url:footage.url});
+      if(media.error) return "Optional footage could not be saved. Open Game submissions to add it to the saved game.";
+    }
+    const context = submissionAcquisition();
+    await supabase.rpc("record_submission_acquisition", {
+      p_id: submissionId, p_source: context.source || null, p_medium: context.medium || null,
+      p_campaign: context.campaign || null, p_referral: context.referral || null,
+      p_self_reported: String(formData.get("discoverySource") || "") || null,
+    });
+    const email = normalizeContactEmail(String(formData.get("contactEmail") ?? ""));
+    const emailError = contactEmailError(email);
+    if (emailError) return emailError;
+    const discord = String(formData.get("contactDiscord") ?? "").trim();
+    const reddit = String(formData.get("contactReddit") ?? "").trim();
+    const allowed = formData.get("contactAllowed") === "on";
+    if (!email && !discord && !reddit && !allowed) return null;
+    const { error } = await supabase.from("game_submission_contacts").upsert({
+      submission_id: submissionId, developer_id: developerId,
+      contact_email: email || null, contact_discord: discord || null,
+      contact_reddit: reddit || null, contact_allowed: allowed,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "submission_id" });
+    return error ? error.message : null;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
     event.preventDefault();
@@ -1187,7 +1228,12 @@ export default function SubmitGamePage() {
     const form = event.currentTarget;
 
     const formData = new FormData(form);
-    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String)};
+    const emailError = contactEmailError(String(formData.get("contactEmail") || ""));
+    if(emailError){setError(emailError);return;}
+    if(imageUploading||screenshotSelecting){setError("Wait for the thumbnail upload to finish before submitting.");return;}
+    const footageInput=String(formData.get("gameplayVideo")||"").trim();
+    if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
+    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
 
 
 
@@ -1847,6 +1893,12 @@ export default function SubmitGamePage() {
         let result=await client.from('game_submissions').insert({...draft,id,developer_id:user.id,status:'Pending Review'}).select('*').single();
         if(result.error?.code==='23505')result=await client.from('game_submissions').select('*').eq('id',id).eq('developer_id',user.id).single();
         if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
+        const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
+        if (contactError) {
+          setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
+          return;
+        }
+        setScreenshotFiles([]);
         const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
         if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
         window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
@@ -1910,6 +1962,7 @@ export default function SubmitGamePage() {
 
           ).trim(),
 
+          evidence_link: String(formData.get("evidenceLink") || "").trim(),
           status: "Pending Review",
 
         })
@@ -1966,8 +2019,14 @@ export default function SubmitGamePage() {
 
 
 
+      const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
+      if (contactError) {
+        setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
+        return;
+      }
       if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
+      setScreenshotFiles([]);
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
       setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");form.reset();
@@ -3366,6 +3425,28 @@ export default function SubmitGamePage() {
 
 
 
+              <fieldset className="rounded-xl border border-white/10 p-4 sm:p-5">
+                <legend className="px-2 text-sm font-semibold text-zinc-100">Private developer contact (optional)</legend>
+                <label className="block text-sm">How did you discover Playtested? (optional)<select name="discoverySource" className={inputClass}><option value="">Prefer not to say / unknown</option>{discoverySources.map(source=><option key={source}>{source}</option>)}</select><span className="mt-2 block text-xs text-zinc-400">Private, used to understand how developers find the platform. Do not include personal information in campaign links.</span></label>
+                <p className="mb-3 text-xs leading-5 text-zinc-400">These details are not displayed on your public game page. All fields are optional.</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className={labelClass}>Contact email
+                    <ContactEmailInput name="contactEmail" label="Contact email" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>Discord username
+                    <input type="text" name="contactDiscord" maxLength={100} placeholder="Discord username" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>Reddit username
+                    <input type="text" name="contactReddit" maxLength={100} placeholder="u/username" className={inputClass} />
+                  </label>
+                </div>
+                <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
+                  <input type="checkbox" name="contactAllowed" className="mt-1 accent-[#77f29b]" />
+                  <span>I'm happy for the Playtested operator to contact me about my game, submission or playtesting opportunities.</span>
+                </label>
+                <p className="mt-2 text-xs text-zinc-500">Optional permission; essential service messages about your submission are separate.</p>
+              </fieldset>
+
               <label className={labelClass}>
 
                 Genre *
@@ -3547,7 +3628,7 @@ export default function SubmitGamePage() {
                 <textarea
                   required
                   name="description"
-                  rows={8}
+                  rows={12}
                   maxLength={2000}
                   value={description}
                   onChange={(event) => {
@@ -3556,7 +3637,7 @@ export default function SubmitGamePage() {
                     event.currentTarget.style.height = Math.min(event.currentTarget.scrollHeight, 520) + "px";
                   }}
                   placeholder="Describe the gameplay, key features and what makes your game different."
-                  className={inputClass + " min-h-48 resize-y overflow-y-auto"}
+                  className={inputClass + " min-h-72 resize-y overflow-y-auto"}
                 />
 
                 <span className="mt-2 block text-right text-xs text-zinc-500">
@@ -3628,6 +3709,8 @@ export default function SubmitGamePage() {
 
 
               <div>
+                <ScreenshotPicker onChange={setScreenshotFiles} onBusyChange={setScreenshotSelecting} disabled={submitting}/>
+                <label className="mb-6 block text-sm">Gameplay footage (optional)<input type="url" name="gameplayVideo" maxLength={500} placeholder="https://www.youtube.com/watch?v=?" className={inputClass}/><span className="mt-2 block text-xs leading-5 text-zinc-400">{gameplayGuidance} This link appears on your approved public game page.</span></label>
                 <p className={labelClass}>Game thumbnail *</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-500">
                   Upload a JPG, PNG or WebP up to 5 MB, or paste a direct image URL. Recommended: 16:9, at least 1280 × 720. Other sizes may be cropped to fit.
@@ -3635,7 +3718,7 @@ export default function SubmitGamePage() {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
                   <label className={"inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-[#101311] px-4 py-3 text-sm font-semibold text-zinc-200 hover:border-[#77f29b]/50 " + (imageUploading ? "pointer-events-none opacity-60" : "")}>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
+                    <input type="file" aria-label="Upload game thumbnail" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
                     {imageUploading ? "Uploading..." : "Upload image"}
                   </label>
                   <span className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600 sm:text-left">or use an image URL</span>
@@ -3643,7 +3726,7 @@ export default function SubmitGamePage() {
 
                 <label htmlFor="imageUrl" className="mt-1 block">
                   <span className="sr-only">Game thumbnail image URL</span>
-                  <input id="imageUrl" name="imageUrl" type="url" value={imageUrl} onChange={handleImageChange} placeholder="https://example.com/game-cover.jpg" className={inputClass} />
+                  <input type="hidden" name="imageUrl" value={imageUrl}/><input id="imageUrl" type="url" value={isHostedThumbnail(imageUrl)?"":imageUrl} onChange={handleImageChange} placeholder="Or paste an external image URL" className={inputClass} />
                 </label>
 
                 {imageUrl && (
@@ -3653,6 +3736,7 @@ export default function SubmitGamePage() {
                     {imageStatus === "error" && <p className="text-sm text-red-300">Image failed to load. Check the URL or upload another image.</p>}
                     <img key={imageUrl} src={imageUrl} alt="Game thumbnail preview" className={"max-h-72 w-full rounded-lg object-contain " + (imageStatus === "error" ? "hidden" : "")} onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />
                     {imageStatus === "loaded" && <p className="mt-3 text-sm text-[#77f29b]">Image ready.</p>}
+                    {isHostedThumbnail(imageUrl)&&<button type="button" onClick={()=>{setImageUrl("");setImageStatus("empty");}} className="mt-3 text-sm text-zinc-300 underline">Clear thumbnail selection</button>}
                   </div>
                 )}
               </div>
@@ -3711,19 +3795,21 @@ export default function SubmitGamePage() {
 
                   </option>
 
-                  <option value="AI-assisted: Code only">AI-assisted: Code only</option>
+                  <option value="AI-assisted: Code only">AI-assisted: Code only — code or programming, not game content</option>
 
-                  <option value="AI-assisted: Content only">AI-assisted: Content only</option>
+                  <option value="AI-assisted: Content only">AI-assisted: Content only — art, audio, writing or other game content</option>
 
-                  <option value="AI-assisted: Code and content">AI-assisted: Code and content</option>
+                  <option value="AI-assisted: Code and content">AI-assisted: Code and content — both programming and game content</option>
 
                   <option value="No AI used">No AI used</option>
 
                 </select>
-
+                <p className="mt-2 text-xs leading-5 text-zinc-400">
+                  Code-only assistance is different from AI-generated game assets or narrative.
+                  Select the closest accurate disclosure; explain specific tools and uses below.
+                  If you did not use AI at all, select “No AI used”.
+                </p>
               </label>
-
-
 
               <fieldset>
 
@@ -3836,13 +3922,12 @@ export default function SubmitGamePage() {
 
 
 
-            <button
 
-              type="submit"
+            <button type="submit"
 
               disabled={
 
-                submitting ||
+                submitting || imageUploading || screenshotSelecting ||
 
                 submittingClaim ||
 

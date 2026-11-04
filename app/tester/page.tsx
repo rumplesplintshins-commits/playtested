@@ -678,7 +678,65 @@ export default function TesterPage() {
 
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
   const [genreFilter,setGenreFilter] = useState("preferred");
+  const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
   const [discoveryReady,setDiscoveryReady] = useState(false);
+  // Keep the available-games view intact when visiting a public game profile.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("playtested:tester-return");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        expanded?: Record<string, boolean>;
+        genre?: string;
+        scrollY?: number;
+        savedAt?: number;
+      };
+      if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000) {
+        sessionStorage.removeItem("playtested:tester-return");
+        return;
+      }
+      if (saved.expanded && typeof saved.expanded === "object") {
+        setExpandedAvailableGames(saved.expanded);
+      }
+      if (typeof saved.genre === "string") setGenreFilter(saved.genre);
+    } catch {
+      sessionStorage.removeItem("playtested:tester-return");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!games.length) return;
+    const raw = sessionStorage.getItem("playtested:tester-return");
+    if (!raw) return;
+    let saved: { campaignId?: string; savedAt?: number };
+    try {
+      saved = JSON.parse(raw) as typeof saved;
+    } catch {
+      sessionStorage.removeItem("playtested:tester-return");
+      return;
+    }
+    if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000 || !saved.campaignId) {
+      sessionStorage.removeItem("playtested:tester-return");
+      return;
+    }
+    // The list is loaded asynchronously. Restore to the game, not a pixel offset
+    // measured before the page was reconstructed.
+    let frame = 0;
+    let attempts = 0;
+    const restore = () => {
+      const target = document.getElementById("tester-campaign-" + saved.campaignId);
+      if (target) {
+        target.scrollIntoView({ block: "center", behavior: "instant" });
+        sessionStorage.removeItem("playtested:tester-return");
+      } else if (attempts++ < 45) {
+        frame = requestAnimationFrame(restore);
+      }
+    };
+    frame = requestAnimationFrame(() => { frame = requestAnimationFrame(restore); });
+    return () => cancelAnimationFrame(frame);
+  }, [games, genreFilter, expandedAvailableGames]);
+
+
   useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
   const router = useRouter();
   const activeClaimCount = claims.filter(
@@ -1110,11 +1168,38 @@ export default function TesterPage() {
                     }`}
                   >
                     {game.image_url && activeTestId !== claim?.id && (
-                      <img
-                        src={game.image_url}
-                        alt=""
-                        className="h-48 w-full shrink-0 object-cover"
-                      />
+                      <a
+                        href={`/tester?campaign=${encodeURIComponent(game.submission_id)}`}
+                        onClick={async (event) => {
+                          event.preventDefault();
+                          const supabase = createClient();
+                          const { data, error } = await supabase
+                            .from("approved_games")
+                            .select("id")
+                            .eq("title", game.title)
+                            .eq("developer_name", game.developer_name)
+                            .limit(2);
+                          if (error || !data || data.length !== 1) {
+                            showMessage("Could not find a unique public game details page for this playtest.", "error");
+                            return;
+                          }
+                          sessionStorage.setItem("playtested:tester-return", JSON.stringify({
+                            expanded: expandedAvailableGames,
+                            genre: genreFilter,
+                            campaignId: game.submission_id,
+                            savedAt: Date.now(),
+                          }));
+                          window.location.assign(`/submissions/${data[0].id}`);
+                        }}
+                        aria-label={`View ${game.title} game details`}
+                        className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]"
+                      >
+                        <img
+                          src={game.image_url}
+                          alt={`View details for ${game.title}`}
+                          className="h-48 w-full shrink-0 object-cover"
+                        />
+                      </a>
                     )}
 
                     <CampaignPlaces id={game.submission_id} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
@@ -1503,7 +1588,29 @@ export default function TesterPage() {
                   </p>
                 ) : (
                   <div className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {availableGames.map(renderGameCard)}
+                    {availableGames.map((game) => (
+                      <details
+                        key={game.submission_id}
+                        open={expandedAvailableGames[game.submission_id] !== false}
+                        onToggle={(event) => {
+                          const isOpen = event.currentTarget.open;
+                          setExpandedAvailableGames((previous) =>
+                            previous[game.submission_id] === isOpen
+                              ? previous
+                              : { ...previous, [game.submission_id]: isOpen }
+                          );
+                        }}
+                        className="min-w-0 self-start rounded-xl border border-white/10 bg-white/[0.02] open:border-[#77f29b]/25"
+                      >
+                        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          {game.title}
+                          <span className="ml-2 text-xs font-normal text-zinc-400">
+                            · {game.genre || "Other"} · {game.developer_name}
+                          </span>
+                        </summary>
+                        <div className="p-2 pt-0">{renderGameCard(game)}</div>
+                      </details>
+                    ))}
                   </div>
                 )}
               </section>
