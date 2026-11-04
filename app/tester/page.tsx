@@ -705,22 +705,36 @@ export default function TesterPage() {
   }, []);
 
   useEffect(() => {
-    if (!discoveryReady || games.length === 0) return;
+    if (!games.length) return;
     const raw = sessionStorage.getItem("playtested:tester-return");
     if (!raw) return;
+    let saved: { campaignId?: string; savedAt?: number };
     try {
-      const saved = JSON.parse(raw) as { scrollY?: number; savedAt?: number };
-      if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000) return;
-      if (typeof saved.scrollY !== "number" || !Number.isFinite(saved.scrollY)) return;
-      const frame = requestAnimationFrame(() => {
-        window.scrollTo({ top: saved.scrollY!, behavior: "instant" });
-        sessionStorage.removeItem("playtested:tester-return");
-      });
-      return () => cancelAnimationFrame(frame);
+      saved = JSON.parse(raw) as typeof saved;
     } catch {
       sessionStorage.removeItem("playtested:tester-return");
+      return;
     }
-  }, [discoveryReady, games]);
+    if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000 || !saved.campaignId) {
+      sessionStorage.removeItem("playtested:tester-return");
+      return;
+    }
+    // The list is loaded asynchronously. Restore to the game, not a pixel offset
+    // measured before the page was reconstructed.
+    let frame = 0;
+    let attempts = 0;
+    const restore = () => {
+      const target = document.getElementById("tester-campaign-" + saved.campaignId);
+      if (target) {
+        target.scrollIntoView({ block: "center", behavior: "instant" });
+        sessionStorage.removeItem("playtested:tester-return");
+      } else if (attempts++ < 45) {
+        frame = requestAnimationFrame(restore);
+      }
+    };
+    frame = requestAnimationFrame(() => { frame = requestAnimationFrame(restore); });
+    return () => cancelAnimationFrame(frame);
+  }, [games, genreFilter, expandedAvailableGames]);
 
 
   useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
@@ -1172,7 +1186,7 @@ export default function TesterPage() {
                           sessionStorage.setItem("playtested:tester-return", JSON.stringify({
                             expanded: expandedAvailableGames,
                             genre: genreFilter,
-                            scrollY: window.scrollY,
+                            campaignId: game.submission_id,
                             savedAt: Date.now(),
                           }));
                           window.location.assign(`/submissions/${data[0].id}`);
