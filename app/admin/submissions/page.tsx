@@ -469,8 +469,11 @@ export default function AdminSubmissionsPage() {
       }));
 
       setSubmissions(mapped);
+      const requested=new URLSearchParams(window.location.search).get("submission");
+      if(requested&&mapped.some(s=>s.id===requested)){setFilter("All");setSubmissionSearch("");setReviewTab("submissions");}
 
       setSelectedId((currentId) => {
+        if(requested&&mapped.some(s=>s.id===requested))return requested;
         if (
           currentId &&
           mapped.some((submission) => submission.id === currentId)
@@ -2032,7 +2035,7 @@ export default function AdminSubmissionsPage() {
                           {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
                         </div>
                       </CollapsibleSection>
-                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} admin />
+                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} catalogueThumbnail={selectedSubmission.imageUrl} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 

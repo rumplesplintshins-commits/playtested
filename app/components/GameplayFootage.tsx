@@ -1,15 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
+import VideoPoster from "./VideoPoster";
 import { gameplayVideo, type GameplayVideo } from "@/lib/gameplay-video";
 
-export default function GameplayFootage({ url, embedded = false }: { url: string; embedded?: boolean }) {
+export default function GameplayFootage({ url, embedded = false, posterSources = [] }: { url: string; embedded?: boolean; posterSources?: string[] }) {
   const video = gameplayVideo(url);
   if (!video) return <section className="my-5 rounded-xl border border-white/10 p-5"><h2 className="text-lg font-semibold">Gameplay Footage</h2><p className="mt-2 text-sm text-zinc-400">Video unavailable: the supplied link is invalid or unsupported.</p></section>;
   // A different video must receive its own explicit loading choice.
-  return <GameplayPlayer key={video.embed} video={video} embedded={embedded} />;
+  return <GameplayPlayer key={video.embed} video={video} embedded={embedded} posterSources={posterSources} />;
 }
 
-function GameplayPlayer({ video, embedded }: { video: GameplayVideo; embedded: boolean }) {
+function GameplayPlayer({ video, embedded, posterSources }: { video: GameplayVideo; embedded: boolean; posterSources: string[] }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [slow, setSlow] = useState(false);
   useEffect(() => {
@@ -24,9 +25,10 @@ function GameplayPlayer({ video, embedded }: { video: GameplayVideo; embedded: b
     <p className="mt-2 text-sm leading-6 text-zinc-400">Hosted by {video.provider}. Clicking Play loads its player and shares connection information with that provider under its privacy terms. Start playback in the player; videos do not autoplay.</p>
     <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-emerald-300/15 bg-[#0c120f]">
       {phase === "idle" ? <button type="button" aria-label={`Play ${video.provider} gameplay video`} onClick={play}
-        className="group flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-emerald-300/10 via-[#101a14] to-[#090b0a] p-2 text-center transition hover:from-emerald-300/15 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-emerald-300 sm:gap-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-300/10 text-emerald-200 transition group-hover:scale-105 sm:h-16 sm:w-16"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" className="ml-1 fill-current"><path d="M7 4.5v15l12-7.5z" /></svg></span>
-        <span><span className="block text-sm font-semibold text-zinc-100 sm:text-base">Play gameplay video</span><span className="mt-1 hidden text-xs text-zinc-400 sm:block">{video.provider} · Loads only when you choose</span></span>
+        className="group relative flex h-full w-full flex-col items-center justify-center gap-2 bg-[#090b0a] p-2 text-center transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-emerald-300 sm:gap-4">
+        <VideoPoster sources={posterSources}/>
+        <span className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-300/10 text-emerald-200 transition group-hover:scale-105 sm:h-16 sm:w-16"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" className="ml-1 fill-current"><path d="M7 4.5v15l12-7.5z" /></svg></span>
+        <span className="relative z-10"><span className="block text-sm font-semibold text-zinc-100 sm:text-base">Play gameplay video</span><span className="mt-1 hidden text-xs text-zinc-400 sm:block">{video.provider} · Loads only when you choose</span></span>
       </button> : phase === "error" ? <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
         <p role="alert" className="text-sm font-semibold text-amber-200">Video unavailable</p>
       </div> : <>

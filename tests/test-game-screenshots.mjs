@@ -10,8 +10,10 @@ const require=createRequire(import.meta.url);
 function load(path,resolve=require){const exports={};new Function('exports','require',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true,jsx:ts.JsxEmit.ReactJSX}}).outputText)(exports,resolve);return exports;}
 const common=load('lib/game-screenshots.ts',name=>name==='./thumbnail'?load('lib/thumbnail.ts'):require(name));
 const processing=load('lib/screenshot-processing.ts',name=>name==='./game-screenshots'?common:require(name));
-const footage=load('app/components/GameplayFootage.tsx',name=>name==='@/lib/gameplay-video'?load('lib/gameplay-video.ts'):require(name));
-const gallery=load('app/components/GameMediaGallery.tsx',name=>name==='@/lib/game-screenshots'?common:name==='./GameplayFootage'?footage:require(name));
+const poster=load('app/components/VideoPoster.tsx');
+const posterModel=load('lib/gameplay-poster.ts',name=>name==='./gameplay-video'?load('lib/gameplay-video.ts'):name==='./game-screenshots'?common:require(name));
+const footage=load('app/components/GameplayFootage.tsx',name=>name==='@/lib/gameplay-video'?load('lib/gameplay-video.ts'):name==='./VideoPoster'?poster:require(name));
+const gallery=load('app/components/GameMediaGallery.tsx',name=>name==='@/lib/game-screenshots'?common:name==='./GameplayFootage'?footage:name==='./VideoPoster'?poster:name==='@/lib/gameplay-poster'?posterModel:require(name));
 for(const [videoUrl,screenshots] of [[null,[]],['https://youtu.be/abcdefghijk',[]],[null,[{slot:1,revision:'revision'}]],['https://youtu.be/abcdefghijk',[{slot:1,revision:'revision'}]]]){
  const markup=renderToStaticMarkup(createElement(gallery.default,{id:'synthetic',videoUrl,screenshots}));
  assert(markup.includes('Game Media'));assert(!markup.includes('<iframe'));assert(!markup.includes('Gameplay footage (optional)'));

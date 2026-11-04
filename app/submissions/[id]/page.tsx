@@ -360,7 +360,7 @@ export default async function SubmissionPage({
           </div>
         </section>
 
-        <GameMediaGallery id={id} videoUrl={footage?.video_url} screenshots={screenshots || []}/>
+        <GameMediaGallery id={id} videoUrl={footage?.video_url} screenshots={screenshots || []} catalogueThumbnail={game.image_url}/>
 
         {/* INTERACTIVE BUILD-SPECIFIC RECEPTION */}
         <CommunityReception

@@ -6,7 +6,7 @@ import GameMediaGallery from "./GameMediaGallery";
 import ScreenshotManager from "./ScreenshotManager";
 import { type GameScreenshot } from "@/lib/game-screenshots";
 
-export default function GameplayEditor({ id, admin = false }: { id: string; admin?: boolean }) {
+export default function GameplayEditor({ id, admin = false, catalogueThumbnail }: { id: string; admin?: boolean; catalogueThumbnail?: string | null }) {
   const [url, setUrl] = useState("");
   const [screenshots, setScreenshots] = useState<GameScreenshot[]>([]);
   const [ready, setReady] = useState(false);
@@ -42,7 +42,7 @@ export default function GameplayEditor({ id, admin = false }: { id: string; admi
     } catch { setMessage("Could not save footage. Check your sign-in and retry."); }
     finally { setBusy(false); }
   }
-  if (admin) return <>{!ready ? <section className="my-5 rounded-xl border border-white/10 p-5"><h3 className="font-semibold">Game Media preview</h3><p role="status" className="mt-3 text-sm">{message || "Loading game media…"}</p>{message && <button type="button" onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry media</button>}</section> : <GameMediaGallery id={id} videoUrl={url} screenshots={screenshots} />}</>;
+  if (admin) return <>{!ready ? <section className="my-5 rounded-xl border border-white/10 p-5"><h3 className="font-semibold">Game Media preview</h3><p role="status" className="mt-3 text-sm">{message || "Loading game media…"}</p>{message && <button type="button" onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry media</button>}</section> : <GameMediaGallery id={id} videoUrl={url} screenshots={screenshots} catalogueThumbnail={catalogueThumbnail} />}</>;
   return <><section className="my-5 rounded-xl border border-white/10 p-5"><h3 className="font-semibold">Gameplay footage (optional)</h3><p className="mt-2 text-sm text-zinc-400">{gameplayGuidance}</p>
     {!ready && !message && <p role="status" className="mt-3">Loading footage…</p>}
     {!ready && message && <button onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry footage</button>}
