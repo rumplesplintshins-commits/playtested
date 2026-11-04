@@ -127,6 +127,7 @@ const genres = [
   "Simulation",
   "Racing",
   "Sports",
+  "Other",
 ];
 
 const sortOptions = [
