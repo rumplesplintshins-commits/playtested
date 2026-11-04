@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import SiteHeader from "@/app/components/SiteHeader";
+import PlatformUsers from "@/app/components/PlatformUsers";
 
 type Summary = {
   windows: { days: number; visitors: number; views: number }[];
@@ -28,6 +29,7 @@ export default function AnalyticsPage() {
   return <main className="min-h-screen bg-[#090b0a] text-zinc-100"><SiteHeader /><article className="mx-auto max-w-6xl px-5 py-10">
     <a href="/admin/submissions" className="text-sm text-emerald-300 underline">Back to submission review</a>
     <h1 className="mt-5 text-3xl font-bold">Visitor &amp; acquisition analytics</h1>
+    <PlatformUsers />
     <p className="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">Unique visitors here means distinct consenting browser-tab sessions, renewed after 30 minutes of inactivity. These are approximate visits, not unique people. Returning visitors, multiple tabs/devices and storage clearing can increase counts. Non-consenting visits, privacy signals and recognised bots are excluded; bot filtering is best effort. Times and daily trends use UTC.</p>
     {error && <div role="alert" className="my-5 rounded border border-amber-300/30 p-4"><p>{error}</p><button onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry analytics</button></div>}
     {!data && !error && <p role="status" className="mt-5">Loading analytics…</p>}
