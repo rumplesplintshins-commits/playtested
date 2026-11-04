@@ -3547,7 +3547,7 @@ export default function SubmitGamePage() {
                 <textarea
                   required
                   name="description"
-                  rows={8}
+                  rows={12}
                   maxLength={2000}
                   value={description}
                   onChange={(event) => {
@@ -3556,7 +3556,7 @@ export default function SubmitGamePage() {
                     event.currentTarget.style.height = Math.min(event.currentTarget.scrollHeight, 520) + "px";
                   }}
                   placeholder="Describe the gameplay, key features and what makes your game different."
-                  className={inputClass + " min-h-48 resize-y overflow-y-auto"}
+                  className={inputClass + " min-h-72 resize-y overflow-y-auto"}
                 />
 
                 <span className="mt-2 block text-right text-xs text-zinc-500">
@@ -3711,19 +3711,21 @@ export default function SubmitGamePage() {
 
                   </option>
 
-                  <option value="AI-assisted: Code only">AI-assisted: Code only</option>
+                  <option value="AI-assisted: Code only">AI-assisted: Code only — code or programming, not game content</option>
 
-                  <option value="AI-assisted: Content only">AI-assisted: Content only</option>
+                  <option value="AI-assisted: Content only">AI-assisted: Content only — art, audio, writing or other game content</option>
 
-                  <option value="AI-assisted: Code and content">AI-assisted: Code and content</option>
+                  <option value="AI-assisted: Code and content">AI-assisted: Code and content — both programming and game content</option>
 
                   <option value="No AI used">No AI used</option>
 
                 </select>
-
+                <p className="mt-2 text-xs leading-5 text-zinc-400">
+                  Code-only assistance is different from AI-generated game assets or narrative.
+                  Select the closest accurate disclosure; explain specific tools and uses below.
+                  If you did not use AI at all, select “No AI used”.
+                </p>
               </label>
-
-
 
               <fieldset>
 
