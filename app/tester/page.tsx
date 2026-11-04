@@ -678,6 +678,7 @@ export default function TesterPage() {
 
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
   const [genreFilter,setGenreFilter] = useState("preferred");
+  const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
   const [discoveryReady,setDiscoveryReady] = useState(false);
   useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
   const router = useRouter();
@@ -1110,11 +1111,17 @@ export default function TesterPage() {
                     }`}
                   >
                     {game.image_url && activeTestId !== claim?.id && (
-                      <img
-                        src={game.image_url}
-                        alt=""
-                        className="h-48 w-full shrink-0 object-cover"
-                      />
+                      <a
+                        href={`/submissions/${game.submission_id}`}
+                        aria-label={`View ${game.title} game details`}
+                        className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]"
+                      >
+                        <img
+                          src={game.image_url}
+                          alt={`View details for ${game.title}`}
+                          className="h-48 w-full shrink-0 object-cover"
+                        />
+                      </a>
                     )}
 
                     <CampaignPlaces id={game.submission_id} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
@@ -1503,7 +1510,29 @@ export default function TesterPage() {
                   </p>
                 ) : (
                   <div className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {availableGames.map(renderGameCard)}
+                    {availableGames.map((game) => (
+                      <details
+                        key={game.submission_id}
+                        open={expandedAvailableGames[game.submission_id] !== false}
+                        onToggle={(event) => {
+                          const isOpen = event.currentTarget.open;
+                          setExpandedAvailableGames((previous) =>
+                            previous[game.submission_id] === isOpen
+                              ? previous
+                              : { ...previous, [game.submission_id]: isOpen }
+                          );
+                        }}
+                        className="min-w-0 self-start rounded-xl border border-white/10 bg-white/[0.02] open:border-[#77f29b]/25"
+                      >
+                        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          {game.title}
+                          <span className="ml-2 text-xs font-normal text-zinc-400">
+                            · {game.genre || "Other"} · {game.developer_name}
+                          </span>
+                        </summary>
+                        <div className="p-2 pt-0">{renderGameCard(game)}</div>
+                      </details>
+                    ))}
                   </div>
                 )}
               </section>
