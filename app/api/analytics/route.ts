@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyticsService } from "@/lib/admin-server";
 import { campaignLabel } from "@/lib/acquisition";
+import { hasTrustedOrigin } from "@/lib/request-origin";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const pages = ["/", "/games/detail", "/submissions/detail", "/tester", "/submit", "/login", "/privacy", "/terms", "/contact"];
@@ -9,7 +10,7 @@ let minute = 0, total = 0;
 const perVisitor = new Map<string, number>();
 export async function POST(request: Request) {
   const reply = (status: number) => new NextResponse(null, { status, headers: { "Cache-Control": "no-store" } });
-  if (request.headers.get("origin") !== new URL(request.url).origin) return reply(403);
+  if (!hasTrustedOrigin(request)) return reply(403);
   if (/bot|crawler|spider|headless|slurp|preview/i.test(request.headers.get("user-agent") || "") || request.headers.get("dnt") === "1" || request.headers.get("sec-gpc") === "1") return reply(204);
   if (!request.headers.get("content-type")?.startsWith("application/json")) return reply(415);
   const raw = await request.text();
