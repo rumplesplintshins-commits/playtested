@@ -16,3 +16,17 @@ AS $function$
     else 0 end from public.profiles p cross join history h where p.id = p_user;
 $function$
 ;
+CREATE OR REPLACE FUNCTION public.get_developer_test_rank(p_test_id uuid)
+ RETURNS integer
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select public.tester_rank(t.tester_id)
+  from public.community_game_tests t
+  join public.community_playtests c on c.id = t.playtest_id
+  where t.id = p_test_id
+    and t.review_outcome = 'accepted'
+    and c.developer_id = auth.uid();
+$function$
+;

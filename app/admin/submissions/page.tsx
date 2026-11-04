@@ -1,4 +1,5 @@
 "use client";
+import DisclosureControl from "../../components/DisclosureControl";
 import ListingControls from "../../components/ListingControls";
 import AdminTesterAnalytics from "../../components/AdminTesterAnalytics";
 import AdminAnalyticsSummary from "../../components/AdminAnalyticsSummary";
@@ -307,6 +308,7 @@ export default function AdminSubmissionsPage() {
     useState<ReviewTab>("submissions");
 
   const [catalogueOpen, setCatalogueOpen] = useState(false);
+  const [catalogueLoaded,setCatalogueLoaded]=useState(false);
 
   const [completenessRefresh,setCompletenessRefresh] = useState(0);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -1552,10 +1554,8 @@ export default function AdminSubmissionsPage() {
         <div className={`${panelClass} mb-8 overflow-hidden`}>
           <button
             type="button"
-            onClick={() =>
-              setCatalogueOpen((current) => !current)
-            }
-            className="flex w-full items-center justify-between gap-4 p-5 text-left"
+            aria-expanded={catalogueOpen} aria-controls="admin-catalogue-panel" onClick={()=>{setCatalogueLoaded(true);setCatalogueOpen(current=>!current);}}
+            className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
           >
             <div>
               <h2 className="text-lg font-semibold">
@@ -1568,16 +1568,10 @@ export default function AdminSubmissionsPage() {
               </p>
             </div>
 
-            <span
-              className={`text-xl text-zinc-500 transition ${
-                catalogueOpen ? "rotate-180" : ""
-              }`}
-            >
-              ▾
-            </span>
+            <DisclosureControl expanded={catalogueOpen}/>
           </button>
 
-          {catalogueOpen && (
+          <div id="admin-catalogue-panel" hidden={!catalogueOpen}>{catalogueLoaded && (
             <div className="space-y-6 border-t border-zinc-800 p-5">
               <SteamImporter />
 
@@ -1625,7 +1619,7 @@ export default function AdminSubmissionsPage() {
                 )}
               </div>
             </div>
-          )}
+          )}</div>
         </div>
 
         <div className="mb-6 flex flex-wrap border-b border-zinc-800">

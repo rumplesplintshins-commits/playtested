@@ -611,7 +611,7 @@ export default function CommunityReception({
           <div className="border-t border-white/10 p-4">
             <div className="grid gap-3 lg:grid-cols-2">
               {selectedFeedback.map(
-                (response, index) => (
+                (response) => (
                   <article
                     key={response.id}
                     className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"

@@ -1,5 +1,6 @@
 "use client";
 import DisclosureHeading from "./DisclosureHeading";
+import DisclosureControl from "./DisclosureControl";
 import {intentCounts,intentText} from "@/lib/intent-counts";
 
 import { useRouter } from "next/navigation";
@@ -1675,6 +1676,7 @@ export default function StartPlaytest({
   const [setupExpanded, setSetupExpanded] = useState(false);
 
   const [resultsExpanded, setResultsExpanded] = useState(true);
+  const resultsPanelId=useId();
   const [eligibility, setEligibility] = useState<PlaytestEligibility | null>(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
   const [eligibilityError, setEligibilityError] = useState("");
@@ -2291,7 +2293,7 @@ export default function StartPlaytest({
               <button
                 type="button"
                 onClick={() => setSetupExpanded((current) => !current)}
-                className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
               >
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
@@ -2646,7 +2648,8 @@ export default function StartPlaytest({
               onClick={() => setResultsExpanded((current) => !current)}
               data-results-toggle
               aria-expanded={resultsExpanded}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left"
+              aria-controls={resultsPanelId}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
             >
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
@@ -2657,20 +2660,16 @@ export default function StartPlaytest({
                 </p>
               </div>
 
-              <span className="text-lg text-zinc-400">
-                {resultsExpanded ? "−" : "+"}
-              </span>
+              <DisclosureControl expanded={resultsExpanded}/>
             </button>
 
 
-            {resultsExpanded && (
-              <div className="border-t border-white/10 p-5">
+              <div id={resultsPanelId} hidden={!resultsExpanded} className="border-t border-white/10 p-5">
                 <BuildResultsPanel
                   currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
                 />
               </div>
-            )}
           </section>
         </div>
       </div>

@@ -1,4 +1,5 @@
 "use client";
+import DisclosureControl from "../components/DisclosureControl";
 
 import {currentJourney} from "@/lib/share-links";
 import {TrackedAccessLink,ShareJourneyBanner} from "../components/ShareJourney";
@@ -1602,13 +1603,13 @@ export default function TesterPage() {
                         }}
                         className="min-w-0 self-start rounded-xl border border-white/10 bg-white/[0.02] open:border-[#77f29b]/25"
                       >
-                        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
-                          {game.title}
+                        <summary aria-expanded={expandedAvailableGames[game.submission_id]!==false} aria-controls={`tester-card-${game.submission_id}`} className="flex cursor-pointer list-none select-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          <span>{game.title}
                           <span className="ml-2 text-xs font-normal text-zinc-400">
                             · {game.genre || "Other"} · {game.developer_name}
-                          </span>
+                          </span></span><DisclosureControl expanded={expandedAvailableGames[game.submission_id]!==false}/>
                         </summary>
-                        <div className="p-2 pt-0">{renderGameCard(game)}</div>
+                        <div id={`tester-card-${game.submission_id}`} className="p-2 pt-0">{renderGameCard(game)}</div>
                       </details>
                     ))}
                   </div>

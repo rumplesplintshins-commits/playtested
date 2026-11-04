@@ -1,4 +1,5 @@
 "use client";
+import DisclosureControl from "./DisclosureControl";
 import {useEffect,useState} from "react";
 type Summary={windows:{days:number;visitors:number;views:number}[];sources:{source:string;views:number}[];submission_totals:{submissions:number};submissions:{source:string;self_reported:string|null;submissions:number}[]};
 function Metrics(){
@@ -9,5 +10,5 @@ function Metrics(){
 }
 export default function AdminAnalyticsSummary(){
  const [open,setOpen]=useState(false),[loaded,setLoaded]=useState(false);
- return <section className="mb-8 overflow-hidden rounded-2xl border border-zinc-800 bg-[#101210]"><button type="button" aria-expanded={open} aria-controls="admin-analytics-summary" onClick={()=>{setOpen(!open);setLoaded(true);}} className="flex w-full items-center justify-between gap-4 p-5 text-left"><div><h2 className="text-lg font-semibold">Analytics &amp; acquisition</h2><p className="mt-1 text-sm text-zinc-500">Visitor sessions, page views, sources and genuine submissions.</p></div><span aria-hidden="true">{open?"−":"+"}</span></button><div id="admin-analytics-summary" hidden={!open}>{loaded&&<Metrics/>}</div></section>;
+ return <section className="mb-8 overflow-hidden rounded-2xl border border-zinc-800 bg-[#101210]"><button type="button" aria-expanded={open} aria-controls="admin-analytics-summary" onClick={()=>{setOpen(!open);setLoaded(true);}} className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"><div><h2 className="text-lg font-semibold">Analytics &amp; acquisition</h2><p className="mt-1 text-sm text-zinc-500">Visitor sessions, page views, sources and genuine submissions.</p></div><DisclosureControl expanded={open}/></button><div id="admin-analytics-summary" hidden={!open}>{loaded&&<Metrics/>}</div></section>;
 }
