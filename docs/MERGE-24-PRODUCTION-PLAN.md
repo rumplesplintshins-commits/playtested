@@ -2,6 +2,8 @@
 
 Prepared 4 November 2026 on `feature/merge-24`. **NO-GO for production execution now.** Development functionality is accepted; production rollout still requires explicit approval, backup/restore rehearsal, legal draft sign-off and an agreed disposition of existing lint/legacy-suite debt. This document authorises no write, merge or deployment.
 
+Latest gate pass: the owner explicitly left fresh production backup and restore **BLOCKED** and prohibited production credential access. The read-only migration/preflight review is complete and unchanged; debt is classified but not waived, and notice review is complete but not approved for publication. See [gate audit](MERGE-24-GATE-AUDIT.md), [deferred backup/restore procedure](MERGE-24-BACKUP-RESTORE-PROCEDURE.md), [notice findings/proposed wording](MERGE-24-NOTICE-REVIEW.md), and [final exact execution/Render checklist](MERGE-24-RELEASE-CHECKLIST.md). No application or migration file was changed in this documentation-only pass.
+
 ## Read-only audit findings
 
 The audit used CLI `db query --read-only`, confirmed `transaction_read_only=on`, and queried catalogues/configuration only. No production application RPCs, user records, migration DDL or Storage object operations ran. `docs/merge24-production-baseline.json` records the production baseline and four replaced-function fingerprints; raw metadata snapshots/differences remain ignored under `technical-test-results`.
