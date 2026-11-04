@@ -23,6 +23,7 @@ export type FeedbackReviewItem = {
   report: FeedbackQualityRecord & {
     id: string;
     tester_id: string;
+    feedback_usefulness?: string|null;
     status: string;
     review_outcome: string;
     review_reason: string | null;

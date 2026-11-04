@@ -45,3 +45,6 @@ export function submissionAcquisition() {
     return session.context || {};
   } catch { return {}; }
 }
+
+// A previous general analytics choice is not silently extended to the new referral purpose.
+export function steamReferralsAllowed(){try{return analyticsAllowed()&&JSON.parse(localStorage.getItem(analyticsPreferenceKey)||'null')?.steam_referrals===true;}catch{return false;}}

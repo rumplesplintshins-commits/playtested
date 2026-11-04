@@ -1,4 +1,5 @@
 "use client";
+import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
 import { useEffect, useState } from "react";
@@ -37,7 +38,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
   return <article id={`report-${t.id}`} className="my-5 scroll-mt-6 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p><h3 className="mt-2 text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
-      <span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>
+      <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>{t.status==="reviewed"&&<DeveloperUsefulnessBadge value={t.feedback_usefulness}/>}</div>
     </div>
     <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}

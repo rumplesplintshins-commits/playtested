@@ -1,4 +1,5 @@
 "use client";
+import AdminSteamReferrals from "@/app/components/AdminSteamReferrals";
 import GamePcRequirements from "../../components/GamePcRequirements";
 import DisclosureControl from "../../components/DisclosureControl";
 import ListingControls from "../../components/ListingControls";
@@ -1551,7 +1552,7 @@ export default function AdminSubmissionsPage() {
         </div>
 
         <AdminAnalyticsSummary/>
-        <AdminTesterAnalytics/>
+        <AdminTesterAnalytics/><AdminSteamReferrals/>
         <div className={`${panelClass} mb-8 overflow-hidden`}>
           <button
             type="button"

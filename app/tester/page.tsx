@@ -1,4 +1,7 @@
 "use client";
+import TestingActivityHeader from '../components/TestingActivityHeader';
+import ActivityStorefrontLink from '../components/ActivityStorefrontLink';
+import {type ActivityMedia} from '@/lib/testing-activity';
 import GamePcRequirements from "../components/GamePcRequirements";
 import {PrivatePcProvider} from "../components/AccountPcSpecifications";
 import DisclosureControl from "../components/DisclosureControl";
@@ -39,6 +42,8 @@ type TestGame = {
 };
 
 type TestClaim = FeedbackQualityRecord & {
+  activity_media?:ActivityMedia;
+  feedback_usefulness?:string|null;
   id: string;
   submission_id: string | null;
   playtest_id: string | null;
@@ -861,7 +866,10 @@ function TesterPage() {
 
       setGames((gamesData ?? []) as TestGame[]);
       if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
-      setClaims((claimsData ?? []) as TestClaim[]);
+      const mediaResult=await supabase.rpc("get_my_testing_activity_media");
+      if(!active)return;
+      const mediaByTest=new Map<string,ActivityMedia>((mediaResult.error?[]:mediaResult.data??[]).filter(Boolean).map((row:ActivityMedia)=>[row.test_id,row]));
+      setClaims((claimsData ?? []).map((claim:TestClaim)=>({...claim,activity_media:mediaByTest.get(claim.id)})) as TestClaim[]);
       const usefulness=await supabase.rpc("get_my_feedback_usefulness");
       if(active&&!usefulness.error){
         const mapped:Record<string,"useful"|"not_useful">={};
@@ -1103,6 +1111,9 @@ function TesterPage() {
       setClaims((previous) => previous.map((item) => item.id === claim.id
         ? { ...item, status: "submitted", review_outcome: "pending" }
         : item));
+      // Refresh authoritative timestamp and safe media after a newly submitted report.
+      // A secondary history fetch must never turn a confirmed submission into a failure.
+      void(async()=>{try{const [reservations,media]=await Promise.all([supabase.rpc('get_my_test_reservations'),supabase.rpc('get_my_testing_activity_media')]);const row=reservations.data?.claims?.find((item:TestClaim)=>item.id===claim.id);const artwork=media.data?.find((item:ActivityMedia)=>item.test_id===claim.id);setClaims(previous=>previous.map(item=>item.id===claim.id?{...item,...(reservations.error?{}:row),activity_media:artwork??item.activity_media}:item));}catch{/* Reload recovers optional history metadata. */}})();
       setActiveTestId(null);
       showMessage(`Your test of "${game.title}" has been submitted for review. XP is awarded only if it is accepted.${draftCleared ? "" : " This browser could not remove its local draft."}`, "success");
       return true;
@@ -1653,6 +1664,7 @@ function TesterPage() {
                   claimMatchesGame(claim, item)
                 );
 
+                const media=claim.activity_media;
                 const accepted =
                   claim.review_outcome === "accepted";
                 const rejected =
@@ -1663,22 +1675,12 @@ function TesterPage() {
                   <article
                     id={`testing-activity-${claim.id}`}
                     key={claim.id}
-                    className="scroll-mt-24 flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"
+                    className="scroll-mt-24 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"
                   >
-                    <div>
-                      <h3 className="font-semibold">
-                        {game?.title ??
-                          claim.game_title ?? "Previously tested game"}
-                      </h3>
-
-                      <p className="mt-1 text-sm text-zinc-400">
-                        {game
-                          ? `By ${game.developer_name}`
-                          : "Game details are no longer available in the current catalogue."}
-                      </p>
-
+                    <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={feedbackUsefulness[claim.id]??claim.feedback_usefulness} status={getStatusLabel(claim)}/>
+                    <div className="mt-3 min-w-0">
                       <p className="mt-2 text-sm text-zinc-300">{feedbackQualityLabel(claim)}</p>
-                      {feedbackUsefulness[claim.id]==="useful"&&<span className="mt-2 inline-flex rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">Developer marked this feedback useful</span>}
+                      <div className="mt-2"><ActivityStorefrontLink testId={claim.id} url={media?.store_url}/></div>
                       {claim.submitted_at&&<p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}
                       {claim.submitted_at&&<details className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-200">View my submitted feedback</summary><div className="mt-3 space-y-3 text-zinc-300">{claim.overall_score!=null&&<p><span className="text-zinc-500">Overall:</span> {claim.overall_score}/10</p>}{claim.gameplay_score!=null&&<p><span className="text-zinc-500">Gameplay:</span> {claim.gameplay_score}/10</p>}{claim.performance_score!=null&&<p><span className="text-zinc-500">Performance:</span> {claim.performance_score}/10</p>}{claim.hours_played!=null&&<p><span className="text-zinc-500">Time played:</span> {claim.hours_played} hours</p>}{claim.continue_playing&&<p><span className="text-zinc-500">Continue playing:</span> {claim.continue_playing.replaceAll("_"," ")}</p>}{claim.recommend_game&&<p><span className="text-zinc-500">Recommend:</span> {claim.recommend_game.replaceAll("_"," ")}</p>}{claim.enjoyed_most&&<div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}{claim.frustrations&&<div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}{claim.bugs_found&&<div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}{claim.biggest_improvement&&<div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}{claim.feedback&&<div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}</div></details>}
                       {accepted&&claim.review_reason&&<p className="mt-2 text-sm text-zinc-400">Admin reason: {claim.review_reason}</p>}
@@ -1695,21 +1697,8 @@ function TesterPage() {
                               : "Your test has been reviewed."}
                       </p>
                     </div>
-
                     {claim.status==="expired"&&<div className="flex flex-wrap gap-2"><button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!,title:claim.game_title??game?.title??"this game"} as TestGame)} className="rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>{<button type="button" onClick={()=>setActiveTestId(claim.id)} className="rounded-lg border border-white/20 px-3 py-2 text-sm">Open saved draft</button>}{!claim.playtest_id&&!claim.reclaim_campaign_id&&<p className="text-xs text-zinc-400">This historical test needs a published campaign before it can be reclaimed.</p>}</div>}
-                    <span
-                      className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                        pending
-                          ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
-                          : accepted
-                            ? "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]"
-                            : rejected
-                              ? "border-red-400/30 bg-red-400/10 text-red-300"
-                              : "border-white/15 text-zinc-300"
-                      }`}
-                    >
-                      {getStatusLabel(claim)}
-                    </span>
+
                   </article>
                 );
               })}

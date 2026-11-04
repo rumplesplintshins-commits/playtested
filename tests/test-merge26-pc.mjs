@@ -9,6 +9,8 @@ try{
  await db.exec(availabilityFixtureSQL());await db.exec(availabilitySeedSQL());
  await db.exec(fs.readFileSync('tests/fixtures/merge26-pc-listing-helpers.sql','utf8'));
  await db.exec(fs.readFileSync('supabase/migrations/202611040113_merge26_pc_specifications.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/202611040117_merge26_closed_campaign_requirements_guard.sql','utf8'));
+ await db.exec(`update community_playtests set status='closed' where id='${id(20)}';set role anon;reset test.uid`);assert.deepEqual(await read('campaign',id(20)),[],'Anonymous closed-campaign reference fails closed');await db.exec(`reset role;update community_playtests set status='open' where id='${id(20)}'`);
  await db.exec(`insert into auth.users(id) values('${id(5)}');insert into profiles(id,roles,role) values('${id(5)}',array['developer'],'user');`);
  for(const [value,notes,valid] of [[{},false,true],[{cpu:'Intel Core i5-12400F',ram_gb:16},false,true],[{os:'Linux',notes:'Optional game notes'},true,true],[{ram_gb:-1},false,false],[{ram_gb:5000},false,false],[{storage_gb:1000001},false,false],[{ram_gb:'16'},false,false],[{cpu:'x'.repeat(161)},false,false],[{notes:'x'.repeat(1001)},true,false],[{serial_number:'not allowed'},false,false],[{mac_address:'not allowed'},false,false],[{hardware_id:'not allowed'},false,false],[{ip_address:'not allowed'},false,false],[[],false,false],[null,false,false]])assert.equal((await db.query('select pc_specs_valid($1,$2) ok',[JSON.stringify(value),notes])).rows[0].ok,valid);
  await db.exec(`set role authenticated;set test.uid='${id(1)}'`);await db.query('insert into account_pc_specs(user_id,specs) values($1,$2)',[id(1),{cpu:'PRIVATE CPU',ram_gb:16}]);
