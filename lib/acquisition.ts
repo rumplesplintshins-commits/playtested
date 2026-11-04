@@ -4,6 +4,19 @@ export function campaignLabel(value: unknown): string | null {
 }
 export const discoverySources = ["Reddit outreach", "Reddit post", "Organic search", "External referral", "Direct", "Other"] as const;
 export type Acquisition = { source: string | null; medium: string | null; campaign: string | null; referral: string | null };
+// Only use recorded labels. A bare Reddit referral cannot identify a post or a DM.
+export function capturedChannel(value:{source:string;medium?:string|null;campaign?:string|null;referral?:string|null}){
+ const source=value.source.toLowerCase(),medium=value.medium?.toLowerCase()||"",campaign=value.campaign?.toLowerCase()||"";
+ if(source==="reddit"){
+  if(/^(outreach|dm|direct_message)$/.test(medium)||/^(reddit_)?(outreach|dm)(_|$)/.test(campaign))return "Direct Reddit outreach (captured label)";
+  if(/^(post|subreddit|social)$/.test(medium)||/^(subreddit|reddit_post)(_|$)/.test(campaign))return "Subreddit post (captured label)";
+  return "Reddit — placement unknown";
+ }
+ if(source==="search"||medium==="organic")return "Organic search (captured label/referral)";
+ if(source==="external"||medium==="referral")return "External referral";
+ if(["unknown","direct_or_unknown","direct"].includes(source))return "Direct / unknown";
+ return "Other captured source";
+}
 export function acquisitionContext(href: string, referrer: string): Acquisition {
   const url = new URL(href);
   let referral: string | null = null;

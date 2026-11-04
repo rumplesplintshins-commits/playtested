@@ -15,6 +15,7 @@ try{
  await db.exec(`insert into game_submissions values('${id(10)}','${id(2)}','Existing title','Pending Review',0)`);
  const prior=(await db.query('select id,recipient_id,read_at,created_at from notifications')).rows;
  await db.exec(fs.readFileSync('supabase/migrations/202611040013_notification_routing.sql','utf8'));
+ const merge26=fs.readFileSync('supabase/migrations/202611040103_merge26_reporting.sql','utf8');await db.exec(merge26.slice(merge26.indexOf('CREATE OR REPLACE FUNCTION public.notify_developer_feedback()'),merge26.lastIndexOf('commit;')));
  assert.deepEqual((await db.query('select id,recipient_id,read_at,created_at from notifications')).rows,prior,'Migration preserves counts, recipients and read state');
  assert.equal((await db.query('select href from notifications')).rows[0].href,`/admin/submissions?submission=${id(10)}`);
  const count=async(where,args=[])=>(await db.query('select count(*)::int n from notifications where '+where,args)).rows[0].n;
@@ -29,7 +30,7 @@ try{
  await db.exec(`insert into community_playtests values('${id(20)}','${id(2)}','Campaign','${id(11)}',null,null,'draft','both',false,null);insert into game_developer_links values('${id(21)}','${id(2)}','${id(11)}',null,null);insert into community_game_tests values('${id(22)}','${id(20)}',null,'submitted','pending','${id(4)}')`);
  assert.equal(await count(`kind='developer_feedback_received'`),0,'Unreviewed feedback stays private');
  await db.exec(`update community_game_tests set status='reviewed',review_outcome='accepted' where id='${id(22)}'`);
- let feedback=(await db.query("select * from notifications where kind='developer_feedback_received'")).rows[0];assert.equal(feedback.recipient_id,id(2));assert.equal(feedback.href,`/my-submissions?tab=games&game=${id(21)}`);
+ let feedback=(await db.query("select * from notifications where kind='developer_feedback_received'")).rows[0];assert.equal(feedback.recipient_id,id(2));assert.equal(feedback.href,`/my-submissions?tab=games&game=${id(21)}&campaign=${id(20)}`);
  await db.exec(`update community_game_tests set status='reviewed',review_outcome='accepted' where id='${id(22)}'`);assert.equal(await count(`kind='developer_feedback_received'`),1);
  await db.exec(`set role authenticated;set test.uid='${id(3)}'`);assert.equal((await db.query('select * from notifications')).rows.length,0);assert.equal((await db.query('select get_my_notifications() p')).rows[0].p.unread_count,0);assert.equal((await db.query('select mark_notification_read($1) ok',[feedback.id])).rows[0].ok,false);assert.equal((await db.query('select dismiss_notification($1) ok',[feedback.id])).rows[0].ok,false);
  await assert.rejects(db.query('select * from notification_delivery_keys'),/permission denied/);

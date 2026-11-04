@@ -1,4 +1,7 @@
 "use client";
+import ListingControls from "../../components/ListingControls";
+import AdminAnalyticsSummary from "../../components/AdminAnalyticsSummary";
+import {compareAdminReview} from "@/lib/admin-review-order";
 import GameplayEditor from "../../components/GameplayEditor";
 
 import { useEffect, useState } from "react";
@@ -64,6 +67,7 @@ type Submission = {
   submittedAt: string;
   status: SubmissionStatus;
   reviewReason: string;
+  reviewActivity?: string;
 };
 
 type GameClaim = {
@@ -450,6 +454,8 @@ export default function AdminSubmissionsPage() {
         return;
       }
 
+      const activity=await supabase.rpc("m26_admin_review_activity");
+      if(activity.error){setPageError("Review activity could not be loaded. Refresh before reviewing.");setLoaded(true);return;}
       const mapped: Submission[] = (data ?? []).map((row) => ({
         id: row.id,
         steamUrl:row.steam_url??"",releaseStatus: row.release_status ?? "",releaseDate:row.release_date??"",completenessMessage:completenessMessage(submissionIssues(row)),
@@ -464,6 +470,7 @@ export default function AdminSubmissionsPage() {
         aiExplanation: row.ai_explanation ?? "",
         evidenceLink: row.evidence_link ?? "",
         submittedAt: row.submitted_at ?? "",
+        reviewActivity: activity.data?.[row.id],
         status: row.status as SubmissionStatus,
         reviewReason: row.review_reason ?? "",
       }));
@@ -905,12 +912,15 @@ export default function AdminSubmissionsPage() {
       return;
     }
 
+    const activity=await supabase.rpc("m26_admin_review_activity");
+    if(activity.error)setPageError("Decision saved, but review activity could not be refreshed. Refresh before your next decision.");
     setSubmissions((current) =>
       current.map((submission) =>
         submission.id === id
           ? {
               ...submission,
               status,
+              reviewActivity: activity.data?.[id]||submission.reviewActivity,
               reviewReason: savedReason,
             }
           : submission
@@ -1165,7 +1175,7 @@ export default function AdminSubmissionsPage() {
               (submission) => submission.status === filter
             )
   ).filter(submission=>[submission.title,submission.developer].some(value=>value.toLocaleLowerCase().includes(submissionSearch.trim().toLocaleLowerCase())))
-   .sort((a,b)=>(Date.parse(b.submittedAt)||0)-(Date.parse(a.submittedAt)||0)||a.id.localeCompare(b.id));
+   .sort((a,b)=>compareAdminReview(a,b,filter));
 
   const filteredClaims = (
     claimFilter === "All"
@@ -1482,7 +1492,6 @@ export default function AdminSubmissionsPage() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
-      <a href="/admin/analytics" className="mx-5 block py-3 text-sm text-emerald-300 underline">Visitor &amp; acquisition analytics</a>
 
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
         <ListingRevisionQueue/>
@@ -1537,6 +1546,7 @@ export default function AdminSubmissionsPage() {
           ))}
         </div>
 
+        <AdminAnalyticsSummary/>
         <div className={`${panelClass} mb-8 overflow-hidden`}>
           <button
             type="button"
@@ -2035,7 +2045,8 @@ export default function AdminSubmissionsPage() {
                           {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
                         </div>
                       </CollapsibleSection>
-                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} catalogueThumbnail={selectedSubmission.imageUrl} admin />
+                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><ListingControls key={`controls-${selectedSubmission.id}`} id={selectedSubmission.id} title={selectedSubmission.title} approved={selectedSubmission.status==="Approved"} admin/>
+                      <GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} catalogueThumbnail={selectedSubmission.imageUrl} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 

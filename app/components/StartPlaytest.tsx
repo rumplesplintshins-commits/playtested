@@ -1473,6 +1473,7 @@ function BuildResultsPanel({
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
   const resultRequest = useRef(0);
+  useEffect(()=>{if(typeof window==="undefined")return;const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign&&[currentPlaytest.id,...playtests.map(p=>p.id)].includes(campaign))queueMicrotask(()=>setSelectedId(campaign));},[currentPlaytest.id,playtests]);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
   const isCurrent = selectedPlaytest.id === currentPlaytest.id;

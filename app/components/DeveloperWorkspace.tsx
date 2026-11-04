@@ -4,14 +4,14 @@ import {DeveloperPlanProvider,DeveloperPlanSummary} from "./DeveloperPlan";
 import {submissionReviewPresentation} from "@/lib/submission-completeness";
 import {useRouter} from "next/navigation";
 
-export type WorkspaceItem={missingCount?:number;correctionHref?:string;id:string;title:string;status:string;image?:string|null;context?:string;feedback?:string;active?:boolean;hasPlaytest?:boolean;hasFeedback?:boolean;content:ReactNode};
+export type WorkspaceItem={campaignIds?:string[];missingCount?:number;correctionHref?:string;id:string;title:string;status:string;image?:string|null;context?:string;feedback?:string;active?:boolean;hasPlaytest?:boolean;hasFeedback?:boolean;content:ReactNode};
 type Tab="games"|"submissions"|"claims"|"diagnostics";
-type Selection={tab:Tab;filter:string;search:string;item:string};
+type Selection={tab:Tab;filter:string;search:string;item:string;campaign?:string};
 const labels={games:"My games",submissions:"Game submissions",claims:"Developer claims",diagnostics:"Diagnostics"};
 const filters={games:["All","Active playtest","Current Hub feedback"],submissions:["All","Pending Review","Approved","Needs More Information","Rejected"],claims:["All","Pending","Approved","Needs More Information","Rejected"],diagnostics:["All"]};
 function readSelection():Selection{
  const query=new URLSearchParams(window.location.search);const value=query.get("tab");const tab:Tab=value==="claims"||value==="submissions"||value==="diagnostics"?value:"games";
- return {tab,filter:(tab==="diagnostics"||filters[tab].includes(query.get("filter")||""))?(query.get("filter")||"All"):"All",search:query.get("q")||"",item:query.get("game")||""};
+ return {tab,filter:(tab==="diagnostics"||filters[tab].includes(query.get("filter")||""))?(query.get("filter")||"All"):"All",search:query.get("q")||"",item:query.get("game")||"",campaign:query.get("campaign")||undefined};
 }
 export function WorkspaceRetry({message}:{message:string}){const router=useRouter();const [busy,setBusy]=useState(false);return <div role="alert" className="my-5 rounded-xl border border-amber-300/30 p-5 text-sm text-amber-100"><p>{message}</p><button type="button" disabled={busy} onClick={()=>{setBusy(true);router.refresh();setTimeout(()=>setBusy(false),1200);}} className="mt-3 rounded-lg border border-white/20 px-4 py-2 focus-visible:outline-2">{busy?"Refreshing…":"Refresh workspace"}</button></div>;}
 export default function DeveloperWorkspace({games,submissions,claims,diagnostics=[],diagnosticsReady=true,diagnosticsNotice,warnings=[],extras,feedbackCountsReady=true,showPlan=false}:{games:WorkspaceItem[];submissions:WorkspaceItem[];claims:WorkspaceItem[];diagnostics?:WorkspaceItem[];diagnosticsReady?:boolean;diagnosticsNotice?:ReactNode;warnings?:string[];extras?:ReactNode;feedbackCountsReady?:boolean;showPlan?:boolean}){
@@ -23,7 +23,8 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  const effectiveFilter=selection.tab==="diagnostics"&&!statusFilters.includes(selection.filter)?"All":selection.filter==="Current Hub feedback"&&!feedbackCountsReady?"All":selection.filter;
  const priority=(status:string)=>status==="Needs More Information"?0:status==="Pending Review"||status==="Pending"?1:status==="Approved"?2:status==="Rejected"?3:4;
  const visible=items.filter(item=>item.title.toLowerCase().includes(selection.search.trim().toLowerCase())&&(effectiveFilter==="All"||(effectiveFilter==="Active playtest"?item.active:effectiveFilter==="Current Hub feedback"?item.hasFeedback:item.status===effectiveFilter))).sort((a,b)=>selection.tab==="submissions"||selection.tab==="claims"?priority(a.status)-priority(b.status):0);
- const selected=visible.find(item=>item.id===selection.item)||visible[0];
+ // A claimed Steam game may have several relationship IDs collapsed into one card.
+ const selected=visible.find(item=>item.id===selection.item)||visible.find(item=>selection.campaign&&item.campaignIds?.includes(selection.campaign))||visible[0];
  const [scrollRequest,setScrollRequest]=useState<{id:string;tab:Tab;feedback:boolean}|null>(null);
  const handledScroll=useRef<typeof scrollRequest>(null);
  useEffect(()=>{
