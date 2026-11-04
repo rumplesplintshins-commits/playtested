@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { analyticsService } from "@/lib/admin-server";
 import { processScreenshot } from "@/lib/screenshot-processing";
 import { SCREENSHOT_BYTES } from "@/lib/game-screenshots";
+import { hasTrustedOrigin } from "@/lib/request-origin";
 
 type Context = { params: Promise<{ id: string; slot: string }> };
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -34,7 +35,7 @@ export async function GET(request: Request, context: Context) {
   return new Response(file.data, { headers: { ...headers, "Content-Type": "image/webp" } });
 }
 async function mutate(request: Request, context: Context, remove: boolean) {
-  if (request.headers.get("origin") !== new URL(request.url).origin) return reply("Same-origin request required.", 403);
+  if (!hasTrustedOrigin(request)) return reply("Same-origin request required.", 403);
   const { id, slot } = await context.params;
   if (!valid(id, slot)) return reply("Choose screenshot slot 1 to 5.", 400);
   const client = await createClient();
