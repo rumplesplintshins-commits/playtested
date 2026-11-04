@@ -26,7 +26,7 @@ export function analyticsAllowed() {
 }
 export function submissionAcquisition() {
   try {
-    if (!analyticsAllowed()) return {};
+    if (!analyticsAllowed() || navigator.doNotTrack === "1" || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl) return {};
     const session = JSON.parse(sessionStorage.getItem(analyticsSessionKey) || "null");
     if (!session || Date.now() - session.last > 30 * 60000) return {};
     return session.context || {};

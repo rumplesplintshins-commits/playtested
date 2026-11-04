@@ -12,7 +12,7 @@ import SubmissionCorrection from "../components/SubmissionCorrection";
 import {thumbnailExtension} from "@/lib/thumbnail";
 import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
 import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
-import {submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
+import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
 import SiteHeader from "../components/SiteHeader";
 
 import { createClient } from "../../lib/supabase";
@@ -1217,6 +1217,8 @@ export default function SubmitGamePage() {
 
     const formData = new FormData(form);
     if(imageUploading){setError("Wait for the thumbnail upload to finish before submitting.");return;}
+    const evidenceInput=String(formData.get("evidenceLink")||"").trim();
+    if(evidenceInput&&(evidenceInput.length>1000||!submissionHttpUrl(evidenceInput))){setError("Use a valid HTTP or HTTPS supporting-evidence link of at most 1000 characters.");return;}
     const footageInput=String(formData.get("gameplayVideo")||"").trim();
     if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
     const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()||null};
@@ -3904,9 +3906,9 @@ export default function SubmitGamePage() {
 
 
 
-            <button
+            <label className="block text-sm">Supporting evidence link (optional)<input name="evidenceLink" type="url" maxLength={1000} className={inputClass}/><span className="mt-2 block text-xs leading-5 text-zinc-400">A public process write-up, asset provenance or development notes can help explain your AI disclosure. No evidence link is required. This link may appear on your public listing: do not include secrets or private personal information.</span></label>
 
-              type="submit"
+            <button type="submit"
 
               disabled={
 
