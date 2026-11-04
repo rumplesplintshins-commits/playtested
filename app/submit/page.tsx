@@ -1160,6 +1160,21 @@ export default function SubmitGamePage() {
 
 
 
+  async function savePrivateContact(supabase: ReturnType<typeof createClient>, submissionId: string, developerId: string, formData: FormData): Promise<string | null> {
+    const email = String(formData.get("contactEmail") ?? "").trim();
+    const discord = String(formData.get("contactDiscord") ?? "").trim();
+    const reddit = String(formData.get("contactReddit") ?? "").trim();
+    const allowed = formData.get("contactAllowed") === "on";
+    if (!email && !discord && !reddit && !allowed) return null;
+    const { error } = await supabase.from("game_submission_contacts").upsert({
+      submission_id: submissionId, developer_id: developerId,
+      contact_email: email || null, contact_discord: discord || null,
+      contact_reddit: reddit || null, contact_allowed: allowed,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "submission_id" });
+    return error ? error.message : null;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
     event.preventDefault();
@@ -1847,6 +1862,11 @@ export default function SubmitGamePage() {
         let result=await client.from('game_submissions').insert({...draft,id,developer_id:user.id,status:'Pending Review'}).select('*').single();
         if(result.error?.code==='23505')result=await client.from('game_submissions').select('*').eq('id',id).eq('developer_id',user.id).single();
         if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
+        const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
+        if (contactError) {
+          setError("Your game was saved, but private contact details were not saved. Do not submit a duplicate. Check the Merge 24 database migration: " + contactError);
+          return;
+        }
         const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
         if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
         window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
@@ -1966,6 +1986,11 @@ export default function SubmitGamePage() {
 
 
 
+      const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
+      if (contactError) {
+        setError("Your game was saved, but private contact details were not saved. Do not submit a duplicate. Check the Merge 24 database migration: " + contactError);
+        return;
+      }
       if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
       setSavedSubmissionId(insertedSubmission.id);
@@ -3365,6 +3390,27 @@ export default function SubmitGamePage() {
               </label>
 
 
+
+              <fieldset className="rounded-xl border border-white/10 p-4 sm:p-5">
+                <legend className="px-2 text-sm font-semibold text-zinc-100">Private developer contact (optional)</legend>
+                <p className="mb-3 text-xs leading-5 text-zinc-400">These details are not displayed on your public game page. All fields are optional.</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className={labelClass}>Contact email
+                    <input type="email" name="contactEmail" maxLength={254} autoComplete="email" placeholder="developer@example.com" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>Discord username
+                    <input type="text" name="contactDiscord" maxLength={100} placeholder="Discord username" className={inputClass} />
+                  </label>
+                  <label className={labelClass}>Reddit username
+                    <input type="text" name="contactReddit" maxLength={100} placeholder="u/username" className={inputClass} />
+                  </label>
+                </div>
+                <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
+                  <input type="checkbox" name="contactAllowed" className="mt-1 accent-[#77f29b]" />
+                  <span>I'm happy for the Playtested operator to contact me about my game, submission or playtesting opportunities.</span>
+                </label>
+                <p className="mt-2 text-xs text-zinc-500">Optional permission; essential service messages about your submission are separate.</p>
+              </fieldset>
 
               <label className={labelClass}>
 
