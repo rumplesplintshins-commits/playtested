@@ -49,7 +49,7 @@ try{
     await page.getByLabel('Search submissions',{exact:true}).fill(original.title);
     await page.getByRole('button').filter({hasText:original.title}).first().click();
    }
-   const player=page.locator('section').filter({has:page.getByRole('heading',{name:'Gameplay footage (optional)',exact:true})}).last();
+   const player=page.locator('section').filter({has:page.getByRole('heading',{name:'Gameplay Footage',exact:true})}).last();
    const play=player.getByRole('button',{name:`Play ${video.provider} gameplay video`,exact:true});
    await expect(play).toBeVisible();await expect(player.locator('iframe')).toHaveCount(0);assert.equal(requests,0,'No provider connections before Play');
    const fallback=player.getByRole('link',{name:/Open video in new tab/});await expect(fallback).toHaveAttribute('href',video.url);await expect(fallback).toHaveAttribute('target','_blank');await expect(fallback).toHaveAttribute('rel','noopener noreferrer');

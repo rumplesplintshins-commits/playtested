@@ -1,4 +1,4 @@
-import GameplayFootage from "@/app/components/GameplayFootage";
+import GameMediaGallery from "@/app/components/GameMediaGallery";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -296,6 +296,8 @@ export default async function SubmissionPage({
 
   const {data:footage} = await supabase.from("gameplay_footage").select("video_url").eq("submission_id",id).maybeSingle();
 
+  const {data:screenshots} = await supabase.from("game_screenshots").select("slot,revision").eq("submission_id",id).order("slot");
+
   const statusStyle =
     isVerified
       ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
@@ -358,7 +360,7 @@ export default async function SubmissionPage({
           </div>
         </section>
 
-        {footage?.video_url&&<GameplayFootage url={footage.video_url}/>}
+        <GameMediaGallery id={id} videoUrl={footage?.video_url} screenshots={screenshots || []}/>
 
         {/* INTERACTIVE BUILD-SPECIFIC RECEPTION */}
         <CommunityReception

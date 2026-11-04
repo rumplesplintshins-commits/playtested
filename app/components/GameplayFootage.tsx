@@ -2,14 +2,14 @@
 import { useEffect, useState } from "react";
 import { gameplayVideo, type GameplayVideo } from "@/lib/gameplay-video";
 
-export default function GameplayFootage({ url }: { url: string }) {
+export default function GameplayFootage({ url, embedded = false }: { url: string; embedded?: boolean }) {
   const video = gameplayVideo(url);
-  if (!video) return <section className="my-5 rounded-xl border border-white/10 p-5"><h2 className="text-lg font-semibold">Gameplay footage (optional)</h2><p className="mt-2 text-sm text-zinc-400">Video unavailable: the supplied link is invalid or unsupported.</p></section>;
+  if (!video) return <section className="my-5 rounded-xl border border-white/10 p-5"><h2 className="text-lg font-semibold">Gameplay Footage</h2><p className="mt-2 text-sm text-zinc-400">Video unavailable: the supplied link is invalid or unsupported.</p></section>;
   // A different video must receive its own explicit loading choice.
-  return <GameplayPlayer key={video.embed} video={video} />;
+  return <GameplayPlayer key={video.embed} video={video} embedded={embedded} />;
 }
 
-function GameplayPlayer({ video }: { video: GameplayVideo }) {
+function GameplayPlayer({ video, embedded }: { video: GameplayVideo; embedded: boolean }) {
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [slow, setSlow] = useState(false);
   useEffect(() => {
@@ -18,8 +18,9 @@ function GameplayPlayer({ video }: { video: GameplayVideo }) {
     return () => window.clearTimeout(timer);
   }, [phase]);
   function play() { setSlow(false); setPhase("loading"); }
-  return <section className="my-5 min-w-0 rounded-xl border border-white/10 p-4 sm:p-5">
-    <h2 className="text-lg font-semibold">Gameplay footage (optional)</h2>
+  const Heading = embedded ? "h3" : "h2";
+  return <section className={embedded ? "min-w-0" : "my-5 min-w-0 rounded-xl border border-white/10 p-4 sm:p-5"}>
+    <Heading className="text-lg font-semibold">Gameplay Footage</Heading>
     <p className="mt-2 text-sm leading-6 text-zinc-400">Hosted by {video.provider}. Clicking Play loads its player and shares connection information with that provider under its privacy terms. Start playback in the player; videos do not autoplay.</p>
     <div className="relative mt-4 aspect-video w-full overflow-hidden rounded-xl border border-emerald-300/15 bg-[#0c120f]">
       {phase === "idle" ? <button type="button" aria-label={`Play ${video.provider} gameplay video`} onClick={play}

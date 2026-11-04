@@ -139,7 +139,7 @@ try{
   await formPage.locator('[name="discoverySource"]').selectOption('Reddit outreach');
   await formPage.locator('[name="evidenceLink"]').fill('https://example.test/process');
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF9sAAAAASUVORK5CYII=','base64');
-  await formPage.locator('input[type=file][accept="image/jpeg,image/png,image/webp"]').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:png});
+  await formPage.getByLabel('Upload game thumbnail',{exact:true}).setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:png});
   await expect(formPage.locator('[name="imageUrl"]')).toHaveValue(/game-thumbnails/,{timeout:30000});
   await formPage.getByRole('button',{name:'Submit application',exact:true}).click();
   await expect.poll(async()=>{const result=await service.from('game_submissions').select('id').eq('developer_id',fixtures.users.owner).eq('title',formTitle).maybeSingle();return result.data?.id||null;},{timeout:30000}).not.toBeNull();
@@ -174,7 +174,7 @@ try{
  assert.equal(must(await anon.from('gameplay_footage').select('video_url').eq('submission_id',id).single(),'Approved public video').video_url,'https://www.youtube.com/watch?v=abcdefghijk');
  const publicContext=await contextFor(null),gamePage=await publicContext.newPage();
  await gamePage.goto(`${origin}/submissions/${id}`);
- await expect(gamePage.getByRole('heading',{name:'Gameplay footage (optional)'})).toBeVisible({timeout:30000});
+ await expect(gamePage.getByRole('heading',{name:'Gameplay Footage'})).toBeVisible({timeout:30000});
  assert(!(await gamePage.content()).includes(contact.contact_email),'Private contact email must not enter HTML or RSC data');
  await expect(gamePage.locator('iframe')).toHaveCount(0);
  await publicContext.close();

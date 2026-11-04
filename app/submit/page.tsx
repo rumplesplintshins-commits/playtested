@@ -9,9 +9,11 @@ import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 
 import PulseAvailability from "../components/PulseAvailability";
 import SubmissionCorrection from "../components/SubmissionCorrection";
+import ScreenshotPicker from "../components/ScreenshotPicker";
+import {uploadScreenshot} from "../components/ScreenshotManager";
 import ContactEmailInput from "../components/ContactEmailInput";
 import {contactEmailError,normalizeContactEmail} from "@/lib/contact-email";
-import {thumbnailExtension} from "@/lib/thumbnail";
+import {isHostedThumbnail,thumbnailExtension} from "@/lib/thumbnail";
 import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
 import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
 import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
@@ -464,6 +466,8 @@ export default function SubmitGamePage() {
     useState<ImageStatus>("empty");
 
   const [imageUploading, setImageUploading] = useState(false);
+  const [screenshotFiles,setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotSelecting,setScreenshotSelecting] = useState(false);
   const [description, setDescription] = useState("");
   const [aiExplanation, setAiExplanation] = useState("");
 
@@ -1166,6 +1170,10 @@ export default function SubmitGamePage() {
 
 
   async function savePrivateContact(supabase: ReturnType<typeof createClient>, submissionId: string, developerId: string, formData: FormData): Promise<string | null> {
+    for(let i=0;i<screenshotFiles.length;i++){
+      try{await uploadScreenshot(submissionId,i+1,screenshotFiles[i]);}
+      catch{return "Some screenshots could not be saved. Open Game submissions to retry for the saved game.";}
+    }
     const footage = gameplayVideo(String(formData.get("gameplayVideo") || ""));
     if (footage) {
       const media = await supabase.from("gameplay_footage").upsert({submission_id:submissionId, video_url:footage.url});
@@ -1222,12 +1230,12 @@ export default function SubmitGamePage() {
     const formData = new FormData(form);
     const emailError = contactEmailError(String(formData.get("contactEmail") || ""));
     if(emailError){setError(emailError);return;}
-    if(imageUploading){setError("Wait for the thumbnail upload to finish before submitting.");return;}
+    if(imageUploading||screenshotSelecting){setError("Wait for the thumbnail upload to finish before submitting.");return;}
     const evidenceInput=String(formData.get("evidenceLink")||"").trim();
     if(evidenceInput&&(evidenceInput.length>1000||!submissionHttpUrl(evidenceInput))){setError("Use a valid HTTP or HTTPS supporting-evidence link of at most 1000 characters.");return;}
     const footageInput=String(formData.get("gameplayVideo")||"").trim();
     if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
-    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()||null};
+    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
 
 
 
@@ -1889,9 +1897,10 @@ export default function SubmitGamePage() {
         if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
         const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
         if (contactError) {
-          setError("Your game was saved, but private contact details were not saved. Do not submit a duplicate. Check the Merge 24 database migration: " + contactError);
+          setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
           return;
         }
+        setScreenshotFiles([]);
         const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
         if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
         window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
@@ -1955,7 +1964,7 @@ export default function SubmitGamePage() {
 
           ).trim(),
 
-          evidence_link: String(formData.get("evidenceLink") || "").trim() || null,
+          evidence_link: String(formData.get("evidenceLink") || "").trim(),
           status: "Pending Review",
 
         })
@@ -2014,11 +2023,12 @@ export default function SubmitGamePage() {
 
       const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
       if (contactError) {
-        setError("Your game was saved, but private contact details were not saved. Do not submit a duplicate. Check the Merge 24 database migration: " + contactError);
+        setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
         return;
       }
       if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
+      setScreenshotFiles([]);
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
       setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");form.reset();
@@ -3701,6 +3711,7 @@ export default function SubmitGamePage() {
 
 
               <div>
+                <ScreenshotPicker onChange={setScreenshotFiles} onBusyChange={setScreenshotSelecting} disabled={submitting}/>
                 <label className="mb-6 block text-sm">Gameplay footage (optional)<input type="url" name="gameplayVideo" maxLength={500} placeholder="https://www.youtube.com/watch?v=?" className={inputClass}/><span className="mt-2 block text-xs leading-5 text-zinc-400">{gameplayGuidance} This link appears on your approved public game page.</span></label>
                 <p className={labelClass}>Game thumbnail *</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-500">
@@ -3709,7 +3720,7 @@ export default function SubmitGamePage() {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
                   <label className={"inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-[#101311] px-4 py-3 text-sm font-semibold text-zinc-200 hover:border-[#77f29b]/50 " + (imageUploading ? "pointer-events-none opacity-60" : "")}>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
+                    <input type="file" aria-label="Upload game thumbnail" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={imageUploading} onChange={handleImageUpload} />
                     {imageUploading ? "Uploading..." : "Upload image"}
                   </label>
                   <span className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600 sm:text-left">or use an image URL</span>
@@ -3717,7 +3728,7 @@ export default function SubmitGamePage() {
 
                 <label htmlFor="imageUrl" className="mt-1 block">
                   <span className="sr-only">Game thumbnail image URL</span>
-                  <input id="imageUrl" name="imageUrl" type="url" value={imageUrl} onChange={handleImageChange} placeholder="https://example.com/game-cover.jpg" className={inputClass} />
+                  <input type="hidden" name="imageUrl" value={imageUrl}/><input id="imageUrl" type="url" value={isHostedThumbnail(imageUrl)?"":imageUrl} onChange={handleImageChange} placeholder="Or paste an external image URL" className={inputClass} />
                 </label>
 
                 {imageUrl && (
@@ -3727,6 +3738,7 @@ export default function SubmitGamePage() {
                     {imageStatus === "error" && <p className="text-sm text-red-300">Image failed to load. Check the URL or upload another image.</p>}
                     <img key={imageUrl} src={imageUrl} alt="Game thumbnail preview" className={"max-h-72 w-full rounded-lg object-contain " + (imageStatus === "error" ? "hidden" : "")} onLoad={() => setImageStatus("loaded")} onError={() => setImageStatus("error")} />
                     {imageStatus === "loaded" && <p className="mt-3 text-sm text-[#77f29b]">Image ready.</p>}
+                    {isHostedThumbnail(imageUrl)&&<button type="button" onClick={()=>{setImageUrl("");setImageStatus("empty");}} className="mt-3 text-sm text-zinc-300 underline">Clear thumbnail selection</button>}
                   </div>
                 )}
               </div>
@@ -3918,7 +3930,7 @@ export default function SubmitGamePage() {
 
               disabled={
 
-                submitting || imageUploading ||
+                submitting || imageUploading || screenshotSelecting ||
 
                 submittingClaim ||
 

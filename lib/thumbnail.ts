@@ -1,3 +1,10 @@
+export function isHostedThumbnail(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.origin === new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin && url.pathname.startsWith("/storage/v1/object/public/game-thumbnails/");
+  } catch { return false; }
+}
+
 export async function thumbnailExtension(file: File): Promise<"jpg" | "png" | "webp"> {
   if (!file.size || file.size > 5 * 1024 * 1024) throw new Error("Choose a non-empty image no larger than 5 MB.");
   const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
