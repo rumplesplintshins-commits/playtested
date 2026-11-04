@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const suites=[
+ ['pc',['tests/test-merge26-pc.mjs']],['pc-browser',['--env-file=.env.local','tests/test-merge26-pc-browser.mjs']],
+ ['48-hours',['tests/test-merge26-48-hours.mjs']],['feedback-approval',['tests/test-merge26-feedback-approval.mjs']],['bell-browser',['tests/test-merge26-bell-browser.mjs']],
+ ['steam-development',['--env-file=.env.local','tests/test-merge26-steam-development.mjs']],
+ ['steam-sql',['tests/test-merge26-steam-referrals.mjs']],['steam-routes',['tests/test-merge26-steam-routes.mjs']],['steam-browser',['tests/test-merge26-steam-browser.mjs']],
  ['core',['tests/test-merge26.mjs']],['identity',['tests/test-merge26-tester-identity.mjs']],['tester-analytics',['tests/test-merge26-tester-analytics.mjs']],
  ['availability',['tests/test-merge26-availability.mjs']],['concurrency',['tests/test-merge26-concurrency.mjs']],
  ['security',['tests/test-merge26-security.mjs']],['origins',['tests/test-proxy-origin.mjs']],['notifications',['tests/test-notification-routing.mjs']],

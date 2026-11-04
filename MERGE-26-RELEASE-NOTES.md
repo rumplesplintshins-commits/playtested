@@ -1,3 +1,61 @@
+# Merge 26 - final development release additions
+Final validation: **29 suite/check results Passed, 0 Failed**. Affected suites were rerun; prior passed unchanged scopes were retained rather than repeated. Catalogue: **198 cases; 160 automated criteria Passed; 38 manual/owner cases Not Run; 0 blocked automated cases**. TypeScript and final production build passed. Targeted lint checked 53 changed TypeScript files with no new error-rule counts against b7d8617; 22 existing errors remain in changed files (not a clean broad-lint claim). Mobile/CSS-150% browser automation passed; actual toolbar zoom/screen-reader and full hosted Steam manual walkthrough remain pending. Development postflight confirms 48-hour policy, private grants, stable identities and active availability/retention scheduling. No production access.
+
+
+Implemented additions:
+
+- Optional owner-private Account PC specifications, shared optional minimum/recommended game fields, canonical storage and atomic submission/edit RPCs. Public game requirements and private account comparison remain separate; no device inspection or compatibility certification. Existing Steam importer has no structured requirements mapping; none was invented.
+- New reservations use server-issued 48-hour deadlines. During actual development cutover one issued deadline and all unrelated policy fields were verified unchanged. Expiry preserves drafts and one-active/capacity rules.
+- Acceptance writes exactly one current-owner notification transactionally. Existing closed bell refreshes on visible-tab 15-second polling/focus/open, not an instantaneous push guarantee; hidden tabs do not poll.
+- Admin reviewed reports and Testing Activity share useful / not useful / not-yet-rated badges from community_game_tests.feedback_usefulness. Nothing new controls XP, admin scoring, rank or moderation.
+- Compact Testing Activity headers show genuine thumbnail/developer/title/status with image fallback, while existing submitted timestamp, quality/XP, feedback disclosure, review history and reconsideration remain. Private own-report media lookup resolves archived raw source metadata without changing public listing access. Missing/deleted data is not fabricated.
+- Validated direct new-tab storefront links: Steam, creator itch.io, GOG, Epic Games and Humble Store. Only the activity Steam control records a qualifying event. No title-generated URLs or analytics redirect.
+- Identity-free Steam click events use server-resolved source game UUID/type, tester_activity, per-click retry UUID and server time. No report/account/session/IP/user-agent/hardware fields are retained. Different deliberate activations count separately; a repeated event UUID is ignored.
+- Referral recording requires renewed explicit optional analytics permission for the new purpose; older general Allow does not silently enable it. Decline, withdrawal, expiry, DNT/GPC and service failure do not disable navigation. Server checks origin, current authentication, non-admin tester role and ownership of the historical report.
+- Admin-only Steam referrals on both admin screens aggregate retained last-90-day events server-side. KPIs remain independent of Top 10/25/50/All. All fetches bounded 100-game aggregate pages and uses a scrollable list; ties use stable kind and UUID. No raw event/person lists reach browsers.
+- A final PC authorization edge case was corrected in versioned migration 117: anonymous NULL auth cannot pass the closed/private campaign requirement guard. Public approved-source checks remain.
+
+Development migrations 113-119 are applied and postflight-verified. See the release notes for exact order and rollback considerations. Earlier 101-112 migrations remain preserved. Production requires separate review/backup/owner approval, notice/retention decisions and deployment authorization.
+
+Final automated evidence and the complete case catalogue are in docs/MERGE-26-AUTOMATED-RESULTS.json and MERGE-26-TEST-PLAN.md. Results include actual hosted development authorization/PC workflows, disposable database tests and mocked browser boundary fixtures, explicitly distinguished. Manual owner acceptance remains pending; passing tests do not establish legal compliance.
+
+---
+
+
+## Exact additional migration order and verification
+
+After preserved migrations 101-112, apply only after an independently approved future production-schema comparison:
+
+1. 202611040113_merge26_pc_specifications.sql - private account table/RLS, canonical game requirements, validated atomic creation/edit wrappers and safe bulk read. Verify owner save/clear, cross-account/public denial and public approved game fields.
+2. 202611040114_merge26_48_hour_reservations.sql - change only new-reservation policy default/window and named constraint. Capture issued deadlines and every policy field first; verify all existing timestamps and other fields are unchanged. Abort on an unexpected existing policy rather than overwriting production configuration.
+3. 202611040115_merge26_immediate_feedback_approval.sql - replace the existing notification generator, retaining its existing trigger/durable dedupe event. Verify one owner event, rollback and no rejection/submission alert.
+4. 202611040116_merge26_testing_activity_steam_referrals.sql - private own-history metadata helper, identity-free private event table, service-only writer/aggregation RPCs, and extension of the existing m24_analytics_retention function. Verify no public/raw-client grants, own-history access, admin-only HTTP reporting, valid Steam-only qualification and existing daily retention job. No new job or environment variable.
+5. 202611040117_merge26_closed_campaign_requirements_guard.sql - guarded fail-closed replacement of the nullable campaign permission predicate. Aborts if the reviewed preceding definition differs. Verify anonymous closed/private campaign returns no association/requirements.
+
+6. 202611040118_merge26_referral_snapshot_pagination.sql - pin an event-time reporting cutoff for All pages and use stable kind/UUID tie ordering. Counts cannot change between pages due to later events; current titles may update without changing tie order. Verify bounded page requests pass the same as_of and the window RPC remains service-only.
+
+7. 202611040119_merge26_expired_activity_referral_scope.sql - align event qualification with Testing Activity logical expiry: accept owned past-deadline drafts without rewriting their stored claimed/in_progress status; keep current active claims excluded. Verify both boundaries with the SQL suite.
+
+These have been applied ONLY to development ktifgybnkdaotdxrvjgq. Development has no migration-history table; version files and independent schema/privilege postflight provide the current evidence. Do not blindly replay on production or use development seed values. No production migration, schema comparison or backup operation is claimed in this follow-up.
+
+## Deployment prerequisites and rollback
+
+Owner localhost acceptance and privacy decisions must precede any production authorization. Confirm real production schema/dependencies and exact pending versions, obtain a fresh verified backup, preserve issued deadlines, Free/Pro configuration and live storage, then apply reviewed required migrations before application deployment. Verify the existing minute availability processor and daily analytics retention schedule separately. This document does not authorize production.
+
+For a code rollback, turn off optional recording by reverting the UI/API code; preserve the private event/requirements tables and genuine history. Do not drop records, clear tester-number tombstones, reset XP, delete audit records or shorten/extend already-issued reservations. If policy must return to 72 hours, use an explicitly reviewed forward correction of default/constraint/current window; never rewrite issued deadlines. Restore notification/retention functions from exact pre-release definitions only under an approved rollback plan, retaining the original two retention deletes and existing jobs. A database restore would overwrite live data and requires a separate recovery decision; it is not an automatic rollback step.
+
+Smoke-test future authorized deployment: Account optional PC save/clear/privacy; game optional requirements; old versus new deadlines; single developer approval bell; own archived tester history; usefulness versus unchanged XP; direct Steam/other-store navigation under refuse/allow/withdraw; admin-only Top 10/25/50/All; media/gallery/catalogue and previous notifications. Do not create unnecessary live test data.
+
+## Known limitations / owner decisions
+
+- No Steam page-load, purchase, conversion or revenue confirmation. Counts exclude unconsented/blocked/failed/admin/non-activity clicks. Repeated deliberate clicks may count more than one, and counts are a rolling 90-day retained window.
+- Game identity is source type plus stable game UUID (approved/submitted aliases share their original UUID). No title-based matching or inferred reassignment of a deleted/changed source. Missing titles display Game no longer available; no fabricated developer/artwork/storefront.
+- All uses a pinned event-time cutoff across bounded aggregate pages, with stable kind/UUID ties. Refresh for a newer snapshot. Retention and operator corrections remain normal data-lifecycle boundaries; no raw events reach the browser.
+- Client choice and request consent flag do not constitute a central identifiable consent ledger; privacy review explicitly leaves demonstrability/granularity/rights/provider decisions for owner/legal approval.
+- Owner manual tests, actual browser toolbar zoom/screen-reader walkthrough and full Steam end-to-end hosted acceptance remain Not Run. CSS zoom/mobile automation is evidence for layout, not a substitute for manual accessibility acceptance.
+
+## Earlier release history (superseded where noted above)
+
 # Merge 26 — release candidate for localhost acceptance
 
 **Status:** implemented and tested in development; owner manual acceptance and privacy/operational release approvals remain outstanding. **Production deployment is not authorised.** Branch: `feature/merge-26`, production baseline `b7d8617`, earlier protected checkpoint `b0f8b19`.

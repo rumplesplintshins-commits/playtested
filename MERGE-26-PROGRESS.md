@@ -1,3 +1,28 @@
+# Merge 26 - latest completed development follow-up
+Final validation: **29 suite/check results Passed, 0 Failed**. Affected suites were rerun; prior passed unchanged scopes were retained rather than repeated. Catalogue: **198 cases; 160 automated criteria Passed; 38 manual/owner cases Not Run; 0 blocked automated cases**. TypeScript and final production build passed. Targeted lint checked 53 changed TypeScript files with no new error-rule counts against b7d8617; 22 existing errors remain in changed files (not a clean broad-lint claim). Mobile/CSS-150% browser automation passed; actual toolbar zoom/screen-reader and full hosted Steam manual walkthrough remain pending. Development postflight confirms 48-hour policy, private grants, stable identities and active availability/retention scheduling. No production access.
+
+
+This section supersedes earlier checkpoint counts below. Work remains on feature/merge-26. Protected checkpoints: e0e7901 (earlier completed implementation), c3c0e9c (PC), ca8e703 (48-hour reservations/approval bell); eeda886 implements the follow-up; final expiry/docs commits are listed by Git. No branch reset, production access, v11 merge or Render deployment occurred.
+
+Implemented additions:
+
+- Optional owner-private Account PC specifications, shared optional minimum/recommended game fields, canonical storage and atomic submission/edit RPCs. Public game requirements and private account comparison remain separate; no device inspection or compatibility certification. Existing Steam importer has no structured requirements mapping; none was invented.
+- New reservations use server-issued 48-hour deadlines. During actual development cutover one issued deadline and all unrelated policy fields were verified unchanged. Expiry preserves drafts and one-active/capacity rules.
+- Acceptance writes exactly one current-owner notification transactionally. Existing closed bell refreshes on visible-tab 15-second polling/focus/open, not an instantaneous push guarantee; hidden tabs do not poll.
+- Admin reviewed reports and Testing Activity share useful / not useful / not-yet-rated badges from community_game_tests.feedback_usefulness. Nothing new controls XP, admin scoring, rank or moderation.
+- Compact Testing Activity headers show genuine thumbnail/developer/title/status with image fallback, while existing submitted timestamp, quality/XP, feedback disclosure, review history and reconsideration remain. Private own-report media lookup resolves archived raw source metadata without changing public listing access. Missing/deleted data is not fabricated.
+- Validated direct new-tab storefront links: Steam, creator itch.io, GOG, Epic Games and Humble Store. Only the activity Steam control records a qualifying event. No title-generated URLs or analytics redirect.
+- Identity-free Steam click events use server-resolved source game UUID/type, tester_activity, per-click retry UUID and server time. No report/account/session/IP/user-agent/hardware fields are retained. Different deliberate activations count separately; a repeated event UUID is ignored.
+- Referral recording requires renewed explicit optional analytics permission for the new purpose; older general Allow does not silently enable it. Decline, withdrawal, expiry, DNT/GPC and service failure do not disable navigation. Server checks origin, current authentication, non-admin tester role and ownership of the historical report.
+- Admin-only Steam referrals on both admin screens aggregate retained last-90-day events server-side. KPIs remain independent of Top 10/25/50/All. All fetches bounded 100-game aggregate pages and uses a scrollable list; ties use stable kind and UUID. No raw event/person lists reach browsers.
+- A final PC authorization edge case was corrected in versioned migration 117: anonymous NULL auth cannot pass the closed/private campaign requirement guard. Public approved-source checks remain.
+
+Development migrations 113-119 are applied and postflight-verified. See the release notes for exact order and rollback considerations. Earlier 101-112 migrations remain preserved. Production requires separate review/backup/owner approval, notice/retention decisions and deployment authorization.
+
+Final automated evidence and the complete case catalogue are in docs/MERGE-26-AUTOMATED-RESULTS.json and MERGE-26-TEST-PLAN.md. Results include actual hosted development authorization/PC workflows, disposable database tests and mocked browser boundary fixtures, explicitly distinguished. Manual owner acceptance remains pending; passing tests do not establish legal compliance.
+
+---
+
 ## PC / 48-hour continuation ? current stage
 
 Starting HEAD was e0e7901; earlier work is preserved. Development migrations 113 (private optional account PC details and canonical game requirements), 114 (new 48-hour reservations) and 115 (immediate transactional approval notifications) are applied. One already-issued development deadline and every other testing policy field were independently verified unchanged during cutover. PC SQL/privacy/rollback and real development browser workflows passed, including optional submission/editing, private comparison, clear/failure states and mobile/150%. Notification polling/browser validation, final evidence/docs refresh and commit stages are being completed. The subsequent Testing Activity / usefulness / Steam-referral request is queued until this continuation is checkpointed. Production remains untouched.

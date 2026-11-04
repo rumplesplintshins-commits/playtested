@@ -1,17 +1,17 @@
 # Merge 26 complete test catalogue
 
-Evidence snapshot: 2026-11-04T21:37:16.685Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
+Evidence snapshot: 2026-11-04T23:01:26.511Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
 
 ## Execution summary
 
 | Measure | Actual count |
 |---|---:|
-| Total catalogue cases | 95 |
-| Automated cases passed | 67 |
+| Total catalogue cases | 198 |
+| Automated cases passed | 160 |
 | Automated cases failed | 0 |
-| Manual owner acceptance cases pending | 28 |
+| Manual owner acceptance cases pending | 38 |
 | Blocked/unexecuted automated cases | 0 |
-| Executed suites/checks passed | 20 |
+| Executed suites/checks passed | 29 |
 | Executed suites/checks failed | 0 |
 | Observed critical technical failures | 0 |
 | Observed high technical failures | 0 |
@@ -35,6 +35,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -53,6 +54,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -71,6 +73,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -89,6 +92,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-concurrency.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -107,6 +111,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -125,6 +130,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -143,6 +149,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -161,6 +168,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -179,6 +187,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-label-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -197,6 +206,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester identity
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-label-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -215,6 +225,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -233,6 +244,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-submission-corrections.mjs --listings`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -251,6 +263,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -269,6 +282,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -287,6 +301,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-notification-routing.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -305,6 +320,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-testing-policy.mjs --graded-quality`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -323,6 +339,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -341,6 +358,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -359,6 +377,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -377,6 +396,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -395,6 +415,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -413,6 +434,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -431,6 +453,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -449,6 +472,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -467,6 +491,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -485,6 +510,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-release-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -503,6 +529,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -521,6 +548,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -539,6 +567,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -557,6 +586,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -575,6 +605,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -593,6 +624,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -611,6 +643,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -629,6 +662,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-concurrency.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -647,6 +681,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-concurrency.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -665,6 +700,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -683,6 +719,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -701,6 +738,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -719,6 +757,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -737,6 +776,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-release-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -755,6 +795,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -773,6 +814,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -791,6 +833,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -809,6 +852,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -827,6 +871,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -845,6 +890,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -863,6 +909,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -881,6 +928,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -899,6 +947,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -917,6 +966,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-notification-routing.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -935,6 +985,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-build-results-selection.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -953,6 +1004,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -971,6 +1023,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Earlier Merge 26
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-developer-workspace.mjs --server-only`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -989,6 +1042,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** UI and accessibility
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-label-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1007,6 +1061,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** UI and accessibility
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-label-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1025,6 +1080,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** UI and accessibility
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-release-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1043,6 +1099,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** UI and accessibility
 - **Priority:** High
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1061,6 +1118,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1079,6 +1137,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-security.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1097,6 +1156,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-proxy-origin.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1115,6 +1175,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1133,6 +1194,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1151,6 +1213,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Privacy and security
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1169,6 +1232,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Release readiness
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node node_modules/typescript/bin/tsc --noEmit`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1187,6 +1251,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Release readiness
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node node_modules/next/dist/bin/next build`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1205,6 +1270,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Release readiness
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-lint-baseline.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1223,6 +1289,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Feature area:** Release readiness
 - **Priority:** Critical
 - **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
 - **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
 - **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-development-postflight.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
 - **Steps:**
@@ -1235,6 +1302,1773 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Evidence:** `technical-test-results/m26-final/development-postflight.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
 - **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
 
+### M26-FU-F01 — Focused regressions
+
+- **Test ID:** M26-FU-F01
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Private PC account save/clear/comparison remains operational.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F02 — Focused regressions
+
+- **Test ID:** M26-FU-F02
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Optional game minimum/recommended requirements and public/private permissions remain intact.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F03 — Focused regressions
+
+- **Test ID:** M26-FU-F03
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-48-hours.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-48-hours.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** New 48-hour reservation deadlines and grandfathered issued timestamps remain correct.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/48-hours.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F04 — Focused regressions
+
+- **Test ID:** M26-FU-F04
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-48-hours.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-48-hours.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Server expiry retains drafts and frees capacity correctly.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/48-hours.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F05 — Focused regressions
+
+- **Test ID:** M26-FU-F05
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-availability.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-availability.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Tester availability notifications preserve opt-in and deduplication.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/availability.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F06 — Focused regressions
+
+- **Test ID:** M26-FU-F06
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-feedback-approval.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-feedback-approval.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Owner developer approval notifications preserve routing and transaction guarantees.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/feedback-approval.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F07 — Focused regressions
+
+- **Test ID:** M26-FU-F07
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-identity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-tester-identity.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Tester public numbers/current rank assertions remain passed from the prior unchanged identity scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/identity.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F08 — Focused regressions
+
+- **Test ID:** M26-FU-F08
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-tester-analytics.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-tester-analytics.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing Admin Tester Analytics assertions remain passed from the prior unchanged aggregation scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/tester-analytics.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F09 — Focused regressions
+
+- **Test ID:** M26-FU-F09
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing acquisition/cohort assertions remain passed from the prior unchanged report scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/core.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F10 — Focused regressions
+
+- **Test ID:** M26-FU-F10
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing Featured catalogue sort/filter/page assertions remain passed from the prior unchanged catalogue scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/core.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F11 — Focused regressions
+
+- **Test ID:** M26-FU-F11
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-submission-corrections.mjs --listings`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-submission-corrections.mjs --listings`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing developer listing edit/reassessment assertions remain passed from the prior unchanged listing RPC scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/listings.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F12 — Focused regressions
+
+- **Test ID:** M26-FU-F12
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-testing-policy.mjs --graded-quality`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-testing-policy.mjs --graded-quality`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Graded XP, quality moderation and reconsideration audit tests pass.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/xp-quality.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F13 — Focused regressions
+
+- **Test ID:** M26-FU-F13
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-bell-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-bell-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing bell counts/read actions and visible/focus refresh remain operational.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/bell-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-F14 — Focused regressions
+
+- **Test ID:** M26-FU-F14
+- **Feature area:** Focused regressions
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Optional analytics refusal/withdrawal/purpose renewal and server consent/privacy controls remain enforced.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A01 — Developer usefulness
+
+- **Test ID:** M26-FU-A01
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Admin reviewed cards render Developer marked useful with shared green badge.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A02 — Developer usefulness
+
+- **Test ID:** M26-FU-A02
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Admin reviewed cards render Developer marked not useful with distinct muted styling.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A03 — Developer usefulness
+
+- **Test ID:** M26-FU-A03
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Admin reviewed cards render null assessments as Not yet rated by developer.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A04 — Developer usefulness
+
+- **Test ID:** M26-FU-A04
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual Admin Review and Testing Activity header components use identical three-state semantics.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A05 — Developer usefulness
+
+- **Test ID:** M26-FU-A05
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** The existing owner usefulness RPC does not change the 80 XP award.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A06 — Developer usefulness
+
+- **Test ID:** M26-FU-A06
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** The existing owner usefulness RPC does not change accepted moderation outcome.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-A07 — Developer usefulness
+
+- **Test ID:** M26-FU-A07
+- **Feature area:** Developer usefulness
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Legacy reviewed card with missing usefulness renders neutral without inventing assessment.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B01 — Testing Activity history
+
+- **Test ID:** M26-FU-B01
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Own active-game metadata returns the actual image URL.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B02 — Testing Activity history
+
+- **Test ID:** M26-FU-B02
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Own archived-game artwork remains available through restricted own-report lookup.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B03 — Testing Activity history
+
+- **Test ID:** M26-FU-B03
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Missing and failed artwork show graceful fallback, including failure before hydration.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B04 — Testing Activity history
+
+- **Test ID:** M26-FU-B04
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Original developer_name is returned rather than fabricated from the tester profile.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B06 — Testing Activity history
+
+- **Test ID:** M26-FU-B06
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Compact actual history header shows Accepted separately from developer usefulness.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B08 — Testing Activity history
+
+- **Test ID:** M26-FU-B08
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** All three developer assessment values display correctly in history header.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B11 — Testing Activity history
+
+- **Test ID:** M26-FU-B11
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual shared history/header/referral components fit 390px viewport without page overflow.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B12 — Testing Activity history
+
+- **Test ID:** M26-FU-B12
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual components fit 150% CSS zoom without horizontal page overflow; browser toolbar zoom remains manual.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-B14 — Testing Activity history
+
+- **Test ID:** M26-FU-B14
+- **Feature area:** Testing Activity history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-steam-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-steam-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Hosted own-history metadata contains only reports belonging to the signed-in development tester.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C01 — Storefront links
+
+- **Test ID:** M26-FU-C01
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** A valid saved numeric Steam app URL labels View Steam Page.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C02 — Storefront links
+
+- **Test ID:** M26-FU-C02
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** A valid creator.itch.io game URL labels View itch.io page, never Steam.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C03 — Storefront links
+
+- **Test ID:** M26-FU-C03
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Missing destination is rejected by the link helper.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C04 — Storefront links
+
+- **Test ID:** M26-FU-C04
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Arbitrary hosts, malformed URLs, credentials and unexpected ports are rejected.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C05 — Storefront links
+
+- **Test ID:** M26-FU-C05
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** javascript, data and insecure http destinations are rejected.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C06 — Storefront links
+
+- **Test ID:** M26-FU-C06
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real link activation opens the exact destination in a new tab (destination network mocked).
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C07 — Storefront links
+
+- **Test ID:** M26-FU-C07
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** New tab navigation preserves existing Results selector state in the original page.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C08 — Storefront links
+
+- **Test ID:** M26-FU-C08
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Archived own-history metadata retains the original valid store URL.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-C09 — Storefront links
+
+- **Test ID:** M26-FU-C09
+- **Feature area:** Storefront links
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** No helper derives a store URL from a game title; unsupported destinations return null.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D01 — Steam recording
+
+- **Test ID:** M26-FU-D01
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** One deliberate primary click submits one event; no render/prefetch submission.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D02 — Steam recording
+
+- **Test ID:** M26-FU-D02
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Event uses the actual source game UUID and kind resolved from the owned report.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D03 — Steam recording
+
+- **Test ID:** M26-FU-D03
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Stored source is exactly tester_activity.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D04 — Steam recording
+
+- **Test ID:** M26-FU-D04
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Catalogue/Home does not mount the activity tracking link.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D05 — Steam recording
+
+- **Test ID:** M26-FU-D05
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-routes.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-routes.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Game details do not mount the activity tracking link.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-routes.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D06 — Steam recording
+
+- **Test ID:** M26-FU-D06
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-steam-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-steam-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real admin-originated recording is rejected; no admin UI tracking link exists.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D07 — Steam recording
+
+- **Test ID:** M26-FU-D07
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** itch.io activation opens normally without a Steam analytics request.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D08 — Steam recording
+
+- **Test ID:** M26-FU-D08
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Rendering and opening the fixture do not record clicks.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D09 — Steam recording
+
+- **Test ID:** M26-FU-D09
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Retrying the same event UUID produces one event; a separate UUID counts separately.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D10 — Steam recording
+
+- **Test ID:** M26-FU-D10
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Repeated deliberate primary activations generate distinct event IDs.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D11 — Steam recording
+
+- **Test ID:** M26-FU-D11
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Network failure of analytics never blocks direct external navigation.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D12 — Steam recording
+
+- **Test ID:** M26-FU-D12
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** No choice, refusal and old general permission suppress recording; Steam still opens.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D13 — Steam recording
+
+- **Test ID:** M26-FU-D13
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Withdrawal suppresses future recording without disabling Steam links.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D14 — Steam recording
+
+- **Test ID:** M26-FU-D14
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Event schema has only event UUID, game UUID/type, constant source and server time; no personal/session fields.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D16 — Steam recording
+
+- **Test ID:** M26-FU-D16
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Server-derived expired own reservations qualify from Testing Activity without changing stored drafts; current active claims remain excluded.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-D15 — Steam recording
+
+- **Test ID:** M26-FU-D15
+- **Feature area:** Steam recording
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Archiving and renaming preserve game attribution and counts.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E01 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E01
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Total qualifying clicks matches seeded SQL events.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E02 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E02
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Distinct games counts game ID/type groups, not report rows.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E03 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E03
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** All per-game counts sum exactly to overview total.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E04 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E04
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Two-click game precedes one-click games.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E05 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E05
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Equal counts sort deterministically by stable kind/ID, unaffected by title changes.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E06 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E06
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Top 10 displays at most 10 games.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E07 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E07
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Top 25 displays at most 25 games.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E08 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E08
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Top 50 displays at most 50 games.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E09 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E09
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** All loads 142 aggregate game rows across bounded 100-row requests.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E10 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E10
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Selector changes do not change overview totals.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E11 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E11
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Footer reports actual displayed/total game counts.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E12 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E12
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** A one-game dataset returns one result for Top 10.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E13 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E13
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Empty results have useful consent-aware wording and Showing 0 of 0 games.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E14 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E14
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** 142-game All list is height-limited and uses aggregate pagination, not raw event history.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E15 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E15
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Collapse/reopen retains All selection and fetched list.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E16 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E16
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Results UI works at mobile width and 150% CSS zoom.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E17 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E17
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-steam-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-steam-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real anonymous/tester HTTP access is denied and administrator aggregate HTTP access succeeds.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E18 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E18
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-steam-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-steam-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Admin payload contains aggregate games/counts, not tester account IDs.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E19 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E19
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Archived games retain recorded click totals.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E21 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E21
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Pinned aggregate cutoff excludes later events so All pages keep stable counts while new clicks arrive.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FU-E20 — Admin Steam referrals
+
+- **Test ID:** M26-FU-E20
+- **Feature area:** Admin Steam referrals
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Source/view joins do not multiply counts; overview and per-game totals reconcile.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-009 — Game requirements
+
+- **Test ID:** M26-PC-009
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Anonymous closed/private campaign references fail closed despite NULL auth.uid; approved source checks remain.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-001 — Private PC details
+
+- **Test ID:** M26-PC-001
+- **Feature area:** Private PC details
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Whitelist, numeric bounds, allowed optional fields and forbidden identifier keys validate in JS and SQL.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-002 — Private PC details
+
+- **Test ID:** M26-PC-002
+- **Feature area:** Private PC details
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Owner-only RLS supports save/edit/clear and denies cross-account/anonymous access.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-003 — Game requirements
+
+- **Test ID:** M26-PC-003
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Canonical submitted/approved game requirements share one record and never reveal account specs.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-004 — Game requirements
+
+- **Test ID:** M26-PC-004
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Atomic submission create retries are idempotent and transaction failures roll back game/requirements together.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-005 — Game requirements
+
+- **Test ID:** M26-PC-005
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Private/pending/archived listing permissions and public min/recommended-only/removal states are preserved.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-006 — Private PC details
+
+- **Test ID:** M26-PC-006
+- **Feature area:** Private PC details
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real development Account save, invalid-save retention, clear and cross-account privacy pass.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-007 — Game requirements
+
+- **Test ID:** M26-PC-007
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual submit/edit/public requirement and private comparison workflows pass without AI reassessment changes.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PC-008 — Game requirements
+
+- **Test ID:** M26-PC-008
+- **Feature area:** Game requirements
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual shared requirement fields/disclosures work at mobile width and 150% CSS zoom.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-RS-001 — 48-hour reservations
+
+- **Test ID:** M26-RS-001
+- **Feature area:** 48-hour reservations
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-48-hours.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-48-hours.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** New claims receive exact server-issued 48-hour deadlines.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/48-hours.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-RS-002 — 48-hour reservations
+
+- **Test ID:** M26-RS-002
+- **Feature area:** 48-hour reservations
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-48-hours.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-48-hours.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Issued 72-hour deadlines and unrelated capacity/policy values survive cutover.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/48-hours.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-RS-003 — 48-hour reservations
+
+- **Test ID:** M26-RS-003
+- **Feature area:** 48-hour reservations
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-48-hours.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-48-hours.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Boundary expiry releases capacity once and retains drafts; future/extended deadlines remain active.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/48-hours.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-RS-004 — 48-hour reservations
+
+- **Test ID:** M26-RS-004
+- **Feature area:** 48-hour reservations
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-concurrency.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-concurrency.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** One-active and last-place exclusivity survive concurrent requests.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/concurrency.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-NT-001 — Approval notifications
+
+- **Test ID:** M26-NT-001
+- **Feature area:** Approval notifications
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-feedback-approval.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-feedback-approval.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Acceptance persists an owner-only correctly titled/build-linked event in the same transaction.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/feedback-approval.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-NT-002 — Approval notifications
+
+- **Test ID:** M26-NT-002
+- **Feature area:** Approval notifications
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-feedback-approval.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-feedback-approval.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Rollback, submission, rejection, duplicate approval and former-owner situations do not produce an extra alert.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/feedback-approval.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-NT-003 — Approval notifications
+
+- **Test ID:** M26-NT-003
+- **Feature area:** Approval notifications
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-feedback-approval.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-feedback-approval.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Recipient-only read/unread and permissions remain; no tester UUID or private admin notes in message.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/feedback-approval.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-NT-004 — Approval notifications
+
+- **Test ID:** M26-NT-004
+- **Feature area:** Approval notifications
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-bell-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-bell-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Closed visible bell polls at 15 seconds, pauses hidden, refreshes focus/open and preserves mark-all-read.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/bell-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
 ## Manual owner acceptance catalogue
 
 Every case below remains Not Run by the owner in this release record. Browser automation is recorded separately above.
@@ -1245,6 +3079,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Environment
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** All roles
 - **Preconditions:** Localhost connected to development; role: **All roles**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1265,6 +3100,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Public identities
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Tester, then admin, then signed-out visitor
 - **Preconditions:** Localhost connected to development; role: **Tester, then admin, then signed-out visitor**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1285,6 +3121,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Public identities
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Same QA tester and visitor
 - **Preconditions:** Localhost connected to development; role: **Same QA tester and visitor**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1305,6 +3142,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Admin review
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator
 - **Preconditions:** Localhost connected to development; role: **Administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1325,6 +3163,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator
 - **Preconditions:** Localhost connected to development; role: **Administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1345,6 +3184,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Tester analytics
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Ordinary developer and signed-out visitor
 - **Preconditions:** Localhost connected to development; role: **Ordinary developer and signed-out visitor**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1365,6 +3205,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Tester without an active reservation
 - **Preconditions:** Localhost connected to development; role: **Tester without an active reservation**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1385,6 +3226,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Waiting tester
 - **Preconditions:** Localhost connected to development; role: **Waiting tester**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1405,6 +3247,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Availability
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Two separate QA testers
 - **Preconditions:** Localhost connected to development; role: **Two separate QA testers**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1425,6 +3268,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Availability expiry
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Local operator
 - **Preconditions:** Localhost connected to development; role: **Local operator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1432,7 +3276,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
   2. Run node tests/test-merge26-availability.mjs from the repository terminal.
   3. Read the server-time expiry/future-deadline assertions.
   4. Run node tests/test-merge26-development-postflight.mjs and confirm the development job is active/succeeded.
-- **Expected result:** Controlled expired fixtures alert once without 72 real hours; future/extended deadlines are not expired; no real QA deadline was edited.
+- **Expected result:** Controlled expired fixtures alert once without 48 real hours; future/extended deadlines are not expired; no real QA deadline was edited.
 - **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
 - **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
 - **Status:** Not Run
@@ -1445,6 +3289,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Availability capacity
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Local operator
 - **Preconditions:** Localhost connected to development; role: **Local operator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1465,6 +3310,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Catalogue
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Signed-out visitor
 - **Preconditions:** Localhost connected to development; role: **Signed-out visitor**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1485,6 +3331,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Developer saves
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Owning developer
 - **Preconditions:** Localhost connected to development; role: **Owning developer**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1505,6 +3352,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Developer failed save
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Owning developer
 - **Preconditions:** Localhost connected to development; role: **Owning developer**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1525,6 +3373,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Archive/restore
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Owning developer and signed-out visitor
 - **Preconditions:** Localhost connected to development; role: **Owning developer and signed-out visitor**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1545,6 +3394,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Eligible deletion
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Developer
 - **Preconditions:** Localhost connected to development; role: **Developer**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1565,6 +3415,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Admin Test/Demo
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator and ordinary tester
 - **Preconditions:** Localhost connected to development; role: **Administrator and ordinary tester**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1585,6 +3436,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Admin ordering
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator
 - **Preconditions:** Localhost connected to development; role: **Administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1605,6 +3457,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Reassessment
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Owning QA developer and administrator
 - **Preconditions:** Localhost connected to development; role: **Owning QA developer and administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1625,6 +3478,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Existing developer alerts
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** QA tester, admin, owning developer
 - **Preconditions:** Localhost connected to development; role: **QA tester, admin, owning developer**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1645,6 +3499,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Analytics consent
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Signed-out visitor and administrator
 - **Preconditions:** Localhost connected to development; role: **Signed-out visitor and administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1665,6 +3520,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Acquisition
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator
 - **Preconditions:** Localhost connected to development; role: **Administrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1685,6 +3541,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Disclosure accessibility
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Any appropriate role
 - **Preconditions:** Localhost connected to development; role: **Any appropriate role**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1705,6 +3562,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Screen reader
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Administrator or tester with Windows Narrator
 - **Preconditions:** Localhost connected to development; role: **Administrator or tester with Windows Narrator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1725,6 +3583,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Mobile/zoom
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Developer, tester and admin
 - **Preconditions:** Localhost connected to development; role: **Developer, tester and admin**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1745,6 +3604,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Reduced motion
 - **Priority:** High
 - **Test type:** Manual
+- **Required role:** Any role
 - **Preconditions:** Localhost connected to development; role: **Any role**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1765,6 +3625,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Rights and privacy approval
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Owner/legal reviewer
 - **Preconditions:** Localhost connected to development; role: **Owner/legal reviewer**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1785,6 +3646,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Feature area:** Production release gate
 - **Priority:** Critical
 - **Test type:** Manual
+- **Required role:** Owner/release operator
 - **Preconditions:** Localhost connected to development; role: **Owner/release operator**. Use separate browser profiles for different accounts.
 - **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
 - **Steps:**
@@ -1799,6 +3661,215 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
 - **Cleanup:** No production action is authorised by this test plan.
 
+### M26-FU-A08 — Developer usefulness permissions
+
+- **Test ID:** M26-FU-A08
+- **Feature area:** Developer usefulness permissions
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Anonymous and ordinary developer
+- **Preconditions:** Localhost connected to development; role: **Anonymous and ordinary developer**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/admin/submissions?tab=playtests`.
+  2. Attempt to open feedback review signed out.
+  3. Sign in as an unrelated developer and repeat; inspect get_quality_review_queue network response.
+- **Expected result:** No private review report or assessment is exposed; server rejects non-admin.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Sign out; do not modify records.
+
+### M26-FU-B05 — Testing Activity timestamp
+
+- **Test ID:** M26-FU-B05
+- **Feature area:** Testing Activity timestamp
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester with dedicated submitted QA report
+- **Preconditions:** Localhost connected to development; role: **Tester with dedicated submitted QA report**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Open Testing activity.
+  3. Compare the Submitted date/time with that report submitted_at using authorised development inspection; note browser timezone.
+- **Expected result:** Timestamp corresponds to the actual submission, not reservation creation or an invented date.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Read-only; leave report unchanged.
+
+### M26-FU-B07 — Testing Activity XP
+
+- **Test ID:** M26-FU-B07
+- **Feature area:** Testing Activity XP
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester with dedicated reviewed QA report
+- **Preconditions:** Localhost connected to development; role: **Tester with dedicated reviewed QA report**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Open Testing activity.
+  3. Compare the existing quality/XP label with the actual review and XP history.
+  4. Confirm developer usefulness does not replace the admin outcome.
+- **Expected result:** The genuine current award and legacy missing-score explanation are preserved.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Read-only; do not change XP.
+
+### M26-FU-B09 — Feedback disclosure
+
+- **Test ID:** M26-FU-B09
+- **Feature area:** Feedback disclosure
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester with dedicated submitted QA report
+- **Preconditions:** Localhost connected to development; role: **Tester with dedicated submitted QA report**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Open Testing activity.
+  3. Expand View my submitted feedback, inspect all answers and collapse/reopen.
+  4. Verify the answers match your original report.
+- **Expected result:** Existing feedback disclosure remains readable and complete.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Read-only; leave history untouched.
+
+### M26-FU-B10 — Reconsideration controls
+
+- **Test ID:** M26-FU-B10
+- **Feature area:** Reconsideration controls
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester with eligible rejected or partial-award QA report
+- **Preconditions:** Localhost connected to development; role: **Tester with eligible rejected or partial-award QA report**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Open Testing activity and the eligible report.
+  3. Open reconsideration, enter a dedicated QA explanation and submit once.
+  4. As administrator inspect the audit history; do not alter a genuine report.
+- **Expected result:** Eligibility and existing audit trail remain; duplicate pending reconsiderations are rejected.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Retain intentional QA moderation history; close only the dedicated QA request with a reason if authorised.
+
+### M26-FU-B13 — History accessibility
+
+- **Test ID:** M26-FU-B13
+- **Feature area:** History accessibility
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester and administrator
+- **Preconditions:** Localhost connected to development; role: **Tester and administrator**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Use Tab/Shift+Tab and Enter/Space through history disclosures, store link and Results selector.
+  3. Use Narrator or another screen reader to inspect title, statuses, image fallback and external-link announcement.
+  4. Repeat at 150% browser toolbar zoom and 390px mobile emulation.
+- **Expected result:** Logical focus order, meaningful labels and no page-wide overflow; all controls operable.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Reset zoom/emulation; no writes.
+
+### M26-FU-M01 — Full Steam acceptance
+
+- **Test ID:** M26-FU-M01
+- **Feature area:** Full Steam acceptance
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester then administrator
+- **Preconditions:** Localhost connected to development; role: **Tester then administrator**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Create a dedicated development-only Steam-linked QA submission/campaign using the fixture instructions below; submit your own QA report normally.
+  3. Renew Allow optional analytics after reading the new purpose, then activate View Steam Page once.
+  4. In a separate admin profile open Steam referrals, check the correct title/count and Top 10/25/50/All.
+  5. Reject analytics and click again; confirm store still opens and total does not increase.
+- **Expected result:** One recorded qualifying click; refusal/withdrawal does not block navigation or create a new event; no other links count.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Remove only exact dedicated QA event IDs through an authorised development operator if available; otherwise allow 90-day expiry. Preserve reports, XP and audit history.
+
+### M26-PC-M01 — PC manual acceptance
+
+- **Test ID:** M26-PC-M01
+- **Feature area:** PC manual acceptance
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Signed-in account owner and developer
+- **Preconditions:** Localhost connected to development; role: **Signed-in account owner and developer**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/account#pc-specifications`.
+  2. Save optional model names and RAM, collapse/reopen and navigate away with an unsaved edit.
+  3. Clear after confirmation; verify private values never appear on public profiles.
+  4. Edit a dedicated game minimum/recommended field, save and compare in Tester Hub beside your own private specs.
+- **Expected result:** Optional fields preserve edits and show manual comparison only; public game specs do not include private account values.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Restore original game fields and clear only your QA account specs.
+
+### M26-RS-M01 — Reservation manual acceptance
+
+- **Test ID:** M26-RS-M01
+- **Feature area:** Reservation manual acceptance
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester with no active reservation
+- **Preconditions:** Localhost connected to development; role: **Tester with no active reservation**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Claim a free dedicated QA place.
+  3. Check the displayed deadline and compare with server-issued timestamps.
+  4. Release only your dedicated test; use tests/test-merge26-48-hours.mjs for controlled expiry rather than waiting.
+- **Expected result:** New reservation is 48 hours; previously issued reservation is not shortened.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Release only your own QA reservation; no real deadline editing.
+
+### M26-NT-M01 — Approval manual acceptance
+
+- **Test ID:** M26-NT-M01
+- **Feature area:** Approval manual acceptance
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Tester, administrator, owning developer in separate profiles
+- **Preconditions:** Localhost connected to development; role: **Tester, administrator, owning developer in separate profiles**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Submit a dedicated QA report.
+  3. Accept it as administrator with a reason.
+  4. Leave the owning developer bell closed in a visible tab and wait up to 15 seconds plus network latency; open its new alert.
+- **Expected result:** Exactly one owner notification opens the correct workspace/build; another developer receives none.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Keep intended QA report/audit; mark the QA alert read if desired.
+
 ## MY MANUAL LOCALHOST ACCEPTANCE WALKTHROUGH
 
 1. **Environment / signed out:** Open localhost, verify the Network Supabase hostname is development (MN-001). A production hostname or unexpected authenticated account is a stop condition. No time manipulation.
@@ -1809,7 +3880,7 @@ Every case below remains Not Run by the owner in this release record. Browser au
 6. **QA tester → admin → developer → visitor:** Submit a dedicated QA report, moderate with a reason, inspect owner-only notification and accepted public number/current rank (MN-002/003/004/020). Requires accepted QA reports for label comparison; never adjust real XP just to force promotion. Controlled rank tests are automated ID-003/004.
 7. **Admin:** Expand Tester Analytics, inspect definitions and all rank tiers (MN-005), then verify an ordinary account is denied (MN-006). Empty and malformed-data boundaries are supplied by the disposable analytics suite.
 8. **Two QA testers:** Opt into a full QA campaign, release only the other tester’s dedicated reservation, click the single bell and cancel the request (MN-007/008/009). If safe full fixtures are unavailable, run the development release-browser test, which creates and cleans only its own synthetic holders. Never release another person’s reservation.
-9. **Operator:** Run the expiry/concurrency fixture commands (MN-010/011). These simulate past deadlines in disposable databases and require **no 72-hour real wait**. The real development cron job was separately checked as active/succeeded.
+9. **Operator:** Run the expiry/concurrency fixture commands (MN-010/011). These simulate past deadlines in disposable databases and require **no 48-hour real wait**. The real development cron job was separately checked as active/succeeded.
 10. **Visitor + admin:** Test analytics decline/allow/withdraw and inspect source versus voluntary discovery text (MN-021/022). Unknown is legitimate; no registration conversion is implied.
 11. **All relevant roles:** Use keyboard controls, an unsaved disclosure input, 150% browser zoom/mobile, thumbnail-return flow, Narrator and reduced motion (MN-023–026). Failure includes lost unsaved input, inaccessible focus/state, accidental neighbouring action or page-wide overflow.
 12. **Owner/legal:** Complete the privacy/retention/notice decisions, manual observations and future release gates (MN-027/028). No production migration, merge or deployment is authorised by this walkthrough.
@@ -1821,11 +3892,33 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - Rollback must preserve public-number allocation/tombstones and historical records. Do not reset identity sequences or drop genuine feedback data. See release notes.
 - Legal/DPIA/LIA/retention/processor decisions are documented in the privacy review. No technical test can approve them.
 
+## STEAM REFERRALS - MY MANUAL LOCALHOST ACCEPTANCE TESTS
 
-## PC and 48-hour continuation checkpoint
+Status: **Not Run** by owner. Browser automation uses mocked destinations; an actual Steam page load is not measured or claimed by analytics.
 
-Development migrations 113?115 add owner-private optional account PC details, canonical optional minimum/recommended game requirements, 48-hour deadlines for new reservations, and transactional owner approval notifications. Already-issued deadlines and other policy values were preserved (one active development reservation verified). No production operation occurred. Account and listing UI preserve optional fields, use atomic save RPCs and show manual comparison without compatibility claims or device inspection. Steam importer does not currently supply structured requirements; no invented mapping was added.
+### Safe development fixture setup
 
-Executed: PC validation/RLS/atomic rollback tests and real development browser account/create/edit/private comparison/clear/mobile/150% tests passed; 48-hour boundary/preservation, availability, approval dedupe/RLS/rollback and notification bell browser tests passed. Bell persistence is transactional; closed visible bells refresh every 15 seconds or on focus, not push-instantly. Hidden tabs do not poll. Full owner manual acceptance remains pending. The feedback-history/referrals follow-up begins after this checkpoint; final combined documentation and build will follow.
+1. Open http://localhost:3000 and verify browser Network uses development ktifgybnkdaotdxrvjgq.supabase.co. Stop if it points to production.
+2. Use separate existing development tester, owning developer, unrelated developer and administrator browser profiles. Never put their passwords in this document.
+3. As developer create a clearly labelled [DEV QA M26 STEAM] submission using your authorised game/build, actual developer name, one genuine thumbnail and a Steam URL copied from that game's real store page. Do not guess an app ID or use a title-generated URL. If no authorised Steam-linked QA game exists, this manual fixture is Blocked until one is available; the disposable SQL/browser suites remain usable without inventing a public listing.
+4. Approve only this intended development fixture as administrator and publish a small QA campaign with safe authorised access. A tester claims and submits their own report normally. Admin accepts with a reason if testing reviewed history. Developer marks useful or not useful using the existing control; retain the original moderation audit. Use a second intentional QA report or change your own QA assessment to inspect all three states. Do not delete genuine submitted feedback to reset a fixture.
 
-Executed evidence commands: `node tests/test-merge26-pc.mjs`; `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; `node tests/test-merge26-48-hours.mjs`; `node tests/test-merge26-feedback-approval.mjs`; `node tests/test-merge26-bell-browser.mjs`. Detailed new case catalogue will be regenerated with the follow-up.
+### Numbered acceptance actions
+
+1. Starting at http://localhost:3000, click Login and sign in with the dedicated development tester.
+2. Open Tester Hub, then scroll to Testing activity (not Available games).
+3. Find your QA report; verify the genuine thumbnail, title, developer, Submitted timestamp, admin outcome, XP and three-state usefulness. Expand submitted feedback and XP/review history; verify reconsideration remains where eligible.
+4. In the footer open Privacy & optional analytics. Read the new referral purpose and press Allow optional analytics again. An older general Allow alone is deliberately insufficient.
+5. Note the admin total in a separate admin profile, then as tester activate View Steam Page once. Confirm the expected Steam destination opens in a new tab and Tester Hub state remains intact. The successful external load itself is not something Playtested can confirm.
+6. In the separate profile log in as development administrator and open /admin/analytics or Admin Review.
+7. Expand Steam referrals. Expect the correct game's count and total to increase by one after refresh/reopening the page. No tester identity should be displayed. A second deliberate activation may add another event.
+8. Select Top 10, Top 25, Top 50 and All. Check descending count order, deterministic ties and Showing X of Y games. Overview totals must not change merely because Results changes. With fewer than the limit, only available games are shown. Do not manufacture large hosted datasets: use tests/test-merge26-steam-browser.mjs for 142 mocked aggregate games and SQL fixtures for tie/count boundaries.
+9. Collapse/reopen the section; the selected Results value should remain. Other admin UI state must not reset.
+10. Return to the tester footer, press Reject optional analytics and activate Steam again. Steam still opens; after refreshing the admin metrics the count must remain unchanged. Also test a fresh profile with no permission and withdrawal after renewed Allow.
+11. Visit catalogue/game-details Steam links and a legitimate itch.io link: none adds to these Steam totals. Admin clicks are excluded even if the admin also has tester role.
+12. For missing links use a QA game without a storefront: no store control should appear. Archive your own dedicated QA game through the existing owner control, reopen its tester history and check safe retained artwork/store link; signed-out visitors must not gain archive access. Restore only the QA listing afterwards. If a historical image is unavailable, expect Artwork unavailable rather than fabricated art.
+13. Use keyboard only, then 390px mobile emulation and actual browser toolbar zoom 150%. Cards stack, thumbnail ratios remain intact, controls are readable and the All list scrolls inside its panel. Return zoom to 100% afterwards.
+
+### Cleanup and evidence
+
+Record actual observations, timestamp, role, test IDs and redacted screenshots against the matching cases; never mark these steps Passed without performing them. Restore QA listing controls/metadata, cancel your own availability requests and release your own unused reservations. Retain intended submitted reports/moderation audit. Do not hard-delete an account with report dependencies. The optional event table has no account/report IDs, so do not attempt to find or erase a person's past clicks by account. Dedicated test event UUIDs, if captured from your own Network requests, can be removed by an authorised development operator using exact IDs only; otherwise normal 90-day retention applies. Do not alter unrelated analytics or production.
