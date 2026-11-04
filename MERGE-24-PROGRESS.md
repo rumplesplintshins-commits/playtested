@@ -93,3 +93,11 @@ References checked: [ICO storage/access guidance](https://ico.org.uk/for-organis
 Environment URL and CLI target repeatedly verified as development `ktifgybnkdaotdxrvjgq`. Production `qtcmzckdhgahuqqilmzj`, Render and `v11` were not changed. Existing untracked `playtested_schema.sql` and `supabase/.temp/` were preserved and excluded from commits. Secrets/private contacts were not printed or committed.
 
 Next.js feedback pass completed. The Cache Components/Suspense diagnostic was resolved through existing guidance and did not qualify under the returned protocol. No feedback was submitted.
+
+## Additional acceptance fix: optional contact email
+
+- Shared contact-email rules now drive both submission and owner editing. Malformed dot-atoms, missing/multiple @ signs, malformed domain labels, embedded whitespace, and local/domain/total length violations are rejected before submission and by the database. Blank values remain optional and normalize to NULL; outer ASCII whitespace is removed consistently. The practical ASCII mailbox format supports plus tags, apostrophes, subdomains and punycode domains.
+- Domain syntax is checked without a TLD/provider allowlist, DNS/MX lookup or claim of mailbox deliverability. `test@yopmail.coma` remains syntactically valid: it receives a non-blocking likely-spelling warning. Unfamiliar valid domains are accepted. Existing known-disposable-provider data is used only for a non-blocking contact warning; registration's separate disposable-email policy is unchanged.
+- Migration `202611040009_contact_email_syntax.sql` applied to development only. It adds authoritative validation and normalization, preserves historical rows with NOT VALID, and checks future writes. Include it after 008 in the authorised release sequence; the baseline/history reconciliation requirement still applies.
+- Passed: expanded actual-migration frontend/database parity and boundary tests; `npm.cmd run test:merge24`; TypeScript; targeted lint; production build; real development/browser acceptance covering both inputs, warnings that permit saves, unfamiliar domains and clearing email. Existing synthetic fixtures were reused and restored. Production was not modified.
+- No qualifying Next.js feedback candidate arose during this acceptance fix.

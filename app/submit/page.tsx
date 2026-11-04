@@ -9,6 +9,8 @@ import type { ChangeEvent, FormEvent, MouseEvent } from "react";
 
 import PulseAvailability from "../components/PulseAvailability";
 import SubmissionCorrection from "../components/SubmissionCorrection";
+import ContactEmailInput from "../components/ContactEmailInput";
+import {contactEmailError,normalizeContactEmail} from "@/lib/contact-email";
 import {thumbnailExtension} from "@/lib/thumbnail";
 import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
 import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
@@ -1175,7 +1177,9 @@ export default function SubmitGamePage() {
       p_campaign: context.campaign || null, p_referral: context.referral || null,
       p_self_reported: String(formData.get("discoverySource") || "") || null,
     });
-    const email = String(formData.get("contactEmail") ?? "").trim();
+    const email = normalizeContactEmail(String(formData.get("contactEmail") ?? ""));
+    const emailError = contactEmailError(email);
+    if (emailError) return emailError;
     const discord = String(formData.get("contactDiscord") ?? "").trim();
     const reddit = String(formData.get("contactReddit") ?? "").trim();
     const allowed = formData.get("contactAllowed") === "on";
@@ -1216,6 +1220,8 @@ export default function SubmitGamePage() {
     const form = event.currentTarget;
 
     const formData = new FormData(form);
+    const emailError = contactEmailError(String(formData.get("contactEmail") || ""));
+    if(emailError){setError(emailError);return;}
     if(imageUploading){setError("Wait for the thumbnail upload to finish before submitting.");return;}
     const evidenceInput=String(formData.get("evidenceLink")||"").trim();
     if(evidenceInput&&(evidenceInput.length>1000||!submissionHttpUrl(evidenceInput))){setError("Use a valid HTTP or HTTPS supporting-evidence link of at most 1000 characters.");return;}
@@ -3417,7 +3423,7 @@ export default function SubmitGamePage() {
                 <p className="mb-3 text-xs leading-5 text-zinc-400">These details are not displayed on your public game page. All fields are optional.</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className={labelClass}>Contact email
-                    <input type="email" name="contactEmail" maxLength={254} autoComplete="email" placeholder="developer@example.com" className={inputClass} />
+                    <ContactEmailInput name="contactEmail" label="Contact email" className={inputClass} />
                   </label>
                   <label className={labelClass}>Discord username
                     <input type="text" name="contactDiscord" maxLength={100} placeholder="Discord username" className={inputClass} />

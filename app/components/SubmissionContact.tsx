@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
+import ContactEmailInput from "./ContactEmailInput";
+import {contactEmailError,normalizeContactEmail} from "@/lib/contact-email";
 
 type Contact = { contact_email: string | null; contact_discord: string | null; contact_reddit: string | null; contact_allowed: boolean };
 const empty: Contact = { contact_email: "", contact_discord: "", contact_reddit: "", contact_allowed: false };
@@ -32,14 +34,17 @@ export default function SubmissionContact({ id, admin = false }: { id: string; a
     return () => { active = false; };
   }, [id, admin, retry]);
   async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setMessage("");
+    event.preventDefault();
+    const emailError = contactEmailError(contact.contact_email);
+    if(emailError){setMessage(emailError);return;}
+    setBusy(true); setMessage("");
     try {
       const client = createClient();
       const { data: { user } } = await client.auth.getUser();
       if (!user) throw new Error();
       const { error } = await client.from("game_submission_contacts").upsert({
         submission_id: id, developer_id: user.id,
-        contact_email: contact.contact_email?.trim() || null,
+        contact_email: normalizeContactEmail(contact.contact_email),
         contact_discord: contact.contact_discord?.trim() || null,
         contact_reddit: contact.contact_reddit?.trim() || null,
         contact_allowed: contact.contact_allowed, updated_at: new Date().toISOString(),
@@ -58,7 +63,7 @@ export default function SubmissionContact({ id, admin = false }: { id: string; a
       <p className={contact.contact_allowed ? "text-emerald-200" : "text-amber-200"}>{contact.contact_allowed ? "Contact permitted for the purposes above." : "Contact consent not given or withdrawn. Do not use these details for optional outreach."}</p>
       <p>Email: {contact.contact_email || "Not provided"}</p><p>Discord: {contact.contact_discord || "Not provided"}</p><p>Reddit: {contact.contact_reddit || "Not provided"}</p>
     </div> : <form onSubmit={save} className="mt-4 space-y-4"><fieldset disabled={busy} className="space-y-4">
-      {([ ["contact_email", "Email", 254], ["contact_discord", "Discord username", 100], ["contact_reddit", "Reddit username", 100] ] as const).map(([key, label, max]) => <label key={key} className="block text-sm">{label}<input type={key === "contact_email" ? "email" : "text"} maxLength={max} value={contact[key] || ""} onChange={e => setContact(c => ({ ...c, [key]: e.target.value }))} className="mt-2 block w-full rounded-lg border border-white/20 bg-[#101310] p-3" /></label>)}
+      {([ ["contact_email", "Email", 254], ["contact_discord", "Discord username", 100], ["contact_reddit", "Reddit username", 100] ] as const).map(([key, label, max]) => <label key={key} className="block text-sm">{label}{key === "contact_email" ? <ContactEmailInput label="Email" value={contact.contact_email || ""} onChange={value => setContact(c => ({...c,contact_email:value}))} className="mt-2 block w-full rounded-lg border border-white/20 bg-[#101310] p-3" /> : <input type="text" maxLength={max} value={contact[key] || ""} onChange={e => setContact(c => ({ ...c, [key]: e.target.value }))} className="mt-2 block w-full rounded-lg border border-white/20 bg-[#101310] p-3" />}</label>)}
       <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={contact.contact_allowed} onChange={e => setContact(c => ({ ...c, contact_allowed: e.target.checked }))} className="mt-1" /><span>I’m happy for Playtested to contact me about this game, submission or playtesting opportunities. Untick and save to withdraw this permission.</span></label>
       <button type="submit" className="rounded-lg border border-emerald-300/40 px-4 py-2 text-sm">{busy ? "Saving…" : "Save contact preference"}</button>
     </fieldset></form>)}

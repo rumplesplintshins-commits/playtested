@@ -91,6 +91,26 @@ try{
  const ownerPanel=page.locator(`[data-workspace-item="${id}"]`);
  await expect(ownerPanel.getByRole('heading',{name:'Private developer contact',exact:true})).toBeVisible({timeout:30000});
  await expect(ownerPanel.getByLabel('Email',{exact:true})).toHaveValue(contact.contact_email,{timeout:30000});
+ // Both contact entry points share the same syntax and non-blocking guidance.
+ const emailCases=[['a..b@example.test',false],['a@example..test',false],['a@-example.test',false],['test@yopmail.coma',true],['test@yopmail.com',true],['test@newbrand.unfamiliartld',true],['',true]];
+ const submissionPage=await ownerContext.newPage();await submissionPage.goto(origin+'/submit');
+ for(const input of [ownerPanel.getByLabel('Email',{exact:true}),submissionPage.getByRole('textbox',{name:'Contact email',exact:true})]){
+  for(const [value,valid] of emailCases){await input.fill(value);assert.equal(await input.evaluate(el=>el.checkValidity()),valid,'Shared email input validity');}
+ }
+ await submissionPage.getByRole('textbox',{name:'Contact email',exact:true}).fill('test@yopmail.coma');
+ await expect(submissionPage.getByText(/Check the domain spelling:/)).toBeVisible();
+ for(const value of ['test@yopmail.coma','test@yopmail.com','test@newbrand.unfamiliartld','']){
+  await ownerPanel.getByLabel('Email',{exact:true}).fill(value);
+  if(value==='test@yopmail.coma')await expect(ownerPanel.getByText(/Check the domain spelling:/)).toBeVisible();
+  if(value==='test@yopmail.com')await expect(ownerPanel.getByText(/This looks like a disposable email provider/)).toBeVisible();
+  await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
+  await expect.poll(async()=>must(await clients.owner.from('game_submission_contacts').select('contact_email').eq('submission_id',id).single(),'Verify optional email save').contact_email).toBe(value||null);
+ }
+ await ownerPanel.getByLabel('Email',{exact:true}).fill(contact.contact_email);
+ await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
+ await expect.poll(async()=>must(await clients.owner.from('game_submission_contacts').select('contact_email').eq('submission_id',id).single(),'Restore synthetic email').contact_email).toBe(contact.contact_email);
+ await submissionPage.close();
+ console.log('PASS email acceptance: submission/editor syntax parity, malformed rejection, typo/disposable warnings without blocking saves, unfamiliar domains and optional blank email.');
  const consent=ownerPanel.getByRole('checkbox',{name:/happy for Playtested to contact/});await expect(consent).not.toBeChecked();
  await ownerPanel.getByLabel('Discord username',{exact:true}).fill('updated_synthetic');await consent.check();await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();await expect(ownerPanel.getByRole('status').filter({hasText:'Private contact details and preference saved.'})).toBeVisible();
  await consent.uncheck();await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
