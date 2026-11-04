@@ -1,3 +1,4 @@
+import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
@@ -941,7 +942,7 @@ export default async function GamePage({
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-semibold text-[#77f29b]">
-                              Playtested tester {index + 1}
+                              <AnonymousTesterLabel testId={response.id}/>
                             </p>
                             <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">
                               Accepted

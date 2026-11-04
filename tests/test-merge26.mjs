@@ -8,7 +8,7 @@ const id=n=>`26000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const load=path=>{const exports={};new Function('exports','require',ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(exports,require);return exports;};
 try{
  await db.exec(fs.readFileSync('tests/fixtures/merge26-schema.sql','utf8'));
- for(const file of fs.readdirSync('supabase/migrations').filter(f=>f.includes('merge26_')).sort())await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+ for(const file of fs.readdirSync('supabase/migrations').filter(f=>f.includes('merge26_')&&f.slice(0,12)<='202611040107').sort())await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
  await db.exec(`insert into auth.users values('${id(1)}'),('${id(2)}'),('${id(3)}');insert into profiles(id,role,roles) values('${id(1)}','user',array['developer','tester']),('${id(2)}','user',array['developer','tester']),('${id(3)}','admin',array['admin','developer','tester']);`);
  for(const [n,score,title] of [[10,10,'Top'],[11,8,'Eight'],[12,null,'Unrated newest'],[13,6,'Boundary six'],[14,5.9,'Boundary below'],[15,2,'Poor'],[16,null,'Unrated older']]){
   await db.query(`insert into game_submissions(id,developer_id,title,status,submitted_at) values($1,$2,$3,'Approved',now()-make_interval(days=>$4))`,[id(n),id(1),title,n===16?30:1]);

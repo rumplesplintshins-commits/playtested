@@ -1,4 +1,5 @@
 "use client";
+import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
@@ -38,7 +39,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
       <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p><h3 className="mt-2 text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
       <span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>
     </div>
-    <p className="text-xs text-zinc-500">Tester {t.tester_id} · {feedbackQualityLabel(t)}</p>
+    <p className="text-xs text-zinc-500">Tester {t.tester_id} <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}

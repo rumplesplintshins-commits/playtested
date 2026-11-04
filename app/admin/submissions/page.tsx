@@ -1,5 +1,6 @@
 "use client";
 import ListingControls from "../../components/ListingControls";
+import AdminTesterAnalytics from "../../components/AdminTesterAnalytics";
 import AdminAnalyticsSummary from "../../components/AdminAnalyticsSummary";
 import {compareAdminReview} from "@/lib/admin-review-order";
 import GameplayEditor from "../../components/GameplayEditor";
@@ -1547,6 +1548,7 @@ export default function AdminSubmissionsPage() {
         </div>
 
         <AdminAnalyticsSummary/>
+        <AdminTesterAnalytics/>
         <div className={`${panelClass} mb-8 overflow-hidden`}>
           <button
             type="button"

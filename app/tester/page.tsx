@@ -1202,7 +1202,7 @@ export default function TesterPage() {
                       </a>
                     )}
 
-                    <CampaignPlaces id={game.submission_id} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
+                    <CampaignPlaces id={game.submission_id} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
                     <ReservationNotice claimed={!!claim} expiresAt={claim?.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
                     {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
                     <div
