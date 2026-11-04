@@ -1,4 +1,5 @@
 "use client";
+import GameplayEditor from "../../components/GameplayEditor";
 
 import { useEffect, useState } from "react";
 import SubmissionCompletenessBatch from "../../components/SubmissionCompletenessBatch";
@@ -1478,6 +1479,7 @@ export default function AdminSubmissionsPage() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
+      <a href="/admin/analytics" className="mx-5 block py-3 text-sm text-emerald-300 underline">Visitor &amp; acquisition analytics</a>
 
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
         <ListingRevisionQueue/>
@@ -2030,7 +2032,7 @@ export default function AdminSubmissionsPage() {
                           {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
                         </div>
                       </CollapsibleSection>
-                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin />
+                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 

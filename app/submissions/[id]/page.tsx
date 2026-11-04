@@ -1,3 +1,4 @@
+import GameplayFootage from "@/app/components/GameplayFootage";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -293,6 +294,8 @@ export default async function SubmissionPage({
         ? "Some assessment work has been recorded, but the full criteria for Verified have not been met. Review the checks and limitations below."
         : "This game has an approved listing, but there is not yet enough recorded assessment work to classify it as independently assessed.";
 
+  const {data:footage} = await supabase.from("gameplay_footage").select("video_url").eq("submission_id",id).maybeSingle();
+
   const statusStyle =
     isVerified
       ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
@@ -354,6 +357,8 @@ export default async function SubmissionPage({
             )}
           </div>
         </section>
+
+        {footage?.video_url&&<GameplayFootage url={footage.video_url}/>}
 
         {/* INTERACTIVE BUILD-SPECIFIC RECEPTION */}
         <CommunityReception

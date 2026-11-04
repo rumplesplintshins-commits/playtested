@@ -1,3 +1,4 @@
+import GameplayEditor from "../components/GameplayEditor";
 import SubmissionContact from "../components/SubmissionContact";
 import PulseAvailability,{PulseJobStatus} from "../components/PulseAvailability";
 import {pulseMessage} from "@/lib/pulse-availability";
@@ -1210,7 +1211,7 @@ async function DeveloperDashboard() {
               </article>
               );
             })(game)}))}
- submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><SubmissionContact id={game.id}/>{((game) => (
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><SubmissionContact id={game.id}/><GameplayEditor id={game.id}/>{((game) => (
               <article
                 key={game.id}
                 className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
