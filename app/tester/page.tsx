@@ -1127,7 +1127,7 @@ export default function TesterPage() {
                             return;
                           }
                           window.location.assign(`/submissions/${data[0].id}`);
-                        }
+                        }}
                         aria-label={`View ${game.title} game details`}
                         className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]"
                       >
