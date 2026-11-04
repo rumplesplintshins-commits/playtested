@@ -1112,7 +1112,22 @@ export default function TesterPage() {
                   >
                     {game.image_url && activeTestId !== claim?.id && (
                       <a
-                        href={`/submissions/${game.submission_id}`}
+                        href={`/tester?campaign=${encodeURIComponent(game.submission_id)}`}
+                        onClick={async (event) => {
+                          event.preventDefault();
+                          const supabase = createClient();
+                          const { data, error } = await supabase
+                            .from("approved_games")
+                            .select("id")
+                            .eq("title", game.title)
+                            .eq("developer_name", game.developer_name)
+                            .limit(2);
+                          if (error || !data || data.length !== 1) {
+                            showMessage("Could not find a unique public game details page for this playtest.", "error");
+                            return;
+                          }
+                          window.location.assign(`/submissions/${data[0].id}`);
+                        }
                         aria-label={`View ${game.title} game details`}
                         className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]"
                       >
