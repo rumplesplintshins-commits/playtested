@@ -679,6 +679,48 @@ export default function TesterPage() {
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
   const [genreFilter,setGenreFilter] = useState("preferred");
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
+  // Keep the available-games view intact when visiting a public game profile.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("playtested:tester-return");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        expanded?: Record<string, boolean>;
+        genre?: string;
+        scrollY?: number;
+        savedAt?: number;
+      };
+      if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000) {
+        sessionStorage.removeItem("playtested:tester-return");
+        return;
+      }
+      if (saved.expanded && typeof saved.expanded === "object") {
+        setExpandedAvailableGames(saved.expanded);
+      }
+      if (typeof saved.genre === "string") setGenreFilter(saved.genre);
+    } catch {
+      sessionStorage.removeItem("playtested:tester-return");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!discoveryReady || games.length === 0) return;
+    const raw = sessionStorage.getItem("playtested:tester-return");
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw) as { scrollY?: number; savedAt?: number };
+      if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000) return;
+      if (typeof saved.scrollY !== "number" || !Number.isFinite(saved.scrollY)) return;
+      const frame = requestAnimationFrame(() => {
+        window.scrollTo({ top: saved.scrollY!, behavior: "instant" });
+        sessionStorage.removeItem("playtested:tester-return");
+      });
+      return () => cancelAnimationFrame(frame);
+    } catch {
+      sessionStorage.removeItem("playtested:tester-return");
+    }
+  }, [discoveryReady, games]);
+
   const [discoveryReady,setDiscoveryReady] = useState(false);
   useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
   const router = useRouter();
@@ -1126,6 +1168,12 @@ export default function TesterPage() {
                             showMessage("Could not find a unique public game details page for this playtest.", "error");
                             return;
                           }
+                          sessionStorage.setItem("playtested:tester-return", JSON.stringify({
+                            expanded: expandedAvailableGames,
+                            genre: genreFilter,
+                            scrollY: window.scrollY,
+                            savedAt: Date.now(),
+                          }));
                           window.location.assign(`/submissions/${data[0].id}`);
                         }}
                         aria-label={`View ${game.title} game details`}
