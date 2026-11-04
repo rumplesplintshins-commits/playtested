@@ -1,3 +1,5 @@
+import PrivacyAnalytics from "./components/PrivacyAnalytics";
+import { Suspense } from "react";
 
 import type { Metadata } from "next";
 import { Rajdhani, Inter } from "next/font/google";
@@ -34,6 +36,7 @@ export default function RootLayout({
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
         {children}
         <SiteFooter />
+        <Suspense fallback={null}><PrivacyAnalytics /></Suspense>
         <ToastHost />
         <PrivacyStorageMaintenance />
       </body>
