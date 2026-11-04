@@ -679,6 +679,7 @@ export default function TesterPage() {
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
   const [genreFilter,setGenreFilter] = useState("preferred");
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
+  const [discoveryReady,setDiscoveryReady] = useState(false);
   // Keep the available-games view intact when visiting a public game profile.
   useEffect(() => {
     try {
@@ -721,7 +722,7 @@ export default function TesterPage() {
     }
   }, [discoveryReady, games]);
 
-  const [discoveryReady,setDiscoveryReady] = useState(false);
+
   useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
   const router = useRouter();
   const activeClaimCount = claims.filter(
