@@ -1,32 +1,8 @@
 {
-  "executed_at": "2026-11-04T21:30:36.773Z",
+  "executed_at": "2026-11-04T21:37:16.685Z",
   "environment": "localhost and development ktifgybnkdaotdxrvjgq / disposable databases",
   "production_access": false,
   "suites": [
-    {
-      "suite": "core",
-      "command": "node tests/test-merge26.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/core.log",
-      "summary": "PASS Merge 26: actual migrations, full ranking/pagination and 5.9/6 boundary, claims/deduplication, ownership/admin/anonymous permissions, archive/history/delete safety, private demo testing, genuine acquisition cohort, review sorting and evidence-based source labels."
-    },
-    {
-      "suite": "tester-analytics",
-      "command": "node tests/test-merge26-tester-analytics.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/tester-analytics.log",
-      "summary": "PASS tester analytics: real rank policy, multiple/zero reports, active window, pending/decided denominator, valid/missing hours, empty tiers, missing profiles, synthetic/demo exclusion, archive history, reconciliation, service-only grants and empty state."
-    },
-    {
-      "suite": "availability",
-      "command": "node tests/test-merge26-availability.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/availability.log",
-      "summary": "PASS availability: opt-in/out/uniqueness, reservation/role exclusions, manual release, genuine server-time expiry, repeat suppression, future deadlines, capacity increase, successful-claim removal, capacity refusal, archived games, private RLS/worker, retention and correct private-free bell links."
-    },
     {
       "suite": "concurrency",
       "command": "node tests/test-merge26-concurrency.mjs",
@@ -154,6 +130,38 @@
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/development-postflight.log",
       "summary": "PASS development postflight: localhost configuration targets development; active minute scheduler has succeeded; direct private rank and analytics grants denied; allocated numbers unique. Read-only development query."
+    },
+    {
+      "suite": "core",
+      "command": "node tests/test-merge26.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/core.log",
+      "summary": "PASS Merge 26: actual migrations, full ranking/pagination and 5.9/6 boundary, claims/deduplication, ownership/admin/anonymous permissions, archive/history/delete safety, private demo testing, genuine acquisition cohort, review sorting and evidence-based source labels."
+    },
+    {
+      "suite": "tester-analytics",
+      "command": "node tests/test-merge26-tester-analytics.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/tester-analytics.log",
+      "summary": "PASS tester analytics: real rank policy, multiple/zero reports, active window, pending/decided denominator, valid/missing hours, empty tiers, missing profiles, synthetic/demo exclusion, archive history, reconciliation, service-only grants and empty state."
+    },
+    {
+      "suite": "xp-quality",
+      "command": "node tests/test-testing-policy.mjs --graded-quality",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/xp-quality.log",
+      "summary": "PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used."
+    },
+    {
+      "suite": "availability",
+      "command": "node tests/test-merge26-availability.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/availability.log",
+      "summary": "PASS availability: opt-in/out/uniqueness, reservation/role exclusions, manual release, genuine server-time expiry, repeat suppression, future deadlines, capacity increase, successful-claim removal, capacity refusal, archived games, private RLS/worker, retention and correct private-free bell links."
     }
   ]
 }

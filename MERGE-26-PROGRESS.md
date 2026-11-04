@@ -1,5 +1,19 @@
 # Merge 26 — local development acceptance
 
+## Final continuation after checkpoint b0f8b19
+
+The follow-on implementation and privacy-assurance brief is complete for **localhost acceptance**, not production release. Protected checkpoints include `0db90b9` (typed private lookup), `cf30e44` (identity/analytics/availability) and `172bfb2` (privacy hardening, disclosure UX and executed evidence). Final documentation/test refinements follow on this same branch; no new branch, `v11` merge, Render deployment or production database operation occurred.
+
+Additional development migrations **108–112** are applied: stable private tester-number mappings and batched current ranks; restricted aggregate Tester Analytics; opt-in availability preferences/events/worker; private canonical rank helpers; explicit non-null opt-in choice. Existing migration 107 was confirmed pending at the checkpoint and then applied to development. New UI uses stable rank-aware public labels, current admin ranks and shared accessible disclosures without unnecessary form-state loss.
+
+The existing development pg_cron job `merge26-tester-availability` runs every minute; read-only postflight verified active and latest execution **succeeded**. No production schedule was activated. Real isolated PostgreSQL races verified unique allocation, last-place exclusivity, one-active-test enforcement and release/expiry dedupe. New hosted browser fixtures created only synthetic users/reservations, then cleaned them; stable-number tombstones intentionally remain.
+
+Final evidence: **20 suites/checks passed, 0 failed**. The comprehensive catalogue contains **95 cases: 67 automated criteria passed, 28 manual owner cases Not Run, 0 blocked automated cases**. TypeScript/final build passed. Targeted comparison covered 31 changed TypeScript files with no new lint error-rule counts; 15 existing errors remain within the previously accepted wider baseline debt. Broad unrelated legacy suites were not repeated. Browser, actual SQL, graded XP/moderation and privacy/security tests are included.
+
+Read [test plan](MERGE-26-TEST-PLAN.md), [privacy review](MERGE-26-PRIVACY-REVIEW.md), [release notes](MERGE-26-RELEASE-NOTES.md), [PR description](MERGE-26-PR-DESCRIPTION.md) and [executed results](docs/MERGE-26-AUTOMATED-RESULTS.json). Owner/legal public-attribution, retention/rights and notice decisions remain explicit production gates. In particular, existing report/auth deletion dependencies require an approved operator procedure; no end-to-end erasure or legal-compliance claim is made. **GO for localhost acceptance; NO-GO for production until those approvals and operational gates pass.**
+
+The earlier implementation notes below describe the initial checkpoint and are retained as history; the final evidence/documents above supersede their narrower test/migration counts.
+
 Branch: `feature/merge-26`, based on `origin/v11` at `b7d8617`. Production Supabase, Render and `v11` were not queried, changed, merged or deployed. Localhost uses only development project `ktifgybnkdaotdxrvjgq`.
 
 ## Implemented and verified

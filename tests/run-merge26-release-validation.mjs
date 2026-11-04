@@ -6,6 +6,7 @@ const suites=[
  ['security',['tests/test-merge26-security.mjs']],['origins',['tests/test-proxy-origin.mjs']],['notifications',['tests/test-notification-routing.mjs']],
  ['build-selection',['tests/test-build-results-selection.mjs']],['workspace',['tests/test-developer-workspace.mjs','--server-only']],
  ['listings',['tests/test-submission-corrections.mjs','--listings']],['legacy-final-fixes',['tests/test-m24-final-fixes.mjs']],
+ ['xp-quality',['tests/test-testing-policy.mjs','--graded-quality']],
  ['labels-browser',['tests/test-merge26-label-browser.mjs']],['release-browser',['--env-file=.env.local','tests/test-merge26-release-browser.mjs']],
  ['earlier-browser',['--env-file=.env.local','tests/test-merge26-browser.mjs']],
  ['typescript',['node_modules/typescript/bin/tsc','--noEmit']],['targeted-lint',['tests/test-merge26-lint-baseline.mjs']],

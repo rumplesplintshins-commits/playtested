@@ -5,6 +5,7 @@ export function availabilityFixtureSQL(){
  for(const file of fs.readdirSync('supabase/migrations').filter(f=>f.includes('merge26_')&&f.slice(0,12)<='202611040108').sort())sql+='\n'+fs.readFileSync('supabase/migrations/'+file,'utf8');
  sql+='\n'+fs.readFileSync('tests/fixtures/merge26-reservation-policy.sql','utf8');
  sql+='\n'+fs.readFileSync('supabase/migrations/202611040110_merge26_availability_notifications.sql','utf8');
+ sql+='\n'+fs.readFileSync('supabase/migrations/202611040112_merge26_explicit_availability_choice.sql','utf8');
  return sql;
 }
 export const id=n=>`26300000-0000-4000-8000-${String(n).padStart(12,'0')}`;

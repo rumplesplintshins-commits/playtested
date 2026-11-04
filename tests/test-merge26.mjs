@@ -18,6 +18,10 @@ try{
  const catalogue=async(page=1,size=100)=>(await db.query('select game_id,total_count from get_public_catalogue($1,$2)',[page,size])).rows;
  assert.deepEqual((await catalogue()).map(r=>r.game_id),[10,11,13,12,16,14,15,30].map(id));
  assert.deepEqual((await catalogue(2,3)).map(r=>r.game_id),[12,16,14].map(id),'Ranking occurs before pagination');
+ assert.deepEqual((await db.query("select game_id from get_public_catalogue(1,100,'Boundary')")).rows.map(r=>r.game_id),[13,14].map(id),'Search retains complete-dataset ranking');
+ assert.deepEqual((await db.query("select game_id from get_public_catalogue(1,100,'','All genres','Steam listings')")).rows.map(r=>r.game_id),[id(30)]);
+ assert.equal((await db.query("select game_id from get_public_catalogue(1,100,'','All genres','All verification statuses','All AI types',false,'Recently added')")).rows[0].game_id,id(30));
+ assert.deepEqual((await db.query("select game_id from get_public_catalogue(1,100,'','All genres','All verification statuses','All AI types',false,'Title A-Z')")).rows.map(r=>r.game_id),[14,13,11,15,30,10,12,16].map(id));
  // Claimed imports enter developer tiers and duplicate Steam IDs are not rendered twice.
  await db.query(`insert into game_developer_links(id,developer_id,imported_game_id) values($1,$2,$3)`,[id(40),id(1),id(30)]);
  assert.equal((await catalogue())[3].game_id,id(30));
@@ -47,6 +51,7 @@ try{
  await db.query("select set_listing_control('submission',$1,'restore','')",[id(12)]);
  await db.exec(`set test.uid='${id(3)}'`);await db.query("select set_listing_control('submission',$1,'mark_test','')",[id(11)]);
  assert(!(await catalogue()).some(r=>r.game_id===id(11)));
+ assert.equal((await db.query('select * from get_game_community_reception() where submission_id=$1',[id(11)])).rows.length,0,'Test feedback cannot enter public ratings');
  assert.equal((await db.query('select campaign_eligible($1,$2) ok',[id(111),id(3)])).rows[0].ok,true,'Admin can exercise private demo campaigns');
  await db.exec(`set test.uid='${id(2)}'`);assert.equal((await db.query('select campaign_eligible($1,$2) ok',[id(111),id(2)])).rows[0].ok,false);
  await assert.rejects(db.query('select m26_admin_review_activity()'),/Administrator/);
