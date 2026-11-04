@@ -1,3 +1,7 @@
+## PC / 48-hour continuation ? current stage
+
+Starting HEAD was e0e7901; earlier work is preserved. Development migrations 113 (private optional account PC details and canonical game requirements), 114 (new 48-hour reservations) and 115 (immediate transactional approval notifications) are applied. One already-issued development deadline and every other testing policy field were independently verified unchanged during cutover. PC SQL/privacy/rollback and real development browser workflows passed, including optional submission/editing, private comparison, clear/failure states and mobile/150%. Notification polling/browser validation, final evidence/docs refresh and commit stages are being completed. The subsequent Testing Activity / usefulness / Steam-referral request is queued until this continuation is checkpointed. Production remains untouched.
+
 # Merge 26 — local development acceptance
 
 ## Final continuation after checkpoint b0f8b19

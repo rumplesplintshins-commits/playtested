@@ -1,4 +1,7 @@
 "use client";
+import {GamePcFields,type RequirementsDraft} from "../components/PcSpecificationFields";
+import {parsePcSpecs} from "@/lib/pc-specifications";
+import {useUnsavedPcChanges} from "@/lib/use-unsaved-pc-changes";
 
 
 
@@ -466,6 +469,8 @@ export default function SubmitGamePage() {
     useState<ImageStatus>("empty");
 
   const [imageUploading, setImageUploading] = useState(false);
+  const [pcRequirements,setPcRequirements]=useState<RequirementsDraft>({minimum:{},recommended:{}});
+  const [pcDirty,setPcDirty]=useState(false);useUnsavedPcChanges(pcDirty);
   const [screenshotFiles,setScreenshotFiles] = useState<File[]>([]);
   const [screenshotSelecting,setScreenshotSelecting] = useState(false);
   const [description, setDescription] = useState("");
@@ -1234,6 +1239,7 @@ export default function SubmitGamePage() {
     const footageInput=String(formData.get("gameplayVideo")||"").trim();
     if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
     const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
+    let pcMinimum,pcRecommended;try{pcMinimum=parsePcSpecs(pcRequirements.minimum,true);pcRecommended=parsePcSpecs(pcRequirements.recommended,true);}catch(e){setError(e instanceof Error?e.message:"Check optional PC requirements.");return;}
 
 
 
@@ -1890,15 +1896,15 @@ export default function SubmitGamePage() {
         if(readiness.error){setError('The submission correction update is not available yet. Your entered details have been kept.');return;}
 
         const id=incompleteRequestId.current||(incompleteRequestId.current=crypto.randomUUID());
-        let result=await client.from('game_submissions').insert({...draft,id,developer_id:user.id,status:'Pending Review'}).select('*').single();
+        let result=await client.rpc('create_game_with_pc_requirements',{p_fields:{...draft,id,developer_id:user.id,status:'Pending Review'},p_minimum:pcMinimum,p_recommended:pcRecommended});
         if(result.error?.code==='23505')result=await client.from('game_submissions').select('*').eq('id',id).eq('developer_id',user.id).single();
         if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
-        const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
+        setPcDirty(false);const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
         if (contactError) {
           setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
           return;
         }
-        setScreenshotFiles([]);
+        setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
         const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
         if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
         window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
@@ -1910,9 +1916,8 @@ export default function SubmitGamePage() {
 
       const { data: insertedSubmission, error: insertError } = await supabase
 
-        .from("game_submissions")
-
-        .insert({
+        .rpc("create_game_with_pc_requirements",{p_fields:{
+          id:incompleteRequestId.current||(incompleteRequestId.current=crypto.randomUUID()),
 
           developer_id: user.id,
 
@@ -1965,11 +1970,7 @@ export default function SubmitGamePage() {
           evidence_link: String(formData.get("evidenceLink") || "").trim(),
           status: "Pending Review",
 
-        })
-
-        .select("*")
-
-        .single();
+        },p_minimum:pcMinimum,p_recommended:pcRecommended});
 
 
 
@@ -2019,14 +2020,14 @@ export default function SubmitGamePage() {
 
 
 
-      const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
+      setPcDirty(false);const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
       if (contactError) {
         setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
         return;
       }
       if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
 
-      setScreenshotFiles([]);
+      setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
       setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");form.reset();
@@ -3709,6 +3710,7 @@ export default function SubmitGamePage() {
 
 
               <div>
+                <div className="mb-6"><GamePcFields value={pcRequirements} onChange={value=>{setPcRequirements(value);setPcDirty(true);}} disabled={submitting}/></div>
                 <ScreenshotPicker onChange={setScreenshotFiles} onBusyChange={setScreenshotSelecting} disabled={submitting}/>
                 <label className="mb-6 block text-sm">Gameplay footage (optional)<input type="url" name="gameplayVideo" maxLength={500} placeholder="https://www.youtube.com/watch?v=?" className={inputClass}/><span className="mt-2 block text-xs leading-5 text-zinc-400">{gameplayGuidance} This link appears on your approved public game page.</span></label>
                 <p className={labelClass}>Game thumbnail *</p>

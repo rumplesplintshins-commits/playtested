@@ -1,4 +1,5 @@
 "use client";
+import GamePcRequirements from "../../components/GamePcRequirements";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -442,6 +443,7 @@ export default function ImportedSteamCatalogue() {
 
                     {expanded && (
                       <div className="border-t border-zinc-800 p-4">
+                        <GamePcRequirements id={game.id} kind="imported" showEmpty/>
                         <dl className="grid gap-4 sm:grid-cols-2">
                           {[
                             ["Developer", game.developer_name],

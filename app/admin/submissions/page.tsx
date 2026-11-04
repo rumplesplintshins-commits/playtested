@@ -1,4 +1,5 @@
 "use client";
+import GamePcRequirements from "../../components/GamePcRequirements";
 import DisclosureControl from "../../components/DisclosureControl";
 import ListingControls from "../../components/ListingControls";
 import AdminTesterAnalytics from "../../components/AdminTesterAnalytics";
@@ -2042,6 +2043,7 @@ export default function AdminSubmissionsPage() {
                         </div>
                       </CollapsibleSection>
                       <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin /><ListingControls key={`controls-${selectedSubmission.id}`} id={selectedSubmission.id} title={selectedSubmission.title} approved={selectedSubmission.status==="Approved"} admin/>
+                      <GamePcRequirements key={`pc-${selectedSubmission.id}`} id={selectedSubmission.id} showEmpty/>
                       <GameplayEditor key={`footage-${selectedSubmission.id}`} id={selectedSubmission.id} catalogueThumbnail={selectedSubmission.imageUrl} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 

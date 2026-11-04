@@ -1,3 +1,4 @@
+import GamePcRequirements from "@/app/components/GamePcRequirements";
 import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
@@ -618,6 +619,7 @@ export default async function GamePage({
 
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-6">
+            <GamePcRequirements id={importedGame.id} kind="imported"/>
             <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

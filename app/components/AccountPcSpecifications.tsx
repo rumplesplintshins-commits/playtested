@@ -1,0 +1,22 @@
+"use client";
+import {createContext,useContext,useEffect,useState,type ReactNode} from "react";
+import {createClient} from "@/lib/supabase";
+import {parsePcSpecs,pcDraft,type PcDraft,type PcSpecs} from "@/lib/pc-specifications";
+import {useUnsavedPcChanges} from "@/lib/use-unsaved-pc-changes";
+import CompactDetails from "./CompactDetails";
+import {PcFields} from "./PcSpecificationFields";
+import {showToast} from "./ToastHost";
+export const PrivatePcContext=createContext<{specs:PcSpecs|null;error:boolean}>({specs:null,error:false});
+export function PrivatePcProvider({children}:{children:ReactNode}){
+ const [value,setValue]=useState<{specs:PcSpecs|null;error:boolean}>({specs:null,error:false});
+ useEffect(()=>{let active=true;async function load(){const client=createClient();const {data:{user}}=await client.auth.getUser();if(!user)return;const {data,error}=await client.from('account_pc_specs').select('specs').eq('user_id',user.id).maybeSingle();if(active)setValue({specs:data?.specs||null,error:!!error});}void load();window.addEventListener('pc-specs-changed',load);return()=>{active=false;window.removeEventListener('pc-specs-changed',load);};},[]);
+ return <PrivatePcContext.Provider value={value}>{children}</PrivatePcContext.Provider>;
+}
+export function usePrivatePc(){return useContext(PrivatePcContext);}
+export default function AccountPcSpecifications(){
+ const [fields,setFields]=useState<PcDraft>({}),[ready,setReady]=useState(false),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[retry,setRetry]=useState(0);
+ useUnsavedPcChanges(dirty);
+ useEffect(()=>{let active=true;void(async()=>{try{const client=createClient(),{data:{user}}=await client.auth.getUser();if(!user)throw Error("Sign in to manage your private PC details.");const result=await client.from('account_pc_specs').select('specs').eq('user_id',user.id).maybeSingle();if(result.error)throw Error("PC details could not be loaded. Retry before editing.");if(active){setFields(pcDraft(result.data?.specs));setReady(true);setError("");}}catch(e){if(active)setError(e instanceof Error?e.message:"PC details unavailable.");}})();return()=>{active=false;};},[retry]);
+ async function save(clear=false){if(busy||!ready)return;if(clear&&!window.confirm("Clear your saved PC specifications?"))return;setBusy(true);setError("");try{const specs=clear?{}:parsePcSpecs(fields);const client=createClient(),{data:{user}}=await client.auth.getUser();if(!user)throw Error("Sign in again before saving.");const result=clear?await client.from('account_pc_specs').delete().eq('user_id',user.id):await client.from('account_pc_specs').upsert({user_id:user.id,specs});if(result.error)throw Error("PC details were not saved. Check values and retry; your edits remain here.");setFields(pcDraft(specs));setDirty(false);showToast(clear?"PC specifications cleared.":"PC specifications saved.");window.dispatchEvent(new Event('pc-specs-changed'));}catch(e){setError(e instanceof Error?e.message:"Could not save PC details.");}finally{setBusy(false);}}
+ return <section id="pc-specifications" className="mt-6 scroll-mt-8"><CompactDetails title="My PC specifications"><p className="px-4 text-sm leading-6 text-zinc-400">Add your PC details to help compare your setup with game testing requirements. Optional — you can update or clear them at any time. Private to your account; not shared with developers or public feedback. Nothing is detected automatically. Use model names only; do not include serial numbers, MAC addresses or device IDs.</p>{!ready&&!error&&<p role="status" className="p-4">Loading your private PC details…</p>}{ready&&<><PcFields value={fields} onChange={value=>{setFields(value);setDirty(true);}} disabled={busy}/><div className="flex flex-wrap gap-3 p-4"><button type="button" disabled={busy} onClick={()=>void save()} className="rounded-lg border border-emerald-300/40 px-4 py-3 text-sm focus-visible:outline-2 focus-visible:outline-emerald-300">{busy?"Saving…":"Save PC specifications"}</button><button type="button" disabled={busy} onClick={()=>void save(true)} className="rounded-lg border border-white/20 px-4 py-3 text-sm">Clear PC specifications</button>{dirty&&<p role="status" className="text-sm text-amber-200">Unsaved PC changes</p>}</div></>}{error&&<p role="alert" className="p-4 text-sm text-amber-200">{error}{!ready&&<button onClick={()=>setRetry(n=>n+1)} className="ml-2 underline">Retry PC details</button>}</p>}</CompactDetails></section>;
+}

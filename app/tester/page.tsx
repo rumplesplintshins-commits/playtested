@@ -1,4 +1,6 @@
 "use client";
+import GamePcRequirements from "../components/GamePcRequirements";
+import {PrivatePcProvider} from "../components/AccountPcSpecifications";
 import DisclosureControl from "../components/DisclosureControl";
 
 import {currentJourney} from "@/lib/share-links";
@@ -641,7 +643,7 @@ function FeedbackForm({
   );
 }
 
-export default function TesterPage() {
+function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
   useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
   const [reviewHistory,setReviewHistory]=useState<{id:number;test_id:string;kind:string;reason:string;xp_delta:number;rubric_version?:number|null;quality_score?:number|null;actual_xp_award?:number|null;created_at?:string}[]>([]);
@@ -1203,6 +1205,7 @@ export default function TesterPage() {
                       </a>
                     )}
 
+                    <GamePcRequirements id={game.submission_id} kind="campaign" compact/>
                     <CampaignPlaces id={game.submission_id} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
                     <ReservationNotice claimed={!!claim} expiresAt={claim?.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
                     {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
@@ -1717,3 +1720,5 @@ export default function TesterPage() {
     </main>
   );
 }
+
+export default function TesterPcPage(){return <PrivatePcProvider><TesterPage /></PrivatePcProvider>;}

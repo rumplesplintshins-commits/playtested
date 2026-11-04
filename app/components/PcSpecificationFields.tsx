@@ -1,0 +1,15 @@
+"use client";
+import {useId} from "react";
+import {PC_FIELDS,type PcDraft} from "@/lib/pc-specifications";
+import CompactDetails from "./CompactDetails";
+export function PcFields({value,onChange,requirements=false,disabled=false}:{value:PcDraft;onChange:(value:PcDraft)=>void;requirements?:boolean;disabled?:boolean}){
+ const id=useId();return <fieldset disabled={disabled} className="grid min-w-0 gap-4 p-4 sm:grid-cols-2"><legend className="sr-only">{requirements?"Optional game PC requirements":"Optional private PC specifications"}</legend>{PC_FIELDS.filter(f=>requirements||!('notes'in f)).map(field=><label key={field.key} className={`min-w-0 text-sm text-zinc-300 ${'notes'in field?'sm:col-span-2':''}`}>{field.key==='storage_gb'?(requirements?"Storage required (GB)":"Available storage (GB)"):field.label} <span className="text-xs text-zinc-500">(optional)</span>
+  {field.key==='storage_type'?<select value={value[field.key]||""} onChange={e=>onChange({...value,[field.key]:e.target.value})} className="mt-2 block w-full rounded-lg border border-white/20 bg-[#101310] p-3"><option value="">Not provided</option>{['SSD','HDD','NVMe SSD','Other'].map(s=><option key={s}>{s}</option>)}</select>:
+   'notes'in field?<textarea rows={3} maxLength={1000} value={value[field.key]||""} onChange={e=>onChange({...value,[field.key]:e.target.value})} className="mt-2 block w-full rounded-lg border border-white/20 bg-[#101310] p-3"/>:
+   <input type={'numeric'in field?'number':'text'} min={'numeric'in field?field.min:undefined} max={'numeric'in field?field.max:undefined} step={'numeric'in field?'any':undefined} list={field.key==='os'?id:undefined} maxLength={160} placeholder={field.example} value={value[field.key]||""} onChange={e=>onChange({...value,[field.key]:e.target.value})} className="mt-2 block w-full min-w-0 rounded-lg border border-white/20 bg-[#101310] p-3 focus-visible:outline-2 focus-visible:outline-emerald-300"/>}
+ </label>)}<datalist id={id}>{['Windows 10','Windows 11','Linux','macOS','Other'].map(s=><option key={s} value={s}/>)}</datalist></fieldset>;
+}
+export type RequirementsDraft={minimum:PcDraft;recommended:PcDraft};
+export function GamePcFields({value,onChange,disabled=false}:{value:RequirementsDraft;onChange:(value:RequirementsDraft)=>void;disabled?:boolean}){
+ return <section aria-label="Optional game PC requirements" className="space-y-3"><p className="text-sm leading-6 text-zinc-400">Optional. Add the PC hardware needed to run your game. This helps testers review their setup; no automatic compatibility verdict is made.</p>{(['minimum','recommended'] as const).map(tier=><CompactDetails key={tier} title={tier==='minimum'?"Minimum PC requirements":"Recommended PC requirements"}><p className="px-4 text-xs text-zinc-400">{tier==='minimum'?"Lowest supported configuration.":"Suggested configuration for a better experience."} All fields are optional.</p><PcFields value={value[tier]} onChange={fields=>onChange({...value,[tier]:fields})} requirements disabled={disabled}/></CompactDetails>)}</section>;
+}

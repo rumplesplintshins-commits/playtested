@@ -1,3 +1,4 @@
+import GamePcRequirements from "@/app/components/GamePcRequirements";
 import GameMediaGallery from "@/app/components/GameMediaGallery";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
@@ -360,6 +361,7 @@ export default async function SubmissionPage({
           </div>
         </section>
 
+        <GamePcRequirements id={id}/>
         {/* INTERACTIVE BUILD-SPECIFIC RECEPTION */}
         <CommunityReception
           builds={receptionBuilds}
