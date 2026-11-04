@@ -16,8 +16,8 @@ function Gallery({ id, videoUrl, screenshots, catalogueThumbnail }: { id: string
   const index = selected - offset;
   const shot = screenshots[index];
   const count = screenshots.length + offset;
-  return <section aria-labelledby={`media-${id}`} className="my-5 min-w-0 rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-    <h2 id={`media-${id}`} className="mb-4 text-xl font-semibold">Game Media</h2>
+  return <section aria-labelledby={`media-${id}`} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+    <h2 id={`media-${id}`} className="mb-3 text-base font-semibold">Game Media</h2>
     {!count ? <p className="text-sm text-zinc-400">No gameplay footage or screenshots have been added yet.</p> : <>
       {selected === 0 && videoUrl ? <GameplayFootage url={videoUrl} embedded posterSources={videoPosterSources(id,videoUrl,screenshots,catalogueThumbnail)}/> : shot && <>
         <h3 className="mb-3 text-base font-semibold">Screenshot {index + 1} of {screenshots.length}</h3>
@@ -27,7 +27,7 @@ function Gallery({ id, videoUrl, screenshots, catalogueThumbnail }: { id: string
           <button type="button" disabled={screenshots.length < 2} onClick={() => setSelected(offset + (index + 1) % screenshots.length)} className="rounded-lg border border-white/20 px-3 py-2 text-sm disabled:opacity-40">Next screenshot</button>
         </div>
       </>}
-      {count > 1 && <div role="group" aria-label="Select game media" className="mt-5 flex max-w-full gap-3 overflow-x-auto pb-3">
+      {count > 1 && <div role="group" aria-label="Select game media" className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-2">
         {videoUrl && <button type="button" aria-label="View Gameplay Footage" aria-pressed={selected === 0} onClick={() => setSelected(0)} className={`w-28 shrink-0 rounded-lg border p-2 text-left ${selected === 0 ? "border-emerald-300 bg-emerald-300/10" : "border-white/15"}`}><span className="relative flex aspect-video items-center justify-center overflow-hidden rounded bg-[#101310] text-2xl text-emerald-200" aria-hidden="true"><VideoPoster sources={videoPosterSources(id,videoUrl,screenshots,catalogueThumbnail,true)}/><span className="relative z-10">&#9654;</span></span><span className="mt-2 block text-xs">Gameplay Footage</span></button>}
         {screenshots.map((item, i) => <button key={item.slot} type="button" aria-label={`View screenshot ${i + 1}`} aria-pressed={selected === offset + i} onClick={() => setSelected(offset + i)} className={`w-28 shrink-0 rounded-lg border p-2 text-left ${selected === offset + i ? "border-emerald-300 bg-emerald-300/10" : "border-white/15"}`}><img loading="lazy" src={screenshotUrl(id, item, true)} alt="" className="aspect-video w-full rounded bg-black/40 object-contain" /><span className="mt-2 block text-xs">Screenshot {i + 1}</span></button>)}
       </div>}

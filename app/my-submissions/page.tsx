@@ -1,4 +1,5 @@
 import GameplayEditor from "../components/GameplayEditor";
+import { compareSubmissions } from "@/lib/submission-order";
 import SubmissionContact from "../components/SubmissionContact";
 import PulseAvailability,{PulseJobStatus} from "../components/PulseAvailability";
 import {pulseMessage} from "@/lib/pulse-availability";
@@ -44,6 +45,7 @@ type SubmissionRow = {
   genre: string;
   status: string;
   submitted_at: string;
+  updated_at?: string | null;
 };
 
 type PulseJobRow = {
@@ -547,15 +549,14 @@ async function DeveloperDashboard() {
   const { data: profile, error: profileError } =
     await supabase
       .from("profiles")
-      .select("roles, developer_xp")
+      .select("role, roles, developer_xp")
       .eq("id", user.id)
       .single();
 
   if(profileError) return <WorkspaceRetry message="Could not verify your developer access. Please retry."/>;
   if (
     !profile ||
-    !Array.isArray(profile.roles) ||
-    !profile.roles.includes("developer")
+    (profile.role !== "admin" && (!Array.isArray(profile.roles) || !profile.roles.includes("developer")))
   ) {
     redirect("/account");
   }
@@ -715,7 +716,14 @@ async function DeveloperDashboard() {
     );
   }
 
-  const games = (submissions ?? []) as SubmissionRow[];
+  const ownedSubmissions = (submissions ?? []) as SubmissionRow[];
+  const {data: activityRows, error: activityError} = ownedSubmissions.length
+    ? await supabase.from("submission_review_events").select("submission_id,created_at").in("submission_id", ownedSubmissions.map(row => row.id))
+    : {data: [], error: null};
+  if (activityError) return <WorkspaceRetry message="Could not load submission activity. Please retry."/>;
+  const latestActivity = new Map<string, string>();
+  for (const event of activityRows ?? []) if (Date.parse(event.created_at) > Date.parse(latestActivity.get(event.submission_id) || "1970-01-01")) latestActivity.set(event.submission_id, event.created_at);
+  const games = ownedSubmissions.map(row => ({...row, updated_at: latestActivity.get(row.id) || row.submitted_at})).sort(compareSubmissions);
   const rawClaims = (claimRows ?? []) as GameClaimRow[];
   const rawLinks =
     (linkRows ?? []) as GameDeveloperLinkRow[];

@@ -38,7 +38,7 @@ try{
  if(!fixtures.submission)must(await clients.owner.from('game_submissions').insert({id,developer_id:fixtures.users.owner,title:`Merge 24 QA ${run}`,developer_name:'Synthetic QA Studio',genre:'Other',description:'Synthetic development-only acceptance fixture.',game_link:'https://example.test/game',image_url:'https://example.test/cover.png',release_status:'Not announced',ai_type:'No AI used',status:'Pending Review'}),'Create synthetic submission');
  fixtures.submission=id;
  must(await clients.admin.rpc('review_game_submission',{p_submission_id:id,p_status:'Pending Review',p_review_reason:null}),'Reset synthetic review state');
- const contact={submission_id:id,developer_id:fixtures.users.owner,contact_email:'synthetic@example.test',contact_discord:'synthetic_qa',contact_reddit:'u/synthetic_qa',contact_allowed:true};
+ const contact={submission_id:id,developer_id:fixtures.users.owner,contact_email:'synthetic@example.com',contact_discord:'synthetic_qa',contact_reddit:'u/synthetic_qa',contact_allowed:true};
  must(await clients.owner.from('game_submission_contacts').upsert(contact),'Save all contact methods');
  const stored=must(await clients.owner.from('game_submission_contacts').select('contact_email,contact_discord,contact_reddit,contact_allowed').eq('submission_id',id).single(),'Read owner contact');
  for(const key of Object.keys(stored))assert.equal(stored[key],contact[key]);
@@ -91,18 +91,16 @@ try{
  const ownerPanel=page.locator(`[data-workspace-item="${id}"]`);
  await expect(ownerPanel.getByRole('heading',{name:'Private developer contact',exact:true})).toBeVisible({timeout:30000});
  await expect(ownerPanel.getByLabel('Email',{exact:true})).toHaveValue(contact.contact_email,{timeout:30000});
- // Both contact entry points share the same syntax and non-blocking guidance.
- const emailCases=[['a..b@example.test',false],['a@example..test',false],['a@-example.test',false],['test@yopmail.coma',true],['test@yopmail.com',true],['test@newbrand.unfamiliartld',true],['',true]];
+ // Both entry points enforce syntax and the versioned contact policy.
+ const emailCases=[['a..b@example.test',false],['a@example..test',false],['a@-example.test',false],['test@yopmail.coma',false],['test@yopmail.com',false],['test@example.cock',false],['test@indie.games',true],['test@indie.studio',true],['test@indie.gg',true],['test@indie.de',true],['',true]];
  const submissionPage=await ownerContext.newPage();await submissionPage.goto(origin+'/submit');
  for(const input of [ownerPanel.getByLabel('Email',{exact:true}),submissionPage.getByRole('textbox',{name:'Contact email',exact:true})]){
   for(const [value,valid] of emailCases){await input.fill(value);assert.equal(await input.evaluate(el=>el.checkValidity()),valid,'Shared email input validity');}
  }
  await submissionPage.getByRole('textbox',{name:'Contact email',exact:true}).fill('test@yopmail.coma');
- await expect(submissionPage.getByText(/Check the domain spelling:/)).toBeVisible();
- for(const value of ['test@yopmail.coma','test@yopmail.com','test@newbrand.unfamiliartld','']){
+ await expect(submissionPage.getByText(/suffix is not supported/)).toBeVisible();
+ for(const value of ['test@indie.games','test@indie.co.uk','test@indie.de','']){
   await ownerPanel.getByLabel('Email',{exact:true}).fill(value);
-  if(value==='test@yopmail.coma')await expect(ownerPanel.getByText(/Check the domain spelling:/)).toBeVisible();
-  if(value==='test@yopmail.com')await expect(ownerPanel.getByText(/This looks like a disposable email provider/)).toBeVisible();
   await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
   await expect.poll(async()=>must(await clients.owner.from('game_submission_contacts').select('contact_email').eq('submission_id',id).single(),'Verify optional email save').contact_email).toBe(value||null);
  }
@@ -110,7 +108,7 @@ try{
  await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
  await expect.poll(async()=>must(await clients.owner.from('game_submission_contacts').select('contact_email').eq('submission_id',id).single(),'Restore synthetic email').contact_email).toBe(contact.contact_email);
  await submissionPage.close();
- console.log('PASS email acceptance: submission/editor syntax parity, malformed rejection, typo/disposable warnings without blocking saves, unfamiliar domains and optional blank email.');
+ console.log('PASS email acceptance: submission/editor syntax parity, malformed rejection, suffix/disposable rejection, legitimate international domains and optional blank email.');
  const consent=ownerPanel.getByRole('checkbox',{name:/happy for Playtested to contact/});await expect(consent).not.toBeChecked();
  await ownerPanel.getByLabel('Discord username',{exact:true}).fill('updated_synthetic');await consent.check();await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();await expect(ownerPanel.getByRole('status').filter({hasText:'Private contact details and preference saved.'})).toBeVisible();
  await consent.uncheck();await ownerPanel.getByRole('button',{name:'Save contact preference'}).click();
@@ -132,20 +130,20 @@ try{
   await formPage.locator('textarea[name="description"]').fill('Synthetic development-only form submission: test movement, exploration and controls.');
   await formPage.locator('[name="aiType"]').selectOption('No AI used');
   await formPage.locator('[name="gameplayVideo"]').fill('https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/view?usp=sharing');
-  await formPage.locator('[name="contactEmail"]').fill('form-synthetic@example.test');
+  await formPage.locator('[name="contactEmail"]').fill('form-synthetic@example.com');
   await formPage.locator('[name="contactDiscord"]').fill('form_synthetic');
   await formPage.locator('[name="contactReddit"]').fill('u/form_synthetic');
   await expect(formPage.locator('[name="contactAllowed"]')).not.toBeChecked();
   await formPage.locator('[name="discoverySource"]').selectOption('Reddit outreach');
-  await formPage.locator('[name="evidenceLink"]').fill('https://example.test/process');
+  await expect(formPage.locator('[name="evidenceLink"]')).toHaveCount(0);
   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF9sAAAAASUVORK5CYII=','base64');
   await formPage.getByLabel('Upload game thumbnail',{exact:true}).setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:png});
   await expect(formPage.locator('[name="imageUrl"]')).toHaveValue(/game-thumbnails/,{timeout:30000});
   await formPage.getByRole('button',{name:'Submit application',exact:true}).click();
   await expect.poll(async()=>{const result=await service.from('game_submissions').select('id').eq('developer_id',fixtures.users.owner).eq('title',formTitle).maybeSingle();return result.data?.id||null;},{timeout:30000}).not.toBeNull();
   const saved=must(await service.from('game_submissions').select('id,evidence_link,status').eq('developer_id',fixtures.users.owner).eq('title',formTitle).single(),'Verify real form submission');fixtures.formSubmission=saved.id;
-  assert.equal(saved.evidence_link,'https://example.test/process');assert.equal(saved.status,'Pending Review');
-  await expect.poll(async()=>{const result=await service.from('game_submission_contacts').select('contact_email').eq('submission_id',saved.id).maybeSingle();return result.data?.contact_email;}).toBe('form-synthetic@example.test');
+  assert.equal(saved.evidence_link,'');assert.equal(saved.status,'Pending Review');
+  await expect.poll(async()=>{const result=await service.from('game_submission_contacts').select('contact_email').eq('submission_id',saved.id).maybeSingle();return result.data?.contact_email;}).toBe('form-synthetic@example.com');
   const savedContact=must(await service.from('game_submission_contacts').select('contact_discord,contact_reddit,contact_allowed').eq('submission_id',saved.id).single(),'Verify form preferences');assert.deepEqual(savedContact,{contact_discord:'form_synthetic',contact_reddit:'u/form_synthetic',contact_allowed:false});
   assert.equal(must(await service.from('gameplay_footage').select('video_url').eq('submission_id',saved.id).single(),'Verify Drive video').video_url,'https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/view');
   assert.equal(must(await service.from('m24_submission_acquisition').select('self_reported,source').eq('submission_id',saved.id).single(),'Verify voluntary acquisition').self_reported,'Reddit outreach');

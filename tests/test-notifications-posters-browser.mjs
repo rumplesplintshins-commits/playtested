@@ -47,7 +47,7 @@ try{
  await expect(adminPage.getByRole('heading',{name:game.title,exact:true})).toBeVisible({timeout:30000});
  assert(must(await service.from('notifications').select('read_at').eq('entity_id',qa).eq('recipient_id',fixtures.users.admin),'Admin read state').some(n=>n.read_at));await adminPage.close();
  const ownerPage=await contexts.owner.newPage();await ownerPage.goto(origin+'/privacy');await ownerPage.getByRole('button',{name:/^Notifications/}).click();
- await ownerPage.getByRole('button').filter({hasText:'Game approved'}).filter({hasText:game.title}).click();
+ await ownerPage.getByRole('button').filter({hasText:'Game approved'}).filter({hasText:game.title}).first().click();
  await ownerPage.waitForURL(url=>url.pathname==='/my-submissions'&&url.searchParams.get('game')===qa&&url.searchParams.get('tab')==='submissions');
  await expect(ownerPage.locator(`[data-workspace-item="${qa}"]`)).toBeVisible();
  assert(must(await clients.owner.from('notifications').select('read_at').eq('id',ownerItem.id).single(),'Own read state').read_at);await ownerPage.close();
@@ -80,6 +80,13 @@ try{
    await expect(gallery.locator('iframe')).toHaveCount(0);assert.equal(external,0);assert.equal(players,0);
    assert.equal(await play.locator('img').evaluate(image=>getComputedStyle(image).objectFit),'contain');
    for(const width of [320,390,853,1280]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+   if(kind==='anon'){
+    const hero=page.locator('[data-game-hero]');
+    const boxes=await hero.evaluate(node=>Array.from(node.children).map(child=>{const r=child.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};}));
+    assert(boxes[0].x<boxes[1].x&&Math.abs(boxes[0].y-boxes[1].y)<2,'Desktop media and game details sit alongside');
+    assert(boxes[0].width<800,'Desktop viewer stays compact');
+    await page.screenshot({path:'technical-test-results/gallery-compact-desktop.png'});
+   }
    await page.evaluate(()=>document.documentElement.style.zoom='1.5');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    fs.mkdirSync('technical-test-results',{recursive:true});await play.screenshot({path:`technical-test-results/poster-${provider.replace(' ','-')}-${kind}.png`});await page.evaluate(()=>document.documentElement.style.zoom='');
    if(provider==='YouTube'){posterUnavailable=true;await page.reload();await expect.poll(()=>play.locator('img').getAttribute('src')).toContain(`/api/game-media/${media.id}/${screenshots[0].slot}?`);}

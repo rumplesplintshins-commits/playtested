@@ -5,8 +5,9 @@ import ts from 'typescript';
 
 const disposable={},emailModel={};
 const compile=path=>ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-new Function('exports',compile('lib/disposable-email.ts'))(disposable);
-new Function('exports','require',compile('lib/contact-email.ts'))(emailModel,()=>disposable);
+const policy=JSON.parse(fs.readFileSync('lib/contact-email-policy.json','utf8'));
+new Function('exports','require',compile('lib/disposable-email.ts'))(disposable,()=>({default:policy}));
+new Function('exports','require',compile('lib/contact-email.ts'))(emailModel,name=>name.includes('policy')?{default:policy}:disposable);
 
 const db = new PGlite();
 const owner = '10000000-0000-4000-8000-000000000001';
@@ -24,20 +25,21 @@ try {
   await db.exec(fs.readFileSync('supabase/migrations/202611040001_private_submission_contacts.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/202611040002_contact_email_validation.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/202611040009_contact_email_syntax.sql','utf8'));
-  const accepted=[null,'','  \t','test@yopmail.coma','test@yopmail.com','test@unfamiliar.studio','test@newbrand.unfamiliartld','a+b@sub.example.test',"o'brien@example.test",'a@xn--bcher-kva.example','a@b.c',`${'a'.repeat(64)}@example.test`,`a@${'b'.repeat(63)}.test`,`${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`,' \tMixed.Case@Example.Test\r\n'];
-  const rejected=['missing-at','a@@example.test','@example.test','a@','a@example','a@.test','a@example.','a@example..test','a@-example.test','a@example-.test','a@exam_ple.test','.a@example.test','a.@example.test','a..b@example.test','a b@example.test','a\n@example.test','a@foo\n.test','a@ex ample.test','a@example.test/path','a@example.test:443','a@例子.test','a\u00a0@example.test',`${'a'.repeat(65)}@example.test`,`a@${'b'.repeat(64)}.test`,`${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(62)}`];
+  await db.exec(fs.readFileSync('supabase/migrations/202611040015_contact_email_policy.sql','utf8'));
+  const storedPolicy=(await db.query('select allowed_suffixes,blocked_providers from contact_email_policy')).rows[0];
+  assert.deepEqual(storedPolicy.allowed_suffixes,policy.allowedSuffixes);assert.deepEqual(storedPolicy.blocked_providers,policy.blockedProviders);
+  const accepted=[null,'','  \t','test@indie.games','test@studio.studio','test@team.gg','test@example.co.uk','test@example.uk','test@example.io','test@example.dev','test@example.org','test@example.net','test@example.de','test@example.co.jp','a@xn--bcher-kva.de','a@example.xn--p1ai',"o'brien@example.com",'a+b@sub.example.com',
+    `${'a'.repeat(64)}@example.com`,`a@${'b'.repeat(63)}.com`,`${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(57)}.com`,' \tMixed.Case@Example.Com\r\n'];
+  const rejected=['a@example.cock','a@yopmail.com','a@sub.yopmail.com','a@mailinator.com','a@example.coma','a@example.unfamiliartld','a@example.test','missing-at','a@@example.com','@example.com','a@','a@example','a@.com','a@example.','a@example..com','a@-example.com','a@example-.com','a@exam_ple.com','.a@example.com','a.@example.com','a..b@example.com','a b@example.com','a\n@example.com','a@foo\n.com','a@ex ample.com','a@example.com/path','a@example.com:443','a@??.com','a\u00a0@example.com',`${'a'.repeat(65)}@example.com`,`a@${'b'.repeat(64)}.com`,`${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(58)}.com`];
   for(const [values,valid] of [[accepted,true],[rejected,false]])for(const value of values){
     assert.equal(emailModel.contactEmailError(value)===null,valid,`Client syntax: ${JSON.stringify(value)}`);
     const normalized=emailModel.normalizeContactEmail(value);
     assert.equal((await db.query('select public.valid_contact_email($1) valid',[normalized])).rows[0].valid,valid,`Database/client parity: ${JSON.stringify(value)}`);
   }
-  assert.match(emailModel.contactEmailWarning('test@yopmail.coma'),/spelling/);
-  assert.match(emailModel.contactEmailWarning('test@yopmail.com'),/disposable/);
-  assert.equal(emailModel.contactEmailWarning('test@newbrand.unfamiliartld'),null);
   await db.exec(`set role authenticated; set test.uid='${owner}';`);
-  await db.query(`insert into game_submission_contacts(submission_id,developer_id,contact_email,contact_discord,contact_reddit,contact_allowed) values($1,$2,'dev@example.test','dev_discord','u/dev',true)`, [submission, owner]);
+  await db.query(`insert into game_submission_contacts(submission_id,developer_id,contact_email,contact_discord,contact_reddit,contact_allowed) values($1,$2,'dev@example.com','dev_discord','u/dev',true)`, [submission, owner]);
   let row = (await db.query('select * from game_submission_contacts')).rows[0];
-  assert.equal(row.contact_email,'dev@example.test'); assert.equal(row.contact_discord,'dev_discord'); assert.equal(row.contact_reddit,'u/dev'); assert.equal(row.contact_allowed,true);
+  assert.equal(row.contact_email,'dev@example.com'); assert.equal(row.contact_discord,'dev_discord'); assert.equal(row.contact_reddit,'u/dev'); assert.equal(row.contact_allowed,true);
   for(const value of accepted){await db.query('update game_submission_contacts set contact_email=$1',[value]);assert.equal((await db.query('select contact_email from game_submission_contacts')).rows[0].contact_email,emailModel.normalizeContactEmail(value));}
   for(const value of rejected)await assert.rejects(db.query('update game_submission_contacts set contact_email=$1',[value]),/check constraint/);
   await db.exec('update game_submission_contacts set contact_allowed=false,contact_discord=null');
@@ -53,5 +55,5 @@ try {
   await assert.rejects(db.query('select * from game_submission_contacts'),/permission denied/);
   await db.exec('reset role');
   assert.equal((await db.query('select * from game_submission_contacts')).rows.length,1,'Server privileged reader can inspect contact record');
-  console.log('PASS: frontend/database email parity, malformed addresses, unfamiliar domains, length boundaries, optional normalization, non-blocking disposable/typo warnings, contacts, withdrawal and RLS.');
+  console.log('PASS: frontend/database email parity, malformed addresses, unfamiliar domains, length boundaries, optional normalization, public suffix/disposable product policy, contacts, withdrawal and RLS.');
 } catch(error) { console.error(error.message); process.exitCode=1; } finally { await db.close(); }

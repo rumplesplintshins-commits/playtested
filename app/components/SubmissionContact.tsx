@@ -49,7 +49,10 @@ export default function SubmissionContact({ id, admin = false }: { id: string; a
         contact_reddit: contact.contact_reddit?.trim() || null,
         contact_allowed: contact.contact_allowed, updated_at: new Date().toISOString(),
       });
-      if (error) throw new Error();
+      if (error) {
+        if (error.code === "23514") { setMessage("Contact details were not saved. Use a supported public email suffix and a non-disposable provider, or leave email blank."); return; }
+        throw new Error();
+      }
       setMessage("Private contact details and preference saved.");
     } catch { setMessage("Could not save your contact details. Check your sign-in and retry."); }
     finally { setBusy(false); }

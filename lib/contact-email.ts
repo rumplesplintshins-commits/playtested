@@ -1,11 +1,13 @@
 import { isDisposableEmail } from "./disposable-email";
+import policy from "./contact-email-policy.json";
+const allowedSuffixes = new Set(policy.allowedSuffixes);
 
 export function normalizeContactEmail(value: string | null | undefined): string | null {
   return (value || "").replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, "") || null;
 }
 
 // Practical ASCII mailbox syntax: dot-atom local part and DNS domain labels.
-// Domain familiarity, DNS/MX records and mailbox existence are not syntax checks.
+// Syntax plus the configured product policy; never proof of mailbox existence.
 export function contactEmailError(value: string | null | undefined): string | null {
   const email = normalizeContactEmail(value);
   if (email === null) return null;
@@ -17,14 +19,7 @@ export function contactEmailError(value: string | null | undefined): string | nu
     labels.length < 2 || labels.some(label => label.length > 63 || !/^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(label))) {
     return "Enter a valid email address such as name@example.com, or leave it blank. Use a local part up to 64 characters and a dotted domain with no empty labels or leading/trailing hyphens (254 characters total).";
   }
+  if (!allowedSuffixes.has(labels[labels.length - 1].toLowerCase())) return "This email suffix is not supported by our contact policy. Use a public email domain or leave the email blank.";
+  if (isDisposableEmail(email)) return "Disposable email providers are not accepted for developer contacts. Use a lasting email address or leave it blank.";
   return null;
-}
-
-export function contactEmailWarning(value: string): string | null {
-  const email = normalizeContactEmail(value);
-  if (!email || contactEmailError(email)) return null;
-  if (isDisposableEmail(email)) return "This looks like a disposable email provider. Consider an address you can keep accessing. You can still save it.";
-  const domain = email.split("@")[1].toLowerCase();
-  const likely = ["yopmail.com", "gmail.com", "outlook.com", "hotmail.com", "yahoo.com"].find(known => domain.startsWith(known) && /^[a-z]{1,3}$/.test(domain.slice(known.length)));
-  return likely ? `Check the domain spelling: it looks similar to ${likely}. Unfamiliar domains are allowed; you can still save this address.` : null;
 }

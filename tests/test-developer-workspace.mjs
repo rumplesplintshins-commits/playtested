@@ -38,9 +38,10 @@ const tables={
 let failure='',queries=[];
 const client={auth:{getUser:async()=>({data:{user:{id:owner}}})},rpc:async()=>({data:[],error:null}),from(table){const filters=[];const query={select(){return query;},eq(key,value){filters.push(row=>row[key]===value);queries.push({table,key,value});return query;},in(key,values){filters.push(row=>values.includes(row[key]));return query;},order(){return query;},limit(){return query;},single(){query.singleRow=true;return query;},then(resolve){const rows=(tables[table]||[]).filter(row=>filters.every(filter=>filter(row)));return Promise.resolve({data:query.singleRow?rows[0]:rows,error:failure===table?{message:'Fixture unavailable'}:null}).then(resolve);}};return query;}};
 const Start=()=>null,Workspace=()=>null,Retry=()=>null;
+const ordering={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/submission-order.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(ordering);
 const exports={};
 const code=ts.transpileModule(fs.readFileSync('app/my-submissions/page.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-new Function('exports','require',code+'\nexports.dashboard=DeveloperDashboard;exports.sidebar=sidebarFeedback;')(exports,name=>name==='next/server'?{connection:async()=>{}}:name==='next/navigation'?{redirect(path){throw new Error('redirect:'+path);}}:name.endsWith('/supabase-server')?{createClient:async()=>client}:name.endsWith('/SiteHeader')?{default:()=>null}:name.endsWith('/listing-updates')?{listingUpdates:async()=>[],listingNotice:()=>''}:name.endsWith('/GameLinksEngagement')?{default:()=>null}:name.endsWith('/PulseAvailability')?{default:()=>null,PulseJobStatus:()=>null}:name==='@/lib/pulse-availability'?{pulseMessage:()=>''}:name.endsWith('/StartPlaytest')?{default:Start}:name.endsWith('/DeveloperWorkspace')?{default:Workspace,WorkspaceRetry:Retry}:name.endsWith('/submission-completeness')?completeness:require(name));
+new Function('exports','require',code+'\nexports.dashboard=DeveloperDashboard;exports.sidebar=sidebarFeedback;')(exports,name=>name.endsWith('/GameplayEditor')||name.endsWith('/SubmissionContact')?{default:()=>null}:name.endsWith('/submission-order')?ordering:name==='next/server'?{connection:async()=>{}}:name==='next/navigation'?{redirect(path){throw new Error('redirect:'+path);}}:name.endsWith('/supabase-server')?{createClient:async()=>client}:name.endsWith('/SiteHeader')?{default:()=>null}:name.endsWith('/listing-updates')?{listingUpdates:async()=>[],listingNotice:()=>''}:name.endsWith('/GameLinksEngagement')?{default:()=>null}:name.endsWith('/PulseAvailability')?{default:()=>null,PulseJobStatus:()=>null}:name==='@/lib/pulse-availability'?{pulseMessage:()=>''}:name.endsWith('/StartPlaytest')?{default:Start}:name.endsWith('/DeveloperWorkspace')?{default:Workspace,WorkspaceRetry:Retry}:name.endsWith('/submission-completeness')?completeness:require(name));
 const sidebarGame={submissionId:'game-side',latestPlaytest:{id:'current-side',releaseLabel:'Demo 0.8'}};
 const sidebarRow={submission_id:'game-side',playtest_id:'current-side',release_label:'Demo 0.8',accepted_test_count:1,created_at:'2026-10-28'};
 assert.deepEqual(exports.sidebar(sidebarGame,[sidebarRow],false),{context:'Current build: Demo 0.8',feedback:'1 accepted Tester Hub report'});
@@ -55,6 +56,12 @@ assert.equal(result.props.games.length,1,'Same-ID and known Steam aliases counte
 assert.equal(result.props.submissions.length,1);assert.equal(result.props.claims.length,1);
 assert.equal(result.props.games[0].status,'Playtest open');
 const originalSubmission={...tables.game_submissions[0]};
+const originalRows=[...tables.game_submissions];
+tables.game_submissions.push(...['Approved','Pending Review','Rejected','Needs More Information'].map((status,i)=>({...originalSubmission,id:'order-'+i,status,submitted_at:'2026-11-01'})));
+tables.submission_review_events=[{submission_id:'order-3',created_at:'2026-11-04'}];
+assert.deepEqual((await exports.dashboard()).props.submissions.map(row=>row.id),['order-3','submission-a','order-1','order-0','order-2']);
+tables.game_submissions=originalRows;delete tables.submission_review_events;
+
 for(const status of ['Rejected','Needs More Information','Pending Review','Approved'])for(const complete of [true,false]){
  Object.assign(tables.game_submissions[0],{...originalSubmission,status,title:complete?'Alpha':'',description:'A game',release_status:'Not announced',ai_type:'No AI disclosed',review_reason:'Developer-visible decision',admin_notes:'PRIVATE ADMIN SENTINEL'});
  const view=(await exports.dashboard()).props.submissions[0];const html=renderToStaticMarkup(view.content);
