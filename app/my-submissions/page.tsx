@@ -847,7 +847,7 @@ async function DeveloperDashboard() {
   );
 
   const approvedMap = new Map(
-    (approvedResult.data ?? []).map((game) => [
+    ((approvedResult.data ?? []) as {id:string;title:string|null;developer_name:string|null;genre:string|null;image_url:string|null;steam_app_id:string|null}[]).map((game) => [
       game.id,
       {
         title: game.title ?? "Unknown game",
