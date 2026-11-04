@@ -41,3 +41,10 @@ Owner must complete the ordered localhost walkthrough and record manual accessib
 Before any future release: owner localhost/privacy approval, fresh verified production recovery protection, current production schema/migration preflight, reviewed rollback plan, scheduler/environment approval and explicit final owner authorisation. After an authorised release, perform non-destructive production smoke checks.
 
 **Production deployment is not authorised. Do not merge into `v11`, apply production migrations or deploy Render on the basis of this PR description. This candidate is not marked approved or production-safe.**
+
+
+## PC and 48-hour continuation checkpoint
+
+Development migrations 113?115 add owner-private optional account PC details, canonical optional minimum/recommended game requirements, 48-hour deadlines for new reservations, and transactional owner approval notifications. Already-issued deadlines and other policy values were preserved (one active development reservation verified). No production operation occurred. Account and listing UI preserve optional fields, use atomic save RPCs and show manual comparison without compatibility claims or device inspection. Steam importer does not currently supply structured requirements; no invented mapping was added.
+
+Executed: PC validation/RLS/atomic rollback tests and real development browser account/create/edit/private comparison/clear/mobile/150% tests passed; 48-hour boundary/preservation, availability, approval dedupe/RLS/rollback and notification bell browser tests passed. Bell persistence is transactional; closed visible bells refresh every 15 seconds or on focus, not push-instantly. Hidden tabs do not poll. Full owner manual acceptance remains pending. The feedback-history/referrals follow-up begins after this checkpoint; final combined documentation and build will follow.

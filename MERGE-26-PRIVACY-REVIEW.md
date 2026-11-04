@@ -69,3 +69,8 @@ Explain that accepted public contributions can carry a stable pseudonymous numbe
 - Complete DPIA screening, audience/18+ assessment, Article 22 review where relevant and processing records/organisational controls where applicable.
 - Verify controller/contact/service-address details, processor DPAs, hosting/storage/Auth regions, transfers and safeguards, provider logs/backups and the currently draft legal notices. Publish accurate final wording with an effective date before release.
 - Approve the production scheduler and operational monitoring only as part of the separately authorised release. Technical test success does not approve any legal conclusion.
+
+
+## Optional PC details continuation
+Account PC model/specification fields are voluntary, owner-only under RLS, and never included in public profiles, feedback labels or analytics. No hardware detection, serial/MAC/device identifiers or fingerprinting is implemented. Clear deletes the private row; account FK cascades the row, subject to the previously documented account-deletion blockers. Published game requirements are developer-authored product information, separate from account hardware. Proposed basis: requested account comparison service (contract necessity to be assessed) or documented legitimate interests; owner/legal must approve notice and necessity before release. Private specs remain until cleared/account deletion; no new automated account-retention claim is made. Comparison is manual, not a promise that a game will run.
+Approval notifications contain listing title/build and workspace link, not tester UUID, private PC data or admin notes. New 48-hour reservations preserve issued deadlines and historic reports.

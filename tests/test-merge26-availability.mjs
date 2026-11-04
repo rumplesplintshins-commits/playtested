@@ -18,7 +18,7 @@ try{
  await assert.rejects(claim(3),/full/);await preference(3,false);await as(2);await db.query('select release_community_game_test($1)',[id(20)]);assert.equal(await count(),2,'Opt-out prevents new alerts');
  await claim(1);await preference(3);
  // Controlled disposable-fixture time, never production/development reservations.
- await db.exec("alter table community_game_tests disable trigger aa_testing_reservation;update community_game_tests set reservation_started_at=now()-interval '73 hours',reservation_expires_at=now()-interval '1 hour' where status='claimed';alter table community_game_tests enable trigger aa_testing_reservation;");
+ await db.exec("alter table community_game_tests disable trigger aa_testing_reservation;update community_game_tests set reservation_started_at=now()-interval '49 hours',reservation_expires_at=now()-interval '1 hour' where status='claimed';alter table community_game_tests enable trigger aa_testing_reservation;");
  await db.query('select process_tester_availability()');assert.equal(await count(),3,'Expired reservation releases capacity and emits one server-side alert');await db.query('select process_tester_availability()');assert.equal(await count(),3);
  await claim(1);await db.query('select process_tester_availability()');assert.equal(await count(),3,'Fresh/extended deadline is not expired');
  await db.exec('update community_playtests set target_testers=2');assert.equal(await count(),4,'Capacity increase emits a new transition once');

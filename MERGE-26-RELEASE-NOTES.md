@@ -101,3 +101,10 @@ Evidence: [sanitised executed suite results](docs/MERGE-26-AUTOMATED-RESULTS.jso
 - [ ] After an authorised release, essential non-destructive production smoke tests: auth, existing catalogue/submissions, private admin/owner access, media, ranks, aggregates, consent and bell/capacity rules. No unnecessary real test data.
 
 **Recommendation:** GO for owner localhost acceptance; **NO-GO for production now** because manual, privacy and production operational approval gates remain. No critical/high technical failure was observed in executed checks; untested manual outcomes are not claimed as passes.
+
+
+## PC and 48-hour continuation checkpoint
+
+Development migrations 113?115 add owner-private optional account PC details, canonical optional minimum/recommended game requirements, 48-hour deadlines for new reservations, and transactional owner approval notifications. Already-issued deadlines and other policy values were preserved (one active development reservation verified). No production operation occurred. Account and listing UI preserve optional fields, use atomic save RPCs and show manual comparison without compatibility claims or device inspection. Steam importer does not currently supply structured requirements; no invented mapping was added.
+
+Executed: PC validation/RLS/atomic rollback tests and real development browser account/create/edit/private comparison/clear/mobile/150% tests passed; 48-hour boundary/preservation, availability, approval dedupe/RLS/rollback and notification bell browser tests passed. Bell persistence is transactional; closed visible bells refresh every 15 seconds or on focus, not push-instantly. Hidden tabs do not poll. Full owner manual acceptance remains pending. The feedback-history/referrals follow-up begins after this checkpoint; final combined documentation and build will follow.

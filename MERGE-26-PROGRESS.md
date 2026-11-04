@@ -68,3 +68,10 @@ Development had no `supabase_migrations.schema_migrations` history table. Existi
 4. Admin: select a QA submission and toggle Admin Test/Demo. Check owner/admin access remains, public discovery and ordinary Tester Hub offers disappear, and genuine acquisition counts exclude it. Clear the flag to restore normal visibility.
 5. Admin: try each review status filter, open Analytics & acquisition, then the full report. Check mobile/150% layout and distinguish submission counts, distinct developers, sessions and unknown/self-reported sources.
 6. Accept legitimate tester feedback through moderation; check only its developer receives one notification opening the correct game/build. Review a disclosure reassessment normally; do not clear one without fresh assessment evidence.
+
+
+## PC and 48-hour continuation checkpoint
+
+Development migrations 113?115 add owner-private optional account PC details, canonical optional minimum/recommended game requirements, 48-hour deadlines for new reservations, and transactional owner approval notifications. Already-issued deadlines and other policy values were preserved (one active development reservation verified). No production operation occurred. Account and listing UI preserve optional fields, use atomic save RPCs and show manual comparison without compatibility claims or device inspection. Steam importer does not currently supply structured requirements; no invented mapping was added.
+
+Executed: PC validation/RLS/atomic rollback tests and real development browser account/create/edit/private comparison/clear/mobile/150% tests passed; 48-hour boundary/preservation, availability, approval dedupe/RLS/rollback and notification bell browser tests passed. Bell persistence is transactional; closed visible bells refresh every 15 seconds or on focus, not push-instantly. Hidden tabs do not poll. Full owner manual acceptance remains pending. The feedback-history/referrals follow-up begins after this checkpoint; final combined documentation and build will follow.

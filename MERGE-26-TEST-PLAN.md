@@ -1820,3 +1820,12 @@ Every case below remains Not Run by the owner in this release record. Browser au
 - Scheduler: development job `merge26-tester-availability`, every minute; deployment must configure and verify this separately in production. No new app environment variables. Missing scheduler means delayed/missing expiry alerts even though reservation deadlines/capacity remain server-enforced.
 - Rollback must preserve public-number allocation/tombstones and historical records. Do not reset identity sequences or drop genuine feedback data. See release notes.
 - Legal/DPIA/LIA/retention/processor decisions are documented in the privacy review. No technical test can approve them.
+
+
+## PC and 48-hour continuation checkpoint
+
+Development migrations 113?115 add owner-private optional account PC details, canonical optional minimum/recommended game requirements, 48-hour deadlines for new reservations, and transactional owner approval notifications. Already-issued deadlines and other policy values were preserved (one active development reservation verified). No production operation occurred. Account and listing UI preserve optional fields, use atomic save RPCs and show manual comparison without compatibility claims or device inspection. Steam importer does not currently supply structured requirements; no invented mapping was added.
+
+Executed: PC validation/RLS/atomic rollback tests and real development browser account/create/edit/private comparison/clear/mobile/150% tests passed; 48-hour boundary/preservation, availability, approval dedupe/RLS/rollback and notification bell browser tests passed. Bell persistence is transactional; closed visible bells refresh every 15 seconds or on focus, not push-instantly. Hidden tabs do not poll. Full owner manual acceptance remains pending. The feedback-history/referrals follow-up begins after this checkpoint; final combined documentation and build will follow.
+
+Executed evidence commands: `node tests/test-merge26-pc.mjs`; `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; `node tests/test-merge26-48-hours.mjs`; `node tests/test-merge26-feedback-approval.mjs`; `node tests/test-merge26-bell-browser.mjs`. Detailed new case catalogue will be regenerated with the follow-up.

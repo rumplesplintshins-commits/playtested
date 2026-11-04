@@ -1,4 +1,4 @@
-create table public.testing_policy(places integer,reservation_window interval);insert into testing_policy values(1,interval '72 hours');alter table community_game_tests alter column id set default gen_random_uuid();
+create table public.testing_policy(singleton boolean primary key default true,places integer,reservation_window interval not null default interval '72 hours',constraint testing_policy_reservation_window_check check(reservation_window=interval '72 hours'));insert into testing_policy values(true,1,interval '72 hours');alter table community_game_tests alter column id set default gen_random_uuid();
 CREATE OR REPLACE FUNCTION public.campaign_places(p_id uuid)
  RETURNS TABLE(submitted integer, testing integer, available integer)
  LANGUAGE sql
