@@ -1,4 +1,4 @@
-export type GameplayVideo = { provider: "YouTube" | "Vimeo" | "Google Drive"; url: string; embed: string | null };
+export type GameplayVideo = { provider: "YouTube" | "Vimeo" | "Google Drive"; url: string; embed: string };
 export function gameplayVideo(value: string): GameplayVideo | null {
   try {
     const url = new URL(value.trim());
@@ -15,7 +15,7 @@ export function gameplayVideo(value: string): GameplayVideo | null {
     }
     if (host === "drive.google.com") {
       const id = /^\/file\/d\/([a-zA-Z0-9_-]{10,150})(?:\/(?:view|preview))?\/?$/.exec(url.pathname)?.[1];
-      if (id) return { provider: "Google Drive", url: `https://drive.google.com/file/d/${id}/view`, embed: null };
+      if (id) return { provider: "Google Drive", url: `https://drive.google.com/file/d/${id}/view`, embed: `https://drive.google.com/file/d/${id}/preview` };
     }
   } catch { /* Invalid links cannot become embeds. */ }
   return null;
