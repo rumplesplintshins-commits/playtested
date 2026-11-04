@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {createClient} from "@/lib/supabase";
 import SiteHeader from "./SiteHeader";
+import SubmissionContact from "./SubmissionContact";
 import {SUBMISSION_FIELDS,AI_CLASSIFICATIONS,AI_AREAS,RELEASE_STATUSES,submissionIssues,listingEditIssues,type SubmissionIssue} from "@/lib/submission-completeness";
 
 type Correction={submission:Record<string,unknown>;published?:Record<string,unknown>;pending?:{changed_fields:string[]}|null;validation:{issues:SubmissionIssue[];message:string};history:{id:number;kind:string;previous_status:string;new_status:string;review_reason:string|null;previous_review_reason?:string|null;created_at:string}[]};
@@ -54,6 +55,7 @@ export default function SubmissionCorrection({id,listingKind}:{id:string;listing
   {loading&&<p role="status" className="mt-5">Loading your submission…</p>}
   {error&&<div role="alert" className="my-5 rounded-xl border border-red-300/30 p-4 text-sm text-red-200"><p>{error}</p>{!data&&<button onClick={()=>{setLoading(true);setRetry(value=>value+1);}} className="mt-3 rounded border px-3 py-2">Retry loading</button>}</div>}
   {data&&<>
+   {(!listingKind||listingKind==="submission")&&<SubmissionContact id={id}/>}
    <div className="my-5 rounded-xl border border-white/10 p-5"><h2 className="text-lg font-semibold">{String(data.submission.title)} · {String(data.submission.status)}</h2>
    <p className="mt-3 text-sm font-medium text-zinc-300">Automatic completeness check</p>{issues.length?<ul className="mt-3 space-y-2 text-sm leading-6 text-amber-200">{issues.map(issue=><li key={issue.field}><a href={`#correction-${issue.field}`} className="underline">{issue.label}: {issue.reason}</a></li>)}</ul>:<p className="mt-2 text-sm text-emerald-200">Required details for this action are complete.</p>}
    <p className="mt-4 text-sm leading-6 text-zinc-400">Reviewer playtesting, performance checks and public assessment notes are separate internal tasks. They are not your missing submission fields.</p></div>

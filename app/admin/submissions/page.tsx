@@ -9,6 +9,7 @@ import { needsFeedbackReview, type FeedbackReviewItem } from "../../../lib/feedb
 import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase";
 import SteamImporter from "./SteamImporter";
+import SubmissionContact from "../../components/SubmissionContact";
 import ImportedSteamCatalogue from "./ImportedSteamCatalogue";
 
 type SubmissionStatus =
@@ -2029,6 +2030,7 @@ export default function AdminSubmissionsPage() {
                           {!verificationLoaded&&verificationError&&<p className="mt-2 text-sm text-amber-200">Private notes unavailable: {verificationError} Listing review remains available.</p>}
                         </div>
                       </CollapsibleSection>
+                      <SubmissionContact key={selectedSubmission.id} id={selectedSubmission.id} admin />
                       {selectedSubmission.completenessMessage && <aside className="rounded-lg border border-amber-300/30 p-4 text-sm text-amber-100"><h3 className="font-semibold">Automatic developer completeness check</h3><p className="mt-2 whitespace-pre-wrap">{selectedSubmission.completenessMessage}</p></aside>}
 
 
