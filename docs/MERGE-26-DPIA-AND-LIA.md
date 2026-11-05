@@ -1,7 +1,21 @@
 # Merge 26 — Data Protection Impact Assessment and Legitimate Interests Assessment
 **Assessment date:** 5 November 2026
-**Status:** Draft assessment completed; accountable controller review and release sign-off outstanding
+**Status:** Owner design decision recorded (ranks only); revised implementation and accountable controller review outstanding
 **Scope:** Merge 26 Playtested changes, especially stable public tester numbers and current ranks on accepted public feedback. This document is not a legal compliance certificate.
+
+## Owner decision — 5 November 2026: ranks only; no public permanent tester numbers
+
+The owner has expressly rejected the proposed persistent public tester-number design. **Approved product direction:** public feedback may display the tester's current rank, but must not display a permanent public tester number or expose any stable cross-game tester identifier, profile link or other equivalent correlator. Internal tester UUIDs remain private for authenticated ownership, moderation, eligibility and XP. The existing database design and public resolver must be changed and verified before production deployment; this decision does **not** approve the current code as safe.
+
+**Updated LIA:** the original legitimate-interest claim for public cross-game tester numbers is withdrawn. No LIA justification is sought for publishing such numbers because that processing is out of scope. Showing a current rank on eligible accepted feedback supports credibility and recognition with less linkage, but the rank and free-text feedback can still be personal data. Assess reasonable expectations, fairness, user objection, moderation and whether rank-only display is proportionate. Where appropriate, rely on the service basis for requested feedback delivery, and assess legitimate interests separately for public rank publication; do not assume terms acceptance establishes the basis.
+
+**Updated DPIA risk:** deliberate persistent cross-game identifier linkage is removed from the design, reducing re-identification and harassment risk. Residual risks remain from report content, rank rarity, timestamps, game association, existing names or links, screenshots, and developer/private moderation views. Confirm that public pages/API payloads do not leak private tester UUIDs, numeric identity, deterministic stable labels, or profile links. Do not merely hide a number with CSS.
+
+**Existing-user handling:** do not retrospectively publish new rank labels on existing accepted feedback without updated transparent notice and a reviewed objection/restriction route. The owner must decide notice timing and whether rank-only publication applies to historical accepted reports.
+
+**Data minimisation:** avoid allocating public numbers for new testers. Do not delete or reassign any existing mapping without a reviewed migration and data-retention assessment; restrict its grants and public use. Existing admin rights-restriction controls should hide public rank when requested. Internal moderation and XP history must remain intact.
+
+**Release gate:** remove public-number display and API exposure, update privacy and terms wording, revise tests and the admin restriction runbook, validate RLS and server-side resolver output in development, then perform release checks. This document records a product decision, not final controller approval or a signed DPIA.
 
 ## 1. Processing and context
 Playtested is an individual-operated UK-facing indie-game testing platform. It processes authentication/profile data, game submissions, claims/reservations, feedback, scores/XP/ranks, developer contacts, optional PC specifications, optional page analytics and Steam-referral clicks, and operational notifications. Supabase hosts production database/auth/storage in Ireland; Render application service is in Frankfurt based on connected service metadata. Other control-plane, support, logging and subprocessor locations are not established.
