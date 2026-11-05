@@ -10,6 +10,7 @@ on:
       - 'app/components/OrganicGuide.tsx'
       - 'app/seo-social.png/**'
       - 'app/page.tsx'
+      - 'next.config.ts'
       - 'app/sitemap.ts'
       - 'lib/organic-search.ts'
       - '.github/workflows/merge27-seo-checks.yml'
@@ -26,7 +27,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/seo-social.png/route.tsx app/page.tsx app/sitemap.ts lib/organic-search.ts
+      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/seo-social.png/route.tsx app/page.tsx app/sitemap.ts lib/organic-search.ts next.config.ts
       - run: npx tsc --noEmit
       - run: npm run build
         env:
