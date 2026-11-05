@@ -32,6 +32,10 @@ begin
  end if;
 end
 $m26$;
--- The historical mapping is retained for controlled review, but no longer
--- allocated or exposed through the supported rank-only public RPC.
+-- Old development installations also installed a profile trigger which
+-- allocates numbers whenever tester roles are added or updated. Stop it.
+-- Retain historical mappings for controlled review; do not silently erase them.
+drop trigger if exists allocate_tester_public_identity on public.profiles;
+-- The old allocator function remains inaccessible to anon/authenticated.
+revoke all on function public._allocate_tester_public_identity() from public,anon,authenticated,service_role;
 commit;
