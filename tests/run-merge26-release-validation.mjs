@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const suites=[
+ ['qa-capacity',['tests/test-merge26-qa-capacity.mjs']],
+ ['hardware',['tests/test-merge26-hardware.mjs']],['finalisation-development',['--env-file=.env.local','tests/test-merge26-finalisation-development.mjs']],
+ ['plan-policy',['tests/test-developer-launch-limit.mjs','--plans']],['plan-browser',['tests/test-developer-workspace.mjs','--plans-browser']],
  ['pc',['tests/test-merge26-pc.mjs']],['pc-browser',['--env-file=.env.local','tests/test-merge26-pc-browser.mjs']],
  ['48-hours',['tests/test-merge26-48-hours.mjs']],['feedback-approval',['tests/test-merge26-feedback-approval.mjs']],['bell-browser',['tests/test-merge26-bell-browser.mjs']],
  ['steam-development',['--env-file=.env.local','tests/test-merge26-steam-development.mjs']],

@@ -121,3 +121,12 @@ Owner/legal decisions before production:
 3. Approve rights/withdrawal/erasure handling given intentionally unlinked click events and existing submitted-report/auth deletion dependencies.
 4. Confirm controller contact, processor agreements/regions/transfers, access controls and provider/security logging arrangements. No promise of UK-only hosting or absence of provider logs.
 5. Complete manual acceptance and future production backup/schema/release authorization. Technical tests cannot approve these decisions.
+
+
+## Acceptance finalisation - 5 November 2026
+
+Hardware selection standardises model labels in the same existing optional private account/public developer-requirement fields. Canonical IDs describe shared product models, not unique devices; custom entries remain explicitly distinct. No hardware inspection, persistent device ID, fingerprinting, new third-party fetch, performance inference or new analytics use is introduced. Existing owner RLS, minimisation, clear and retention arrangements remain. Recognised legacy strings normalise only on explicit save; unmatched values are retained without a bulk migration.
+
+DEV QA labels derive from explicit feedback markers within the already-admin-authorised review UI; no new database flag or moderation/XP consequence. Historical metadata remains restricted to the tester's own report references; published image changes do not grant public archive access. Notification tests restored the original read state, and no report/XP/audit/notification cleanup was performed. Existing QA records are still needed and retained. The developer account named for QA also has legitimate admin access, so ordinary testers were used to verify private denial.
+
+Owner-reported acceptance and current automated evidence are distinguished in docs/MERGE-26-OWNER-ACCEPTANCE.md and the formal test plan. Previous privacy/consent, retention/rights and provider decisions remain production gates; no legal-compliance claim or new lawful-basis conclusion follows from these technical fixes.

@@ -1,17 +1,17 @@
 # Merge 26 complete test catalogue
 
-Evidence snapshot: 2026-11-04T23:01:26.511Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
+Evidence snapshot: 2026-11-05T10:11:44.350Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
 
 ## Execution summary
 
 | Measure | Actual count |
 |---|---:|
-| Total catalogue cases | 198 |
-| Automated cases passed | 160 |
+| Total catalogue cases | 221 |
+| Automated cases passed | 183 |
 | Automated cases failed | 0 |
 | Manual owner acceptance cases pending | 38 |
 | Blocked/unexecuted automated cases | 0 |
-| Executed suites/checks passed | 29 |
+| Executed suites/checks passed | 34 |
 | Executed suites/checks failed | 0 |
 | Observed critical technical failures | 0 |
 | Observed high technical failures | 0 |
@@ -1296,6 +1296,443 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
   1. From the repository terminal run `node tests/test-merge26-development-postflight.mjs`.
   2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
 - **Expected result:** Local configuration targets development; the minute scheduler is active and its latest actual run succeeded; private grants are denied.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/development-postflight.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-01 — Finalisation notification navigation
+
+- **Test ID:** M26-FINAL-01
+- **Feature area:** Finalisation notification navigation
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real owner bell click and direct URL select the correct game/campaign Individual responses; Back/Forward work and QA read_at is restored.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/finalisation-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-02 — Finalisation authorisation
+
+- **Test ID:** M26-FINAL-02
+- **Feature area:** Finalisation authorisation
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual admin rubric/queue succeeds; ordinary tester is denied admin review and unrelated private developer feedback.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/finalisation-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-03 — DEV QA identification
+
+- **Test ID:** M26-FINAL-03
+- **Feature area:** DEV QA identification
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Explicit line-leading [DEV QA] feedback gets one compact label; ordinary mid-sentence references do not.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-04 — Historical artwork
+
+- **Test ID:** M26-FINAL-04
+- **Feature area:** Historical artwork
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Both existing accepted/rejected QA records load real existing JPEG thumbnails with naturalWidth greater than zero.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/finalisation-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-05 — Historical artwork
+
+- **Test ID:** M26-FINAL-05
+- **Feature area:** Historical artwork
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Private history uses published image override for the same source game, preserving owner scope.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-06 — Historical artwork
+
+- **Test ID:** M26-FINAL-06
+- **Feature area:** Historical artwork
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-referrals.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-referrals.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Imported-game own history resolves its actual imported ID/title/image, separate from submitted/approved source.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-sql.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-07 — Historical artwork
+
+- **Test ID:** M26-FINAL-07
+- **Feature area:** Historical artwork
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Genuinely missing/failed artwork falls back; a pending lazy image is not treated as failed.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-08 — XP review history
+
+- **Test ID:** M26-FINAL-08
+- **Feature area:** XP review history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-finalisation-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing accepted/rejected outcomes, reasons, event counts and XP remain intact after navigation/collapse/mobile/150% checks.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/finalisation-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-09 — XP review history
+
+- **Test ID:** M26-FINAL-09
+- **Feature area:** XP review history
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-testing-policy.mjs --graded-quality`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-testing-policy.mjs --graded-quality`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Partial awards, re-review/reconsideration and XP corrections remain correct in disposable graded-quality tests.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/xp-quality.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-10 — Hardware catalogue
+
+- **Test ID:** M26-FINAL-10
+- **Feature area:** Hardware catalogue
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** CPU and GPU catalogues have unique separate canonical IDs with standard display labels.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-11 — Hardware catalogue
+
+- **Test ID:** M26-FINAL-11
+- **Feature area:** Hardware catalogue
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** RTX4070TI, 4070 ti and NVIDIA 4070 Ti resolve to one model without ambiguous cross-type matches.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-12 — Hardware catalogue
+
+- **Test ID:** M26-FINAL-12
+- **Feature area:** Hardware catalogue
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Manufacturer/model search and no-results state work in the actual shared selector.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-13 — Hardware catalogue
+
+- **Test ID:** M26-FINAL-13
+- **Feature area:** Hardware catalogue
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Other values are explicitly custom and bounded; legacy unknown strings are preserved, not labelled canonical.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-14 — Hardware catalogue
+
+- **Test ID:** M26-FINAL-14
+- **Feature area:** Hardware catalogue
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual account/minimum requirements selectors retain canonical values across disclosure collapse; keyboard, mobile and CSS150% work.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-15 — Hardware persistence/privacy
+
+- **Test ID:** M26-FINAL-15
+- **Feature area:** Hardware persistence/privacy
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual Account and minimum/recommended Submit/Edit save/reload/clear preserve private versus public hardware separation and failed edits.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-16 — Hardware validation
+
+- **Test ID:** M26-FINAL-16
+- **Feature area:** Hardware validation
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-pc.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-pc.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Existing server whitelist/length/numeric bounds and RLS remain enforced for canonical/custom strings.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-17 — Entitlement presentation
+
+- **Test ID:** M26-FINAL-17
+- **Feature area:** Entitlement presentation
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-developer-workspace.mjs --plans-browser`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-developer-workspace.mjs --plans-browser`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Free Bronze is available, higher ranks/genre matching are Locked, Pro enables them, and grandfathered targeting can be retained/lowered.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/plan-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-18 — Entitlement server enforcement
+
+- **Test ID:** M26-FINAL-18
+- **Feature area:** Entitlement server enforcement
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-developer-launch-limit.mjs --plans`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-developer-launch-limit.mjs --plans`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Altered Free targeting writes are rejected; authorised Pro settings and published grandfathering survive downgrade without stronger restrictions.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/plan-policy.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-19 — Launch contract
+
+- **Test ID:** M26-FINAL-19
+- **Feature area:** Launch contract
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-developer-launch-limit.mjs --plans`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-developer-launch-limit.mjs --plans`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Forward five-launch Pro policy preserves historical usage, exact rolling quota boundaries, 48-hour gap and Free one-launch policy.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/plan-policy.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-20 — Campaign capacity
+
+- **Test ID:** M26-FINAL-20
+- **Feature area:** Campaign capacity
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-developer-launch-limit.mjs --plans`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-developer-launch-limit.mjs --plans`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** New rounds use three places while existing saved capacities/claims/history remain unchanged through policy migration.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/plan-policy.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-21 — QA capacity correction
+
+- **Test ID:** M26-FINAL-21
+- **Feature area:** QA capacity correction
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-qa-capacity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-qa-capacity.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual frozen saved-capacity trigger is reproduced; guarded correction changes only the named QA row, restores trigger and preserves both XP/outcomes.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/qa-capacity.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-22 — QA capacity correction
+
+- **Test ID:** M26-FINAL-22
+- **Feature area:** QA capacity correction
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-qa-capacity.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-qa-capacity.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Idempotency, occupied-capacity refusal, rollback and unrelated campaign preservation pass.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/qa-capacity.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-FINAL-23 — Development configuration
+
+- **Test ID:** M26-FINAL-23
+- **Feature area:** Development configuration
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-development-postflight.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-development-postflight.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Actual development default and QA capacity are three; Pro is five with 48-hour gap, freeze trigger restored and privacy/scheduler checks pass.
 - **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
 - **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
 - **Status:** Passed
@@ -3071,7 +3508,7 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 
 ## Manual owner acceptance catalogue
 
-Every case below remains Not Run by the owner in this release record. Browser automation is recorded separately above.
+The formal cases below retain their earlier pending scope. Later owner-reported component passes and resolved blockers are preserved in the dated acceptance ledger appended below; do not erase them or treat broader unexecuted steps as passed. Browser automation is recorded separately.
 
 ### M26-MN-001 — Environment
 
@@ -3922,3 +4359,45 @@ Status: **Not Run** by owner. Browser automation uses mocked destinations; an ac
 ### Cleanup and evidence
 
 Record actual observations, timestamp, role, test IDs and redacted screenshots against the matching cases; never mark these steps Passed without performing them. Restore QA listing controls/metadata, cancel your own availability requests and release your own unused reservations. Retain intended submitted reports/moderation audit. Do not hard-delete an account with report dependencies. The optional event table has no account/report IDs, so do not attempt to find or erase a person's past clicks by account. Dedicated test event UUIDs, if captured from your own Network requests, can be removed by an authorised development operator using exact IDs only; otherwise normal 90-day retention applies. Do not alter unrelated analytics or production.
+
+
+# Merge 26 owner acceptance ledger - 5 November 2026
+
+This ledger preserves the owner's reported results from the acceptance/finalisation briefs. It is separate from automated execution. Exact execution timestamps/screenshots were not supplied; do not invent them. Earlier formal manual cases may cover broader steps and therefore remain pending even where one workflow below was owner-verified.
+
+| ID | Owner-reported workflow | Status | Evidence / limits |
+|---|---|---|---|
+| OWNER-01 | Account PC open/save/edit/clear/persistence and basic privacy | Passed | Owner acceptance brief; new searchable selector UX still needs owner retest. |
+| OWNER-02 | Developer optional requirements entry/editing; public and Tester Hub display | Passed | Owner acceptance brief; preserved styling commits 2bcf39a/7a6ff00; selector retest pending. |
+| OWNER-03 | Steam consent/click/admin reporting and Top 10/25/50/All | Passed | Owner acceptance brief; refusal/navigation without tracking was not completed. |
+| OWNER-04 | 48-hour claim, one-active restriction, release and availability notification | Passed | Owner acceptance brief; no issued deadlines changed in this finalisation. |
+| OWNER-05 | Admin ranks and Tester Analytics | Passed | Owner acceptance brief. |
+| OWNER-06 | General catalogue/developer regressions, responsive UI and development fixture cleanup | Passed | Owner acceptance brief; not a claim that every later manual accessibility case was run. |
+| OWNER-07 | Free one launch/rolling 30 days; Pro five/rolling 30 days and 48-hour gap | Passed | Latest finalisation brief; development policy independently read as 1/5 with existing entitlement flags. Checkout still expected 15; corrected to 5. The stated earlier fix was not assumed present: the actual checked-out parser still expected 15. No reset/cherry-pick overwrote newer work. |
+| OWNER-08 | QA accepted report quality/XP and immediate developer approval notification | Passed | Latest brief supersedes the earlier rubric blocker; accepted report 1c6c3bc7-eca4-490c-bd50-ea9b402f960d. |
+| OWNER-09 | QA rejection with reason; no developer notification | Passed | Latest brief; rejected report 423d0044-6664-4561-b842-c3530ab9b739. |
+| OWNER-10 | Historical artwork, usefulness states and submitted feedback history | Not Run | Previously blocked/incomplete owner walkthrough. Automated authenticated history/artwork checks now exist; owner retest remains. |
+| OWNER-11 | Notification bell deep link, correct build, Back/Forward and no duplicate | Not Run | Notification generation passed separately. New real authenticated automated test covers click/direct URL/navigation and preserves state. |
+| OWNER-12 | Steam refusal/withdrawal with ordinary navigation and unchanged counts | Not Run | Mocked browser/server consent tests passed; owner manual refusal remains. |
+| OWNER-13 | Useful/not useful/unrated independent of admin outcome/XP | Not Run | Shared badge tests passed; owner-specific assessment walkthrough remains. |
+| OWNER-14 | New hardware selectors, three-place QA/default display and actual 150% toolbar/screen-reader acceptance | Not Run | Focused automation provided; owner acceptance still needed. |
+
+The earlier Admin Review quality-rubric blocker is **resolved by the owner's later successful approval/rejection evidence**, independently confirmed by the actual authenticated admin rubric RPC and QA queue in the new integration test. Its historical root cause cannot be reconstructed from a currently healthy RPC; no claim that rerunning migration 013 was necessary is made. The UI now offers a targeted retry with an accurate configuration/access message rather than instructing an unsafe blind migration replay. No current technical blocker is inferred from the old message.
+
+## MERGE 26 — REMAINING LOCALHOST ACCEPTANCE WALKTHROUGH
+
+Environment: http://localhost:3000; only ktifgybnkdaotdxrvjgq. Required roles: existing development administrator/developer 64acc8c1-c78d-47b8-b1d7-4fd9ac6e89d9, the two dedicated QA testers, and an unrelated ordinary account. The named developer also has legitimate admin access, so use an ordinary tester for denial checks. Use established local development logins; never reset a real password or paste session tokens. If interactive synthetic credentials are unavailable, leave that owner step pending and use the authenticated automation; do not invent a manual pass.
+
+Safe existing campaign: 41a91bb0-6439-423f-ab59-fc1defbe0ec8 (Playtest 002). Retain its accepted/rejected report IDs above and their audits. No new hosted reports are required for this walkthrough.
+
+1. **Admin Review error retest:** Sign in as admin, open /admin/submissions?tab=playtests, then Reviewed. Find DEV QA cards. Confirm the rubric loads and the stale migration-013 warning is absent. Open an Awaiting review card only if there is a genuinely dedicated new QA report; assess originality/relevance and preview 0-100 XP without submitting a decision just to reset an already-reviewed record. Approval/rejection generation is already owner-passed; do not re-moderate these historical fixtures unnecessarily. On a temporary offline failure, Retry rubric should recover after restoring network without losing the assessment inputs.
+2. **History/artwork:** As each report's tester open /tester, Testing activity. Compare title/developer, real thumbnail, Submitted date, Accepted/Not accepted, actual quality and XP. Expand View my submitted feedback and XP & review history; inspect reasons/dates and signed XP deltas. Collapse/reopen. Legacy missing awards say Not recorded rather than an invented zero. For partial awards/reversals/reconsideration, use an existing dedicated QA history or the disposable graded-quality test; do not rewrite genuine history to create a screenshot.
+3. **Usefulness:** As owner use the existing feedback usefulness control on the accepted QA report, checking useful and not useful as appropriate; inspect Admin Review and Tester Hub. A report without an assessment stays neutral. Confirm XP and admin decision do not change. If changing the QA assessment, record the intentional final value; do not delete its audit/notifications to hide the test.
+4. **Notification deep link:** As developer start on another page, open the bell and select New playtest feedback approved for Playtest 002. Expect the correct My Games selection, campaign and Individual responses tab, with the feedback section scrolled into view. Open the accepted report's existing disclosure to read its full answers. Back returns naturally; directly paste the existing notification URL in a new tab and repeat. Reopening never generates another notification or XP award. Also try an ordinary unrelated account: private developer RPCs must reject access. If the alert has aged out of the bell's eight recent entries, use notification history/direct URL and record the bell step pending rather than fabricating a new alert.
+5. **Capacity:** Open the QA playtest configuration. Expect three saved Tester Hub places; two submitted reports occupy two places and leave one unless another legitimate reservation has since been made. Compare Tester Hub/Refresh places and admin data. New drafts also default to three. Other existing campaigns retain their intentionally saved capacities; do not globally convert old rounds. Never reduce below occupied/submitted places.
+6. **Entitlements:** With an ordinary Free developer creating an unpublished draft, Bronze/all ranks is selectable; Silver/Gold/Platinum and required genre match are visible as Locked and disabled. Existing published rounds may keep/lower their prior restrictions but cannot strengthen them after downgrade. With a dedicated administrator-authorised Pro fixture, higher targeting is enabled. Do not grant paid entitlements to real accounts solely for this retest; mocked plan-browser and disposable plan-policy tests cover both states.
+7. **Hardware:** In Account choose a CPU by manufacturer/model search. Search GPU using RTX4070TI, 4070 ti and NVIDIA 4070 Ti; choose the same canonical model each time. Test arrows/Enter/Escape and Other / Not listed with a bounded unusual model. Save/reload and clear. Repeat minimum/recommended in Submit/Edit listing. Existing unknown strings must remain custom; public game labels must not show private account hardware or claim compatibility. Collapse/reopen preserves selected values. Restore only your own temporary QA specs/requirements afterwards.
+8. **Steam refusal:** Use the already-authorised Steam-linked game/history from the earlier owner test. The QA campaign may not have a valid Steam destination: do not guess one or relabel itch.io. As an ordinary tester note admin totals, Reject optional analytics and activate View Steam Page. Steam opens in a new tab, original Hub state remains, and a fresh admin report does not gain a click. Renew Allow for this new purpose and make one intentional activation; expect one recorded click. Reject again. Admin/itch/catalogue links are excluded. Record missing-link cases honestly.
+9. **150% / mobile / accessibility:** Use actual browser toolbar zoom 150%, then mobile 390px. Check history cards, event disclosures, hardware list scrolling and section controls. Long reasons wrap; no document-wide horizontal overflow. Use Tab and a screen reader for label/expanded-state announcement. CSS zoom automation is evidence for layout, not owner screen-reader acceptance. Reset zoom afterwards.
+
+Cleanup: restore only changed QA specs/assessment choices if appropriate, release only your own unused reservations, and leave both reports, XP, ranks, dedupe keys, notifications and audit events intact. No feedback/account deletion is appropriate while these fixtures are needed for regression/screenshot/deep-link acceptance. The guarded development-only capacity script is **not** a report-cleanup script or production migration. Any future removal needs separate reviewed dependency/XP-reversal/dedupe/trigger handling; do not hard-delete reports or their auth accounts. Production/privacy approvals remain separate release gates.
