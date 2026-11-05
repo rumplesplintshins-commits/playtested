@@ -21,3 +21,27 @@ jobs:
       - run: node tests/test-merge26-tester-identity.mjs
       - run: node tests/test-merge26-privacy-controls.mjs
       - run: npx tsc --noEmit
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Offline Merge 26 regression suites
+        run: |
+          node tests/test-merge26.mjs
+          node tests/test-merge26-availability.mjs
+          node tests/test-merge26-48-hours.mjs
+          node tests/test-merge26-feedback-approval.mjs
+          node tests/test-merge26-steam-referrals.mjs
+          node tests/test-merge26-steam-routes.mjs
+          node tests/test-merge26-tester-analytics.mjs
+          node tests/test-merge26-security.mjs
+          node tests/test-notification-routing.mjs
+          node tests/test-build-results-selection.mjs
+      - name: Production build
+        run: npm run build
