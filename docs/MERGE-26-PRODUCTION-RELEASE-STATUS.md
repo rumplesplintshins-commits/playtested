@@ -1,3 +1,15 @@
+## 5 November 2026 — release-gate recheck (latest)
+
+- **Production remains unchanged:** PostgreSQL 17.11; 48 profiles, 40 feedback rows, 90 submissions; Merge 26 listing and privacy tables absent. The Supabase migration-list API reports no tracked migration entries for production. Do not infer that the baseline schema is absent from this empty list.
+- **Hosted development reverified:** PostgreSQL 17.11; 9 profiles, 5 feedback rows, 12 submissions; 48-hour reservations, three-place capacity, Pro launch limit, private PC and analytics grants, ranks-only resolver, one active availability scheduler and most recent scheduler run succeeded. These are hosted checks, not only offline tests.
+- **Rank-only schema drift resolved:** migration 126 was applied on development. Public feedback resolver returns `(test_id uuid, current_rank integer)`; legacy number allocation trigger is disabled. Twenty-nine historical development number mappings remain for controlled review. No production migrations applied.
+- **Migration history caveat:** the Supabase migration-list API reports only the connector-applied forward reconciliation migration on development; earlier 101–125 were applied outside its tracked history. Treat the development schema as a test environment, not as proof of a clean production migration chain.
+- **Backup evidence:** the user-provided 4 November `database.dump` still matches SHA-256 `83354c14882be6d869bf4a206683bcc7fbe17b177bce811461a9f6424319326c`. It is not a fresh backup and no isolated PostgreSQL restore was completed. The current execution environment lacks `pg_restore`/PostgreSQL binaries; package installation could not be completed. Do not claim recovery is proven.
+- **Code:** hosted postflight assertions now check the rank-only function signature and absence of legacy number-allocation trigger, rather than uniqueness of rejected public numbers. Commit `2d75bb1f07c9c41e4faedae8174aba7f85c5a52d`.
+- **Release:** no merge to `v11`, no production migration, no Render deployment. Required before release: verified fresh database/Storage recovery, complete clean-schema migration rehearsal, privacy/controller approval, and deployment smoke tests. Do not turn general enthusiasm to launch into a claim these safeguards have passed.
+
+---
+
 # Current Merge26 privacy/recovery readiness ? 5 November 2026
 
 Implementation directions selected, not blanket legal approval. Independent versioned page/Steam choices and audited attribution restriction/partial minimisation are implemented and tested; old combined-consent/no-control statements below are historical snapshots. Migrations123?125 applied/verified ONLY in development; production untouched. Hosted disposable-account testing exposed and corrected a NOT NULL profile-name mismatch in the uncommitted124 implementation. The neutral replacement is Restricted account; no genuine report was altered.
