@@ -28,7 +28,7 @@ try{
  await db.exec(`update profiles set display_name='Private tester',tester_xp=125 where id='${id(1)}';insert into account_pc_specs(user_id,specs) values('${id(1)}','{"os":"Linux"}');insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome) values('${id(50)}','${id(20)}','${id(1)}','reviewed','accepted');`);
  await db.query('insert into tester_availability_preferences(tester_id,playtest_id) values($1,$2)',[id(1),id(20)]);
  const identity=async()=> (await db.query('select * from get_feedback_tester_identities($1)',[[id(50)]])).rows[0];
- await db.exec('set role anon;reset test.uid');assert((await identity()).public_number);
+ await db.exec('set role anon;reset test.uid');assert.equal((await identity()).current_rank,0);
  await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']),/permission denied/);
  await db.exec(`reset role;set role authenticated;set test.uid='${id(2)}'`);
  await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']),/Admin access/);
@@ -36,11 +36,11 @@ try{
  await assert.rejects(db.query('select * from _m26_unrestricted_feedback_identities($1)',[[id(50)]]),/permission denied/);
  await db.exec(`set test.uid='${id(9)}'`);
  const before=(await db.query('select * from community_game_tests where id=$1',[id(50)])).rows[0];
- await db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']);assert((await identity()).public_number,'Private admin moderation retains identity');
- await db.exec('reset test.uid;reset role;set role anon');assert.equal((await identity()).public_number,null);assert.equal((await identity()).current_rank,null);
- await db.exec(`reset role;set role authenticated;set test.uid='${id(2)}'`);assert.equal((await identity()).public_number,null);
+ await db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']);assert.equal((await identity()).current_rank,null,'Admin restriction suppresses public rank');
+ await db.exec('reset test.uid;reset role;set role anon');assert.equal((await identity()).current_rank,null);
+ await db.exec(`reset role;set role authenticated;set test.uid='${id(2)}'`);assert.equal((await identity()).current_rank,null);
  await db.exec(`set test.uid='${id(9)}'`);await db.query('select set_tester_privacy_restriction($1,false,false,$2)',[id(1),'CASE_002']);
- await db.exec('reset test.uid;reset role;set role anon');assert((await identity()).public_number,'Reviewed reversible restriction');
+ await db.exec('reset test.uid;reset role;set role anon');assert.equal((await identity()).current_rank,0,'Reviewed reversible restriction');
  await db.exec(`reset role;set role authenticated;set test.uid='${id(9)}'`);
  await assert.rejects(db.query('select set_tester_privacy_restriction($1,false,true,$2)',[id(1),'CASE_003']),/requires attribution/);
  await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(9),'CASE_003']),/Eligible account/);
@@ -62,5 +62,5 @@ try{
  await assert.rejects(db.query('delete from community_game_tests where id=$1',[id(50)]),/cannot be released or deleted/);
  await assert.rejects(db.query('update community_game_tests set tester_id=$1 where id=$2',[id(2),id(50)]),/cannot be recycled/);
  await db.exec('set role authenticated');await assert.rejects(db.exec('delete from tester_privacy_actions'),/permission denied/);
- console.log('PASS privacy controls: independent versioned opt-ins, legacy off, expiry/withdrawal; real SQL admin-only audited public-number/rank masking, reversible restriction, minimisation without report/XP/Auth deletion.');
+ console.log('PASS privacy controls: independent versioned opt-ins, legacy off, expiry/withdrawal; real SQL admin-only audited public rank masking, reversible restriction, minimisation without report/XP/Auth deletion.');
 }finally{await db.close();}
