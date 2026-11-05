@@ -1,4 +1,6 @@
 "use client";
+import GameTitleHint from "../components/GameTitleHint";
+import {gameTitleError} from "@/lib/submission-completeness";
 import {GamePcFields,type RequirementsDraft} from "../components/PcSpecificationFields";
 import {parsePcSpecs} from "@/lib/pc-specifications";
 import {useUnsavedPcChanges} from "@/lib/use-unsaved-pc-changes";
@@ -448,6 +450,7 @@ export default function SubmitGamePage() {
 
   const [submitted, setSubmitted] = useState(false);
 
+  const [gameTitle,setGameTitle]=useState("");
   const [submittedTitle, setSubmittedTitle] = useState("");
 
 
@@ -1246,6 +1249,7 @@ export default function SubmitGamePage() {
 
 
     const title = String(formData.get("title") ?? "").trim();
+    const titleError=gameTitleError(title);if(titleError){setError(titleError);return;}
 
 
 
@@ -2030,7 +2034,7 @@ export default function SubmitGamePage() {
       setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
-      setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");form.reset();
+      setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");setGameTitle("");form.reset();
       setPulseOpen(false);setPulseStage("idle");
       // The optional queue is handled independently after the successful save.
     } catch (err) {
@@ -2915,7 +2919,7 @@ export default function SubmitGamePage() {
 
                 onClick={() => {
 
-                  setSubmitted(false);
+                  setSubmitted(false);setGameTitle("");
 
                   setReleaseStatus("");
 
@@ -3382,13 +3386,13 @@ export default function SubmitGamePage() {
 
                   required
 
-                  name="title"
+                  name="title" value={gameTitle} aria-describedby="new-game-title-length" aria-invalid={!!gameTitleError(gameTitle)}
 
                   placeholder="Enter your game title"
 
                   className={inputClass}
 
-                  onChange={() => {
+                  onChange={(event) => { setGameTitle(event.target.value);
 
                     resetDuplicateState();
 
@@ -3397,6 +3401,7 @@ export default function SubmitGamePage() {
                 />
 
               </label>
+              <GameTitleHint id="new-game-title-length" value={gameTitle}/>
 
 
 

@@ -204,7 +204,7 @@ const checklistItems = [
 type ChecklistField = (typeof checklistItems)[number]["field"];
 
 function getMissingInformation(submission: Submission): string[] {
- return submissionIssues({title:submission.title,developer_name:submission.developer,genre:submission.genre,description:submission.description,game_link:submission.gameLink,steam_url:submission.steamUrl,image_url:submission.imageUrl,ai_type:submission.aiType,ai_explanation:submission.aiExplanation,evidence_link:submission.evidenceLink,release_status:submission.releaseStatus,release_date:submission.releaseDate}).map(issue=>issue.label+": "+issue.reason);
+ return submissionIssues({title:submission.title,developer_name:submission.developer,genre:submission.genre,description:submission.description,game_link:submission.gameLink,steam_url:submission.steamUrl,image_url:submission.imageUrl,ai_type:submission.aiType,ai_explanation:submission.aiExplanation,evidence_link:submission.evidenceLink,release_status:submission.releaseStatus,release_date:submission.releaseDate},submission.title).map(issue=>issue.label+": "+issue.reason);
 }
 
 function formatDate(value: string): string {
@@ -463,7 +463,7 @@ export default function AdminSubmissionsPage() {
       if(activity.error){setPageError("Review activity could not be loaded. Refresh before reviewing.");setLoaded(true);return;}
       const mapped: Submission[] = (data ?? []).map((row) => ({
         id: row.id,
-        steamUrl:row.steam_url??"",releaseStatus: row.release_status ?? "",releaseDate:row.release_date??"",completenessMessage:completenessMessage(submissionIssues(row)),
+        steamUrl:row.steam_url??"",releaseStatus: row.release_status ?? "",releaseDate:row.release_date??"",completenessMessage:completenessMessage(submissionIssues(row,String(row.title??""))),
         title: row.title ?? "",
         developer: row.developer_name ?? "",
         genre: row.genre ?? "",
@@ -1795,15 +1795,15 @@ export default function AdminSubmissionsPage() {
                               )}
 
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="truncate font-semibold">
+                                <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between">
+                                  <div className="min-w-0 max-w-full">
+                                    <p className="break-words [overflow-wrap:anywhere] font-semibold">
                                       {
                                         submission.title
                                       }
                                     </p>
 
-                                    <p className="mt-1 truncate text-xs text-zinc-500">
+                                    <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs text-zinc-500">
                                       {
                                         submission.developer
                                       }
@@ -1871,7 +1871,7 @@ export default function AdminSubmissionsPage() {
                       <div
                         className={`${panelClass} p-5`}
                       >
-                        <div className="flex flex-wrap items-start gap-4">
+                        <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap">
                           {selectedSubmission.imageUrl ? (
                             <img
                               src={
@@ -1882,12 +1882,9 @@ export default function AdminSubmissionsPage() {
                             />
                           ) : null}
 
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                              Submission review
-                            </p>
+                          <div className="w-full min-w-0 sm:w-auto sm:flex-1">
 
-                            <h2 className="mt-1 text-2xl font-bold">
+                            <h2 className="mt-1 break-words [overflow-wrap:anywhere] text-xl font-bold sm:text-2xl">
                               {
                                 selectedSubmission.title
                               }
@@ -2750,12 +2747,12 @@ export default function AdminSubmissionsPage() {
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h3 className="truncate font-semibold">
+                          <div className="min-w-0 max-w-full">
+                            <h3 className="break-words [overflow-wrap:anywhere] font-semibold">
                               {claim.gameTitle}
                             </h3>
 
-                            <p className="mt-1 truncate text-xs text-zinc-500">
+                            <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs text-zinc-500">
                               {claim.developerName}
                             </p>
                           </div>

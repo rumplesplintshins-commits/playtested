@@ -12,5 +12,6 @@ export async function validateScreenshot(file: File) {
   try { image = await createImageBitmap(file); } catch { throw new Error("This image could not be decoded. Choose a valid JPG, PNG or WebP."); }
   try {
     if (image.width > 8192 || image.height > 8192 || image.width * image.height > SCREENSHOT_PIXELS) throw new Error("Screenshots must be at most 8192 pixels per side and 25 megapixels.");
+    return image.width*image.height;
   } finally { image.close(); }
 }
