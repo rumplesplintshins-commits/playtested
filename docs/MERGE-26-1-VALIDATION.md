@@ -1,5 +1,7 @@
 # Merge 26.1 validation
 
+Fresh follow-up execution and recovery/migration evidence: [release readiness](MERGE-26-1-RELEASE-READINESS.md). Changed-code lint now includes `next.config.ts` (22 files,11 baseline errors, no new errors). Added passing `test-m261-migration-guards.mjs`, `test-m261-recovery-verifier.mjs` and private-snapshot `test-m261-production-snapshot.mjs`. `tests/run-m261-browser.mjs` provides CI orchestration; `.github/workflows/merge261-readiness.yml` is the latest-head PR check. Historical measurements below are distinguished from the newer evidence files and follow-up report.
+
 Run commands from the isolated feature worktree. Use Node/npm versions in the repository lockfile environment; `npm.cmd` on Windows. Browser tests require the local Next development server on `127.0.0.1:3026` with development Supabase public settings. No production credentials are needed. Temporary browser fixture components are removed in `finally`; do not run the build or changed-file lint discovery while those fixtures exist. Native benchmarking requires the authenticated Supabase CLI on PATH or `SUPABASE_CLI` pointing to its executable; the script hardcodes development project identity. Never substitute a production target.
 
 Implementation checkpoint: `e9488bf`. Embedded catalogue SQL retains reviewed source whitespace because migration guards hash function bodies; do not reformat that body without recomputing and verifying compatibility guards.

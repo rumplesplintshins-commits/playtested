@@ -3,7 +3,7 @@ import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const git=args=>execFileSync('git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
-const files=[...new Set([...git(['diff','--name-only','1c85227','--','app','lib']).split(/\r?\n/),...git(['ls-files','--others','--exclude-standard','app','lib']).split(/\r?\n/)])].filter(p=>/\.tsx?$/.test(p));
+const files=[...new Set([...git(['diff','--name-only','--diff-filter=ACMR','1c85227','--','app','lib','next.config.ts']).split(/\r?\n/),...git(['ls-files','--others','--exclude-standard','app','lib']).split(/\r?\n/)])].filter(p=>/\.tsx?$/.test(p));
 const eslint=new ESLint(),results=[];
 for(const file of files){
  let baseline;try{baseline=(await eslint.lintText(git(['show','1c85227:'+file]),{filePath:file}))[0];}catch{baseline={errorCount:0,messages:[]};}

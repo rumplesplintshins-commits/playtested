@@ -2,6 +2,8 @@
 
 **Not executed. Owner approval required before production writes, merge or Render deployment.** Target PR base `v11`; branch `codex/merge-26-1-performance`, based on `1c85227`. Merge 27 stays independent.
 
+Current gate assessment: [release readiness](MERGE-26-1-RELEASE-READINESS.md). Fresh Storage protection now covers126/126 objects, but the existing database dump predates current schema and is not an adequate current recovery point. Do not proceed on Storage verification alone.
+
 ## Preflight
 
 1. Confirm reviewed commit, clean worktree, dependency lockfile unchanged, no secrets/dumps/QA records. Re-run changed-code tests/build if integration changes code.
@@ -13,7 +15,7 @@ select version,name from supabase_migrations.schema_migrations order by version;
 select p.oid::regprocedure, l.lanname, p.prosecdef, p.proacl, md5(p.prosrc),p.proconfig
 from pg_proc p join pg_language l on l.oid=p.prolang
 where p.oid in ('public.beta_fixture_hidden(uuid)'::regprocedure,
- 'public.m26_listing_hidden(uuid)'::regprocedure,
+ 'public.m26_listing_hidden(uuid,boolean)'::regprocedure,
  'public.get_public_catalogue(integer,integer,text,text,text,text,boolean,text)'::regprocedure);
 select indexname,indexdef from pg_indexes where schemaname='public'
 and tablename in ('imported_games','game_submissions');
@@ -26,12 +28,14 @@ Save function definitions/ACLs and baseline aggregate counts securely before rel
 
 ## Ordered migrations — only outstanding versions
 
-1. `202611060128_reconcile_catalogue_fixture_hotfix.sql`: known current production guard bodies are no-ops; compatible known older SQL guards reconcile to the reviewed PL/pgSQL fast paths. Check resulting function definitions and ACLs before proceeding.
+1. `202611060128_reconcile_catalogue_fixture_hotfix.sql`: explicit BEGIN/COMMIT; known current production guard bodies are no-ops; compatible known older SQL guards reconcile to the reviewed PL/pgSQL fast paths. If the second guard is unknown, both changes roll back. Check resulting function definitions and ACLs before proceeding. Use `m26_listing_hidden(uuid,boolean)`, not a nonexistent one-argument signature, in verification queries.
 2. `202611060129_catalogue_custom_plan.sql`: two ordinary indexes and invoker catalogue custom planning; same signature/result/filters. Check guard hash compatibility first. Index creation takes locks: choose a low-traffic window and a bounded lock timeout at the migration connection. If lock timeout/failure occurs, stop and inspect transaction/history; do not improvise `CONCURRENTLY`, disable RLS or remove guards. Capture anonymous actual RPC timings and compare result totals before continuing.
 3. `202611060130_developer_game_metrics.sql`: private identity helper and service-role-only aggregate RPC. Verify ordinary/anonymous cannot execute, service aggregate matches read-only reconciliation, no user identities returned.
 4. `202611060131_game_title_limits.sql`: title and listing-revision triggers; no backfill/truncation. Check legacy unchanged rows remain editable and >60 changed/new titles fail in a rollback-only test. Preserve existing claim title compatibility.
 
 Each file is transactional. Verify successful migration/history and expected definitions before the next file. All are compatible with the current app; new metrics UI is deployed only after its RPC. Unknown/failing results stop release.
+
+The SELECT-only `tests/m261-production-readonly-preflight.sql` and offline `tests/test-m261-production-snapshot.mjs PRIVATE_SNAPSHOT` reproduce the reviewed production metadata compatibility check. LF-normalized SHA-256 values for all four exact files are recorded in `docs/performance/MERGE-26-1-PRODUCTION-COMPATIBILITY.json`; recheck before execution. Do not apply 128–131 with a blanket `db push` that might replay unrelated development history or seeds. Use the existing approved migration connection/ledger workflow, one reviewed file per verified step, after recovery and release approval. Do not request/reset credentials as a workaround.
 
 ```sql
 select indexname from pg_indexes where schemaname='public' and indexname like 'm261_%';

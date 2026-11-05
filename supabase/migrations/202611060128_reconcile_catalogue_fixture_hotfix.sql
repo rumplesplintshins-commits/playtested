@@ -1,3 +1,4 @@
+begin;
 -- Also reconcile the earlier direct PL/pgSQL listing fastpath without overwriting newer definitions.
 do $listing_guard$
 declare body text;lang text;
@@ -52,3 +53,4 @@ end;
 $function$;$definition$;
 end;
 $reconcile$;
+commit;

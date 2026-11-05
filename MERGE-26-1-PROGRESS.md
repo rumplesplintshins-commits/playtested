@@ -1,5 +1,7 @@
 # Merge 26.1 — Performance & UX Optimisation
 
+Latest follow-up: [release-readiness assessment](docs/MERGE-26-1-RELEASE-READINESS.md). Atomic128 reconciliation, corrected preflight signature, independent recovery verification and focused GitHub Actions coverage are added. Fresh Storage backup now covers126/126 objects; a current database recovery point remains BLOCKED. No production changes.
+
 Source: production branch `v11` at `1c85227`; isolated branch `codex/merge-26-1-performance`. Merge 26 and the separate Merge 27 SEO worktree have not been modified. Production inspection was read-only. No production migrations, merge, configuration changes or deployment have occurred.
 
 ## Implemented

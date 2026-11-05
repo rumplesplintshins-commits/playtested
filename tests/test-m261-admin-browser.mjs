@@ -6,12 +6,13 @@ const title='Historical game '+ 'LongUnbrokenTitle'.repeat(15);
 const browser=await chromium.launch();
 try {
  const context=await browser.newContext();
- await context.addInitScript(()=>{
+ const project=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL||'https://ktifgybnkdaotdxrvjgq.supabase.co').hostname.split('.')[0];
+ await context.addInitScript(project=>{
   const user={id:'26110000-0000-4000-8000-000000000001',aud:'authenticated',role:'authenticated',email:'fixture@example.invalid',user_metadata:{}};
   const enc=v=>btoa(JSON.stringify(v)).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
   const token=enc({alg:'HS256',typ:'JWT'})+'.'+enc({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})+'.fixture';
-  document.cookie='sb-ktifgybnkdaotdxrvjgq-auth-token=base64-'+enc({access_token:token,refresh_token:'fixture',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user})+'; path=/';
- });
+  document.cookie='sb-'+project+'-auth-token=base64-'+enc({access_token:token,refresh_token:'fixture',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user})+'; path=/';
+ },project);
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());
   // Synthetic session is never forwarded to the application server or Supabase.
