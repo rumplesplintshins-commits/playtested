@@ -1,3 +1,5 @@
+**Additional read-only production prerequisites (5 November):** `pg_cron` is installed; existing new-campaign capacity is 3; Pro launch limit is 15 (an explicitly supported input for migration 122 to change to 5); `_share_key(text,uuid)` exists; `_m26_activity_game(uuid,uuid)` is absent before the earlier Merge 26 migration that creates it. These checks do not substitute for full ordered migration execution. The privacy CI test now also runs migration 126 after 124 on its clean test fixture (commit `7b57e07`), with CI outcome pending independent verification.
+
 ## 5 November 2026 — release-gate recheck (latest)
 
 - **Production remains unchanged:** PostgreSQL 17.11; 48 profiles, 40 feedback rows, 90 submissions; Merge 26 listing and privacy tables absent. The Supabase migration-list API reports no tracked migration entries for production. Do not infer that the baseline schema is absent from this empty list.
