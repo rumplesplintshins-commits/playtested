@@ -1,4 +1,10 @@
+import Link from "next/link";
 
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
+// Main contains illustrative prototype records, not genuine catalogue entries.
+export const metadata: Metadata = { title: "Prototype game preview", robots: { index: false, follow: true } };
 export const instant = false;
 
 const gameDetails: Record<
@@ -163,6 +169,9 @@ const gameDetails: Record<
   },
 };
 
+// Prerender known prototype examples; never port this demo list to the database catalogue.
+export function generateStaticParams() { return Object.keys(gameDetails).map(slug => ({slug})); }
+
 export default async function GamePage({
   params,
 }: {
@@ -171,36 +180,24 @@ export default async function GamePage({
   const { slug } = await params;
   const game = gameDetails[slug];
 
-  if (!game) {
-    return (
-      <main className="min-h-screen bg-[#090b0a] px-6 py-20 text-zinc-100">
-        <a href="/" className="text-[#77f29b]">
-          PLAYTESTED_
-        </a>
-        <h1 className="mt-10 text-3xl font-bold">Game not found</h1>
-        <a href="/#discover" className="mt-6 inline-block text-zinc-400">
-          ← Back to games
-        </a>
-      </main>
-    );
-  }
+  if (!game) notFound();
 
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <header className="border-b border-white/[0.08]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <a
+          <Link
             href="/"
             className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider"
           >
             PLAYTESTED<span className="text-[#77f29b]">_</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/#discover"
             className="text-sm text-zinc-400 hover:text-white"
           >
             ← All games
-          </a>
+          </Link>
         </div>
       </header>
 

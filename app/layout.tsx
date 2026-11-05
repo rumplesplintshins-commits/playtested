@@ -15,9 +15,10 @@ const bodyFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Playtested | Find Good Games",
+  metadataBase: new URL("https://playtested.co.uk"),
+  title: { default: "Playtest Indie Games & Find Playtesters | Playtested", template: "%s | Playtested" },
   description:
-    "Cut through the noise. Discover games worth your time, money and attention.",
+    "Discover indie games, learn about playtesting and find practical guides for developers and playtesters to collect useful player feedback.",
 };
 
 export default function RootLayout({

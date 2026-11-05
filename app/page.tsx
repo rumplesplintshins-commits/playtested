@@ -1,4 +1,14 @@
 
+import Link from "next/link";
+import type { Metadata } from "next";
+import { organicOrigin, safeStructuredData } from "@/lib/organic-search";
+
+export const metadata: Metadata = {
+  alternates: { canonical: organicOrigin },
+  openGraph: { type: "website", locale: "en_GB", siteName: "Playtested", title: "Playtest Indie Games & Find Playtesters | Playtested", url: organicOrigin, description: "Explore indie game playtesting and practical player feedback guides.", images: [{ url: "/seo-social.png", width: 1200, height: 630, alt: "Playtested — playtesting and player feedback" }] },
+  twitter: { card: "summary_large_image", title: "Playtest Indie Games & Find Playtesters | Playtested", description: "Explore indie game playtesting and practical player feedback guides.", images: ["/seo-social.png"] },
+};
+
 const games = [
   {
     slug: "echoes-of-elsewhere",
@@ -61,18 +71,18 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <header className="border-b border-white/[0.08]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-5">
+          <Link href="/" className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider">
             PLAYTESTED<span className="text-[#77f29b]">_</span>
-          </a>
+          </Link>
           <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
-            <a href="#discover" className="hover:text-white">Discover</a>
-            <a href="#stats" className="hover:text-white">Community stats</a>
-            <a href="#about" className="hover:text-white">About</a>
+            <Link href="#discover" className="hover:text-white">Discover</Link>
+            <Link href="#stats" className="hover:text-white">Community stats</Link>
+            <Link href="#about" className="hover:text-white">About</Link>
           </nav>
-          <a href="#discover" className="rounded-md border border-[#77f29b]/40 px-4 py-2 text-sm text-[#77f29b] hover:bg-[#77f29b]/10">
+          <Link href="#discover" className="rounded-md border border-[#77f29b]/40 px-4 py-2 text-sm text-[#77f29b] hover:bg-[#77f29b]/10">
             Explore games
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -82,25 +92,29 @@ export default function Home() {
             <span className="h-2 w-2 rounded-full bg-[#77f29b]" />
             BUILT AROUND PLAYER OPINION
           </div>
-          <h1 className="font-[family-name:var(--font-display)] text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-            LESS HYPE.
+          <h1 className="font-[family-name:var(--font-display)] break-words text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
+            PLAYTEST INDIE GAMES.
             <br />
-            <span className="text-[#77f29b]">MORE GAME.</span>
+            <span className="text-[#77f29b]">FIND PLAYTESTERS.</span>
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-zinc-400 md:text-lg">
-            Discover what is worth playing. Honest reviews, useful player
-            feedback and a clearer picture of what makes a game good.
-            Whatever the technology behind it.
+            Discover indie games and learn how to turn player feedback into
+            useful development decisions. Explore practical playtesting guides
+            for developers and players.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#discover" className="rounded-md bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4]">
+            <Link href="#discover" className="rounded-md bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4]">
               Discover games <span aria-hidden="true">↗</span>
-            </a>
-            <a href="#stats" className="rounded-md border border-white/15 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">
+            </Link>
+            <Link href="#stats" className="rounded-md border border-white/15 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">
               Explore the data
-            </a>
+            </Link>
           </div>
         </div>
+      </section>
+
+      <section aria-label="Playtesting guides" className="mx-auto grid max-w-7xl gap-5 px-6 pb-14 md:grid-cols-3">
+        {[{href:"/playtesting",title:"What is playtesting?",text:"Understand what a focused game playtest can reveal."},{href:"/find-playtesters",title:"Find playtesters",text:"Prepare a clear brief and recruit players for your indie game."},{href:"/become-a-playtester",title:"Become a playtester",text:"Learn how to choose a task and give useful feedback."}].map(item=><Link key={item.href} href={item.href} className="rounded-xl border border-white/10 bg-[#101311] p-6 hover:border-[#77f29b]/50"><h2 className="text-xl font-bold text-[#77f29b]">{item.title}</h2><p className="mt-3 text-sm leading-6 text-zinc-400">{item.text}</p></Link>)}
       </section>
 
       <section id="stats" className="border-y border-white/[0.08] bg-[#0e110f]">
@@ -130,14 +144,14 @@ export default function Home() {
           <div>
             <p className="mb-2 text-xs tracking-[0.2em] text-[#77f29b]">FIND YOUR NEXT GAME</p>
             <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold md:text-4xl">Worth your time?</h2>
-            <p className="mt-2 text-sm text-zinc-500">A mix of experimental, AI-assisted and traditional games.</p>
+            <p className="mt-2 text-sm text-zinc-500">Prototype listings: illustrative games, scores and reviews, not real player feedback.</p>
           </div>
           <span className="text-sm text-zinc-500">{games.length} featured games</span>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {games.map((game) => (
-            <a
+            <Link
               key={game.slug}
               href={`/games/${game.slug}`}
               className="group overflow-hidden rounded-xl border border-white/[0.09] bg-[#101311] transition hover:-translate-y-1 hover:border-[#77f29b]/40"
@@ -161,7 +175,7 @@ export default function Home() {
                 </div>
                 <p className="mt-4 text-xs font-medium text-[#77f29b]">View game & reviews <span aria-hidden="true">→</span></p>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
         <p className="mt-4 text-xs text-zinc-600">All games, ratings and review counts shown here are illustrative demo content.</p>
@@ -185,6 +199,7 @@ export default function Home() {
       <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
         PLAYTESTED_ · A prototype for players, by players.
       </footer>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:safeStructuredData({"@context":"https://schema.org","@type":"WebSite","@id":organicOrigin+"/#website",name:"Playtested",url:organicOrigin,description:"Indie game discovery and playtesting guides"})}} />
     </main>
   );
 }
