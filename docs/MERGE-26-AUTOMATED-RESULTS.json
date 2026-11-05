@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-11-05T11:15:09.189Z",
+  "executed_at": "2026-11-05T12:02:16.363Z",
   "environment": "localhost and development ktifgybnkdaotdxrvjgq / disposable databases",
   "production_access": false,
   "suites": [
@@ -44,14 +44,6 @@
       "summary": "PASS tester identity: backfill/allocation, unique stable numbers across games, promotion/demotion, deleted fallback/tombstones, restricted mappings, accepted-only public output, current admin ranks and minimal public fields."
     },
     {
-      "suite": "core",
-      "command": "node tests/test-merge26.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/core.log",
-      "summary": "PASS Merge 26: actual migrations, full ranking/pagination and 5.9/6 boundary, claims/deduplication, ownership/admin/anonymous permissions, archive/history/delete safety, private demo testing, genuine acquisition cohort, review sorting and evidence-based source labels."
-    },
-    {
       "suite": "tester-analytics",
       "command": "node tests/test-merge26-tester-analytics.mjs",
       "status": "Passed",
@@ -66,14 +58,6 @@
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/feedback-approval.log",
       "summary": "PASS immediate approval: same-transaction persistence and rollback, no submission/rejection/failed alerts, verified current owner/title/build, unread/read and recipient RLS, retry/reapproval/dismissal dedupe, no private notes/tester IDs or former-owner delivery."
-    },
-    {
-      "suite": "notifications",
-      "command": "node tests/test-notification-routing.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/notifications.log",
-      "summary": "PASS notification migration: expected admin review routing, owner-only decisions/accepted feedback, exact links, resubmissions, durable dedupe, column permissions, recipient RLS, unread counts/read/dismiss and migration preservation."
     },
     {
       "suite": "release-browser",
@@ -92,36 +76,12 @@
       "summary": "PASS real development referral integration: deployed dev schema own-report metadata scope, anonymous/raw-event/private RPC denial, actual localhost guest/tester/admin origin and consent authorisation, admin HTTP totals match real database aggregation with no tester IDs. Read-only checks plus rejected event attempts; no referral fixture events or live records created."
     },
     {
-      "suite": "steam-routes",
-      "command": "node tests/test-merge26-steam-routes.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/steam-routes.log",
-      "summary": "PASS Steam referral routes/privacy: strict storefront destinations/protocols, new-purpose opt-in and expiry/withdrawal, trusted origin, DNT/GPC, unauthenticated/unauthorised denial, service failure isolation, admin-only aggregate endpoints and bounded pagination."
-    },
-    {
-      "suite": "plan-policy",
-      "command": "node tests/test-developer-launch-limit.mjs --plans",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/plan-policy.log",
-      "summary": "PASS isolated plans: Free default/private entitlements/admin audit, exact Free/Pro time boundaries, historical and new five-launch excess quota deadlines, preserved existing/fresh three-place capacity, shared account history, upgrade/downgrade, targeting enforcement/grandfathering, drafts/community conversion/resume, immutable publication, unchanged capacity/claims/feedback permissions."
-    },
-    {
       "suite": "plan-browser",
       "command": "node tests/test-developer-workspace.mjs --plans-browser",
       "status": "Passed",
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/plan-browser.log",
       "summary": "PASS browser: Free/Pro account summary/usage/spacing, admin grant/revoke and refresh, Pro-only controls, preserved requested settings, grandfathered targeting, error/retry and desktop/mobile layout; no payment controls. All backend requests mocked."
-    },
-    {
-      "suite": "48-hours",
-      "command": "node tests/test-merge26-48-hours.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/48-hours.log",
-      "summary": "PASS 48-hour reservations: new claims use exact server-issued 48-hour deadlines; issued 72-hour deadlines and capacity survive cutover; future/extended deadlines protected; expiry boundary and repeated server processing preserve drafts and one-active enforcement."
     },
     {
       "suite": "bell-browser",
@@ -138,62 +98,6 @@
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/steam-browser.log",
       "summary": "PASS Steam UI browser: three actual shared usefulness states, broken/missing artwork fallback, safe links/popups preserve state, no render/declined/old-purpose/withdrawn/itch tracking, one event per activation and distinct repeats, failure never blocks navigation, actual results selector 10/25/50/paged All and KPI/footer/collapse/empty, keyboard/mobile/150%. Mocked APIs and destinations; no database writes."
-    },
-    {
-      "suite": "availability",
-      "command": "node tests/test-merge26-availability.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/availability.log",
-      "summary": "PASS availability: opt-in/out/uniqueness, reservation/role exclusions, manual release, genuine server-time expiry, repeat suppression, future deadlines, capacity increase, successful-claim removal, capacity refusal, archived games, private RLS/worker, retention and correct private-free bell links."
-    },
-    {
-      "suite": "concurrency",
-      "command": "node tests/test-merge26-concurrency.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/concurrency.log",
-      "summary": "PASS real PostgreSQL concurrency: unique identity allocation under concurrent profile registration; release versus scheduler dedupe; only one concurrent last-place claimant; one active test across campaigns; simultaneous expiry workers emit one event per recipient. Disposable network-isolated database only."
-    },
-    {
-      "suite": "security",
-      "command": "node tests/test-merge26-security.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/security.log",
-      "summary": "PASS Merge 26 analytics: consent, anonymous/ordinary accounts, verified admin omission, monitoring/bot/DNT/GPC exclusions, cross-site rejection; shared save toast and reduced-motion scrolling."
-    },
-    {
-      "suite": "origins",
-      "command": "node tests/test-proxy-origin.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/origins.log",
-      "summary": "PASS proxy-origin hotfix: canonical HTTPS through internal bind URLs; localhost development only; missing/null/spoofed/cross-site/HTTP/port/suffix origins denied; no forwarding-header trust; actual routes retain consent/DNT/GPC/bot checks, anonymous/foreign denial and owner PUT/DELETE success. Mocked services; no database writes."
-    },
-    {
-      "suite": "build-selection",
-      "command": "node tests/test-build-results-selection.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/build-selection.log",
-      "summary": "Command exited successfully."
-    },
-    {
-      "suite": "workspace",
-      "command": "node tests/test-developer-workspace.mjs --server-only",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/workspace.log",
-      "summary": "Command exited successfully."
-    },
-    {
-      "suite": "xp-quality",
-      "command": "node tests/test-testing-policy.mjs --graded-quality",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/xp-quality.log",
-      "summary": "PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used."
     },
     {
       "suite": "qa-capacity",
@@ -236,6 +140,30 @@
       "summary": "PASS hardware catalogue: separate unique canonical models, alias normalization, manufacturer search, legacy/custom preservation, shared account/requirements selectors, keyboard selection, save/collapse retention, mobile and 150% layout. Local UI fixture; no database writes."
     },
     {
+      "suite": "pc-browser",
+      "command": "node --env-file=.env.local tests/test-merge26-pc-browser.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/pc-browser.log",
+      "summary": "PASS PC development browser: OS Account Windows11 and minimum Linux/recommended macOS save/reload, Other submission, header/privacy retained; optional private save/edit/clear and invalid-save retention, cross-account/public privacy, real atomic game submission and listing edit, no AI reassessment, public tiers/private manual comparison, shared collapses, mobile/150%, no compatibility claims or runtime errors."
+    },
+    {
+      "suite": "os-browser",
+      "command": "node tests/test-merge26-os-browser.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/os-browser.log",
+      "summary": "PASS OS shared browser: true controlled select, all five OS values, preserved legacy options, keyboard Enter/Escape/focus, minimum/recommended collapse and persistence, unchanged CPU/GPU IDs, desktop/mobile 100/125/150% CSS zoom. Local fixture storage only."
+    },
+    {
+      "suite": "plan-policy",
+      "command": "node tests/test-developer-launch-limit.mjs --plans",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/plan-policy.log",
+      "summary": "PASS isolated plans: Free default/private entitlements/admin audit, exact Free/Pro time boundaries, historical and new five-launch excess quota deadlines, preserved existing/fresh three-place capacity, shared account history, upgrade/downgrade, targeting enforcement/grandfathering, drafts/community conversion/resume, immutable publication, unchanged capacity/claims/feedback permissions."
+    },
+    {
       "suite": "pc",
       "command": "node tests/test-merge26-pc.mjs",
       "status": "Passed",
@@ -244,12 +172,92 @@
       "summary": "PASS PC specifications: optional/partial validation and bounds, owner-only account RLS/edit/clear, forbidden identifiers, atomic creation/retry/rollback, private pending data, public minimisation, alias integrity, archive/demo visibility, recommended-only/removal, no AI reassessment and client parsing."
     },
     {
-      "suite": "pc-browser",
-      "command": "node --env-file=.env.local tests/test-merge26-pc-browser.mjs",
+      "suite": "48-hours",
+      "command": "node tests/test-merge26-48-hours.mjs",
       "status": "Passed",
       "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/pc-browser.log",
-      "summary": "PASS PC development browser: OS Account Windows11 and minimum Linux/recommended macOS save/reload, Other submission, header/privacy retained; optional private save/edit/clear and invalid-save retention, cross-account/public privacy, real atomic game submission and listing edit, no AI reassessment, public tiers/private manual comparison, shared collapses, mobile/150%, no compatibility claims or runtime errors."
+      "evidence": "technical-test-results/m26-final/48-hours.log",
+      "summary": "PASS 48-hour reservations: new claims use exact server-issued 48-hour deadlines; issued 72-hour deadlines and capacity survive cutover; future/extended deadlines protected; expiry boundary and repeated server processing preserve drafts and one-active enforcement."
+    },
+    {
+      "suite": "steam-routes",
+      "command": "node tests/test-merge26-steam-routes.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/steam-routes.log",
+      "summary": "PASS Steam referral routes/privacy: strict storefront destinations/protocols, new-purpose opt-in and expiry/withdrawal, trusted origin, DNT/GPC, unauthenticated/unauthorised denial, service failure isolation, admin-only aggregate endpoints and bounded pagination."
+    },
+    {
+      "suite": "core",
+      "command": "node tests/test-merge26.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/core.log",
+      "summary": "PASS Merge 26: actual migrations, full ranking/pagination and 5.9/6 boundary, claims/deduplication, ownership/admin/anonymous permissions, archive/history/delete safety, private demo testing, genuine acquisition cohort, review sorting and evidence-based source labels."
+    },
+    {
+      "suite": "availability",
+      "command": "node tests/test-merge26-availability.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/availability.log",
+      "summary": "PASS availability: opt-in/out/uniqueness, reservation/role exclusions, manual release, genuine server-time expiry, repeat suppression, future deadlines, capacity increase, successful-claim removal, capacity refusal, archived games, private RLS/worker, retention and correct private-free bell links."
+    },
+    {
+      "suite": "concurrency",
+      "command": "node tests/test-merge26-concurrency.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/concurrency.log",
+      "summary": "PASS real PostgreSQL concurrency: unique identity allocation under concurrent profile registration; release versus scheduler dedupe; only one concurrent last-place claimant; one active test across campaigns; simultaneous expiry workers emit one event per recipient. Disposable network-isolated database only."
+    },
+    {
+      "suite": "security",
+      "command": "node tests/test-merge26-security.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/security.log",
+      "summary": "PASS Merge 26 analytics: consent, anonymous/ordinary accounts, verified admin omission, monitoring/bot/DNT/GPC exclusions, cross-site rejection; shared save toast and reduced-motion scrolling."
+    },
+    {
+      "suite": "origins",
+      "command": "node tests/test-proxy-origin.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/origins.log",
+      "summary": "PASS proxy-origin hotfix: canonical HTTPS through internal bind URLs; localhost development only; missing/null/spoofed/cross-site/HTTP/port/suffix origins denied; no forwarding-header trust; actual routes retain consent/DNT/GPC/bot checks, anonymous/foreign denial and owner PUT/DELETE success. Mocked services; no database writes."
+    },
+    {
+      "suite": "notifications",
+      "command": "node tests/test-notification-routing.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/notifications.log",
+      "summary": "PASS notification migration: expected admin review routing, owner-only decisions/accepted feedback, exact links, resubmissions, durable dedupe, column permissions, recipient RLS, unread counts/read/dismiss and migration preservation."
+    },
+    {
+      "suite": "build-selection",
+      "command": "node tests/test-build-results-selection.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/build-selection.log",
+      "summary": "Command exited successfully."
+    },
+    {
+      "suite": "workspace",
+      "command": "node tests/test-developer-workspace.mjs --server-only",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/workspace.log",
+      "summary": "Command exited successfully."
+    },
+    {
+      "suite": "xp-quality",
+      "command": "node tests/test-testing-policy.mjs --graded-quality",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/xp-quality.log",
+      "summary": "PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used."
     },
     {
       "suite": "typescript",
@@ -274,14 +282,6 @@
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/build.log",
       "summary": "Command exited successfully."
-    },
-    {
-      "suite": "os-browser",
-      "command": "node tests/test-merge26-os-browser.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/os-browser.log",
-      "summary": "PASS OS shared browser: true controlled select, all five OS values, preserved legacy options, keyboard Enter/Escape/focus, minimum/recommended collapse and persistence, unchanged CPU/GPU IDs, desktop/mobile 100/125/150% CSS zoom. Local fixture storage only."
     }
   ]
 }
