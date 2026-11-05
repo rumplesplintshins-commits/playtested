@@ -66,6 +66,7 @@ try{
  await db.exec('set role authenticated');await assert.rejects(db.exec('delete from tester_privacy_actions'),/permission denied/);
  // Rehearse the forward-only upgrade path for a hosted database that once
  // exposed permanent numbers, without altering genuine development records.
+ await db.exec('reset role');
  await db.exec(`alter function public.get_feedback_tester_identities(uuid[]) rename to _m26_fixture_rank_wrapper;
  create function public.get_feedback_tester_identities(p_test_ids uuid[])
  returns table(test_id uuid,public_number integer,current_rank integer)
