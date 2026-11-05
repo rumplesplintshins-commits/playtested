@@ -64,5 +64,24 @@ try{
  await assert.rejects(db.query('delete from community_game_tests where id=$1',[id(50)]),/cannot be released or deleted/);
  await assert.rejects(db.query('update community_game_tests set tester_id=$1 where id=$2',[id(2),id(50)]),/cannot be recycled/);
  await db.exec('set role authenticated');await assert.rejects(db.exec('delete from tester_privacy_actions'),/permission denied/);
+ // Rehearse the forward-only upgrade path for a hosted database that once
+ // exposed permanent numbers, without altering genuine development records.
+ await db.exec(`alter function public.get_feedback_tester_identities(uuid[]) rename to _m26_fixture_rank_wrapper;
+ create function public.get_feedback_tester_identities(p_test_ids uuid[])
+ returns table(test_id uuid,public_number integer,current_rank integer)
+ language sql stable security definer set search_path='' as $body$
+ select f.test_id,99,f.current_rank from public._m26_fixture_rank_wrapper(p_test_ids) f
+ $body$;
+ create function public._allocate_tester_public_identity() returns trigger
+ language plpgsql as $body$ begin return new; end $body$;
+ create trigger allocate_tester_public_identity after update on public.profiles
+ for each row execute function public._allocate_tester_public_identity();`);
+ await db.exec(fs.readFileSync('supabase/migrations/202611050126_merge26_rank_only_forward_compat.sql','utf8'));
+ assert.equal((await db.query("select pg_get_function_result('public.get_feedback_tester_identities(uuid[])'::regprocedure) as signature")).rows[0].signature,'TABLE(test_id uuid, current_rank integer)');
+ assert.equal((await db.query("select count(*)::int n from pg_trigger where tgname='allocate_tester_public_identity' and not tgisinternal")).rows[0].n,0);
+ await db.exec('set role anon');
+ await assert.rejects(db.query('select * from _m26_legacy_numbered_feedback_identities($1)',[[id(50)]]),/permission denied/);
+ assert.deepEqual(Object.keys((await db.query('select * from get_feedback_tester_identities($1)',[[id(50)]])).rows[0]).sort(),['current_rank','test_id']);
+ await db.exec('reset role');
  console.log('PASS privacy controls: independent versioned opt-ins, legacy off, expiry/withdrawal; real SQL admin-only audited public rank masking, reversible restriction, minimisation without report/XP/Auth deletion.');
 }finally{await db.close();}
