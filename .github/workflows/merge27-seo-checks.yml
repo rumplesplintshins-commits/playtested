@@ -13,6 +13,7 @@ on:
       - 'app/sitemap.ts'
       - 'lib/organic-search.ts'
       - '.github/workflows/merge27-seo-checks.yml'
+      - 'tests/merge27-browser.mjs'
   workflow_dispatch:
 jobs:
   validate:
@@ -28,6 +29,11 @@ jobs:
       - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/seo-social.png/route.tsx app/page.tsx app/sitemap.ts lib/organic-search.ts
       - run: npx tsc --noEmit
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-for-build-only
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/merge27-browser.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-for-build-only
