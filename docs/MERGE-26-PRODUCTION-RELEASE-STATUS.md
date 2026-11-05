@@ -1,3 +1,17 @@
+## Current preparation: proposals requested, not approvals
+
+The owner explicitly requested implementation/documentation of proposed privacy decisions and read-only production checks, **without blanket legal approval**. The prior general approval question is superseded by specific D01-D07 in docs/MERGE-26-OWNER-PRIVACY-DECISIONS.md. Exact proposed Privacy/cookie/Terms copy is implemented locally and reproduced there; /privacy and /terms remain draft/noindex with no effective date.
+
+Read-only production inspection is now complete at metadata level: eu-west-1 primary Supabase region, PostgreSQL17.11;44profiles,40reports/32accepted,66Storage objects. Existing column types match development; eight Merge26 tables are absent, and policies remain Free1/Pro15, places3 and72-hour new reservations. The ordered candidate plan and a tested forward dependency correction123 are in docs/MERGE-26-PRODUCTION-COMPATIBILITY.md.123 is prepared locally only, not applied to hosted databases. Production migration history is absent; this is not a full-chain rehearsal or clearance to run blindly.
+
+The historical4November database archive passes SHA/size/list/full offline decode. Its45Storage files and manifest pass rehash. Production now has66objects; that copy is incomplete for current recovery. Backup API returns no recoverable timestamp/entries (PITRfalse, WALflagtrue), so fresh database and full Storage protection remain required. No backup/retention setting or production data was changed.
+
+Specific technical/operational blockers: no dedicated public-attribution restriction control; NOT NULL tester/Auth CASCADE plus non-cascading audit/signal FKs and submitted-report guards block naive account erasure; consent has no notice-version/durable scope evidence and uses combined choice pending D03; the new production availability job is absent; Render region/agreement/retention evidence is unavailable through current tools. Owner-approved handling/designs, not wording alone, must address applicable gaps. DPIA screening outcome remains undetermined, not waived by modest current counts.
+
+No production migrations, QA import, v11 merge or Render deployment. No fresh restore rehearsal or new live release smoke test. See the decision record for the exact remaining owner choices, PRIVACY-OPERATIONS for the manual rights/DPIA/provider assessment, and PRODUCTION-COMPATIBILITY for recovery/migration steps.
+
+---
+
 # Merge 26 production release status - BLOCKED
 
 ## Verified release inputs

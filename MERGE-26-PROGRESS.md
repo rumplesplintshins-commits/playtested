@@ -141,3 +141,10 @@ Executed: PC validation/RLS/atomic rollback tests and real development browser a
 ## Authorised production release attempt - stopped at privacy gate
 
 Code cd784b7 is pushed and verified remotely; sixteen final release-critical checks passed, including Featured priority, security and final build. The separately documented owner/legal decisions remain unresolved under the explicit instruction not to infer their approval. No production migration, v11 merge, Render deployment or post-release smoke test occurred. Fresh backup/Storage recovery and current production migration compatibility remain unverified for this release. See docs/MERGE-26-PRODUCTION-RELEASE-STATUS.md for exact completed/pending gates and resume order.
+
+
+## Production privacy/recovery preparation
+
+Prepared specific proposed owner decisions (not blanket approval), updated draft Privacy/cookie/Terms wording, documented manual rights handling and exact deletion/consent/restriction gaps, and inspected production schema/configuration read-only. Reverified the historical backup offline; current Storage66 versus archived45 makes a fresh complete recovery point necessary. New SQL123 captures the previously unversioned private approved-identity dependency and passed local SQL regression; it is not applied to either hosted environment. See docs/MERGE-26-OWNER-PRIVACY-DECISIONS.md, PRIVACY-OPERATIONS and PRODUCTION-COMPATIBILITY. No production writes, migration, v11 merge or deployment.
+
+Preparation validation: seven focused suites executed and passed (information pages, PC SQL/RLS including candidate123, Steam routes, security, TypeScript, targeted lint and production build). Older suite results remain historical evidence, not reruns. Targeted lint found no new error-rule counts; 22 existing errors remain in its scope. No hosted migration or manual rights/restriction workflow is represented as passed.

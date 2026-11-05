@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-11-05T12:02:16.363Z",
+  "executed_at": "2026-11-05T12:30:47.515Z",
   "environment": "localhost and development ktifgybnkdaotdxrvjgq / disposable databases",
   "production_access": false,
   "suites": [
@@ -164,28 +164,12 @@
       "summary": "PASS isolated plans: Free default/private entitlements/admin audit, exact Free/Pro time boundaries, historical and new five-launch excess quota deadlines, preserved existing/fresh three-place capacity, shared account history, upgrade/downgrade, targeting enforcement/grandfathering, drafts/community conversion/resume, immutable publication, unchanged capacity/claims/feedback permissions."
     },
     {
-      "suite": "pc",
-      "command": "node tests/test-merge26-pc.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/pc.log",
-      "summary": "PASS PC specifications: optional/partial validation and bounds, owner-only account RLS/edit/clear, forbidden identifiers, atomic creation/retry/rollback, private pending data, public minimisation, alias integrity, archive/demo visibility, recommended-only/removal, no AI reassessment and client parsing."
-    },
-    {
       "suite": "48-hours",
       "command": "node tests/test-merge26-48-hours.mjs",
       "status": "Passed",
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/48-hours.log",
       "summary": "PASS 48-hour reservations: new claims use exact server-issued 48-hour deadlines; issued 72-hour deadlines and capacity survive cutover; future/extended deadlines protected; expiry boundary and repeated server processing preserve drafts and one-active enforcement."
-    },
-    {
-      "suite": "steam-routes",
-      "command": "node tests/test-merge26-steam-routes.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/steam-routes.log",
-      "summary": "PASS Steam referral routes/privacy: strict storefront destinations/protocols, new-purpose opt-in and expiry/withdrawal, trusted origin, DNT/GPC, unauthenticated/unauthorised denial, service failure isolation, admin-only aggregate endpoints and bounded pagination."
     },
     {
       "suite": "core",
@@ -210,14 +194,6 @@
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/concurrency.log",
       "summary": "PASS real PostgreSQL concurrency: unique identity allocation under concurrent profile registration; release versus scheduler dedupe; only one concurrent last-place claimant; one active test across campaigns; simultaneous expiry workers emit one event per recipient. Disposable network-isolated database only."
-    },
-    {
-      "suite": "security",
-      "command": "node tests/test-merge26-security.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/security.log",
-      "summary": "PASS Merge 26 analytics: consent, anonymous/ordinary accounts, verified admin omission, monitoring/bot/DNT/GPC exclusions, cross-site rejection; shared save toast and reduced-motion scrolling."
     },
     {
       "suite": "origins",
@@ -260,6 +236,38 @@
       "summary": "PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used."
     },
     {
+      "suite": "information-pages",
+      "command": "node tests/test-catalogue-browser.mjs --information",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/information-pages.log",
+      "summary": "PASS information pages: routes, one shared footer, homepage placement, links, draft/noindex labels, mailto, keyboard copy and denied fallback, mobile reflow. Backend blocked/mocked; no live writes."
+    },
+    {
+      "suite": "pc",
+      "command": "node tests/test-merge26-pc.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/pc.log",
+      "summary": "PASS PC specifications: optional/partial validation and bounds, owner-only account RLS/edit/clear, forbidden identifiers, atomic creation/retry/rollback, private pending data, public minimisation, alias integrity, archive/demo visibility, recommended-only/removal, no AI reassessment and client parsing."
+    },
+    {
+      "suite": "steam-routes",
+      "command": "node tests/test-merge26-steam-routes.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/steam-routes.log",
+      "summary": "PASS Steam referral routes/privacy: strict storefront destinations/protocols, new-purpose opt-in and expiry/withdrawal, trusted origin, DNT/GPC, unauthenticated/unauthorised denial, service failure isolation, admin-only aggregate endpoints and bounded pagination."
+    },
+    {
+      "suite": "security",
+      "command": "node tests/test-merge26-security.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/security.log",
+      "summary": "PASS Merge 26 analytics: consent, anonymous/ordinary accounts, verified admin omission, monitoring/bot/DNT/GPC exclusions, cross-site rejection; shared save toast and reduced-motion scrolling."
+    },
+    {
       "suite": "typescript",
       "command": "node node_modules/typescript/bin/tsc --noEmit",
       "status": "Passed",
@@ -273,7 +281,7 @@
       "status": "Passed",
       "exit_code": 0,
       "evidence": "technical-test-results/m26-final/targeted-lint.log",
-      "summary": "PASS targeted lint: 58 changed TypeScript files checked; no new error-rule counts versus b7d8617. Existing errors: 22. New files have no errors."
+      "summary": "PASS targeted lint: 59 changed TypeScript files checked; no new error-rule counts versus b7d8617. Existing errors: 22. New files have no errors."
     },
     {
       "suite": "build",

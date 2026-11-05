@@ -1,6 +1,6 @@
 # Merge 26 complete test catalogue
 
-Evidence snapshot: 2026-11-05T11:15:09.189Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
+Evidence snapshot: 2026-11-05T12:30:47.515Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
 
 ## Execution summary
 
@@ -11,7 +11,7 @@ Evidence snapshot: 2026-11-05T11:15:09.189Z. Environment: localhost and developm
 | Automated cases failed | 0 |
 | Manual owner acceptance cases pending | 39 |
 | Blocked/unexecuted automated cases | 0 |
-| Executed suites/checks passed | 35 |
+| Executed suites/checks passed | 36 |
 | Executed suites/checks failed | 0 |
 | Observed critical technical failures | 0 |
 | Observed high technical failures | 0 |

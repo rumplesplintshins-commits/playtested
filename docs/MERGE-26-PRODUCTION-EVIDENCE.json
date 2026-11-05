@@ -1,0 +1,121 @@
+{
+  "production_ref": "qtcmzckdhgahuqqilmzj",
+  "development_ref": "ktifgybnkdaotdxrvjgq",
+  "production_queries": "SELECT only with --read-only",
+  "production_writes": 0,
+  "regions": {
+    "production_supabase": "eu-west-1",
+    "development_supabase": "eu-central-1",
+    "render_service": "unverified"
+  },
+  "production_version": "17.11",
+  "aggregate_screening": {
+    "profiles": 44,
+    "reports": 40,
+    "accepted_reports": 32,
+    "storage_objects": 66
+  },
+  "new_tables_absent_in_production": [
+    "account_pc_specs",
+    "campaign_availability_state",
+    "game_pc_requirements",
+    "listing_control_events",
+    "listing_controls",
+    "m26_steam_clicks",
+    "tester_availability_preferences",
+    "tester_public_identities"
+  ],
+  "existing_column_type_differences": [],
+  "existing_function_fingerprint_differences": [
+    "_listing_base(text,uuid)",
+    "_share_key(text,uuid)",
+    "beta_fixture_hidden(uuid)",
+    "campaign_eligible(uuid,uuid)",
+    "confirm_listing_reassessment(bigint,integer,text)",
+    "get_discoverable_community_test_games()",
+    "get_public_catalogue(integer,integer,text,text,text,text,boolean,text)",
+    "m24_analytics_retention()",
+    "m24_analytics_summary()",
+    "notify_developer_feedback()"
+  ],
+  "production_testing_policy": {
+    "base_xp": 100,
+    "launch_window": "720:00:00",
+    "launches": 1,
+    "places": 3,
+    "reservation_window": "72:00:00",
+    "reservations_activated_at": "2026-10-28T21:50:03.001143+00:00",
+    "singleton": true
+  },
+  "production_plan_policy": [
+    {
+      "genre_targeting": false,
+      "launch_gap": "00:00:00",
+      "launch_limit": 1,
+      "launch_window": "720:00:00",
+      "plan": "free",
+      "rank_targeting": false
+    },
+    {
+      "genre_targeting": true,
+      "launch_gap": "48:00:00",
+      "launch_limit": 15,
+      "launch_window": "720:00:00",
+      "plan": "pro",
+      "rank_targeting": true
+    }
+  ],
+  "production_migration_history_present": false,
+  "production_scheduler": [
+    {
+      "active": true,
+      "analytics_retention": true,
+      "name": "m24-analytics-retention",
+      "schedule": "17 3 * * *"
+    }
+  ],
+  "production_tester_reference_nullable": false,
+  "backup_metadata": {
+    "pitr_enabled": false,
+    "walg_enabled": true,
+    "available_entries": null,
+    "recoverable_timestamp_verified": false
+  },
+  "historical_archive": {
+    "database_archive_sha256_matches_prior_manifest": true,
+    "database_list_and_full_decode_passed": true,
+    "storage_manifest_sha256_matches": true,
+    "storage_objects_verified": 45,
+    "storage_bytes_verified": 66700326,
+    "backup_date": "2026-11-04",
+    "fresh_release_backup_verified": false,
+    "isolated_restore_performed": false
+  },
+  "planned_migration_files": [
+    "202611040101_merge26_listing_controls.sql",
+    "202611040102_merge26_catalogue.sql",
+    "202611040103_merge26_reporting.sql",
+    "202611040104_merge26_historical_acquisition.sql",
+    "202611040105_merge26_control_audit_retention.sql",
+    "202611040106_merge26_private_listing_management.sql",
+    "202611040107_merge26_public_claim_ranking.sql",
+    "202611040108_merge26_tester_identity.sql",
+    "202611040109_merge26_tester_analytics.sql",
+    "202611040110_merge26_availability_notifications.sql",
+    "202611040111_merge26_private_rank_helpers.sql",
+    "202611040112_merge26_explicit_availability_choice.sql",
+    "202611040113_merge26_pc_specifications.sql",
+    "202611040114_merge26_48_hour_reservations.sql",
+    "202611040115_merge26_immediate_feedback_approval.sql",
+    "202611040116_merge26_testing_activity_steam_referrals.sql",
+    "202611040117_merge26_closed_campaign_requirements_guard.sql",
+    "202611040118_merge26_referral_snapshot_pagination.sql",
+    "202611040119_merge26_expired_activity_referral_scope.sql",
+    "202611050120_merge26_history_published_artwork.sql",
+    "202611050121_merge26_new_campaign_capacity.sql",
+    "202611050122_merge26_pro_launch_contract.sql",
+    "202611050123_merge26_private_approved_identity.sql"
+  ],
+  "new_candidate_123": "prepared and locally SQL-tested only; not applied to any hosted database",
+  "full_production_chain_rehearsal": "Not Run"
+}

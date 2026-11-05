@@ -15,7 +15,7 @@ export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"
         <p className="mt-5 text-zinc-300">Email Playtested for help with your account, a game or a review. This opens your email app; messages are not sent from this page.</p>
         <SupportEmail/>
         <h2 className="mt-8 text-xl font-semibold">What can we help with?</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-300"><li>Technical problems or account access.</li><li>Feedback-review appeals and moderation decisions.</li><li>Privacy questions or account-deletion requests.</li><li>Game ownership, copyright or other intellectual-property concerns.</li><li>Suspicious game links, abusive content or unsafe behaviour.</li></ul>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-300"><li>Technical problems or account access.</li><li>Feedback-review appeals and moderation decisions.</li><li>Privacy questions, public tester-attribution objections, restriction or account-deletion requests.</li><li>Game ownership, copyright or other intellectual-property concerns.</li><li>Suspicious game links, abusive content or unsafe behaviour.</li></ul>
         <h2 className="mt-8 text-xl font-semibold">What to include</h2>
         <p className="mt-3 text-zinc-300">Include the relevant game or report reference, a description of the problem and any steps that reproduce it. Redact private information from screenshots. Never send passwords, API keys, private access tokens or payment details.</p>
         <p className="mt-4 text-zinc-300">For an appeal, explain which decision you disagree with and why. For privacy requests, describe the information or account involved; we may need to confirm your identity through an appropriate channel.</p>
