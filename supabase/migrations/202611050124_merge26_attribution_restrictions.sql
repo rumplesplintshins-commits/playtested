@@ -47,11 +47,10 @@ grant execute on function public.set_tester_privacy_restriction(uuid,boolean,boo
 alter function public.get_feedback_tester_identities(uuid[]) rename to _m26_unrestricted_feedback_identities;
 revoke all on function public._m26_unrestricted_feedback_identities(uuid[]) from public,anon,authenticated,service_role;
 create function public.get_feedback_tester_identities(p_test_ids uuid[])
-returns table(test_id uuid,public_number bigint,current_rank integer)
+returns table(test_id uuid,current_rank integer)
 language sql stable security definer set search_path='' as $$
  select f.test_id,
- case when r.restricted and not exists(select 1 from public.profiles where id=auth.uid() and role='admin') then null else f.public_number end,
- case when r.restricted and not exists(select 1 from public.profiles where id=auth.uid() and role='admin') then null else f.current_rank end
+ case when coalesce(r.restricted,false) then null else f.current_rank end
  from public._m26_unrestricted_feedback_identities(p_test_ids) f
  left join public.community_game_tests t on t.id=f.test_id
  left join public.tester_privacy_restrictions r on r.tester_id=t.tester_id;
