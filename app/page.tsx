@@ -55,6 +55,10 @@ export default function Home() {
       <section aria-labelledby="playtesting-guides" className="mx-auto max-w-7xl px-6 py-10">
         <h2 id="playtesting-guides" className="font-[family-name:var(--font-display)] text-2xl font-bold">Learn about indie game playtesting</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">Practical guidance for developers looking for player feedback and players interested in testing indie games.</p>
+        <div className="mt-4 max-w-3xl space-y-3 text-sm leading-7 text-zinc-400">
+          <p>Playtested helps you discover indie games and playtest new releases before they reach a wider audience. Browse game listings, learn what each developer is building, and see how community playtesting can reveal strengths, confusing controls, bugs and performance issues.</p>
+          <p>For indie developers, structured playtests turn player opinions into useful feedback tied to a particular game build. For playtesters, trying an unfamiliar game is a chance to share clear observations about the experience. Whether you want to find playtesters for your own game or become a playtester yourself, the guides below explain how to get started.</p>
+        </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { href: "/playtesting", title: "What is playtesting?", description: "Understand what a playtest reveals." },
