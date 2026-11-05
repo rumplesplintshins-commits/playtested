@@ -1,5 +1,11 @@
 // Acceptance criteria mapped only where executed assertions actually cover them.
 export const followupAutomated=[
+ ['OS-001','OS shared selector','os-browser','All five supported OS selections immediately update the controlled Account field; legacy saved values remain selectable.'],
+ ['OS-002','OS shared selector','os-browser','Minimum/recommended Linux/macOS selections persist through collapse/reopen and fixture reload without altering CPU/GPU IDs.'],
+ ['OS-003','OS keyboard/layout','os-browser','Arrow/Enter selection, Escape and focus work at desktop/mobile 100/125/150 percent CSS zoom with no page overflow.'],
+ ['OS-004','OS real persistence','pc-browser','Account Windows11 saves/reloads in development with private hardware preserved; Tester Hardware heading/privacy guidance remain.'],
+ ['OS-005','OS real persistence','pc-browser','Real listing minimum Linux/recommended macOS saves/reloads; Other is retained on a new optional submission.'],
+ ['OS-006','Hardware regression','hardware','Working CPU/GPU search, canonical IDs, aliases, custom values and keyboard/collapse behaviour remain unchanged.'],
  ['FINAL-01','Finalisation notification navigation','finalisation-development','Real owner bell click and direct URL select the correct game/campaign Individual responses; Back/Forward work and QA read_at is restored.'],
  ['FINAL-02','Finalisation authorisation','finalisation-development','Actual admin rubric/queue succeeds; ordinary tester is denied admin review and unrelated private developer feedback.'],
  ['FINAL-03','DEV QA identification','steam-browser','Explicit line-leading [DEV QA] feedback gets one compact label; ordinary mid-sentence references do not.'],
@@ -118,6 +124,7 @@ export const followupAutomated=[
  ['NT-004','Approval notifications','bell-browser','Closed visible bell polls at 15 seconds, pauses hidden, refreshes focus/open and preserves mark-all-read.'],
 ];
 export const followupManual=[
+ ['OS-M01','Native OS popup acceptance','Signed-in development account owner/developer','/account#pc-specifications','Expand My PC specifications and verify TESTER HARDWARE, white title, supporting description and privacy guidance.|Use mouse and keyboard to choose Linux, macOS and Other; save/reload each as needed.|Repeat in minimum/recommended Submit/Edit fields. Verify prior legacy OS can remain unchanged.|At actual browser toolbar zoom 100,125,150 percent and mobile, open the native menu, use Escape/Enter, scroll surrounding panels and confirm CPU/GPU controls still work.','Selected OS is immediately visible and retained after save/reload; native menus remain usable, legacy strings are not replaced and privacy/disclosures/Save/Clear remain.','Restore only original QA OS/requirements or clear your own temporary specs; do not alter unrelated hardware or production.'],
  ['FU-A08','Developer usefulness permissions','Anonymous and ordinary developer','/admin/submissions?tab=playtests','Attempt to open feedback review signed out.|Sign in as an unrelated developer and repeat; inspect get_quality_review_queue network response.','No private review report or assessment is exposed; server rejects non-admin.','Sign out; do not modify records.'],
  ['FU-B05','Testing Activity timestamp','Tester with dedicated submitted QA report','/tester','Open Testing activity.|Compare the Submitted date/time with that report submitted_at using authorised development inspection; note browser timezone.','Timestamp corresponds to the actual submission, not reservation creation or an invented date.','Read-only; leave report unchanged.'],
  ['FU-B07','Testing Activity XP','Tester with dedicated reviewed QA report','/tester','Open Testing activity.|Compare the existing quality/XP label with the actual review and XP history.|Confirm developer usefulness does not replace the admin outcome.','The genuine current award and legacy missing-score explanation are preserved.','Read-only; do not change XP.'],

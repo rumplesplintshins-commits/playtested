@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-11-05T10:11:44.350Z",
+  "executed_at": "2026-11-05T11:15:09.189Z",
   "environment": "localhost and development ktifgybnkdaotdxrvjgq / disposable databases",
   "production_access": false,
   "suites": [
@@ -116,22 +116,6 @@
       "summary": "PASS browser: Free/Pro account summary/usage/spacing, admin grant/revoke and refresh, Pro-only controls, preserved requested settings, grandfathered targeting, error/retry and desktop/mobile layout; no payment controls. All backend requests mocked."
     },
     {
-      "suite": "pc",
-      "command": "node tests/test-merge26-pc.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/pc.log",
-      "summary": "PASS PC specifications: optional/partial validation and bounds, owner-only account RLS/edit/clear, forbidden identifiers, atomic creation/retry/rollback, private pending data, public minimisation, alias integrity, archive/demo visibility, recommended-only/removal, no AI reassessment and client parsing."
-    },
-    {
-      "suite": "pc-browser",
-      "command": "node --env-file=.env.local tests/test-merge26-pc-browser.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/pc-browser.log",
-      "summary": "PASS PC development browser: optional private save/edit/clear and invalid-save retention, cross-account/public privacy, real atomic game submission and listing edit, no AI reassessment, public tiers/private manual comparison, shared collapses, mobile/150%, no compatibility claims or runtime errors."
-    },
-    {
       "suite": "48-hours",
       "command": "node tests/test-merge26-48-hours.mjs",
       "status": "Passed",
@@ -212,30 +196,6 @@
       "summary": "PASS isolated graded quality: six scores, eligibility override, partial/zero acceptance, 100->60->80 deltas, duplicate no-op, actual reversal/restoration, legacy preservation, sentiment neutrality, capacity, permissions, tamper rejection, reconsideration, failed-reversal atomicity and unchanged rank rules. No source database used."
     },
     {
-      "suite": "typescript",
-      "command": "node node_modules/typescript/bin/tsc --noEmit",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/typescript.log",
-      "summary": "Command exited successfully."
-    },
-    {
-      "suite": "targeted-lint",
-      "command": "node tests/test-merge26-lint-baseline.mjs",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/targeted-lint.log",
-      "summary": "PASS targeted lint: 57 changed TypeScript files checked; no new error-rule counts versus b7d8617. Existing errors: 22. New files have no errors."
-    },
-    {
-      "suite": "build",
-      "command": "node node_modules/next/dist/bin/next build",
-      "status": "Passed",
-      "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/build.log",
-      "summary": "Command exited successfully."
-    },
-    {
       "suite": "qa-capacity",
       "command": "node tests/test-merge26-qa-capacity.mjs",
       "status": "Passed",
@@ -260,6 +220,14 @@
       "summary": "PASS development postflight: localhost configuration targets development; active minute scheduler has succeeded; direct private rank and analytics grants denied; allocated numbers unique. Read-only development query."
     },
     {
+      "suite": "finalisation-development",
+      "command": "node --env-file=.env.local tests/test-merge26-finalisation-development.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/finalisation-development.log",
+      "summary": "PASS real development finalisation: accepted/rejected QA thumbnails load, event-card audit history and outcomes persist, mobile/150% layouts, direct owner notification URL opens campaign individual responses, Back/Forward, real admin rubric and DEV QA label, non-admin/private feedback denial, no XP/outcome/audit/notification duplication. Existing QA fixtures retained; no moderation writes, and bell read state restored."
+    },
+    {
       "suite": "hardware",
       "command": "node tests/test-merge26-hardware.mjs",
       "status": "Passed",
@@ -268,12 +236,52 @@
       "summary": "PASS hardware catalogue: separate unique canonical models, alias normalization, manufacturer search, legacy/custom preservation, shared account/requirements selectors, keyboard selection, save/collapse retention, mobile and 150% layout. Local UI fixture; no database writes."
     },
     {
-      "suite": "finalisation-development",
-      "command": "node --env-file=.env.local tests/test-merge26-finalisation-development.mjs",
+      "suite": "pc",
+      "command": "node tests/test-merge26-pc.mjs",
       "status": "Passed",
       "exit_code": 0,
-      "evidence": "technical-test-results/m26-final/finalisation-development.log",
-      "summary": "PASS real development finalisation: accepted/rejected QA thumbnails load, event-card audit history and outcomes persist, mobile/150% layouts, direct owner notification URL opens campaign individual responses, Back/Forward, real admin rubric and DEV QA label, non-admin/private feedback denial, no XP/outcome/audit/notification duplication. Existing QA fixtures retained; no moderation writes, and bell read state restored."
+      "evidence": "technical-test-results/m26-final/pc.log",
+      "summary": "PASS PC specifications: optional/partial validation and bounds, owner-only account RLS/edit/clear, forbidden identifiers, atomic creation/retry/rollback, private pending data, public minimisation, alias integrity, archive/demo visibility, recommended-only/removal, no AI reassessment and client parsing."
+    },
+    {
+      "suite": "pc-browser",
+      "command": "node --env-file=.env.local tests/test-merge26-pc-browser.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/pc-browser.log",
+      "summary": "PASS PC development browser: OS Account Windows11 and minimum Linux/recommended macOS save/reload, Other submission, header/privacy retained; optional private save/edit/clear and invalid-save retention, cross-account/public privacy, real atomic game submission and listing edit, no AI reassessment, public tiers/private manual comparison, shared collapses, mobile/150%, no compatibility claims or runtime errors."
+    },
+    {
+      "suite": "typescript",
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/typescript.log",
+      "summary": "Command exited successfully."
+    },
+    {
+      "suite": "targeted-lint",
+      "command": "node tests/test-merge26-lint-baseline.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/targeted-lint.log",
+      "summary": "PASS targeted lint: 58 changed TypeScript files checked; no new error-rule counts versus b7d8617. Existing errors: 22. New files have no errors."
+    },
+    {
+      "suite": "build",
+      "command": "node node_modules/next/dist/bin/next build",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/build.log",
+      "summary": "Command exited successfully."
+    },
+    {
+      "suite": "os-browser",
+      "command": "node tests/test-merge26-os-browser.mjs",
+      "status": "Passed",
+      "exit_code": 0,
+      "evidence": "technical-test-results/m26-final/os-browser.log",
+      "summary": "PASS OS shared browser: true controlled select, all five OS values, preserved legacy options, keyboard Enter/Escape/focus, minimum/recommended collapse and persistence, unchanged CPU/GPU IDs, desktop/mobile 100/125/150% CSS zoom. Local fixture storage only."
     }
   ]
 }

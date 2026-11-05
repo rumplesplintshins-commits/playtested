@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const suites=[
+ ['os-browser',['tests/test-merge26-os-browser.mjs']],
  ['qa-capacity',['tests/test-merge26-qa-capacity.mjs']],
  ['hardware',['tests/test-merge26-hardware.mjs']],['finalisation-development',['--env-file=.env.local','tests/test-merge26-finalisation-development.mjs']],
  ['plan-policy',['tests/test-developer-launch-limit.mjs','--plans']],['plan-browser',['tests/test-developer-workspace.mjs','--plans-browser']],

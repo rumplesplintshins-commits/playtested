@@ -1,17 +1,17 @@
 # Merge 26 complete test catalogue
 
-Evidence snapshot: 2026-11-05T10:11:44.350Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
+Evidence snapshot: 2026-11-05T11:15:09.189Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
 
 ## Execution summary
 
 | Measure | Actual count |
 |---|---:|
-| Total catalogue cases | 221 |
-| Automated cases passed | 183 |
+| Total catalogue cases | 228 |
+| Automated cases passed | 189 |
 | Automated cases failed | 0 |
-| Manual owner acceptance cases pending | 38 |
+| Manual owner acceptance cases pending | 39 |
 | Blocked/unexecuted automated cases | 0 |
-| Executed suites/checks passed | 34 |
+| Executed suites/checks passed | 35 |
 | Executed suites/checks failed | 0 |
 | Observed critical technical failures | 0 |
 | Observed high technical failures | 0 |
@@ -1300,6 +1300,120 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
 - **Status:** Passed
 - **Evidence:** `technical-test-results/m26-final/development-postflight.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-001 — OS shared selector
+
+- **Test ID:** M26-OS-001
+- **Feature area:** OS shared selector
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-os-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-os-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** All five supported OS selections immediately update the controlled Account field; legacy saved values remain selectable.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/os-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-002 — OS shared selector
+
+- **Test ID:** M26-OS-002
+- **Feature area:** OS shared selector
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-os-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-os-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Minimum/recommended Linux/macOS selections persist through collapse/reopen and fixture reload without altering CPU/GPU IDs.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/os-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-003 — OS keyboard/layout
+
+- **Test ID:** M26-OS-003
+- **Feature area:** OS keyboard/layout
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-os-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-os-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Arrow/Enter selection, Escape and focus work at desktop/mobile 100/125/150 percent CSS zoom with no page overflow.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/os-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-004 — OS real persistence
+
+- **Test ID:** M26-OS-004
+- **Feature area:** OS real persistence
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Account Windows11 saves/reloads in development with private hardware preserved; Tester Hardware heading/privacy guidance remain.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-005 — OS real persistence
+
+- **Test ID:** M26-OS-005
+- **Feature area:** OS real persistence
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-pc-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real listing minimum Linux/recommended macOS saves/reloads; Other is retained on a new optional submission.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/pc-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-OS-006 — Hardware regression
+
+- **Test ID:** M26-OS-006
+- **Feature area:** Hardware regression
+- **Priority:** High
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-hardware.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-hardware.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Working CPU/GPU search, canonical IDs, aliases, custom values and keyboard/collapse behaviour remain unchanged.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/hardware.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
 - **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
 
 ### M26-FINAL-01 — Finalisation notification navigation
@@ -4097,6 +4211,28 @@ The formal cases below retain their earlier pending scope. Later owner-reported 
 - **Status:** Not Run
 - **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
 - **Cleanup:** No production action is authorised by this test plan.
+
+### M26-OS-M01 — Native OS popup acceptance
+
+- **Test ID:** M26-OS-M01
+- **Feature area:** Native OS popup acceptance
+- **Priority:** High
+- **Test type:** Manual
+- **Required role:** Signed-in development account owner/developer
+- **Preconditions:** Localhost connected to development; role: **Signed-in development account owner/developer**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/account#pc-specifications`.
+  2. Expand My PC specifications and verify TESTER HARDWARE, white title, supporting description and privacy guidance.
+  3. Use mouse and keyboard to choose Linux, macOS and Other; save/reload each as needed.
+  4. Repeat in minimum/recommended Submit/Edit fields. Verify prior legacy OS can remain unchanged.
+  5. At actual browser toolbar zoom 100,125,150 percent and mobile, open the native menu, use Escape/Enter, scroll surrounding panels and confirm CPU/GPU controls still work.
+- **Expected result:** Selected OS is immediately visible and retained after save/reload; native menus remain usable, legacy strings are not replaced and privacy/disclosures/Save/Clear remain.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Restore only original QA OS/requirements or clear your own temporary specs; do not alter unrelated hardware or production.
 
 ### M26-FU-A08 — Developer usefulness permissions
 

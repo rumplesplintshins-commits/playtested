@@ -1,3 +1,17 @@
+## OS dropdown and Account hardware header follow-up
+
+Started from e4b21f8 on feature/merge-26. OS was rendered as a text input with datalist autocomplete suggestions rather than a real selection control. Replaced that wiring with shared OperatingSystemSelect, a controlled native select bound to the existing os field. Windows 10, Windows 11, Linux, macOS, Other and optional blank are supported. Unrecognised saved strings get a retained saved-value option; no bulk conversion, schema migration or hardware-data rewrite. The browser manages popup keyboard/focus/positioning rather than a custom clipped overlay. CPU/GPU selectors and canonical ID logic are unchanged.
+
+Account now matches the existing minimum/recommended disclosure pattern: compact bold green TESTER HARDWARE eyebrow and white My PC specifications title. The existing supporting sentence, privacy/no-detection guidance, expand/collapse, fields and Save/Clear behaviour remain.
+
+Executed seven focused checks: OS browser, hardware regression, PC SQL/privacy, real development PC browser, TypeScript, targeted lint and final production build - all Passed. Real development coverage saves/reloads Account Windows11, minimum Linux/recommended macOS and an Other submission, restores original QA requirements and removes only the test's own temporary account/submission. Local browser coverage includes unknown legacy persistence, all five values, keyboard Enter/Escape/focus, disclosure retention, unchanged CPU/GPU IDs, desktop/mobile and 100/125/150 percent CSS zoom. The test fixture waits for hydration/storage loading before interaction; this is not a simulated production data change.
+
+Targeted lint: 58 changed TS files, no new error-rule counts versus b7d8617; 22 baseline errors remain. Combined retained evidence now has 35 passed suite/check results, with 189 passed formal automated criteria and 39 broader manual cases pending. Unchanged earlier checks are retained, not all rerun.
+
+Manual OS-M01 remains pending: Account and Submit/Edit using mouse and keyboard in the owner's browser, actual toolbar zoom 100/125/150 percent, mobile/native popup placement and screen-reader announcement. Restore only your own QA OS values after testing. CSS zoom/headless Chromium evidence is not a claim of owner manual or cross-browser acceptance. No database migration is required. No production, v11, Render or environment-secret changes; existing dump/temp files remain excluded.
+
+---
+
 ## Final acceptance fixes - 5 November 2026
 
 Implementation checkpoint: eba4725. Continued from actual HEAD 2baab20, preserving the intervening locked-option, PC styling and XP-card commits. The owner's latest brief explicitly passes feedback approval/rejection/XP and approval-notification generation; these systems were not reset or rewritten. See docs/MERGE-26-OWNER-ACCEPTANCE.md for the preserved owner ledger and **MERGE 26 — REMAINING LOCALHOST ACCEPTANCE WALKTHROUGH**. Formal pending cases can cover broader steps than the owner's reported component passes.
