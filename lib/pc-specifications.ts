@@ -1,3 +1,4 @@
+import {canonicalHardware} from './hardware-catalogue';
 export type PcSpecs=Record<string,string|number>;
 export type PcDraft=Record<string,string>;
 export type PcRequirements={minimum:PcSpecs;recommended:PcSpecs};
@@ -18,9 +19,9 @@ export function parsePcSpecs(value:PcDraft,allowNotes=false):PcSpecs{
  const result:PcSpecs={};
  for(const [key,raw] of Object.entries(value)){
   const field=PC_FIELDS.find(f=>f.key===key);if(!field||('notes'in field&&!allowNotes))throw Error("Unsupported PC specification field.");
-  const text=raw.trim();if(!text)continue;
+  const text=raw.trim();if(!text||text==='custom:')continue;
   if('numeric'in field){const amount=Number(text);if(!Number.isFinite(amount)||amount<field.min||amount>field.max)throw Error(`${field.label}: enter a number between ${field.min} and ${field.max}, or leave blank.`);result[key]=amount;}
-  else{if(text.length>('notes'in field?1000:160))throw Error(`${field.label} is too long.`);if(key==='storage_type'&&!['SSD','HDD','NVMe SSD','Other'].includes(text))throw Error("Choose a supported storage type.");result[key]=text;}
+  else{if(text.length>('notes'in field?1000:160))throw Error(`${field.label} is too long.`);if(key==='storage_type'&&!['SSD','HDD','NVMe SSD','Other'].includes(text))throw Error("Choose a supported storage type.");result[key]=(key==='cpu'||key==='gpu')?canonicalHardware(key,text):text;}
  }
  return result;
 }

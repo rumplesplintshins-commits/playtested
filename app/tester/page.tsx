@@ -876,7 +876,7 @@ function TesterPage() {
         for(const row of usefulness.data??[]){if(row?.test_id&&(row.usefulness==="useful"||row.usefulness==="not_useful"))mapped[row.test_id]=row.usefulness;}
         setFeedbackUsefulness(mapped);
       }
-      if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id));if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
+      if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id)).order("created_at",{ascending:false}).order("id",{ascending:false});if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
       setDraftOwnerId(user.id);
 
       if (progressError) {
@@ -1698,7 +1698,7 @@ function TesterPage() {
                             </div>
                             {event.rubric_version!=null?<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                               <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">Feedback quality</p><p className="mt-1 text-lg font-semibold text-white">{event.quality_score??"—"}%</p></div>
-                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award??0} XP</p></div>
+                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award==null?"Not recorded":`${event.actual_xp_award} XP`}</p></div>
                               <div className="col-span-2 rounded-lg bg-black/30 p-3 sm:col-span-1"><p className="text-xs text-zinc-400">Rubric</p><p className="mt-1 text-lg font-semibold text-white">Version {event.rubric_version}</p></div>
                             </div>:<p className="mt-3 text-xs text-zinc-400">Legacy review · score not recorded</p>}
                             {event.reason&&<div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Review reason</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">{event.reason}</p></div>}

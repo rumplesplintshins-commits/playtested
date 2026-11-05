@@ -16,7 +16,6 @@ function readSelection():Selection{
 export function WorkspaceRetry({message}:{message:string}){const router=useRouter();const [busy,setBusy]=useState(false);return <div role="alert" className="my-5 rounded-xl border border-amber-300/30 p-5 text-sm text-amber-100"><p>{message}</p><button type="button" disabled={busy} onClick={()=>{setBusy(true);router.refresh();setTimeout(()=>setBusy(false),1200);}} className="mt-3 rounded-lg border border-white/20 px-4 py-2 focus-visible:outline-2">{busy?"Refreshing…":"Refresh workspace"}</button></div>;}
 export default function DeveloperWorkspace({games,submissions,claims,diagnostics=[],diagnosticsReady=true,diagnosticsNotice,warnings=[],extras,feedbackCountsReady=true,showPlan=false}:{games:WorkspaceItem[];submissions:WorkspaceItem[];claims:WorkspaceItem[];diagnostics?:WorkspaceItem[];diagnosticsReady?:boolean;diagnosticsNotice?:ReactNode;warnings?:string[];extras?:ReactNode;feedbackCountsReady?:boolean;showPlan?:boolean}){
  const router=useRouter();const [selection,setSelection]=useState<Selection>({tab:"games",filter:"All",search:"",item:""});const [mobileDetail,setMobileDetail]=useState(false);const panel=useRef<HTMLDivElement>(null);const tabs=useRef<Array<HTMLButtonElement|null>>([]);
- useEffect(()=>{function sync(){const next=readSelection();setSelection(next);setMobileDetail(!!next.item);}sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);
  function choose(next:Selection,replace=false){setSelection(next);const url=new URL(window.location.href);for(const key of ["tab","filter","q","game"])url.searchParams.delete(key);url.searchParams.set("tab",next.tab);if(next.filter!=="All")url.searchParams.set("filter",next.filter);if(next.search)url.searchParams.set("q",next.search);if(next.item)url.searchParams.set("game",next.item);window.history[replace?"replaceState":"pushState"](null,"",url);}
  const groups={games,submissions,claims,diagnostics};const items=groups[selection.tab];
  const statusFilters=selection.tab==="diagnostics"?["All",...new Set(diagnostics.map(run=>run.status))]:filters[selection.tab];
@@ -27,11 +26,12 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  const selected=visible.find(item=>item.id===selection.item)||visible.find(item=>selection.campaign&&item.campaignIds?.includes(selection.campaign))||visible[0];
  const [scrollRequest,setScrollRequest]=useState<{id:string;tab:Tab;feedback:boolean}|null>(null);
  const handledScroll=useRef<typeof scrollRequest>(null);
+ useEffect(()=>{function sync(){const next=readSelection();setSelection(next);setMobileDetail(!!next.item);if(next.item&&next.campaign)setScrollRequest({id:next.item,tab:next.tab,feedback:true});}sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);
  useEffect(()=>{
   if(!scrollRequest||handledScroll.current===scrollRequest)return;
   handledScroll.current=scrollRequest;
   const root=panel.current;
-  if(!root||selected?.id!==scrollRequest.id||selection.tab!==scrollRequest.tab)return;
+  if(!root||(selected?.id!==scrollRequest.id&&!selected?.campaignIds?.includes(selection.campaign||""))||selection.tab!==scrollRequest.tab)return;
   const detail=root.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden]) > div:not([hidden])')||root;
   root.focus({preventScroll:true});
   function scroll(target:HTMLElement){
@@ -62,7 +62,7 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
   toggle?.click();
   if(reveal())observer.disconnect();
   return()=>observer.disconnect();
- },[scrollRequest,selected?.id,selection.tab,mobileDetail]);
+ },[scrollRequest,selected?.id,selection.tab,selection.campaign,mobileDetail]);
  function selectTab(tab:Tab){choose({tab,filter:"All",search:"",item:""});setMobileDetail(false);}
  function selectItem(id:string,feedback=false){if(id!==selected?.id||(!mobileDetail&&window.matchMedia("(max-width: 1023px)").matches)||feedback)setScrollRequest({id,tab:selection.tab,feedback});choose({...selection,item:id});setMobileDetail(true);}
  return <DeveloperPlanProvider enabled={showPlan}><div className="mt-7 min-w-0">

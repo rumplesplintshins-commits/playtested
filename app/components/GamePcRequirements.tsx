@@ -1,11 +1,12 @@
 "use client";
+import {hardwareLabel} from '@/lib/hardware-catalogue';
 import {useEffect,useState} from "react";
 import {PC_FIELDS,type PcRequirements,type PcSpecs} from "@/lib/pc-specifications";
 import {subscribeGamePc} from "@/lib/game-pc-requirements";
 import {usePrivatePc} from "./AccountPcSpecifications";
 import CompactDetails from "./CompactDetails";
 function Specs({value,privateSpecs=false}:{value:PcSpecs;privateSpecs?:boolean}){
- return <dl className="space-y-2 text-sm">{PC_FIELDS.filter(f=>value[f.key]!==undefined&&value[f.key]!=="").map(f=><div key={f.key} className="min-w-0 break-words [overflow-wrap:anywhere]"><dt className="text-xs text-zinc-500">{f.key==='storage_gb'?(privateSpecs?'Available storage':'Storage required'):f.label}</dt><dd className="whitespace-pre-wrap text-zinc-200">{String(value[f.key])}{['ram_gb','vram_gb','storage_gb'].includes(f.key)?' GB':''}</dd></div>)}</dl>;
+ return <dl className="space-y-2 text-sm">{PC_FIELDS.filter(f=>value[f.key]!==undefined&&value[f.key]!=="").map(f=><div key={f.key} className="min-w-0 break-words [overflow-wrap:anywhere]"><dt className="text-xs text-zinc-500">{f.key==='storage_gb'?(privateSpecs?'Available storage':'Storage required'):f.label}</dt><dd className="whitespace-pre-wrap text-zinc-200">{f.key==='cpu'||f.key==='gpu'?hardwareLabel(f.key,String(value[f.key])):String(value[f.key])}{['ram_gb','vram_gb','storage_gb'].includes(f.key)?' GB':''}</dd></div>)}</dl>;
 }
 export default function GamePcRequirements({id,kind="submission",compact=false,showEmpty=false}:{id:string;kind?:"submission"|"approved"|"imported"|"campaign";compact?:boolean;showEmpty?:boolean}){
  const [value,setValue]=useState<PcRequirements|null>(null),[loaded,setLoaded]=useState(false),[error,setError]=useState(false),pc=usePrivatePc();
