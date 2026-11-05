@@ -24,6 +24,8 @@ try{
  await db.exec(fs.readFileSync('tests/fixtures/merge26-tester-rank.sql','utf8'));
  await db.exec(fs.readFileSync('tests/fixtures/merge26-pc-listing-helpers.sql','utf8'));
  for(const file of ['202611040111_merge26_private_rank_helpers.sql','202611040113_merge26_pc_specifications.sql','202611050124_merge26_attribution_restrictions.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/202611050126_merge26_rank_only_forward_compat.sql','utf8'));
+ assert.equal((await db.query("select pg_get_function_result('public.get_feedback_tester_identities(uuid[])'::regprocedure) as signature")).rows[0].signature,'TABLE(test_id uuid, current_rank integer)','Forward migration preserves rank-only contract on clean schema');
  const integrity=fs.readFileSync('supabase/migrations/202610280004_claim_integrity.sql','utf8');await db.exec(integrity.slice(integrity.indexOf('create function public.guard_submitted_test()'),integrity.indexOf('revoke all on function public.guard_legacy_claim()')));
  await db.exec(`update profiles set display_name='Private tester',tester_xp=125 where id='${id(1)}';insert into account_pc_specs(user_id,specs) values('${id(1)}','{"os":"Linux"}');insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome) values('${id(50)}','${id(20)}','${id(1)}','reviewed','accepted');`);
  await db.query('insert into tester_availability_preferences(tester_id,playtest_id) values($1,$2)',[id(1),id(20)]);
