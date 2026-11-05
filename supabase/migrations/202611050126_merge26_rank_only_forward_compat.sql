@@ -37,5 +37,9 @@ $m26$;
 -- Retain historical mappings for controlled review; do not silently erase them.
 drop trigger if exists allocate_tester_public_identity on public.profiles;
 -- The old allocator function remains inaccessible to anon/authenticated.
-revoke all on function public._allocate_tester_public_identity() from public,anon,authenticated,service_role;
+do $m26$ begin
+ if to_regprocedure('public._allocate_tester_public_identity()') is not null then
+   revoke all on function public._allocate_tester_public_identity() from public,anon,authenticated,service_role;
+ end if;
+end $m26$;
 commit;
