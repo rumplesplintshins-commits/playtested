@@ -1498,7 +1498,7 @@ export default function AdminSubmissionsPage() {
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
 
-      <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+      <div className="mx-auto min-w-0 max-w-7xl [overflow-wrap:anywhere] px-5 py-10 sm:px-8">
         <ListingRevisionQueue/>
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
@@ -1517,7 +1517,7 @@ export default function AdminSubmissionsPage() {
 
         </div>
 
-        <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3 lg:grid-cols-4">
           {[
             {
               label: "Needs attention",
@@ -1722,7 +1722,7 @@ export default function AdminSubmissionsPage() {
             </div>
 
             <div className="mb-4 flex flex-wrap items-end gap-3">
-              <label className="min-w-0 flex-1 text-sm text-zinc-300" htmlFor="submission-search">Search submissions
+              <label className="min-w-0 basis-full grow text-sm text-zinc-300 sm:basis-0" htmlFor="submission-search">Search submissions
                 <input id="submission-search" type="search" value={submissionSearch} onChange={event=>setSubmissionSearch(event.target.value)} placeholder="Game title or developer/studio" className={inputClass}/>
               </label>
               <button type="button" className="rounded-lg border border-zinc-700 px-4 py-3 text-sm" onClick={()=>setSubmissionSearch("")} disabled={!submissionSearch}>Clear search</button>
@@ -1779,7 +1779,7 @@ export default function AdminSubmissionsPage() {
                                 : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600"
                             }`}
                           >
-                            <div className="flex items-start gap-3">
+                            <div className="flex flex-wrap items-start gap-3">
                               {submission.imageUrl ? (
                                 <img
                                   src={
@@ -1794,7 +1794,7 @@ export default function AdminSubmissionsPage() {
                                 </div>
                               )}
 
-                              <div className="min-w-0 flex-1">
+                              <div className="min-w-[min(100%,8rem)] flex-1">
                                 <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between">
                                   <div className="min-w-0 max-w-full">
                                     <p className="break-words [overflow-wrap:anywhere] font-semibold">
