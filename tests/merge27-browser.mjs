@@ -42,6 +42,10 @@ try {
       assert.equal(result.status(), 200, path + " broken guide link " + href);
     }
   }
+  const iconResponse = await context.request.get(origin + "/apple-icon");
+  assert.equal(iconResponse.status(), 200, "Apple touch icon response");
+  assert((iconResponse.headers()["content-type"] || "").includes("image/png"), "Apple touch icon PNG content type");
+  assert.equal(iconResponse.headers()["x-powered-by"], undefined, "X-Powered-By header must be disabled");
   const noJs = await browser.newContext({ javaScriptEnabled: false });
   for (const path of paths) {
     const p = await noJs.newPage();
