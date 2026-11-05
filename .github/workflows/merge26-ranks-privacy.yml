@@ -1,0 +1,23 @@
+name: Merge 26 ranks-only privacy
+on:
+  push:
+    branches: [feature/merge-26]
+  pull_request:
+    branches: [v11]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node tests/test-merge26-tester-identity.mjs
+      - run: node tests/test-merge26-privacy-controls.mjs
+      - run: npx tsc --noEmit
