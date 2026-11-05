@@ -27,6 +27,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/seo-social.png/route.tsx app/page.tsx app/sitemap.ts lib/organic-search.ts
+      - run: npm run test:unit
       - run: npx tsc --noEmit
       - run: npm run build
         env:
