@@ -1,3 +1,7 @@
+## Personal-name minimisation review — 5 November 2026
+
+The owner requires **N Quanja** as the only public-facing operator name for now and does not authorise publication of their private personal name. The exact private name is intentionally **not reproduced** in this repository or release documentation. GitHub's default-branch code search returned no match for the supplied private name, and direct checks of the Merge 26 privacy/terms component, legal content and owner decision record returned no match. These checks are limited: they do not cover all feature-branch files, commit history, Git author metadata, previous deployments, external search caches, WHOIS/registrar records or provider billing identities. Do not rewrite Git history or falsify legal/provider account records as part of a routine release. Latest CI run #38 passed for the previous privacy update; a new commit requires its own check.
+
 ## Latest release verification — 5 November 2026
 
 - GitHub Actions run **#30** for commit `b7d99c647f548ad660117f79eefc3317d93d1eac` completed **successfully**. Privacy and regression jobs passed, including the new legacy-numbered-to-rank-only upgrade rehearsal and production build.
