@@ -1,3 +1,11 @@
+## Latest release verification — 5 November 2026
+
+- GitHub Actions run **#30** for commit `b7d99c647f548ad660117f79eefc3317d93d1eac` completed **successfully**. Privacy and regression jobs passed, including the new legacy-numbered-to-rank-only upgrade rehearsal and production build.
+- The mounted historical database backup at `/mnt/data/database.dump` was independently SHA-256 checked: `83354c14882be6d869bf4a206683bcc7fbe17b177bce811461a9f6424319326c`. It remains a **4 November** snapshot, not a verified current production recovery point. Attempted PostgreSQL package installation in the working environment timed out; isolated restore remains unverified.
+- **Release decision:** hold production writes and `v11` merge until fresh backup/restore assurance and final controller/privacy decisions. The owner's general instruction to ship does not establish missing legal identity, controller notice, provider account agreements or a recoverable current backup. No production migration or deployment occurred.
+
+---
+
 **Additional read-only production prerequisites (5 November):** `pg_cron` is installed; existing new-campaign capacity is 3; Pro launch limit is 15 (an explicitly supported input for migration 122 to change to 5); `_share_key(text,uuid)` exists; `_m26_activity_game(uuid,uuid)` is absent before the earlier Merge 26 migration that creates it. These checks do not substitute for full ordered migration execution. The privacy CI test now also runs migration 126 after 124 on its clean test fixture (commit `7b57e07`), with CI outcome pending independent verification.
 
 ## 5 November 2026 — release-gate recheck (latest)
