@@ -1,3 +1,5 @@
+Current status: selected controls are implemented and development-tested; see the final resumed implementation section and docs/MERGE-26-OWNER-PRIVACY-DECISIONS.md. Earlier combined-consent/no-restriction findings below are preserved historical snapshots, not current implementation status. Confirmed public alias is N Quanja (not verified legal identity).
+
 # Merge 26 privacy and security review — owner decision draft
 
 Reviewed against development code, disposable database tests and development-only browser tests on 4 November 2026. This is a technical assessment and proposed processing record, **not a legal-compliance certification**. Production data, configuration, processor contracts and production retention jobs were not inspected. No production release is authorised.
@@ -145,3 +147,14 @@ Specific technical/operational blockers: no dedicated public-attribution restric
 No production migrations, QA import, v11 merge or Render deployment. No fresh restore rehearsal or new live release smoke test. See the decision record for the exact remaining owner choices, PRIVACY-OPERATIONS for the manual rights/DPIA/provider assessment, and PRODUCTION-COMPATIBILITY for recovery/migration steps.
 
 The older checklist items below/above are not automatically approved: this preparation adds evidence and concrete proposals. Public version0.4 remains draft; no provider contract, region outside Supabase metadata, or unverified log/backup retention is claimed.
+
+
+## Resumed privacy-control implementation ? 5 November 2026
+
+Supersedes the earlier combined-choice/no-restriction snapshot. Owner selected persistent public numbers/ranks with rights restrictions, separate page/Steam permission, waiting30days/alerts90days, and a safe historical-report procedure. Migration124 implements admin-only audited masking of number AND rank, reviewed reversal and narrow display-name/PC/waiting minimisation without rewriting reports/XP/Auth ownership or disabling guards. Migration125 reconciles the existing development minute worker. Migrations123?125 applied/verified in development ONLY.
+
+Consent version merge26-2026-11-05-v2 records each purpose decision/time in browser storage, independently withdrawable and expiring after180days; old preferences enable neither purpose. Failed persistence cannot undo current-tab withdrawal. No persistent device/account receipt ID or server consent ledger is introduced; browser evidence is lost on clearing storage, a documented limitation.
+
+Confirmed public-facing alias N Quanja and privacy email incorporated; individual operator, not incorporated, no public residential/correspondence address available. Alias is not verified legal identity; statutory controller/name/geographical-address disclosure applicability must be confirmed (see owner decision record). No address is invented.
+
+DPIA technical screening is complete in docs/MERGE-26-DPIA-SCREENING.md. Conservative outcome recommends proportionate full DPIA/LIA before persistent public attribution release; no blanket legal conclusion. docs/MERGE-26-RIGHTS-RUNBOOK.md distinguishes tested restriction/partial minimisation from provider account containment and complete erasure. Remaining actual controller/provider facts and operational review must be settled.

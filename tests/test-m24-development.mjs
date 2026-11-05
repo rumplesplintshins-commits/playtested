@@ -184,9 +184,9 @@ try{
  await publicPage.goto(origin+'/privacy?utm_source=reddit&utm_campaign=m24_qa');
  await publicPage.getByText('Privacy & optional analytics',{exact:true}).click();
  assert.equal(analyticsRequests,0,'Analytics must be off without permission');
- await publicPage.getByRole('button',{name:'Allow optional analytics'}).click();
+ await publicPage.getByRole('button',{name:'Allow page analytics'}).click();
  await expect.poll(()=>analyticsRequests).toBe(1);
- await publicPage.getByRole('button',{name:'Reject optional analytics'}).click();
+ await publicPage.getByRole('button',{name:'Reject page analytics'}).click();
  assert.equal(await publicPage.evaluate(()=>sessionStorage.getItem('playtested.analytics.session.v1')),null);
  const count=analyticsRequests;await publicPage.reload();await publicPage.waitForLoadState('networkidle');assert.equal(analyticsRequests,count,'Withdrawal persists');
  for(const width of [320,390,1280]){await publicPage.setViewportSize({width,height:900});assert(await publicPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`Privacy reflow ${width}`);}

@@ -1,6 +1,7 @@
 // Documentation generation only. Status comes from executed validation evidence.
 import fs from 'node:fs';
 import {followupAutomated,followupManual,steamWalkthrough} from './merge26-followup-cases.mjs';
+import {privacyAutomated,privacyManual} from './merge26-privacy-cases.mjs';
 const evidence=JSON.parse(fs.readFileSync('docs/MERGE-26-AUTOMATED-RESULTS.json','utf8'));
 const suites=new Map(evidence.suites.map(r=>[r.suite,r]));
 const automated=[
@@ -103,7 +104,9 @@ const manual=[
  ['MN-028','Production release gate','Owner/release operator','/','Review release notes, migration order, scheduler and rollback prerequisites.|Arrange a fresh production backup and production-schema review only under separate future authorisation.|Approve deployment only after localhost/privacy acceptance.','No production query/write/migration, v11 merge or Render deployment is performed by this Merge 26 implementation run.','No production action is authorised by this test plan.'],
 ];
 automated.push(...followupAutomated);
+automated.push(...privacyAutomated);
 manual.push(...followupManual);
+manual.push(...privacyManual);
 const autoCases=automated.map(([id,area,suite,expected])=>({id:'M26-'+id,area,suite,expected,type:'Automated',priority:/Privacy|Availability|Environment|Release|identity/i.test(area)?'Critical':'High'}));
 const manualCases=manual.map(([id,area,role,page,steps,expected,cleanup])=>({id:'M26-'+id,area,role,page,steps:steps.split('|'),expected,cleanup,type:'Manual',priority:/Privacy|Availability|Environment|gate|deletion/i.test(area)?'Critical':'High'}));
 const all=[...autoCases,...manualCases];

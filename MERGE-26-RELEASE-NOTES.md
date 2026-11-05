@@ -246,3 +246,8 @@ Executed: PC validation/RLS/atomic rollback tests and real development browser a
 - tests/test-merge26-qa-capacity.mjs
 
 Rollback: preserve saved hardware IDs and keep the label resolver if reverting selector UI; do not bulk rewrite private specs. Existing notification hrefs remain compatible. Restore earlier read-helper definitions only through reviewed migrations if necessary. Any capacity-policy reversal affects future rounds only; do not rewrite issued deadlines or historical targets/XP/audit. Keep the owner-approved Pro five-launch contract coordinated with its frontend reader. The development-only QA maintenance script must never be run as a production migration.
+
+
+## Privacy readiness follow-up
+
+Separate page/Steam opt-ins with versioned minimal browser evidence, independent withdrawal and legacy-off defaults; audited admin public-attribution restriction/partial minimisation preserving report/XP integrity; explicit minute scheduler. New migrations124?125 after123, development verified, production not applied. Public-facing operator alias N Quanja is not verified legal identity. Full DPIA/LIA review, controller/provider facts and fresh database recovery remain release prerequisites;66Storage objects separately protected.

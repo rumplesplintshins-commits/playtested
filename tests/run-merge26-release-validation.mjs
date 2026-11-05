@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const suites=[
+ ['privacy-controls',['tests/test-merge26-privacy-controls.mjs']],
+ ['privacy-development',['--env-file=.env.local','tests/test-merge26-privacy-development.mjs']],
  ['information-pages',['tests/test-catalogue-browser.mjs','--information']],
  ['os-browser',['tests/test-merge26-os-browser.mjs']],
  ['qa-capacity',['tests/test-merge26-qa-capacity.mjs']],

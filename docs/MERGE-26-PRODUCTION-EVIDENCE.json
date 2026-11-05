@@ -114,8 +114,52 @@
     "202611050120_merge26_history_published_artwork.sql",
     "202611050121_merge26_new_campaign_capacity.sql",
     "202611050122_merge26_pro_launch_contract.sql",
-    "202611050123_merge26_private_approved_identity.sql"
+    "202611050123_merge26_private_approved_identity.sql",
+    "202611050124_merge26_attribution_restrictions.sql",
+    "202611050125_merge26_availability_schedule.sql"
   ],
-  "new_candidate_123": "prepared and locally SQL-tested only; not applied to any hosted database",
-  "full_production_chain_rehearsal": "Not Run"
+  "new_candidate_123": "Applied and verified in development only; NOT applied to production",
+  "full_production_chain_rehearsal": "Not Run",
+  "latest_update": {
+    "production_writes": 0,
+    "development_migrations_applied": [
+      "123",
+      "124",
+      "125"
+    ],
+    "new_development_tables": 10,
+    "production_public_tables_views": 63,
+    "production_functions": 159,
+    "development_public_tables_views": 73,
+    "development_functions": 192,
+    "existing_column_type_mismatches": 0,
+    "storage_recovery": {
+      "objects": 66,
+      "bytes": 72810736,
+      "verified_at": "2026-11-05T13:01:35.141Z",
+      "manifest_sha256": "52980dbaba2f98ffd214597f904cd0506ab57c76a3bf0cf7211a374f90738920",
+      "stable_inventory": true,
+      "independent_rehash": true,
+      "broad_windows_acl_entries": 0,
+      "database_included": false
+    },
+    "fresh_database_recovery": "Blocked: no usable existing connection or provider-confirmed recovery point",
+    "render_region": "Unverified: no available authenticated connection",
+    "production_availability_job": "Absent",
+    "development_availability_job": "one active every minute",
+    "full_isolated_restore": "Not Run",
+    "existing_column_type_and_nullability_mismatches": 0,
+    "expected_default_changes": {
+      "places": {
+        "production": 4,
+        "development": 3,
+        "migration": "121"
+      },
+      "reservation_hours": {
+        "production": 72,
+        "development": 48,
+        "migration": "114"
+      }
+    }
+  }
 }

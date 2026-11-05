@@ -1,3 +1,19 @@
+# Current Merge26 privacy/recovery readiness ? 5 November 2026
+
+Implementation directions selected, not blanket legal approval. Independent versioned page/Steam choices and audited attribution restriction/partial minimisation are implemented and tested; old combined-consent/no-control statements below are historical snapshots. Migrations123?125 applied/verified ONLY in development; production untouched. Hosted disposable-account testing exposed and corrected a NOT NULL profile-name mismatch in the uncommitted124 implementation. The neutral replacement is Restricted account; no genuine report was altered.
+
+Real Auth test: ban rejects new sign-in and refresh, but an existing JWT can still read until expiry. RIGHTS-RUNBOOK therefore requires verified containment/expiry before case minimisation; public masking does not pretend to revoke account access or complete erasure.
+
+Fresh complete Storage recovery VERIFIED:66objects/72810736bytes, all hashes and stable before/after inventory, restricted local ACL. Fresh database recovery BLOCKED: no existing usable connection/provider recovery point; old4November export is not fresh. Full isolated restore remains Not Run.
+
+Remaining external gates: required legal identity/address disclosure (N Quanja is an alias; email/individual status confirmed), accountable full DPIA/LIA/actual audience review, named rights/retention operator and schedule, actual Render region/provider-account contracts/retention, fresh database recovery. No further permission to implement the already selected controls is needed. Production125 must install the absent minute worker during a later explicitly authorised release.
+
+See OWNER-PRIVACY-DECISIONS, RIGHTS-RUNBOOK, DPIA-SCREENING and PRODUCTION-COMPATIBILITY. No production migrations, v11 merge or deployment occurred.
+
+---
+
+## Historical preparation snapshots
+
 ## Current preparation: proposals requested, not approvals
 
 The owner explicitly requested implementation/documentation of proposed privacy decisions and read-only production checks, **without blanket legal approval**. The prior general approval question is superseded by specific D01-D07 in docs/MERGE-26-OWNER-PRIVACY-DECISIONS.md. Exact proposed Privacy/cookie/Terms copy is implemented locally and reproduced there; /privacy and /terms remain draft/noindex with no effective date.

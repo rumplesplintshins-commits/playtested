@@ -88,11 +88,11 @@ try{
  await visitor.goto(origin+'/?utm_source=reddit&utm_medium=outreach&utm_campaign=merge26_pipeline');
  await visitor.getByText('Privacy & optional analytics',{exact:true}).click();await expect(visitor.getByText('Current choice: Off.',{exact:false})).toBeVisible();assert.equal(posts,0);
  const recording=visitor.waitForResponse(r=>new URL(r.url()).pathname==='/api/analytics'&&r.request().method()==='POST');
- await visitor.getByRole('button',{name:'Allow optional analytics'}).click();const recorded=await recording;assert.equal(recorded.status(),204);
+ await visitor.getByRole('button',{name:'Allow page analytics'}).click();const recorded=await recording;assert.equal(recorded.status(),204);
  const event=recorded.request().postDataJSON();temporaryEvents.push(event.event_id);
  const stored=must(await service.from('m24_page_views').select('event_id,source,medium,campaign').eq('event_id',event.event_id).single(),'Consenting event storage');assert.equal(stored.campaign,'merge26_pipeline');assert.equal(stored.source,'reddit');
  const measured=await (await admin.request.get(origin+'/api/admin/analytics')).json();assert(measured.sources.some(s=>s.campaign==='merge26_pipeline'&&s.views>=1));
- await visitor.getByRole('button',{name:'Reject optional analytics'}).click();assert.equal(posts,1);await consent.close();
+ await visitor.getByRole('button',{name:'Reject page analytics'}).click();assert.equal(posts,1);await consent.close();
  const adminEvent={consent:true,event_id:crypto.randomUUID(),visitor_id:crypto.randomUUID(),page:'/'};temporaryEvents.push(adminEvent.event_id);
  assert.equal((await admin.request.post(origin+'/api/analytics',{headers:{origin},data:adminEvent})).status(),204);
  assert.equal(must(await service.from('m24_page_views').select('event_id').eq('event_id',adminEvent.event_id),'Internal traffic omission').length,0);

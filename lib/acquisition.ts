@@ -31,11 +31,32 @@ export function acquisitionContext(href: string, referrer: string): Acquisition 
 }
 export const analyticsPreferenceKey = "playtested.analytics.preference.v1";
 export const analyticsSessionKey = "playtested.analytics.session.v1";
-export function analyticsAllowed() {
+export const analyticsNoticeVersion = "merge26-2026-11-05-v2";
+export type AnalyticsPurpose = "pages" | "steam";
+const deniedInThisTab = new Set<AnalyticsPurpose>();
+export function purposeAllowed(purpose: AnalyticsPurpose) {
+  if (deniedInThisTab.has(purpose)) return false;
   try {
     const value = JSON.parse(localStorage.getItem(analyticsPreferenceKey) || "null");
-    return value?.allowed === true && typeof value.at === "number" && Date.now() - value.at < 180 * 86400000;
+    const choice = value?.version === analyticsNoticeVersion ? value[purpose] : null;
+    const age = Date.now() - choice?.at;
+    return choice?.allowed === true && typeof choice.at === "number" && Number.isFinite(age) && age >= 0 && age < 180 * 86400000;
   } catch { return false; }
+}
+export function saveAnalyticsChoice(purpose: AnalyticsPurpose, allowed: boolean) {
+  // A failed persistence write must never undo withdrawal in the current tab.
+  if (!allowed) deniedInThisTab.add(purpose);
+  if (purpose === "pages" && !allowed) { try { sessionStorage.removeItem(analyticsSessionKey); } catch { /* Collection remains off. */ } }
+  let previous;
+  try { previous = JSON.parse(localStorage.getItem(analyticsPreferenceKey) || "null"); } catch { /* Invalid preferences stay off. */ }
+  const value: {version: string; pages?: {allowed: boolean; at: number}; steam?: {allowed: boolean; at: number}} = previous?.version === analyticsNoticeVersion
+    ? {version: analyticsNoticeVersion, pages: previous.pages, steam: previous.steam} : { version: analyticsNoticeVersion };
+  value[purpose] = { allowed, at: Date.now() };
+  localStorage.setItem(analyticsPreferenceKey, JSON.stringify(value));
+  if (allowed) deniedInThisTab.delete(purpose);
+}
+export function analyticsAllowed() {
+  return purposeAllowed("pages");
 }
 export function submissionAcquisition() {
   try {
@@ -47,4 +68,4 @@ export function submissionAcquisition() {
 }
 
 // A previous general analytics choice is not silently extended to the new referral purpose.
-export function steamReferralsAllowed(){try{return analyticsAllowed()&&JSON.parse(localStorage.getItem(analyticsPreferenceKey)||'null')?.steam_referrals===true;}catch{return false;}}
+export function steamReferralsAllowed(){return purposeAllowed("steam");}

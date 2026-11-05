@@ -1,17 +1,17 @@
 # Merge 26 complete test catalogue
 
-Evidence snapshot: 2026-11-05T12:30:47.515Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
+Evidence snapshot: 2026-11-05T13:12:54.883Z. Environment: localhost and development `ktifgybnkdaotdxrvjgq`, plus disposable network-isolated PostgreSQL/PGlite fixtures. Production was not accessed.
 
 ## Execution summary
 
 | Measure | Actual count |
 |---|---:|
-| Total catalogue cases | 228 |
-| Automated cases passed | 189 |
+| Total catalogue cases | 238 |
+| Automated cases passed | 197 |
 | Automated cases failed | 0 |
-| Manual owner acceptance cases pending | 39 |
+| Manual owner acceptance cases pending | 41 |
 | Blocked/unexecuted automated cases | 0 |
-| Executed suites/checks passed | 36 |
+| Executed suites/checks passed | 38 |
 | Executed suites/checks failed | 0 |
 | Observed critical technical failures | 0 |
 | Observed high technical failures | 0 |
@@ -3620,6 +3620,158 @@ Case counts are documented acceptance criteria mapped to executed assertions, no
 - **Evidence:** `technical-test-results/m26-final/bell-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
 - **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
 
+### M26-PV-001 — Privacy consent
+
+- **Test ID:** M26-PV-001
+- **Feature area:** Privacy consent
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Fresh, invalid, expired, future-dated and legacy preferences enable neither purpose; each scope has version/decision/time only.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-002 — Privacy consent
+
+- **Test ID:** M26-PV-002
+- **Feature area:** Privacy consent
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Steam-only and page-only permission work; independently withdraw without changing the other purpose; failed persistence still withdraws in this tab.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-003 — Privacy restriction
+
+- **Test ID:** M26-PV-003
+- **Feature area:** Privacy restriction
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Anonymous/ordinary accounts cannot restrict a tester, read private case tables or bypass masking via the renamed resolver.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-004 — Privacy restriction
+
+- **Test ID:** M26-PV-004
+- **Feature area:** Privacy restriction
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Admin restriction masks both public number and rank, keeps private moderation access and supports reviewed reversal before minimisation.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-005 — Privacy restriction
+
+- **Test ID:** M26-PV-005
+- **Feature area:** Privacy restriction
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Minimisation uses neutral NOT NULL profile status and removes own hardware/waiting fields without rewriting reports, ownership, XP or Auth account.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-006 — Privacy restriction
+
+- **Test ID:** M26-PV-006
+- **Feature area:** Privacy restriction
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-privacy-controls.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-privacy-controls.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Submitted-report hard deletion and identity recycling still fail; audit is private and cannot be deleted by ordinary callers.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-controls.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-007 — Privacy consent browser
+
+- **Test ID:** M26-PV-007
+- **Feature area:** Privacy consent browser
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node tests/test-merge26-steam-browser.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node tests/test-merge26-steam-browser.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** Real footer components independently enable/reject page/Steam purposes and retain correct separate states after reload; navigation still works.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/steam-browser.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
+### M26-PV-008 — Privacy account containment
+
+- **Test ID:** M26-PV-008
+- **Feature area:** Privacy account containment
+- **Priority:** Critical
+- **Test type:** Automated
+- **Required role:** Isolated test runner exercising owner/tester/developer/admin/anonymous roles as named in the criterion; hosted cases use dedicated development roles only.
+- **Preconditions:** Dependencies installed; fixture runner supplies isolated roles/data. Development browser/postflight cases additionally require the verified development server/accounts; no production credentials.
+- **Test data:** The dedicated synthetic/disposable fixtures in `node --env-file=.env.local tests/test-merge26-privacy-development.mjs`; browser label number #114 is mocked, not a live account. Hosted browser tests use the safe QA games above and newly created synthetic accounts only.
+- **Steps:**
+  1. From the repository terminal run `node --env-file=.env.local tests/test-merge26-privacy-development.mjs`.
+  2. Verify its exit code and the assertions for the expected criterion below; inspect the named evidence log if unsuccessful.
+- **Expected result:** A new disposable development account is denied admin RPC access, can be restricted/minimised by QA admin, and Auth ban prevents new sign-in/refresh; existing JWT limitation measured.
+- **Security/privacy expectation:** Respect the suite’s role checks; no private mappings or secrets in public output; no production access.
+- **Actual result:** Executed automated suite passed; the mapped criterion is covered by its assertions. This is not manual acceptance.
+- **Status:** Passed
+- **Evidence:** `technical-test-results/m26-final/privacy-development.log`; committed suite status in `docs/MERGE-26-AUTOMATED-RESULTS.json`.
+- **Cleanup:** Disposable database/container and temporary label route clean up automatically. Hosted integration removes its exact synthetic events/accounts/reservations and restores QA controls; legitimate feedback history is retained.
+
 ## Manual owner acceptance catalogue
 
 The formal cases below retain their earlier pending scope. Later owner-reported component passes and resolved blockers are preserved in the dated acceptance ledger appended below; do not erase them or treat broader unexecuted steps as passed. Browser automation is recorded separately.
@@ -4370,7 +4522,7 @@ The formal cases below retain their earlier pending scope. Later owner-reported 
 - **Steps:**
   1. Open `http://localhost:3000/tester`.
   2. Create a dedicated development-only Steam-linked QA submission/campaign using the fixture instructions below; submit your own QA report normally.
-  3. Renew Allow optional analytics after reading the new purpose, then activate View Steam Page once.
+  3. Renew Allow Steam referrals after reading the new purpose, then activate View Steam Page once.
   4. In a separate admin profile open Steam referrals, check the correct title/count and Top 10/25/50/All.
   5. Reject analytics and click again; confirm store still opens and total does not increase.
 - **Expected result:** One recorded qualifying click; refusal/withdrawal does not block navigation or create a new event; no other links count.
@@ -4443,6 +4595,48 @@ The formal cases below retain their earlier pending scope. Later owner-reported 
 - **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
 - **Cleanup:** Keep intended QA report/audit; mark the QA alert read if desired.
 
+### M26-PV-M01 — Privacy rights operations
+
+- **Test ID:** M26-PV-M01
+- **Feature area:** Privacy rights operations
+- **Priority:** Critical
+- **Test type:** Manual
+- **Required role:** Designated rights operator and development admin
+- **Preconditions:** Localhost connected to development; role: **Designated rights operator and development admin**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/contact`.
+  2. Use a new development-only account and opaque case reference; review RIGHTS-RUNBOOK scope and intake.
+  3. Using supported Auth administration ban it and inspect actual JWT expiry/session settings; verify sign-in/refresh fail and wait until a captured prior token can no longer mutate protected data.
+  4. Run the reviewed minimisation against only that fixture, inspect remaining identifiers/free text and document retain/erase/restrict decisions.
+- **Expected result:** No claim of instant account erasure or immediate JWT revocation; restriction and scope-specific minimisation preserve genuine reports and audits. Full case completion requires reviewed residual data handling.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Remove only an empty disposable account; preserve submitted-report and intended privacy audit evidence.
+
+### M26-PV-M02 — Privacy restriction accessibility
+
+- **Test ID:** M26-PV-M02
+- **Feature area:** Privacy restriction accessibility
+- **Priority:** Critical
+- **Test type:** Manual
+- **Required role:** Development admin and signed-out visitor
+- **Preconditions:** Localhost connected to development; role: **Development admin and signed-out visitor**. Use separate browser profiles for different accounts.
+- **Test data:** QA games A/B and dedicated development accounts described above; create only clearly labelled disposable submissions where instructed. Controlled time/rank states use the named disposable test runner, never genuine records.
+- **Steps:**
+  1. Open `http://localhost:3000/tester`.
+  2. Use a dedicated accepted QA report and note its displayed public number/rank.
+  3. Apply audited attribution restriction through an authenticated administrator RPC; refresh public and developer feedback views.
+  4. Check keyboard/screen reader and390px/150% layouts; verify admin private review and XP are unchanged.
+- **Expected result:** Public number AND rank unavailable across shared resolver views; neutral fallback is readable; private moderation remains authorised.
+- **Security/privacy expectation:** Use only authorised development accounts; do not expose credentials or unrelated users, send marketing, alter genuine history, or operate on production.
+- **Actual result:** Not executed as owner manual acceptance; record observations here when performed.
+- **Status:** Not Run
+- **Evidence:** Owner to add timestamp, observed result and redacted screenshot/log reference; no password or private account mapping.
+- **Cleanup:** Reverse only a reversible fixture restriction; never re-enable a minimised account.
+
 ## MY MANUAL LOCALHOST ACCEPTANCE WALKTHROUGH
 
 1. **Environment / signed out:** Open localhost, verify the Network Supabase hostname is development (MN-001). A production hostname or unexpected authenticated account is a stop condition. No time manipulation.
@@ -4481,13 +4675,13 @@ Status: **Not Run** by owner. Browser automation uses mocked destinations; an ac
 1. Starting at http://localhost:3000, click Login and sign in with the dedicated development tester.
 2. Open Tester Hub, then scroll to Testing activity (not Available games).
 3. Find your QA report; verify the genuine thumbnail, title, developer, Submitted timestamp, admin outcome, XP and three-state usefulness. Expand submitted feedback and XP/review history; verify reconsideration remains where eligible.
-4. In the footer open Privacy & optional analytics. Read the new referral purpose and press Allow optional analytics again. An older general Allow alone is deliberately insufficient.
+4. In the footer open Privacy & optional analytics. Read the new referral purpose and press Allow Steam referrals again. An older general Allow alone is deliberately insufficient.
 5. Note the admin total in a separate admin profile, then as tester activate View Steam Page once. Confirm the expected Steam destination opens in a new tab and Tester Hub state remains intact. The successful external load itself is not something Playtested can confirm.
 6. In the separate profile log in as development administrator and open /admin/analytics or Admin Review.
 7. Expand Steam referrals. Expect the correct game's count and total to increase by one after refresh/reopening the page. No tester identity should be displayed. A second deliberate activation may add another event.
 8. Select Top 10, Top 25, Top 50 and All. Check descending count order, deterministic ties and Showing X of Y games. Overview totals must not change merely because Results changes. With fewer than the limit, only available games are shown. Do not manufacture large hosted datasets: use tests/test-merge26-steam-browser.mjs for 142 mocked aggregate games and SQL fixtures for tie/count boundaries.
 9. Collapse/reopen the section; the selected Results value should remain. Other admin UI state must not reset.
-10. Return to the tester footer, press Reject optional analytics and activate Steam again. Steam still opens; after refreshing the admin metrics the count must remain unchanged. Also test a fresh profile with no permission and withdrawal after renewed Allow.
+10. Return to the tester footer, press Reject Steam referrals and activate Steam again. Steam still opens; after refreshing the admin metrics the count must remain unchanged. Also test a fresh profile with no permission and withdrawal after renewed Allow.
 11. Visit catalogue/game-details Steam links and a legitimate itch.io link: none adds to these Steam totals. Admin clicks are excluded even if the admin also has tester role.
 12. For missing links use a QA game without a storefront: no store control should appear. Archive your own dedicated QA game through the existing owner control, reopen its tester history and check safe retained artwork/store link; signed-out visitors must not gain archive access. Restore only the QA listing afterwards. If a historical image is unavailable, expect Artwork unavailable rather than fabricated art.
 13. Use keyboard only, then 390px mobile emulation and actual browser toolbar zoom 150%. Cards stack, thumbnail ratios remain intact, controls are readable and the All list scrolls inside its panel. Return zoom to 100% afterwards.
