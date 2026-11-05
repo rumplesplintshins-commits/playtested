@@ -1,5 +1,6 @@
 "use client";
 import DisclosureHeading from "./DisclosureHeading";
+import DisclosureControl from "./DisclosureControl";
 import {intentCounts,intentText} from "@/lib/intent-counts";
 
 import { useRouter } from "next/navigation";
@@ -450,7 +451,7 @@ function HistoricalPlaytestCard({
                                 <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3">
                                   <p className="text-sm font-semibold text-zinc-200">
-                                    <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
+                                    <AnonymousTesterLabel testId={response.test_id} />
                                   </p>
                                   <p className="mt-1 text-xs font-normal text-zinc-500">
                                     {response.submitted_at
@@ -1113,8 +1114,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1140,8 +1141,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1167,8 +1168,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1198,7 +1199,7 @@ function ResultsDashboard({
                       className="rounded-lg border border-white/10 bg-black/20 p-3"
                     >
                       <p className="text-[11px] font-semibold text-[#77f29b]">
-                        <AnonymousTesterLabel testId={response.test_id} number={index + 1} compact />
+                        <AnonymousTesterLabel testId={response.test_id} compact />
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                         {response.bugs_found}
@@ -1224,7 +1225,7 @@ function ResultsDashboard({
           </div>
         </div></>}
        {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
-        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
+        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
        {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
@@ -1237,7 +1238,7 @@ function ResultsDashboard({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-zinc-100">
-                      <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
+                      <AnonymousTesterLabel testId={response.test_id} />
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
                       {response.submitted_at
@@ -1473,6 +1474,7 @@ function BuildResultsPanel({
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
   const resultRequest = useRef(0);
+  useEffect(()=>{if(typeof window==="undefined")return;let active=true;const sync=()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign&&[currentPlaytest.id,...playtests.map(p=>p.id)].includes(campaign))queueMicrotask(()=>{if(active){setSelectedId(campaign);setFeedbackTab("individual");}});};sync();window.addEventListener("popstate",sync);return()=>{active=false;window.removeEventListener("popstate",sync);};},[currentPlaytest.id,playtests]);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
   const isCurrent = selectedPlaytest.id === currentPlaytest.id;
@@ -1674,6 +1676,7 @@ export default function StartPlaytest({
   const [setupExpanded, setSetupExpanded] = useState(false);
 
   const [resultsExpanded, setResultsExpanded] = useState(true);
+  const resultsPanelId=useId();
   const [eligibility, setEligibility] = useState<PlaytestEligibility | null>(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
   const [eligibilityError, setEligibilityError] = useState("");
@@ -2290,7 +2293,7 @@ export default function StartPlaytest({
               <button
                 type="button"
                 onClick={() => setSetupExpanded((current) => !current)}
-                className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
               >
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
@@ -2645,7 +2648,8 @@ export default function StartPlaytest({
               onClick={() => setResultsExpanded((current) => !current)}
               data-results-toggle
               aria-expanded={resultsExpanded}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left"
+              aria-controls={resultsPanelId}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
             >
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
@@ -2656,20 +2660,16 @@ export default function StartPlaytest({
                 </p>
               </div>
 
-              <span className="text-lg text-zinc-400">
-                {resultsExpanded ? "−" : "+"}
-              </span>
+              <DisclosureControl expanded={resultsExpanded}/>
             </button>
 
 
-            {resultsExpanded && (
-              <div className="border-t border-white/10 p-5">
+              <div id={resultsPanelId} hidden={!resultsExpanded} className="border-t border-white/10 p-5">
                 <BuildResultsPanel
                   currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
                 />
               </div>
-            )}
           </section>
         </div>
       </div>

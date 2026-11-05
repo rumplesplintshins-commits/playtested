@@ -1,4 +1,5 @@
 "use client";
+import {developerSaved} from "@/lib/developer-save";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
@@ -35,6 +36,7 @@ export default function SubmissionContact({ id, admin = false }: { id: string; a
   }, [id, admin, retry]);
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if(busy)return;
     const emailError = contactEmailError(contact.contact_email);
     if(emailError){setMessage(emailError);return;}
     setBusy(true); setMessage("");
@@ -53,7 +55,7 @@ export default function SubmissionContact({ id, admin = false }: { id: string; a
         if (error.code === "23514") { setMessage("Contact details were not saved. Use a supported public email suffix and a non-disposable provider, or leave email blank."); return; }
         throw new Error();
       }
-      setMessage("Private contact details and preference saved.");
+      setMessage("Private contact details and preference saved."); developerSaved("Contact details saved.");
     } catch { setMessage("Could not save your contact details. Check your sign-in and retry."); }
     finally { setBusy(false); }
   }

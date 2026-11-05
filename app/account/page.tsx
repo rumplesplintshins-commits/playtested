@@ -1,4 +1,5 @@
 "use client";
+import AccountPcSpecifications from "../components/AccountPcSpecifications";
 import { TesterRankPanel, GenrePreferences } from "../components/TestingPolicy";
 
 import { useEffect, useState } from "react";
@@ -98,6 +99,7 @@ export default function AccountPage() {
     <main className="min-h-screen bg-[#090b0a] text-white">
       <SiteHeader />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+        {!loading&&<AccountPcSpecifications/>}
         {!loading && roles.includes("tester") && <><TesterRankPanel /><GenrePreferences /></>}
         <header>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Playtested account</p>

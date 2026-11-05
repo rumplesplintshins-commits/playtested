@@ -29,8 +29,8 @@ if(process.argv.includes('--information')){
    if(path==='/privacy'){
     await expect(page.getByRole('heading',{name:'Cookies and browser storage',exact:true})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Sign-in and recovery cookies',exact:true}).locator('..')).toContainText('400-day maximum');
-    await expect(page.getByRole('heading',{name:'Feedback drafts on your device',exact:true}).locator('..')).toContainText('no automatic time expiry');
-    await expect(page.getByRole('heading',{name:'Reporting records and your choices',exact:true}).locator('..')).toContainText('no in-app attribution opt-out');
+    await expect(page.getByRole('heading',{name:'Feedback drafts on your device',exact:true}).locator('..')).toContainText('30 days');
+    await expect(page.getByRole('heading',{name:'Historical reporting records',exact:true}).locator('..')).toContainText('former shared-link journey system remains disabled');
     await expect(page.getByRole('link',{name:'ICO guidance on cookies and other storage/access technologies'})).toHaveAttribute('href','https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/guidance-on-the-use-of-storage-and-access-technologies/');
    }
    if(path==='/terms'||path==='/privacy'){

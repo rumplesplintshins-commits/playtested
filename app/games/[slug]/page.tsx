@@ -1,3 +1,5 @@
+import GamePcRequirements from "@/app/components/GamePcRequirements";
+import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
@@ -617,6 +619,7 @@ export default async function GamePage({
 
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-6">
+            <GamePcRequirements id={importedGame.id} kind="imported"/>
             <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -934,14 +937,14 @@ export default async function GamePage({
 
                   <div className="border-t border-white/10 p-4">
                     <div className="grid gap-3 lg:grid-cols-2">
-                      {currentDetailedFeedback.map((response, index) => (
+                      {currentDetailedFeedback.map((response) => (
                         <article
                           key={response.id}
                           className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-semibold text-[#77f29b]">
-                              Playtested tester {index + 1}
+                              <AnonymousTesterLabel testId={response.id}/>
                             </p>
                             <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">
                               Accepted

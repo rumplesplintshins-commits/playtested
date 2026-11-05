@@ -1,44 +1,11 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
-import { testerRankPresentation } from "@/lib/tester-rank";
-
-export default function AnonymousTesterLabel({
-  testId,
-  number,
-  compact = false,
-}: {
-  testId: string;
-  number: number;
-  compact?: boolean;
-}) {
-  const [rank, setRank] = useState<number | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void createClient()
-      .rpc("get_developer_test_rank", { p_test_id: testId })
-      .then(({ data, error }) => {
-        if (!active || error) return;
-        if (typeof data === "number" && Number.isInteger(data)) setRank(data);
-      });
-    return () => {
-      active = false;
-    };
-  }, [testId]);
-
-  const presentation = testerRankPresentation(rank);
-  const label = presentation.known
-    ? `${presentation.label} #${number}`
-    : `Tester #${number}`;
-
-  return (
-    <span
-      className={compact ? presentation.text : `font-semibold ${presentation.text}`}
-      title="Anonymous tester rank at the time this report is viewed"
-    >
-      {label}
-    </span>
-  );
+import {useEffect,useState} from "react";
+import {subscribeFeedbackIdentity,type FeedbackIdentity} from "@/lib/feedback-identities";
+import {testerRankPresentation} from "@/lib/tester-rank";
+export default function AnonymousTesterLabel({testId,compact=false}:{testId:string;compact?:boolean;rankOnly?:boolean}){
+ const [identity,setIdentity]=useState<FeedbackIdentity|null>(null);
+ useEffect(()=>subscribeFeedbackIdentity(testId,setIdentity),[testId]);
+ const rank=testerRankPresentation(identity?.current_rank);
+ const label=(rank.known?rank.label:"Rank unavailable")+" (current)";
+ return <span className={compact?rank.text:"font-semibold "+rank.text} title="Current tester rank; no public tester identifier is displayed">{label}</span>;
 }

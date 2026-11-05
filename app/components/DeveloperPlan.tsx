@@ -11,7 +11,7 @@ export function parseDeveloperPlan(value:unknown):DeveloperPlan{
  if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("Plan unavailable. Unexpected get_my_developer_plan response; check the deployed RPC version.");
  const p=value as DeveloperPlan;
  if(!["free","pro"].includes(p.plan)||!Number.isInteger(p.rounds_used)||p.rounds_used<0||!Number.isInteger(p.launch_limit)||p.launch_limit<1||typeof p.rank_targeting!=="boolean"||typeof p.genre_targeting!=="boolean"||!Number.isFinite(Date.parse(p.server_now))||[p.next_at,p.quota_until,p.cooldown_until].some(v=>v!==null&&(typeof v!=="string"||!Number.isFinite(Date.parse(v)))))throw new Error("Plan unavailable. Invalid allowance response; check the deployed RPC contract.");
- if(p.window_hours!==720||p.launch_limit!==(p.plan==="pro"?15:1)||p.gap_hours!==(p.plan==="pro"?48:0))throw new Error("Plan unavailable. Server policy differs from the configured Free/Pro release policy; review configuration before launching.");
+ if(p.window_hours!==720||p.launch_limit!==(p.plan==="pro"?5:1)||p.gap_hours!==(p.plan==="pro"?48:0))throw new Error("Plan unavailable. Server policy differs from the configured Free/Pro release policy; review configuration before launching.");
  return p;
 }
 const Context=createContext<{data:DeveloperPlan|null;loading:boolean;error:string;refresh:()=>Promise<void>}>({data:null,loading:false,error:"Plan unavailable",refresh:async()=>{}});

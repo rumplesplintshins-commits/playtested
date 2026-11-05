@@ -1,0 +1,88 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {PGlite} from '@electric-sql/pglite';
+import {availabilityFixtureSQL,availabilitySeedSQL,id} from './merge26-availability-fixture.mjs';
+const exports={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/acquisition.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(exports);
+const values=new Map();global.localStorage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};let cleared=0;global.sessionStorage={removeItem:()=>cleared++};
+const {analyticsAllowed,steamReferralsAllowed,saveAnalyticsChoice,analyticsPreferenceKey,analyticsNoticeVersion}=exports;
+assert(!analyticsAllowed()&&!steamReferralsAllowed());
+for(const old of [{allowed:true,at:Date.now()},{allowed:true,steam_referrals:true,at:Date.now()}]){values.set(analyticsPreferenceKey,JSON.stringify(old));assert(!analyticsAllowed()&&!steamReferralsAllowed());}
+saveAnalyticsChoice('steam',true);assert(steamReferralsAllowed()&&!analyticsAllowed());
+saveAnalyticsChoice('pages',true);assert(steamReferralsAllowed()&&analyticsAllowed());
+saveAnalyticsChoice('pages',false);assert(steamReferralsAllowed()&&!analyticsAllowed());assert.equal(cleared,1);
+saveAnalyticsChoice('steam',false);assert(!steamReferralsAllowed());
+saveAnalyticsChoice('pages',true);assert(analyticsAllowed()&&!steamReferralsAllowed());
+let evidence=JSON.parse(values.get(analyticsPreferenceKey));assert.equal(evidence.version,analyticsNoticeVersion);assert.deepEqual(Object.keys(evidence).sort(),['pages','steam','version']);assert.deepEqual(Object.keys(evidence.pages).sort(),['allowed','at']);
+for(const at of [Date.now()+86400000,Date.now()-181*86400000,'wrong']){values.set(analyticsPreferenceKey,JSON.stringify({version:analyticsNoticeVersion,pages:{allowed:true,at},steam:{allowed:true,at}}));assert(!analyticsAllowed()&&!steamReferralsAllowed());}
+values.set(analyticsPreferenceKey,'invalid');assert(!analyticsAllowed());saveAnalyticsChoice('steam',true);assert(steamReferralsAllowed());
+const persist=global.localStorage.setItem;global.localStorage.setItem=()=>{throw Error('Storage blocked');};assert.throws(()=>saveAnalyticsChoice('steam',false));assert(!steamReferralsAllowed(),'Withdrawal survives failed persistence');assert.throws(()=>saveAnalyticsChoice('steam',true));assert(!steamReferralsAllowed(),'Failed grant cannot override withdrawal');global.localStorage.setItem=persist;
+const db=new PGlite();
+try{
+ await db.exec(availabilityFixtureSQL());await db.exec(availabilitySeedSQL());
+ await db.exec("update profiles set display_name='Fixture account' where display_name is null;alter table profiles alter column display_name set not null;");
+ await db.exec(fs.readFileSync('tests/fixtures/merge26-tester-rank.sql','utf8'));
+ await db.exec(fs.readFileSync('tests/fixtures/merge26-pc-listing-helpers.sql','utf8'));
+ for(const file of ['202611040111_merge26_private_rank_helpers.sql','202611040113_merge26_pc_specifications.sql','202611050124_merge26_attribution_restrictions.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/202611050126_merge26_rank_only_forward_compat.sql','utf8'));
+ assert.equal((await db.query("select pg_get_function_result('public.get_feedback_tester_identities(uuid[])'::regprocedure) as signature")).rows[0].signature,'TABLE(test_id uuid, current_rank integer)','Forward migration preserves rank-only contract on clean schema');
+ const integrity=fs.readFileSync('supabase/migrations/202610280004_claim_integrity.sql','utf8');await db.exec(integrity.slice(integrity.indexOf('create function public.guard_submitted_test()'),integrity.indexOf('revoke all on function public.guard_legacy_claim()')));
+ await db.exec(`update profiles set display_name='Private tester',tester_xp=125 where id='${id(1)}';insert into account_pc_specs(user_id,specs) values('${id(1)}','{"os":"Linux"}');insert into community_game_tests(id,playtest_id,tester_id,status,review_outcome) values('${id(50)}','${id(20)}','${id(1)}','reviewed','accepted');`);
+ await db.query('insert into tester_availability_preferences(tester_id,playtest_id) values($1,$2)',[id(1),id(20)]);
+ const identity=async()=> (await db.query('select * from get_feedback_tester_identities($1)',[[id(50)]])).rows[0];
+ await db.exec('set role anon;reset test.uid');assert.equal((await identity()).current_rank,0);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']),/permission denied/);
+ await db.exec(`reset role;set role authenticated;set test.uid='${id(2)}'`);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']),/Admin access/);
+ for(const table of ['tester_privacy_restrictions','tester_privacy_actions'])await assert.rejects(db.query('select * from '+table),/permission denied/);
+ await assert.rejects(db.query('select * from _m26_unrestricted_feedback_identities($1)',[[id(50)]]),/permission denied/);
+ await db.exec(`set test.uid='${id(9)}'`);
+ const before=(await db.query('select * from community_game_tests where id=$1',[id(50)])).rows[0];
+ await db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'CASE_001']);assert.equal((await identity()).current_rank,null,'Admin restriction suppresses public rank');
+ await db.exec('reset test.uid;reset role;set role anon');assert.equal((await identity()).current_rank,null);
+ await db.exec(`reset role;set role authenticated;set test.uid='${id(2)}'`);assert.equal((await identity()).current_rank,null);
+ await db.exec(`set test.uid='${id(9)}'`);await db.query('select set_tester_privacy_restriction($1,false,false,$2)',[id(1),'CASE_002']);
+ await db.exec('reset test.uid;reset role;set role anon');assert.equal((await identity()).current_rank,0,'Reviewed reversible restriction');
+ await db.exec(`reset role;set role authenticated;set test.uid='${id(9)}'`);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,false,true,$2)',[id(1),'CASE_003']),/requires attribution/);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(9),'CASE_003']),/Eligible account/);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,false,$2)',[id(1),'Contains personal text']),/case reference/);
+ await db.exec("reset role;create function fixture_deny_minimisation() returns trigger language plpgsql as $$begin raise exception 'Fixture failure';end;$$;create trigger fixture_deny_minimisation before update on profiles for each row execute function fixture_deny_minimisation();set role authenticated;");
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,true,true,$2)',[id(1),'CASE_FAIL']),/Fixture failure/);
+ await db.exec('reset role');assert.equal((await db.query('select restricted from tester_privacy_restrictions where tester_id=$1',[id(1)])).rows[0].restricted,false,'Failed minimisation rolls restriction back');assert.equal((await db.query('select count(*)::int n from account_pc_specs where user_id=$1',[id(1)])).rows[0].n,1,'Failed minimisation preserves private fields');assert.equal((await db.query('select count(*)::int n from tester_privacy_actions')).rows[0].n,2,'Failed action is not falsely recorded as completed');
+ await db.exec(`drop trigger fixture_deny_minimisation on profiles;drop function fixture_deny_minimisation();set role authenticated;set test.uid='${id(9)}'`);
+ await db.query('select set_tester_privacy_restriction($1,true,true,$2)',[id(1),'CASE_003']);
+ await assert.rejects(db.query('select set_tester_privacy_restriction($1,false,false,$2)',[id(1),'CASE_004']),/must remain restricted/);
+ await db.exec('reset role');
+ assert.deepEqual((await db.query('select * from community_game_tests where id=$1',[id(50)])).rows[0],before,'No report, outcome, ownership, XP or audit rewrite');
+ assert.equal((await db.query('select tester_xp,display_name from profiles where id=$1',[id(1)])).rows[0].tester_xp,125);
+ assert.equal((await db.query('select display_name from profiles where id=$1',[id(1)])).rows[0].display_name,'Restricted account');
+ assert.equal((await db.query('select count(*)::int n from account_pc_specs where user_id=$1',[id(1)])).rows[0].n,0);
+ assert.equal((await db.query('select count(*)::int n from tester_availability_preferences where tester_id=$1',[id(1)])).rows[0].n,0);
+ assert.equal((await db.query('select count(*)::int n from tester_privacy_actions')).rows[0].n,3);
+ assert.equal((await db.query('select count(*)::int n from auth.users where id=$1',[id(1)])).rows[0].n,1,'No unsafe Auth hard delete');
+ await assert.rejects(db.query('delete from community_game_tests where id=$1',[id(50)]),/cannot be released or deleted/);
+ await assert.rejects(db.query('update community_game_tests set tester_id=$1 where id=$2',[id(2),id(50)]),/cannot be recycled/);
+ await db.exec('set role authenticated');await assert.rejects(db.exec('delete from tester_privacy_actions'),/permission denied/);
+ // Rehearse the forward-only upgrade path for a hosted database that once
+ // exposed permanent numbers, without altering genuine development records.
+ await db.exec('reset role');
+ await db.exec(`alter function public.get_feedback_tester_identities(uuid[]) rename to _m26_fixture_rank_wrapper;
+ create function public.get_feedback_tester_identities(p_test_ids uuid[])
+ returns table(test_id uuid,public_number integer,current_rank integer)
+ language sql stable security definer set search_path='' as $body$
+ select f.test_id,99,f.current_rank from public._m26_fixture_rank_wrapper(p_test_ids) f
+ $body$;
+ create function public._allocate_tester_public_identity() returns trigger
+ language plpgsql as $body$ begin return new; end $body$;
+ create trigger allocate_tester_public_identity after update on public.profiles
+ for each row execute function public._allocate_tester_public_identity();`);
+ await db.exec(fs.readFileSync('supabase/migrations/202611050126_merge26_rank_only_forward_compat.sql','utf8'));
+ assert.equal((await db.query("select pg_get_function_result('public.get_feedback_tester_identities(uuid[])'::regprocedure) as signature")).rows[0].signature,'TABLE(test_id uuid, current_rank integer)');
+ assert.equal((await db.query("select count(*)::int n from pg_trigger where tgname='allocate_tester_public_identity' and not tgisinternal")).rows[0].n,0);
+ await db.exec('set role anon');
+ await assert.rejects(db.query('select * from _m26_legacy_numbered_feedback_identities($1)',[[id(50)]]),/permission denied/);
+ assert.deepEqual(Object.keys((await db.query('select * from get_feedback_tester_identities($1)',[[id(50)]])).rows[0]).sort(),['current_rank','test_id']);
+ await db.exec('reset role');
+ console.log('PASS privacy controls: independent versioned opt-ins, legacy off, expiry/withdrawal; real SQL admin-only audited public rank masking, reversible restriction, minimisation without report/XP/Auth deletion.');
+}finally{await db.close();}

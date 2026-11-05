@@ -1,4 +1,6 @@
 "use client";
+import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
+import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
@@ -7,10 +9,11 @@ import { QualityGuidance } from "./TestingPolicy";
 
 function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => Promise<void> }) {
   const [error, setError] = useState("");
+  const [rubricAttempt,setRubricAttempt]=useState(0);
   const [criteria, setCriteria] = useState<Record<string, boolean>>({specific:false,examples:false,impact:false,focus:false,takeaway:false});
   const [eligibility,setEligibility]=useState<Record<string,boolean|null>>({original:null,relevant:null});
   const [rubric,setRubric]=useState<{version:number;maximum_xp:number;criteria:Record<string,{label:string;guidance:string}>;eligibility:Record<string,string>}|null>(null);
-  useEffect(()=>{let active=true;void createClient().rpc("get_feedback_quality_rubric").then(({data,error})=>{if(active){setRubric(error?null:data);if(error||!data)setError("Feedback quality rubric unavailable. Enable migration 013, then refresh before reviewing.");}});return()=>{active=false;};},[]);
+  useEffect(()=>{let active=true;void createClient().rpc("get_feedback_quality_rubric").then(({data,error})=>{if(active){setRubric(error?null:data);if(error||!data)setError("Feedback quality rubric could not be loaded. Retry; if this continues, check administrator access and the development RPC configuration.");else setError("");}});return()=>{active=false;};},[rubricAttempt]);
   const assessed=Object.values(eligibility).every(value=>value!==null);
   const eligible=assessed&&Object.values(eligibility).every(Boolean);
   const count=Object.values(criteria).filter(Boolean).length;
@@ -18,6 +21,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const t = item.report;
+  const devQa=[t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement].some(value=>typeof value==="string"&&/^\s*\[DEV QA\](?:\s|$)/im.test(value));
 
   async function decide(action: "accepted" | "rejected" | "replacement") {
     setBusy(true);
@@ -35,10 +39,10 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
 
   return <article id={`report-${t.id}`} className="my-5 scroll-mt-6 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p><h3 className="mt-2 text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
-      <span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>
+      <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p>{devQa&&<span className="mt-2 inline-flex rounded border border-amber-200/30 bg-amber-200/10 px-2 py-0.5 text-xs font-semibold text-amber-200">DEV QA</span>}<h3 className="mt-2 text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
+      <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>{t.status==="reviewed"&&<DeveloperUsefulnessBadge value={t.feedback_usefulness}/>}</div>
     </div>
-    <p className="text-xs text-zinc-500">Tester {t.tester_id} · {feedbackQualityLabel(t)}</p>
+    <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}
@@ -56,7 +60,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     <button type="button" disabled={busy} onClick={()=>setReason(feedbackReasonSuggestion(criteria,eligibility))} className="text-sm text-zinc-300 underline">Use editable reason suggestion</button>
     <p className="text-xs text-zinc-400">Praise and criticism are equal. Do not require bugs, polished English or invented negatives. Rejection awards 0 XP and reverses the actual current award. Feedback quality percentage is distinct from acceptance rate.</p>
     <div className="flex flex-wrap gap-3"><button disabled={busy||!rubric||!eligible||!reason.trim()} onClick={()=>void decide("accepted")} className="rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black disabled:opacity-50">Save accepted assessment / restore XP</button><button disabled={busy||!rubric||!assessed||!reason.trim()} onClick={()=>void decide("rejected")} className="rounded-lg border border-red-400/30 px-4 py-3 text-sm text-red-200 disabled:opacity-50">Save rejection / reverse XP</button><button disabled={busy||!reason.trim()||!!t.replacement_at} onClick={()=>{if(window.confirm("Replace demonstrably fraudulent or unusable feedback? This restores its place, preserves the report and audits your reason. XP requires a separate decision."))void decide("replacement");}} className="rounded-lg border border-zinc-700 px-4 py-3 text-sm disabled:opacity-50">Moderator replacement exception</button></div>
-    {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+    {error && <p role="alert" className="text-sm text-red-300">{error}{!rubric&&<button type="button" onClick={()=>setRubricAttempt(n=>n+1)} className="ml-2 underline">Retry rubric</button>}</p>}
     {!!item.events?.length && <details className="text-sm text-zinc-400"><summary>Review history</summary>{item.events.map(event => <p key={event.id} className="mt-2 break-words">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"} · {event.kind}: {event.reason} · {event.rubric_version==null?"Legacy score not recorded":`Rubric ${event.rubric_version} · Feedback quality ${event.quality_score}% · Award ${event.actual_xp_award} XP`} · XP change {event.xp_delta}{event.actor_id?` · Reviewer ${event.actor_id}`:""}</p>)}</details>}
   </article>;
 }

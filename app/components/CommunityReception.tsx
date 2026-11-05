@@ -1,4 +1,5 @@
 "use client";
+import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 
 import {assessmentLabel} from "../../lib/review-labels";
 
@@ -610,14 +611,14 @@ export default function CommunityReception({
           <div className="border-t border-white/10 p-4">
             <div className="grid gap-3 lg:grid-cols-2">
               {selectedFeedback.map(
-                (response, index) => (
+                (response) => (
                   <article
                     key={response.id}
                     className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-[#77f29b]">
-                        Playtested tester {index + 1}
+                        <AnonymousTesterLabel testId={response.id}/>
                       </p>
 
                       <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">

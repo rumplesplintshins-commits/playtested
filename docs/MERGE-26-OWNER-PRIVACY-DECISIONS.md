@@ -1,0 +1,169 @@
+# Merge 26 owner privacy decisions - PROPOSED, NOT APPROVED
+
+The owner requested specific proposals, not blanket legal approval. No effective date, signature, DPA acceptance, DPIA conclusion or production authorisation is recorded by this document. The local /privacy and /terms pages remain visibly draft/noindex. Production rollout remains blocked at the unresolved items below.
+
+| ID | Specific decision needed | Proposed position / required confirmation | Status |
+|---|---|---|---|
+| D01 | Controller/contact and final notices | On 5 November 2026 the owner explicitly selected public name **N Quanja**, contact **support.playtested@gmail.com**, and **no public postal address**. The site now explains that privacy correspondence and identity-verification enquiries go to that email. The name is a public alias, not verified legal identity. Whether additional legal identity/postal-address disclosure is required, jurisdiction and notice effective date remain for review; do not invent an address. | Owner's public display/contact decision implemented; legal disclosure review outstanding |
+| D02 | PC/history and cross-game attribution basis | Owner changed the design on 5 November 2026: public current ranks ONLY on eligible accepted feedback; permanent public tester numbers rejected. Migration108/124 and application resolver updated on the feature branch, pending testing. Audited admin restriction suppresses public rank; private moderation/XP preserved. Public-rank lawful basis, necessity and balancing still require accountable review. | Restriction implemented/tested in development; LIA remains |
+| D03 | Analytics choice and evidence | Separate page and Steam opt-ins selected and implemented. Both off initially; legacy preferences invalidated, independent withdrawal/expiry and browser-local notice version/purpose/decision/time evidence. No identifiable server receipt ledger added. Archived notice text below. | Selected implementation complete; local-evidence limitations documented |
+| D04 | Retention/operations | Owner selected waiting30days/new availability alerts90days. Existing worker semantics tested; migration125 reconciles exactly one every-minute development job. Production worker is absent and requires future authorised migration125. Remaining report/audit/provider categories still need necessity/review schedule and operator. | Selected periods implemented; production and remaining schedule pending |
+| D05 | Rights and manual deletion | Tested admin attribution restriction/partial profile-PC-waiting minimisation preserves reports, XP and deletion guards. RIGHTS-RUNBOOK specifies supported account-ban/session checks and case-specific free-text/Auth/linked-data assessment; not complete anonymisation or universal erasure. Assign operator and validate provider containment before actual case completion. | Safe SQL path implemented; operational/full-erasure scope explicit |
+| D06 | Providers/transfers/retention | Confirm applicable Supabase/Render agreements, subprocessor/transfer arrangements and actual account settings. Production Supabase region verified eu-west-1 (Ireland), dev eu-central-1. Render region, workspace/log settings, disk/drain/backups and agreement evidence unavailable through connected tools. Gmail/Google account type/arrangements also need confirmation. Public DPA availability is not proof of this account's arrangements. | Account-level evidence missing |
+| D07 | DPIA screening and release conditions | Technical screening initially covered persistent cross-game numbers; owner rejected them on 5 November 2026. Revised ranks-only DPIA/LIA in DPIA-AND-LIA; rank/public-feedback risks, notices, provider facts and controller approval remain open. Actual audience/legacy age handling, significance/scale and accountable final review remain owner inputs. | Screening documented; full assessment/review pending |
+
+Decision log to complete: ID; owner/reviewer; date; approved proposal or precise amendment; supporting record; operator/implementation condition; publication date. Selected implementation directions above are recorded; this is not blanket legal approval. Approval of text alone must not be represented as proof that missing controls or provider settings exist.
+
+
+## Exact proposed notice wording ready for review
+
+Consent version merge26-2026-11-05-v2. These local draft paragraphs are not final production promises.
+
+### Privacy/cookie information: Current public tester ranks and objections
+
+Unless attribution has been restricted following a rights review, only eligible accepted public feedback may show a tester's current rank. No permanent public tester number or cross-game tester profile link is shown. Ranks and feedback content may still enable inferences or identification; this is not a promise of anonymity. Your account email, private account identifier and private PC specifications are not part of that public rank label. Pending and rejected reports remain in authorised private workflows. Current rank may differ from rank when a report was written. Contact support to object to persistent public attribution or request restriction, correction or erasure. State the account/report involved, not passwords or keys. The operator must assess the request, any interim restriction and its outcome separately from the report decision and XP; submission alone does not automatically hide a label. An authorised administrator can restrict public rank across feedback without changing XP or moderation; private authorised moderation access is retained.
+
+### Privacy/cookie information: Availability notification choices
+
+Notify me when a place opens is optional and concerns the selected campaign, not email marketing. Requests expire after 30 days and can be cancelled. A successful claim removes the corresponding waiting request. New availability alerts have a 90-day cleanup rule. Scheduled cleanup must be verified before release; expiry is not a promise about provider logs or backup deletion. Places are first-come, and a notification does not reserve a place.
+
+### Privacy/cookie information: Private developer contacts
+
+Optional submission contact details include email, Discord and Reddit usernames. They are stored separately from public listings and are accessible only to the submission owner and authorised Playtested administrators. The separate, unticked-by-default preference permits optional contact about your game, submission or playtesting opportunities. It is not blanket marketing permission. View, change or clear these details in My submissions; untick the preference and save to withdraw optional contact permission. Contact details remain until you clear them or the submission is deleted; withdrawing permission alone does not erase the fields. Account settings submit a deletion request rather than promising immediate erasure. The operator must include these private contacts when fulfilling a deletion request; contact support for its progress. Essential service or legal messages rely on the applicable service basis, not this optional outreach preference.
+
+### Privacy/cookie information: Optional visitor analytics
+
+If you allow optional analytics in the footer, Playtested records a random browser-tab session identifier, page category, timestamp, restricted UTM source/medium/campaign labels and a broad referral category (Reddit, search or external). It does not store full referring URLs, page queries, search terms, IP addresses, user-agent strings or device fingerprints in the analytics database. Hosting and security providers may separately process connection logs. Recognised bots, Do Not Track and Global Privacy Control are excluded on a best-effort basis. Counts describe consenting browser-tab sessions, not distinct people, and do not cover all visitors. The identifier is held in sessionStorage as playtested.analytics.session.v1 and renewed after 30 minutes without a recorded page navigation. Closing a tab normally clears it; browser session restore or duplicated tabs may preserve it. It is not a cross-device or cross-browser identity.
+
+### Privacy/cookie information: Analytics choice and retention
+
+The footer offers separate, equally available Allow and Reject controls for page analytics and Steam referrals and honours each saved choice in localStorage as playtested.analytics.preference.v1 for up to 180 days; expiry is checked before collection. Expired records may remain in browser storage until replaced or cleared, but do not permit collection. Analytics remains off without permission. Rejecting page analytics clears the current tab's analytics session and stops page collection. Rejecting Steam referrals independently stops new Steam events without changing the page choice. You can use the rest of Playtested without allowing analytics. Analytics events and submission acquisition records are removed by a daily retention task after 90 days (normally within the following day); reports display the last 30 days. Clearing browser storage resets your choice to off but does not erase server records already collected. Ask support about erasure of any information that can still be identified.
+
+### Privacy/cookie information: Optional PC specifications
+
+You may save optional PC model names and specifications for your own manual comparison with game requirements. These details are private to your account, removable in Account, and excluded from public profiles, feedback labels and public analytics. They are not automatically detected. Do not enter serial numbers, MAC addresses or unique device identifiers. A submitted deletion request does not itself erase these fields; the operator must include them in an approved account-erasure procedure. Developer-authored game requirements are separate public listing information. Comparison does not certify compatibility or performance.
+
+### Privacy/cookie information: Optional Steam referral counts
+
+After you choose Allow Steam referrals in the footer, Playtested records intentional View Steam Page activations from your own Tester Hub Testing Activity. Earlier analytics permission alone does not enable this new purpose. The separate event contains a random per-click deduplication ID, stable game ID/type, tester_activity source and server timestamp, not your account, report, session, IP address, user-agent or hardware information. Sign-in is checked to authorise the history link but no account or report identifier is stored in the event. Only administrators can see aggregate counts. Repeat intentional clicks count separately; these are clicks, not confirmed Steam visits or purchases. No tracking redirect is used. Rejecting or withdrawing prevents future recording; the Steam link still opens. Events are removed after 90 days by the daily task, normally within the following day. New random click IDs cannot identify your past clicks for account-based erasure. External Steam/itch.io pages have their own privacy arrangements. No marketing or behavioural profiling use is intended.
+
+### Privacy/cookie information: Developer acquisition sources
+
+A submission can include an optional self-reported discovery category, stored privately for service administration and understanding recruitment sources. With optional analytics permission, a consenting tab's restricted campaign and broad referral labels can also be associated with that submission. No private contact fields are included in acquisition reports. Reports group submitted games and approvals by source; missing sources are recorded as unknown and do not prove a direct visit. Registration attribution is not collected by this feature. Do not put names, email addresses, private identifiers or other personal information in campaign labels.
+
+### Privacy/cookie information: Game screenshots
+
+You may upload up to five screenshots separately from the catalogue thumbnail. Screenshots are checked and re-encoded with metadata removed, preserving their aspect ratios. Their files are stored in a private bucket and served through access checks: the submission owner and authorised admins may preview them, and visitors may view them while the game is approved. Removing or replacing a screenshot withdraws the old gallery link; file-cleanup failures are retained privately for retry. Public images may already have been saved by visitors. Include screenshots and pending file-cleanup tasks when fulfilling a submission or account deletion request.
+
+### Privacy/cookie information: External gameplay video
+
+Gameplay links are public on approved submission pages. YouTube, Vimeo and Google Drive players are loaded only after you choose Play. Posters use existing game images; for YouTube, Playtested may fetch and cache the video's public thumbnail on its server without sending your browser directly to YouTube's thumbnail service. Drive and Vimeo posters use the first game screenshot or catalogue thumbnail. The player or external link connects you to the provider, which receives connection information and may use its own cookies or storage under its privacy practices. Google Drive uses its file preview player and its owner controls sharing permissions. An Open video in new tab link remains available if embedding is restricted or the video is unavailable. No video files are uploaded to or hosted by Playtested.
+
+### Privacy/cookie information: Who is responsible
+
+Playtested is run by an individual operator, not an incorporated company. The confirmed public-facing name is N Quanja, an alias, not a verified legal identity. Privacy contact: support.playtested@gmail.com. No public residential or separate correspondence address is currently available. The legal controller identity and any required geographical/service address disclosure must be confirmed before this draft is published as final; the alias and email are not asserted to satisfy every disclosure requirement.
+
+### Privacy/cookie information: Information used by the service
+
+Account data includes your email address, authentication records, selected roles, profile information and, for new registrations, the record that you confirmed you are 18 or over. Service records can include developer relationships, game submissions, AI disclosures, campaigns, claims, feedback drafts and submitted reports, ratings, review reasons, moderation history, XP and ranks. Catalogue information may also come from public Steam listings. Authentication and hosting services may process technical connection and security records. Support emails contain the information you choose to send.
+
+### Privacy/cookie information: Why information is used
+
+Information supports sign-in, game listings, eligibility, campaign capacity, feedback delivery, quality review, rank calculations, moderation, security and answering requests. The working lawful-basis model is contract for account and service functions requested by users, legitimate interests for proportionate security, abuse prevention, moderation and service administration, and legal obligations where applicable. The operator must review and document legitimate-interest assessments where relied upon. Optional analytics uses your permission, separate from account terms and private developer contact preferences. No advertising tracking is introduced.
+
+### Privacy/cookie information: Cookies and browser storage
+
+Sign-in cookies support the account features you request. Local browser storage also supports requested feedback drafts, follow-up choices, recovery cooldowns and your optional analytics preference. Optional page and Steam-referral analytics remain off until you affirmatively permit the described purpose. Earlier generic analytics permission alone does not enable Steam-referral measurement. You can reject or withdraw through Privacy & optional analytics in the footer without losing storefront navigation or ordinary service access.
+
+Each purpose choice is stored in playtested.analytics.preference.v1 with notice version merge26-2026-11-05-v2, its allow/refuse decision and decision timestamp, expiring after 180 days. Both start off and can be withdrawn independently. Earlier preferences do not carry forward. This browser-local evidence is not a centrally identifiable consent ledger; clearing storage removes it. Page analytics uses a random tab session in sessionStorage, renewed after 30 minutes of inactivity. A Steam event uses a new per-click deduplication ID and does not reuse that tab-session ID. No advertising pixels, fingerprinting or third-party analytics SDK are introduced. The footer provides separate choices; allowing or rejecting one does not change the other. No account, device or persistent consent-receipt identifier is added for this evidence.
+
+### Privacy/cookie information: Sign-in and recovery cookies
+
+On the Playtested host, Supabase uses sb-<project-ref>-auth-token cookies, sometimes split into numbered chunks such as .0 and .1, to hold the authentication session, including tokens and account information. They are read by the browser and server to keep requested account features signed in. The installed SDK sets a 400-day maximum cookie lifetime and renews cookies when session information changes; this is not a promise that a login remains valid for 400 days. Token expiry, revocation and provider session rules also apply. Successful logout removes the session cookies. Signup/confirmation and password-recovery flows can also set PKCE code-verifier cookies used to complete the requested flow in the same browser. Clearing these cookies signs you out locally or can prevent a pending confirmation/recovery link working. Never share their values.
+
+### Privacy/cookie information: Feedback drafts on your device
+
+When you edit Tester Hub feedback, localStorage uses an account/test-specific Playtested feedback-draft key. It stores your written answers, ratings, play time, account/test identifiers and an update timestamp on this browser origin so you can resume your requested report. Playtested removes drafts that are more than 30 days old when the application next runs its browser-storage maintenance; invalid draft entries are also removed. A confirmed successful feedback submission or release attempts to remove that draft sooner. Clearing site storage loses unsent drafts; it does not delete submitted server reports.
+
+### Privacy/cookie information: Follow-up choices and recovery cooldown
+
+When an authorised developer selects a report follow-up status, localStorage stores account/campaign-specific report identifiers and choices such as Planned or Fixed. These follow-up choices are retained for up to 180 days after their last change and expired or invalid entries are removed when encountered. They do not change reports or XP. Password-recovery requests use sessionStorage to remember a retry deadline across reloads in that tab. This contains a timestamp, not your email or password. Clearing these local entries does not delete server records or bypass provider rate limits.
+
+### Privacy/cookie information: Shared links and historical attribution
+
+Playtested has disabled creation of new shared-link journey attribution while its privacy and PECR design is reviewed. Current /share/ links open the normal destination without starting a pt_visit journey, and the engagement endpoint no longer accepts new visit, context or access reporting. Earlier versions could create opaque journey identifiers and connect visits, access events, claims or feedback to a shared link. Historical records are not automatically erased by the software change itself and are handled under the retention approach below.
+
+### Privacy/cookie information: Historical reporting records
+
+Historical shared-link visit/event records were designed around a 90-day reporting window and hashed attribution/rate-limit identifiers. The former shared-link journey system remains disabled. The separate optional analytics described below does not use its identifiers. Existing historical records should be deleted when no longer needed and no later than the adopted retention period unless a specific security or legal reason justifies temporary retention. Contact support about records already held.
+
+### Privacy/cookie information: Clearing storage and external services
+
+Use your browser's site-data controls to inspect or remove Playtested cookies and local/session storage. This may sign you out, break pending recovery/confirmation, lose unsent feedback and reset local follow-up statuses; it does not delete your account or server reports. Normal browser caches may retain downloaded pages, scripts, fonts and images under browser/HTTP cache rules. No application advertising script or third-party analytics SDK was found in the inspected source. External artwork/build/store hosts receive normal connection information when contacted and may use their own cookies or logs. Hosting/security cookies and email-provider link tracking remain configuration-dependent and require separate provider review.
+
+### Privacy/cookie information: Who can see information
+
+Public game pages and catalogue summaries expose public listing information, assessments and community reception according to each feature's visibility. Authorised developers can see their game's reporting and feedback made available to them. Testers can access their own participation and outcomes; admins have review and moderation access. Public summaries do not mean every underlying independent report or account detail is public. Game developers and external build providers also handle information under their own arrangements.
+
+### Privacy/cookie information: Providers and transfers
+
+Playtested uses Supabase for authentication, its database and file storage, Render for application hosting, and Google for optional sign-in and the listed Gmail support address. Read-only project metadata identifies the production Supabase primary region as eu-west-1 (Ireland), not the UK. A primary region does not establish where every support, control-plane, subprocessor or logging operation takes place. Render service region, applicable processing agreements, transfer safeguards and actual provider retention settings still require operator confirmation before this draft becomes final. External game, artwork and video services apply their own arrangements when contacted.
+
+### Privacy/cookie information: Retention and deletion
+
+Optional PC specifications can be cleared in Account. Availability waiting requests expire after 30 days; withdrawing or a successful claim can remove them sooner. The Merge 26 worker removes expired waiting requests and new availability alerts older than 90 days when its scheduled processing runs. This new alert rule does not assert a retention period for every older notification class. Optional analytics events and acquisition records use a 90-day retention window with daily cleanup; deployment must verify the applicable jobs are active.
+
+A deletion request starts manual review, not immediate erasure. The operator assesses personal information across authentication, profiles, hardware, contacts, submitted text, public attribution, moderation/audit records and files. Genuine report integrity must be protected while erasure, restriction and de-identification rights are assessed; it is not a blanket reason to retain identifiable reports indefinitely. Other report, support, security-log and backup retention periods and review criteria must be confirmed in the final operator schedule. No unverified provider retention period is promised here.
+
+### Privacy/cookie information: Your requests and complaints
+
+Contact support to request access, correction, deletion, restriction or portability of personal data, or to object to processing, including processing based on legitimate interests. Which rights apply depends on the applicable law and lawful basis. We may need proportionate identity checks; never send passwords or keys. You may also complain to the relevant data-protection authority. For UK data-protection concerns, the Information Commissioner's Office provides a complaint route.
+
+### Privacy/cookie information: Age, automated rules and changes
+
+Playtested accounts and Playtested playtesting are intended only for adults aged 18 or over. New users must confirm that they are 18 or over when registering. If Playtested becomes aware that an account is being used by someone under 18, access may be restricted or closed and associated personal data handled in accordance with applicable data-protection obligations. Server rules determine matters such as campaign eligibility and capacity; admins assess feedback quality, with a support route for reconsideration. The assessment of any legally significant automated decision-making remains part of operator review. Future notice revisions should explain material changes and carry their own review/effective date.
+
+### Terms: What Playtested provides
+
+Playtested currently offers its services free of charge. Playtested helps developers share games and collect structured feedback, and helps players discover games and take part in playtests. Automation can support repetitive technical checks; people assess how games feel to play. Listings, community ratings and assessments do not guarantee quality, safety, participation or a particular outcome. Small samples should be treated with care.
+
+### Terms: Accounts and eligibility
+
+You must be at least 18 years old to create a Playtested account or participate in Playtested playtesting. New users must confirm that they are 18 or over during registration. Use accurate account details, keep your sign-in credentials private and report suspected account misuse. Choose the roles that reflect how you use the service. Playtested is not intended to provide accounts or playtesting participation to children.
+
+### Terms: Submitting a game
+
+Gameplay footage is optional and is not a condition of submission or approval. Thumbnail images, gameplay screenshots and supporting-evidence links supplied for your approved listing may be public. Only submit a game or claim a developer relationship when you have authority to do so. Provide accurate information, the required AI-use disclosure and authorised build or access links. Do not upload malware, infringe rights, impersonate others or expose confidential access information in a public field. You remain responsible for permissions relating to the material you supply.
+
+### Terms: Disclosure and assessment
+
+AI-use disclosures are declarations, not independent certification. An assessment records the checks or human review described for that game or build. It does not establish that a download is safe, detect all AI use or certify a game as AI-free. Read the scope and status of each assessment separately from its disclosure.
+
+### Terms: Testing, feedback and XP
+
+Test only builds you are authorised to access. Describe your own experience honestly, follow the testing task and avoid spam or copied filler. Thoughtful praise and criticism receive equal treatment. Administrators assess feedback quality, acceptance and XP. A developer marking a report useful or not useful is a separate advisory assessment: it does not automatically change moderation, XP or rank. Ask Contact/Support for reconsideration of a disputed quality decision. XP is not a promise of payment.
+
+### Terms: Reservations and campaign rules
+
+Claiming a place reserves capacity under the rules shown for that campaign. A deadline applies to the reservation; releasing it or letting it expire before submission frees the place. Expiry has no XP penalty. An expired test must successfully reclaim a place before submission, subject to current capacity and eligibility. Submitted feedback consumes a place regardless of its review outcome, except for existing audited moderator exceptions. See the in-app campaign and Tester Hub guidance for current allowances rather than relying on this document for changing quotas.
+
+### Terms: Moderation and appeals
+
+Report abusive content, suspicious links, ownership concerns or a disputed review through Contact/Support. Include enough context for investigation without sending secrets. Accounts or content may be restricted to address misuse, security risks or rights complaints. Ask for the reason and reconsideration if you believe a decision is wrong; include the relevant game or report reference.
+
+### Terms: Your work and its visibility
+
+You retain ownership of your games and original contributions. By submitting material, you allow Playtested to store, display and process it as needed for the service and the visibility of that feature. This does not transfer ownership or grant others a right to sell your game. Public listings, public ratings and community contributions may be visible to visitors. Independent test reports are available through authorised developer, tester and admin workflows; public reception summaries are different from private report access. Do not include personal or confidential information in feedback that the developer will receive.
+
+### Terms: External services and downloads
+
+Steam pages, game downloads, access links and externally hosted images may be operated by others. Their terms and privacy practices apply when you contact them. Be cautious with unfamiliar downloads and never treat a Playtested listing or technical check as a safety guarantee.
+
+### Terms: Closing an account and service changes
+
+Account settings let you submit an account-deletion request; this is not immediate erasure or sign-out. Contact/Support is also available for deletion, objection and restriction requests. An authorised operator must review the account, associated personal information and historical reports, assess applicable erasure/restriction rights and any justified retention, and explain the outcome. Historical usefulness or database dependencies are not by themselves reasons to refuse a request. Where retention is justified, identifying information should be minimised or de-identified as appropriate; de-identification is not automatically irreversible anonymity. Material changes to these terms should have an approved effective date and be explained before they take effect. Payment, subscription and payout terms are not established by this version.
+
+
+### Specific identity/address disclosure confirmation
+
+Confirm applicability and required content under the [Electronic Commerce Regulations2002 regulation6](https://www.legislation.gov.uk/uksi/2002/2013/regulation/6), including service-provider name and geographical address, alongside controller identity/contact transparency. N Quanja is a confirmed alias only, not proof of legal identity; the absence of a publishable address is recorded, not treated as an exemption. Obtain an appropriate lawful disclosure solution before final publication, without automatically exposing a home address or buying an address service without authorisation.

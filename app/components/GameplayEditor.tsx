@@ -1,4 +1,5 @@
 "use client";
+import {developerSaved} from "@/lib/developer-save";
 import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
 import { gameplayVideo, gameplayGuidance } from "@/lib/gameplay-video";
@@ -31,6 +32,7 @@ export default function GameplayEditor({ id, admin = false, catalogueThumbnail }
   }, [id, retry, admin]);
   async function save(event: FormEvent) {
     event.preventDefault();
+    if(busy)return;
     const video = gameplayVideo(url);
     if (url.trim() && !video) { setMessage("Use a supported HTTPS YouTube, Vimeo or Google Drive video link."); return; }
     setBusy(true); setMessage("");
@@ -38,7 +40,7 @@ export default function GameplayEditor({ id, admin = false, catalogueThumbnail }
       const client = createClient();
       const result = video ? await client.from("gameplay_footage").upsert({ submission_id: id, video_url: video.url, updated_at: new Date().toISOString() }) : await client.from("gameplay_footage").delete().eq("submission_id", id);
       if (result.error) throw new Error();
-      setUrl(video?.url || ""); setMessage(video ? "Gameplay footage saved." : "Gameplay footage removed.");
+      setUrl(video?.url || ""); setMessage(video ? "Gameplay footage saved." : "Gameplay footage removed."); developerSaved(video ? "Gameplay footage saved." : "Gameplay footage removed.");
     } catch { setMessage("Could not save footage. Check your sign-in and retry."); }
     finally { setBusy(false); }
   }
@@ -48,5 +50,5 @@ export default function GameplayEditor({ id, admin = false, catalogueThumbnail }
     {!ready && message && <button onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry footage</button>}
     {ready && <form onSubmit={save} className="mt-4"><label className="text-sm">Gameplay video link<input type="url" maxLength={500} value={url} onChange={e => setUrl(e.target.value)} disabled={busy} className="mt-2 block w-full rounded border border-white/20 bg-[#101310] p-3" /></label><p className="mt-2 text-xs text-zinc-400">Clear the link and save to remove footage.</p><button disabled={busy} className="mt-3 rounded border border-emerald-300/40 px-4 py-2 text-sm">{busy ? "Saving…" : "Save gameplay footage"}</button></form>}
     {message && <p role="status" className="mt-3 text-sm">{message}</p>}
-  </section><ScreenshotManager id={id} /></>;
+  </section><ScreenshotManager id={id} management /></>;
 }

@@ -10,8 +10,7 @@ export async function publicLinkedImportedIds(ids?:string[],client=publicProfile
  try{
   for(let batch=0;batch<(batches?.length??1);batch+=100){
    for(let offset=0;offset<49000;offset+=100){
-    let query=client.from("game_developer_links").select("id,imported_game_id,relationship").order("id");
-    if(batches)query=query.in("imported_game_id",batches.slice(batch,batch+100));
+    const query=client.rpc("m26_public_imported_profiles",{p_ids:batches?batches.slice(batch,batch+100):null});
     const result=await query.range(offset,offset+99);
     if(result.error||!Array.isArray(result.data))return null;
     for(const row of result.data)if(row.imported_game_id)found.set(row.imported_game_id,row.relationship??null);

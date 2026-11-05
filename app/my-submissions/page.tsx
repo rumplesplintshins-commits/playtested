@@ -1,3 +1,4 @@
+import ListingControls from "../components/ListingControls";
 import GameplayEditor from "../components/GameplayEditor";
 import { compareSubmissions } from "@/lib/submission-order";
 import SubmissionContact from "../components/SubmissionContact";
@@ -781,9 +782,7 @@ async function DeveloperDashboard() {
 
     approvedIds.length > 0
       ? supabase
-          .from("approved_games")
-          .select("id, title, developer_name, genre, image_url, steam_app_id")
-          .in("id", approvedIds)
+          .rpc("m26_my_approved_games",{p_ids:approvedIds})
       : Promise.resolve({
           data: [] as {
             id: string;
@@ -848,7 +847,7 @@ async function DeveloperDashboard() {
   );
 
   const approvedMap = new Map(
-    (approvedResult.data ?? []).map((game) => [
+    ((approvedResult.data ?? []) as {id:string;title:string|null;developer_name:string|null;genre:string|null;image_url:string|null;steam_app_id:string|null}[]).map((game) => [
       game.id,
       {
         title: game.title ?? "Unknown game",
@@ -1071,7 +1070,7 @@ async function DeveloperDashboard() {
 
   return <DeveloperWorkspace diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
+ games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1203,6 +1202,7 @@ async function DeveloperDashboard() {
                   </p>
                 </div>}
 
+                  <ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved/>
                   <a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>
                   <StartPlaytest
                     gameTitle={game.gameTitle}
@@ -1219,7 +1219,7 @@ async function DeveloperDashboard() {
               </article>
               );
             })(game)}))}
- submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><SubmissionContact id={game.id}/><GameplayEditor id={game.id}/>{((game) => (
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><ListingControls id={game.id} title={game.title} approved={game.status==="Approved"}/><SubmissionContact id={game.id}/><GameplayEditor id={game.id}/>{((game) => (
               <article
                 key={game.id}
                 className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"

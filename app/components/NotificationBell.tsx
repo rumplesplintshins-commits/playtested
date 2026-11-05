@@ -17,6 +17,7 @@ type Payload = { unread_count: number; notifications: NotificationItem[] };
 const BELL_LIMIT = 8;
 const CLEARED_AT_KEY = "playtested-bell-cleared-at-v2";
 const NOTIFICATIONS_CHANGED_EVENT = "playtested-notifications-changed";
+export const NOTIFICATION_POLL_MS=15000;
 
 function timeAgo(value: string) {
   const created = new Date(value);
@@ -57,11 +58,14 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const requestVersion=useRef(0);
 
   async function load() {
+    const version=++requestVersion.current;
     setLoading(true);
     setError("");
     const { data, error: loadError } = await createClient().rpc("get_my_notifications", { p_limit: BELL_LIMIT });
+    if(version!==requestVersion.current)return;
     if (loadError) {
       setError("Could not load notifications.");
       setLoading(false);
@@ -78,8 +82,12 @@ export default function NotificationBell() {
   useEffect(() => {
     void load();
     const changed = () => void load();
+    const refreshVisible=()=>{if(document.visibilityState==='visible')void load();};
+    const timer=window.setInterval(refreshVisible,NOTIFICATION_POLL_MS);
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);
-    return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);
+    window.addEventListener('focus',refreshVisible);
+    document.addEventListener('visibilitychange',refreshVisible);
+    return () => {requestVersion.current++;window.clearInterval(timer);window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
   }, []);
 
   useEffect(() => {

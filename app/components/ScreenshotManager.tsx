@@ -1,4 +1,5 @@
 "use client";
+import {developerSaved} from "@/lib/developer-save";
 /* eslint-disable @next/next/no-img-element -- Browser-local previews and private no-store media must bypass the image optimizer. */
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
@@ -9,7 +10,7 @@ export async function uploadScreenshot(id: string, slot: number, file: File) {
   const response = await fetch(`/api/game-media/${encodeURIComponent(id)}/${slot}`, { method: "PUT", body });
   if (!response.ok) throw new Error((await response.json()).error || "Screenshot upload failed.");
 }
-export default function ScreenshotManager({ id }: { id: string }) {
+export default function ScreenshotManager({ id, management=false }: { id: string; management?:boolean }) {
   const [screenshots, setScreenshots] = useState<GameScreenshot[]>([]);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -23,7 +24,7 @@ export default function ScreenshotManager({ id }: { id: string }) {
   async function refresh() { setScreenshots(await load()); setReady(true); }
   useEffect(() => { let active = true; void load().then(data => { if (active) { setScreenshots(data); setReady(true); } }).catch(e => { if (active) setMessage(e.message); }); return () => { active = false; }; }, [load, retry]);
   async function upload(files: File[], replaceSlot?: number) {
-    if (!files.length) return;
+    if (!files.length||busy) return;
     const free = [1, 2, 3, 4, 5].filter(slot => !screenshots.some(s => s.slot === slot));
     if (replaceSlot === undefined && files.length > free.length) { setMessage("A game can have up to five screenshots. Remove or replace an existing screenshot first."); return; }
     setBusy(true); setMessage("");
@@ -31,15 +32,18 @@ export default function ScreenshotManager({ id }: { id: string }) {
       for (const file of files) await validateScreenshot(file);
       for (let i = 0; i < files.length; i++) await uploadScreenshot(id, replaceSlot ?? free[i], files[i]);
       setMessage(replaceSlot ? "Screenshot replaced." : "Screenshots added.");
+      if(management)developerSaved(replaceSlot ? "Screenshot replaced." : "Screenshots added.");
     } catch (e) { setMessage(e instanceof Error ? e.message : "Could not upload screenshots. Please retry."); }
     finally { await refresh().catch(() => setMessage("Refresh to check which screenshots were saved before retrying.")); setBusy(false); }
   }
   async function remove(slot: number) {
+    if(busy)return;
     setBusy(true); setMessage("");
     try {
       const response = await fetch(`/api/game-media/${encodeURIComponent(id)}/${slot}`, { method: "DELETE" });
       if (!response.ok) throw new Error((await response.json()).error || "Could not remove screenshot.");
       await refresh(); setMessage("Screenshot removed.");
+      if(management)developerSaved("Screenshot removed.");
     } catch (e) { setMessage(e instanceof Error ? e.message : "Could not remove screenshot. Please retry."); }
     finally { setBusy(false); }
   }

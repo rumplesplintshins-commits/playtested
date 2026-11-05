@@ -1,4 +1,10 @@
 "use client";
+import TestingActivityHeader from '../components/TestingActivityHeader';
+import ActivityStorefrontLink from '../components/ActivityStorefrontLink';
+import {type ActivityMedia} from '@/lib/testing-activity';
+import GamePcRequirements from "../components/GamePcRequirements";
+import {PrivatePcProvider} from "../components/AccountPcSpecifications";
+import DisclosureControl from "../components/DisclosureControl";
 
 import {currentJourney} from "@/lib/share-links";
 import {TrackedAccessLink,ShareJourneyBanner} from "../components/ShareJourney";
@@ -36,6 +42,8 @@ type TestGame = {
 };
 
 type TestClaim = FeedbackQualityRecord & {
+  activity_media?:ActivityMedia;
+  feedback_usefulness?:string|null;
   id: string;
   submission_id: string | null;
   playtest_id: string | null;
@@ -640,7 +648,7 @@ function FeedbackForm({
   );
 }
 
-export default function TesterPage() {
+function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
   useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
   const [reviewHistory,setReviewHistory]=useState<{id:number;test_id:string;kind:string;reason:string;xp_delta:number;rubric_version?:number|null;quality_score?:number|null;actual_xp_award?:number|null;created_at?:string}[]>([]);
@@ -858,14 +866,17 @@ export default function TesterPage() {
 
       setGames((gamesData ?? []) as TestGame[]);
       if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
-      setClaims((claimsData ?? []) as TestClaim[]);
+      const mediaResult=await supabase.rpc("get_my_testing_activity_media");
+      if(!active)return;
+      const mediaByTest=new Map<string,ActivityMedia>((mediaResult.error?[]:mediaResult.data??[]).filter(Boolean).map((row:ActivityMedia)=>[row.test_id,row]));
+      setClaims((claimsData ?? []).map((claim:TestClaim)=>({...claim,activity_media:mediaByTest.get(claim.id)})) as TestClaim[]);
       const usefulness=await supabase.rpc("get_my_feedback_usefulness");
       if(active&&!usefulness.error){
         const mapped:Record<string,"useful"|"not_useful">={};
         for(const row of usefulness.data??[]){if(row?.test_id&&(row.usefulness==="useful"||row.usefulness==="not_useful"))mapped[row.test_id]=row.usefulness;}
         setFeedbackUsefulness(mapped);
       }
-      if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id));if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
+      if(claimsData?.length){const history=await supabase.from("test_review_events").select("*").in("test_id",claimsData.map((claim:{id:string})=>claim.id)).order("created_at",{ascending:false}).order("id",{ascending:false});if(!active)return;setReviewHistory(history.data||[]);setReviewHistoryError(history.error?"Review history unavailable. Your recorded totals are unchanged.":"");}else setReviewHistory([]);
       setDraftOwnerId(user.id);
 
       if (progressError) {
@@ -1100,6 +1111,9 @@ export default function TesterPage() {
       setClaims((previous) => previous.map((item) => item.id === claim.id
         ? { ...item, status: "submitted", review_outcome: "pending" }
         : item));
+      // Refresh authoritative timestamp and safe media after a newly submitted report.
+      // A secondary history fetch must never turn a confirmed submission into a failure.
+      void(async()=>{try{const [reservations,media]=await Promise.all([supabase.rpc('get_my_test_reservations'),supabase.rpc('get_my_testing_activity_media')]);const row=reservations.data?.claims?.find((item:TestClaim)=>item.id===claim.id);const artwork=media.data?.find((item:ActivityMedia)=>item.test_id===claim.id);setClaims(previous=>previous.map(item=>item.id===claim.id?{...item,...(reservations.error?{}:row),activity_media:artwork??item.activity_media}:item));}catch{/* Reload recovers optional history metadata. */}})();
       setActiveTestId(null);
       showMessage(`Your test of "${game.title}" has been submitted for review. XP is awarded only if it is accepted.${draftCleared ? "" : " This browser could not remove its local draft."}`, "success");
       return true;
@@ -1202,7 +1216,8 @@ export default function TesterPage() {
                       </a>
                     )}
 
-                    <CampaignPlaces id={game.submission_id} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
+                    <GamePcRequirements id={game.submission_id} kind="campaign" compact/>
+                    <CampaignPlaces id={game.submission_id} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
                     <ReservationNotice claimed={!!claim} expiresAt={claim?.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
                     {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
                     <div
@@ -1602,13 +1617,13 @@ export default function TesterPage() {
                         }}
                         className="min-w-0 self-start rounded-xl border border-white/10 bg-white/[0.02] open:border-[#77f29b]/25"
                       >
-                        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
-                          {game.title}
+                        <summary aria-expanded={expandedAvailableGames[game.submission_id]!==false} aria-controls={`tester-card-${game.submission_id}`} className="flex cursor-pointer list-none select-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          <span>{game.title}
                           <span className="ml-2 text-xs font-normal text-zinc-400">
                             · {game.genre || "Other"} · {game.developer_name}
-                          </span>
+                          </span></span><DisclosureControl expanded={expandedAvailableGames[game.submission_id]!==false}/>
                         </summary>
-                        <div className="p-2 pt-0">{renderGameCard(game)}</div>
+                        <div id={`tester-card-${game.submission_id}`} className="p-2 pt-0">{renderGameCard(game)}</div>
                       </details>
                     ))}
                   </div>
@@ -1649,6 +1664,7 @@ export default function TesterPage() {
                   claimMatchesGame(claim, item)
                 );
 
+                const media=claim.activity_media;
                 const accepted =
                   claim.review_outcome === "accepted";
                 const rejected =
@@ -1659,27 +1675,36 @@ export default function TesterPage() {
                   <article
                     id={`testing-activity-${claim.id}`}
                     key={claim.id}
-                    className="scroll-mt-24 flex flex-col justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 sm:flex-row sm:items-center"
+                    className="scroll-mt-24 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"
                   >
-                    <div>
-                      <h3 className="font-semibold">
-                        {game?.title ??
-                          claim.game_title ?? "Previously tested game"}
-                      </h3>
-
-                      <p className="mt-1 text-sm text-zinc-400">
-                        {game
-                          ? `By ${game.developer_name}`
-                          : "Game details are no longer available in the current catalogue."}
-                      </p>
-
+                    <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={feedbackUsefulness[claim.id]??claim.feedback_usefulness} status={getStatusLabel(claim)}/>
+                    <div className="mt-3 min-w-0">
                       <p className="mt-2 text-sm text-zinc-300">{feedbackQualityLabel(claim)}</p>
-                      {feedbackUsefulness[claim.id]==="useful"&&<span className="mt-2 inline-flex rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#77f29b]">Developer marked this feedback useful</span>}
+                      <div className="mt-2"><ActivityStorefrontLink testId={claim.id} url={media?.store_url}/></div>
                       {claim.submitted_at&&<p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}
                       {claim.submitted_at&&<details className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-200">View my submitted feedback</summary><div className="mt-3 space-y-3 text-zinc-300">{claim.overall_score!=null&&<p><span className="text-zinc-500">Overall:</span> {claim.overall_score}/10</p>}{claim.gameplay_score!=null&&<p><span className="text-zinc-500">Gameplay:</span> {claim.gameplay_score}/10</p>}{claim.performance_score!=null&&<p><span className="text-zinc-500">Performance:</span> {claim.performance_score}/10</p>}{claim.hours_played!=null&&<p><span className="text-zinc-500">Time played:</span> {claim.hours_played} hours</p>}{claim.continue_playing&&<p><span className="text-zinc-500">Continue playing:</span> {claim.continue_playing.replaceAll("_"," ")}</p>}{claim.recommend_game&&<p><span className="text-zinc-500">Recommend:</span> {claim.recommend_game.replaceAll("_"," ")}</p>}{claim.enjoyed_most&&<div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}{claim.frustrations&&<div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}{claim.bugs_found&&<div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}{claim.biggest_improvement&&<div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}{claim.feedback&&<div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}</div></details>}
                       {accepted&&claim.review_reason&&<p className="mt-2 text-sm text-zinc-400">Admin reason: {claim.review_reason}</p>}
                       {reviewHistoryError&&<p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
-                      {reviewHistory.some(event=>event.test_id===claim.id)&&<details className="mt-3 text-xs text-zinc-400"><summary>XP and review history</summary>{reviewHistory.filter(event=>event.test_id===claim.id).map(event=><p key={event.id} className="mt-2 break-words">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"} · {event.kind} · XP change {event.xp_delta}{event.rubric_version!=null?` · Feedback quality ${event.quality_score}% · Award ${event.actual_xp_award} XP`:" · Legacy score not recorded"} · {event.reason}</p>)}</details>}
+                      {reviewHistory.some(event=>event.test_id===claim.id)&&<details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-zinc-100 [&::-webkit-details-marker]:hidden">
+                          <span className="flex items-center gap-2"><span aria-hidden="true" className="text-emerald-400">◷</span> XP & review history <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs font-normal text-zinc-400">{reviewHistory.filter(event=>event.test_id===claim.id).length} events</span></span>
+                          <span className="text-xs font-normal text-zinc-400"><span className="group-open:hidden">Show +</span><span className="hidden group-open:inline">Hide −</span></span>
+                        </summary>
+                        <ol className="space-y-3 border-t border-white/10 p-3 sm:p-4">
+                          {reviewHistory.filter(event=>event.test_id===claim.id).map(event=><li key={event.id} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.025] p-3 sm:p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div><p className="font-semibold capitalize text-zinc-100">{event.kind.replaceAll("_"," ")}</p><p className="mt-1 text-xs text-zinc-400">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"}</p></div>
+                              <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${event.xp_delta>0?"border-emerald-400/30 bg-emerald-400/10 text-emerald-300":event.xp_delta<0?"border-red-400/30 bg-red-400/10 text-red-300":"border-white/10 text-zinc-300"}`}>{event.xp_delta>0?"+":""}{event.xp_delta} XP change</span>
+                            </div>
+                            {event.rubric_version!=null?<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">Feedback quality</p><p className="mt-1 text-lg font-semibold text-white">{event.quality_score??"—"}%</p></div>
+                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award==null?"Not recorded":`${event.actual_xp_award} XP`}</p></div>
+                              <div className="col-span-2 rounded-lg bg-black/30 p-3 sm:col-span-1"><p className="text-xs text-zinc-400">Rubric</p><p className="mt-1 text-lg font-semibold text-white">Version {event.rubric_version}</p></div>
+                            </div>:<p className="mt-3 text-xs text-zinc-400">Legacy review · score not recorded</p>}
+                            {event.reason&&<div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Review reason</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">{event.reason}</p></div>}
+                          </li>)}
+                        </ol>
+                      </details>}
                       {(rejected||(accepted&&claim.quality_rubric_version!=null&&typeof claim.base_xp_amount==="number"&&claim.base_xp_amount<100)) && <Reconsideration testId={claim.id} reason={claim.review_reason} />}
                       <p className="mt-2 text-xs text-zinc-500">
                         {claim.status==="expired" ? "Your draft is kept. Reclaim a place to continue; expiry has no XP penalty." : pending
@@ -1691,21 +1716,8 @@ export default function TesterPage() {
                               : "Your test has been reviewed."}
                       </p>
                     </div>
-
                     {claim.status==="expired"&&<div className="flex flex-wrap gap-2"><button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!,title:claim.game_title??game?.title??"this game"} as TestGame)} className="rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>{<button type="button" onClick={()=>setActiveTestId(claim.id)} className="rounded-lg border border-white/20 px-3 py-2 text-sm">Open saved draft</button>}{!claim.playtest_id&&!claim.reclaim_campaign_id&&<p className="text-xs text-zinc-400">This historical test needs a published campaign before it can be reclaimed.</p>}</div>}
-                    <span
-                      className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                        pending
-                          ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
-                          : accepted
-                            ? "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]"
-                            : rejected
-                              ? "border-red-400/30 bg-red-400/10 text-red-300"
-                              : "border-white/15 text-zinc-300"
-                      }`}
-                    >
-                      {getStatusLabel(claim)}
-                    </span>
+
                   </article>
                 );
               })}
@@ -1716,3 +1728,5 @@ export default function TesterPage() {
     </main>
   );
 }
+
+export default function TesterPcPage(){return <PrivatePcProvider><TesterPage /></PrivatePcProvider>;}
