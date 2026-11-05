@@ -451,7 +451,7 @@ function HistoricalPlaytestCard({
                                 <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3">
                                   <p className="text-sm font-semibold text-zinc-200">
-                                    <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
+                                    <AnonymousTesterLabel testId={response.test_id} />
                                   </p>
                                   <p className="mt-1 text-xs font-normal text-zinc-500">
                                     {response.submitted_at
@@ -1114,8 +1114,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1141,8 +1141,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1168,8 +1168,8 @@ function ResultsDashboard({
                     className="rounded-lg border border-white/10 bg-black/20 p-3"
                   >
                     <p className={`text-[11px] font-semibold ${item.sourceClass}`}>
-                      {item.testId && item.testerNumber !== undefined ? (
-                        <AnonymousTesterLabel testId={item.testId} number={item.testerNumber} compact />
+                      {item.testId ? (
+                        <AnonymousTesterLabel testId={item.testId} compact />
                       ) : item.source}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
@@ -1199,7 +1199,7 @@ function ResultsDashboard({
                       className="rounded-lg border border-white/10 bg-black/20 p-3"
                     >
                       <p className="text-[11px] font-semibold text-[#77f29b]">
-                        <AnonymousTesterLabel testId={response.test_id} number={index + 1} compact />
+                        <AnonymousTesterLabel testId={response.test_id} compact />
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
                         {response.bugs_found}
@@ -1225,7 +1225,7 @@ function ResultsDashboard({
           </div>
         </div></>}
        {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
-        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester ${index+1}${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
+        ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
        {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
@@ -1238,7 +1238,7 @@ function ResultsDashboard({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-zinc-100">
-                      <AnonymousTesterLabel testId={response.test_id} number={index + 1} />
+                      <AnonymousTesterLabel testId={response.test_id} />
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
                       {response.submitted_at
