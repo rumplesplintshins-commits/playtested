@@ -69,13 +69,14 @@ async function mutate(request: Request, context: Context, remove: boolean) {
       encoded = await processScreenshot(file);
     } catch (e) { return reply(e instanceof Error ? e.message : "Invalid screenshot.", 400); }
     path = `${user.id}/${id}/${crypto.randomUUID()}.webp`;
-    const upload = await service.storage.from("game-screenshots").upload(path, encoded.image, { contentType: "image/webp", upsert: false });
-    if (upload.error) return reply("Screenshot upload failed. Please retry.", 503);
-    const thumbnail = await service.storage.from("game-screenshots").upload(path.replace(/\.webp$/, ".thumb.webp"), encoded.thumbnail, { contentType: "image/webp", upsert: false });
-    if (thumbnail.error) {
-      await service.from("game_screenshot_cleanup").upsert({ object_path: path });
+    const [upload,thumbnail]=await Promise.all([
+      service.storage.from("game-screenshots").upload(path,encoded.image,{contentType:"image/webp",upsert:false}),
+      service.storage.from("game-screenshots").upload(path.replace(/\.webp$/, ".thumb.webp"),encoded.thumbnail,{contentType:"image/webp",upsert:false}),
+    ]);
+    if(upload.error||thumbnail.error){
+      await service.from("game_screenshot_cleanup").upsert({object_path:path});
       await cleanup(service);
-      return reply("Screenshot upload failed. Please retry.", 503);
+      return reply("Screenshot upload failed. Please retry.",503);
     }
   }
   const saved = await service.rpc("set_game_screenshot", { p_id: id, p_slot: Number(slot), p_path: path });

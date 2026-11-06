@@ -1,3 +1,9 @@
+export const GAME_TITLE_LIMIT=60;
+export function gameTitleLength(value:string){return Array.from(value.trim()).length;}
+export function gameTitleError(value:string,previous?:string){
+ return gameTitleLength(value)>GAME_TITLE_LIMIT&&value.trim()!==previous?.trim()?"Use a game title of 60 characters or fewer. Your input has not been shortened.":"";
+}
+
 export type SubmissionIssue={field:string;label:string;reason:string};
 export const SUBMISSION_FIELDS=[
  {field:"title",label:"Game title",required:true},
@@ -20,12 +26,13 @@ export const AI_AREAS=["Programming or code","Artwork or textures","Writing or d
 export const RELEASE_STATUSES=["Released","Upcoming","Not announced"];
 export function submissionHttpUrl(value:string){const port=/^https?:\/\/[^/?#@:]+:([0-9]+)/i.exec(value)?.[1];return /^https?:\/\/[^\s/?#@:]+(?::[0-9]{1,5})?(?:[/?#][^\s]*)?$/i.test(value)&&(!port||Number(port)<=65535);}
 // Client guidance only. The matching SQL validator is authoritative on every write.
-export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[]{
+export function submissionIssues(record:Record<string,unknown>,previousTitle?:string):SubmissionIssue[]{
  const ai=["AI-assisted: Code only","AI-assisted: Content only","AI-assisted: Code and content","AI-generated","AI-assisted"].includes(String(record.ai_type||"").trim());
  return SUBMISSION_FIELDS.flatMap(rule=>{
   const value=String(record[rule.field]??"").trim();let reason="";
   const required=("required" in rule&&rule.required)||("ai" in rule&&rule.ai&&ai)||(rule.field==="release_date"&&String(record.release_status||"").trim()==="Released");
   if(required&&!value)reason="Required";
+  else if(rule.field==="title")reason=gameTitleError(value,previousTitle);
   else if(value&&"url" in rule&&!submissionHttpUrl(value))reason="Use a valid HTTP or HTTPS URL";
   else if(rule.field==="steam_url"&&value&&!/^https:\/\/store\.steampowered\.com\/app\/[0-9]+(?:[/?#][^\s]*)?$/i.test(value))reason="Use the game's Steam app store URL";
   else if(rule.field==="ai_type"&&value&&!AI_CLASSIFICATIONS.includes(value)&&value!=="No AI disclosed")reason="Please update this legacy AI disclosure using one of the current classifications";
@@ -38,7 +45,7 @@ export function submissionIssues(record:Record<string,unknown>):SubmissionIssue[
 export function completenessMessage(issues:SubmissionIssue[]){return issues.length?`Please complete these details before we can review your game:\n${issues.map(issue=>`• ${issue.label}: ${issue.reason}`).join("\n")}\nUpdate your submission, then select Resubmit for review.`:"";}
 export function listingEditIssues(before:Record<string,unknown>,after:Record<string,unknown>):SubmissionIssue[]{
  const changed=new Set(SUBMISSION_FIELDS.filter(rule=>String(before[rule.field]??"")!==String(after[rule.field]??"")).map(rule=>rule.field as string));
- return submissionIssues(after).filter(issue=>issue.field==="title"||changed.has(issue.field)||(changed.has("ai_type")&&issue.field==="ai_explanation")||((changed.has("release_status")||changed.has("release_date"))&&issue.field==="release_date"));
+ return submissionIssues(after,String(before.title??"" )).filter(issue=>issue.field==="title"||changed.has(issue.field)||(changed.has("ai_type")&&issue.field==="ai_explanation")||((changed.has("release_status")||changed.has("release_date"))&&issue.field==="release_date"));
 }
 
 // Presentation only; correction RPCs remain authoritative.

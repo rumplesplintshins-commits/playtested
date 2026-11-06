@@ -1,0 +1,50 @@
+{
+  "at": "2026-11-05T21:52:50.205Z",
+  "environment": "Anonymous production public catalogue; existing connection, no throttling",
+  "visible_ms": null,
+  "calls": [
+    {
+      "rpc": "get_game_community_reception",
+      "status": 200,
+      "ms": 192.787
+    },
+    {
+      "rpc": "get_public_catalogue",
+      "status": 500,
+      "ms": 3268.733
+    }
+  ],
+  "results": [
+    {
+      "page": 1,
+      "status": 500,
+      "ms": 3207,
+      "rows": null,
+      "total": null,
+      "error_code": "57014",
+      "error_message": "canceling statement due to statement timeout"
+    },
+    {
+      "page": 2,
+      "status": 200,
+      "ms": 3066,
+      "rows": 12,
+      "total": 9553,
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "page": 7,
+      "status": 200,
+      "ms": 3075,
+      "rows": 12,
+      "total": 9553,
+      "error_code": null,
+      "error_message": null
+    }
+  ],
+  "postgrest_plan_status": 406,
+  "production_writes": 0,
+  "catalogue_rendered": false,
+  "measurement_note": "Initial grid did not render during the12-second visibility wait. RPC samples are separately timed anonymous reads; no production after-change measurements."
+}

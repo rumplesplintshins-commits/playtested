@@ -1,4 +1,5 @@
 "use client";
+import {ukDateTime} from "@/lib/uk-date-time";
 import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
@@ -21,6 +22,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const t = item.report;
+  const moderationTime=t.reviewed_at||item.events?.filter(e=>["accepted","rejected","replacement","replacement_granted"].includes(e.kind)&&e.created_at).sort((a,b)=>Date.parse(b.created_at!)-Date.parse(a.created_at!))[0]?.created_at;
   const devQa=[t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement].some(value=>typeof value==="string"&&/^\s*\[DEV QA\](?:\s|$)/im.test(value));
 
   async function decide(action: "accepted" | "rejected" | "replacement") {
@@ -37,9 +39,10 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     finally { setBusy(false); }
   }
 
-  return <article id={`report-${t.id}`} className="my-5 scroll-mt-6 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+  return <article id={`report-${t.id}`} className="my-5 min-w-0 break-words [overflow-wrap:anywhere] scroll-mt-6 space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+    <dl className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400"><div><dt>Feedback submitted</dt><dd>{ukDateTime(t.submitted_at)}</dd></div><div><dt>Moderated</dt><dd>{ukDateTime(moderationTime)}</dd></div></dl>
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p>{devQa&&<span className="mt-2 inline-flex rounded border border-amber-200/30 bg-amber-200/10 px-2 py-0.5 text-xs font-semibold text-amber-200">DEV QA</span>}<h3 className="mt-2 text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
+      <div className="min-w-0 max-w-full"><p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Independent Tester Hub report</p>{devQa&&<span className="mt-2 inline-flex rounded border border-amber-200/30 bg-amber-200/10 px-2 py-0.5 text-xs font-semibold text-amber-200">DEV QA</span>}<h3 className="mt-2 break-words [overflow-wrap:anywhere] text-xl font-bold">{item.context?.title || "Legacy report"}</h3><p className="mt-1 text-sm text-zinc-400">{item.context?.build || "Unlabelled build"}</p></div>
       <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>{t.status==="reviewed"&&<DeveloperUsefulnessBadge value={t.feedback_usefulness}/>}</div>
     </div>
     <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
@@ -79,7 +82,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
   async function reload() { await refresh(); setNotice("Decision saved and audited."); }
   return <section aria-label="Playtest feedback reviews">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Independent playtest reviews</h2><p className="mt-1 text-sm text-zinc-400">Review submitted feedback against the quality criteria. Admin decisions control XP.</p></div><button disabled={loading} onClick={() => void refresh()} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-50">Refresh reviews</button></div>
-    <QualityGuidance/>
+    <details className="my-4 rounded-lg border border-white/10 p-4"><summary className="cursor-pointer font-semibold">How feedback earns XP</summary><QualityGuidance/></details>
     <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => setView("pending")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => setView("history")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { createClient } from "../../lib/supabase";
 import { testerRankPresentation } from "@/lib/tester-rank";
 import { currentJourney, subscribeJourney, carryJourney } from "@/lib/share-links";
@@ -141,11 +142,11 @@ export default function SiteHeader() {
   return (
     <header className="relative z-40 border-b border-white/[0.08]">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
-        <a href="/" className="shrink-0 font-[family-name:var(--font-display)] text-xl font-bold tracking-wider sm:text-2xl">
+        <Link href="/" className="shrink-0 font-[family-name:var(--font-display)] text-xl font-bold tracking-wider sm:text-2xl">
           PLAYTESTED<span className="text-[#77f29b]">_</span>
-        </a>
+        </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:gap-3">
           {!checkingSession && (loggedIn ? (
             <>
               <div className="hidden max-w-[520px] items-center gap-2 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">

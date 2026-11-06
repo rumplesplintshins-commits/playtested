@@ -143,7 +143,7 @@ export default function NotificationBell() {
       <BellIcon/>
       {unreadTotal > 0 && <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#77f29b] px-1 text-[10px] font-bold leading-none text-[#09100b] ring-2 ring-[#0e110f]">{unreadTotal > 9 ? "9+" : unreadTotal}</span>}
     </button>
-    {open && <div className="fixed left-3 right-3 top-[68px] overflow-hidden rounded-xl border border-white/10 bg-[#111512] shadow-2xl shadow-black/50 sm:absolute sm:left-auto sm:right-0 sm:top-[46px] sm:w-[410px]">
+    {open && <div role="region" aria-label="Notifications" className="fixed left-3 right-3 top-[68px] overflow-hidden rounded-xl border border-white/10 bg-[#111512] shadow-2xl shadow-black/50 sm:absolute sm:left-auto sm:right-0 sm:top-[46px] sm:w-[410px]">
       <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] px-4 py-3.5">
         <div><p className="font-semibold text-white">Notifications</p><p className="mt-0.5 text-xs text-zinc-500">{unreadTotal === 0 ? "No unread notifications" : `${unreadTotal} unread`}</p></div>
         <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
@@ -151,13 +151,13 @@ export default function NotificationBell() {
           {hasRead && <button type="button" title="Hide read notifications from this popup" onClick={clearReadFromBell} className="text-xs font-medium text-zinc-400 hover:text-white">Clear read</button>}
         </div>
       </div>
-      <div className="max-h-[min(430px,65vh)] overflow-y-auto">
+      <div className="max-h-[min(430px,65vh)] min-w-0 overflow-x-hidden overflow-y-auto">
         {loading && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-400">Loading notifications...</div> : error && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-300">{error}</div> : items.length === 0 ? <div className="px-5 py-10 text-center"><p className="text-sm text-zinc-300">No recent notifications</p><p className="mt-1 text-xs text-zinc-500">Older notifications remain in your notification history.</p></div> : items.map((item) => {
           const unread = !item.read_at;
           return <div key={item.id} className={`group flex gap-3 border-b border-white/[0.06] px-4 py-3.5 last:border-b-0 ${unread ? "bg-[#77f29b]/[0.035]" : ""}`}>
             {unread ? <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#77f29b]"/> : <span className="w-2 shrink-0"/>}
-            <button type="button" onClick={() => void openItem(item)} className="min-w-0 flex-1 text-left"><div className="flex items-start justify-between gap-3"><p className={`text-sm ${unread ? "font-semibold text-white" : "font-medium text-zinc-300"}`}>{item.title}</p><span className="shrink-0 text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span></div><p className="mt-1 text-xs leading-5 text-zinc-400">{item.message}</p></button>
-            <button type="button" aria-label={`Dismiss ${item.title}`} title="Delete notification" onClick={() => void dismiss(item)} className="self-start rounded px-1.5 py-0.5 text-lg leading-none text-zinc-600 hover:bg-white/[0.06] hover:text-white">×</button>
+            <button type="button" onClick={() => void openItem(item)} className="min-w-0 flex-1 text-left"><div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3"><p className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${unread ? "font-semibold text-white" : "font-medium text-zinc-300"}`}>{item.title}</p><span className="shrink-0 text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span></div><p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 text-zinc-400">{item.message}</p></button>
+            <button type="button" aria-label={`Dismiss ${item.title}`} title="Delete notification" onClick={() => void dismiss(item)} className="shrink-0 self-start rounded px-2 py-2 text-lg leading-none text-zinc-600 hover:bg-white/[0.06] hover:text-white">×</button>
           </div>;
         })}
       </div>
