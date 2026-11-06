@@ -1,6 +1,16 @@
 # Merge 26.1 readiness after PR30 deployment — 6 November 2026
 
-**NOT READY for production migration approval until a fresh database recovery point is verified.** No migrations, production data changes, PR29 merge or deployment were performed. Worker execution must remain disabled pending its separate security fix or verified isolation.
+**CONDITIONAL GO — ready for an explicit production approval decision.** Fresh database/Storage integrity and coverage independently passed at09:35 UTC. Full isolated restore remains Not Run and requires an explicit deferral decision; Docker is now available, superseding the earlier feasibility limitation below. No migrations, production data changes, PR29 merge or deployment were performed. Worker execution must remain disabled pending its separate security fix or verified isolation.
+
+## Fresh recovery verification — supersedes the historical blocked gate below
+
+The owner-created `database-post-pr30-fresh` export ran09:33:24–09:33:57 UTC. Independent verification at09:35:49 UTC passed every component SHA256, archive listing, full decode and streamed data-section parsing. The database archive is44127507bytes. Coverage matches current metadata:107tables,95RLS-enabled tables,71policies,191public functions, required owner roles,451ACL entries and27default ACL entries; GRANT/REVOKE statements are present. Required auth/application data sections are included; checked source counts reconcile. Migration history matches29entries ending20261105200930;128–131 remain pending.
+
+All126Storage object records in the fresh database archive reconcile by bucket/name,ID,version,timestamp and size with the09:29Storage capture and current production metadata. Every object byte file was independently rehashed again:92507259bytes, zero missing or changed objects. Fresh database directory protection has zero broad-group Allow rules. Counts and schema coverage are not proof of full behavioral restoration or absence of subsequent live writes.
+
+Full isolated restoration remains **Not Run**. A new read-only tool check found Docker29.9.2 client/engine working and local candidate image `public.ecr.aws/supabase/postgres:17.11.0.011`. Thus the earlier Docker-unavailable explanation is obsolete. A separate isolated rehearsal now appears feasible, but image extension compatibility, owner/grant restoration and application operation after restore have not been tested. Do not describe it as completed or technically impossible. Owner may explicitly retain the documented deferral or require rehearsal first; no existing containers or databases were changed during this check.
+
+Evidence: `performance/MERGE-26-1-POST-PR30-RECOVERY-VERIFICATION.json`. Both GitHub workflows passed on application/documentation candidate6abc5d4 (runs42195573687 and42195573672). This follow-up changes documentation/evidence only. No development suites need repeating for these evidence-only edits. Immediate release still requires final baseline/freshness confirmation, explicit approval accepting any restore deferral, and the documented migration-by-migration/live catalogue verification gates. Actual Render logs and authenticated smoke remain operator checks.
 
 ## Integrated candidate and checks
 

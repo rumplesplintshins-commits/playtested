@@ -1,0 +1,139 @@
+{
+  "verified_at": "2026-11-06T09:35:49.338Z",
+  "project": "qtcmzckdhgahuqqilmzj",
+  "export_started_at": "2026-11-06T09:33:24.2006678Z",
+  "export_completed_at": "2026-11-06T09:33:57.2594111Z",
+  "production_writes": 0,
+  "hashes": [
+    {
+      "name": "database.dump",
+      "bytes": 44127507,
+      "sha256": "ef240254b9d78413a08bcdf5d72e410d44e2351fa0537f8340a17e113b759e87",
+      "matches": true
+    },
+    {
+      "name": "roles.sql",
+      "bytes": 6173,
+      "sha256": "a7a29802b2ec6cf7c739e3cb54ec15e1ad9f971e66f5b8d2bdbed80786fef968",
+      "matches": true
+    }
+  ],
+  "archive": {
+    "toc_readable": true,
+    "full_decode": true,
+    "all_data_stream_decoded": true,
+    "table_data_sections": 112,
+    "required_data_sections": {
+      "auth.users": true,
+      "auth.identities": true,
+      "storage.buckets": true,
+      "storage.objects": true,
+      "public.profiles": true,
+      "public.game_submissions": true,
+      "public.imported_games": true,
+      "public.community_game_tests": true,
+      "public.community_playtests": true,
+      "public.listing_controls": true,
+      "public.listing_revisions": true,
+      "supabase_migrations.schema_migrations": true
+    },
+    "required_counts": {
+      "auth.users": 56,
+      "auth.identities": 58,
+      "storage.buckets": 3,
+      "storage.objects": 126,
+      "public.profiles": 56,
+      "public.game_submissions": 95,
+      "public.imported_games": 195362,
+      "public.community_game_tests": 41,
+      "public.community_playtests": 18,
+      "public.listing_controls": 0,
+      "public.listing_revisions": 1,
+      "supabase_migrations.schema_migrations": 29
+    },
+    "current_source_counts": {
+      "auth.identities": 58,
+      "auth.users": 56,
+      "public.community_game_tests": 41,
+      "public.game_submissions": 95,
+      "public.imported_games": 195362,
+      "public.profiles": 56,
+      "storage.objects": 126,
+      "supabase_migrations.schema_migrations": 29
+    },
+    "counts_match_current": true,
+    "vault_secret_rows": 0,
+    "cron_job_rows": 2,
+    "count_method": "LF-delimited COPY records; Windows carriage returns are not counted as extra rows"
+  },
+  "schema": {
+    "tables_checked": 107,
+    "missing_tables": [],
+    "rls_tables_checked": 95,
+    "missing_rls": [],
+    "policies_checked": 71,
+    "missing_policies": [],
+    "public_functions_checked": 191,
+    "missing_or_changed_functions": [],
+    "owners_checked": 3,
+    "missing_owner_roles": [],
+    "acl_entries": 451,
+    "default_acl_entries": 27,
+    "grant_statements_present": true,
+    "revoke_statements_present": true
+  },
+  "migration_history": {
+    "matches_current": true,
+    "archive_entries": 29,
+    "last": {
+      "version": "20261105200930",
+      "name": "merge26_catalogue_fixture_guard_plpgsql_hotfix"
+    }
+  },
+  "storage": {
+    "archived_metadata_objects": 126,
+    "current_metadata_objects": 126,
+    "verified_files": 126,
+    "verified_bytes": 92507259,
+    "manifest_sha256": "428885607fdd91a605444d2533d789ad3b4529e3d537c699e80b3827c2fcee3f",
+    "archive_objects_missing_or_changed": 0,
+    "current_objects_missing_or_changed": 0,
+    "complete": true
+  },
+  "restore": {
+    "status": "Not Run",
+    "native_postgres_major": 17,
+    "missing_native_extensions": [
+      {
+        "name": "pg_cron",
+        "version": "1.6.4"
+      },
+      {
+        "name": "supabase_vault",
+        "version": "0.3.1"
+      }
+    ],
+    "compatible_full_restore_available": null,
+    "docker_on_path": true,
+    "production_or_existing_database_used": false,
+    "docker_engine_version": "29.9.2",
+    "available_local_supabase_image": "public.ecr.aws/supabase/postgres:17.11.0.011",
+    "feasibility": "Docker engine and candidate Supabase image available; isolated rehearsal appears feasible, extension compatibility and successful restoration not yet tested"
+  },
+  "limitations": [
+    "No full isolated restore executed; coverage is not behavioral restoration proof",
+    "Roles and object bytes were captured separately, not a whole-service atomic snapshot",
+    "Provider settings/secrets and off-site/encryption retention assurance are outside SQL archive verification",
+    "Live source data may legitimately change after the snapshot; Storage must be reconciled again before release"
+  ],
+  "results": {
+    "hashes": "PASS",
+    "archive_integrity": "PASS",
+    "required_schema_security_history": "PASS",
+    "auth_application_data": "PASS",
+    "storage_consistency": "PASS",
+    "full_isolated_restore_feasibility": "NOT RUN: candidate Docker environment now available; earlier Docker-unavailable rationale superseded"
+  },
+  "backup_coverage_gate": "PASS: fresh SQL and Storage integrity/coverage independently verified; full restore assurance remains separate",
+  "production_release_authorized": false
+}
