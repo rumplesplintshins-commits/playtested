@@ -1,0 +1,511 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import fs from "node:fs/promises";
+import { createRequire } from "node:module";
+import os from "node:os";
+import path from "node:path";
+import ts from "typescript";
+
+const require = createRequire(import.meta.url);
+const workDirectory = await fs.mkdtemp(
+  path.join(os.tmpdir(), "playtested-pulse-download-test-")
+);
+const agents = [];
+let resolveDns;
+let fetchRequest;
+
+class FixtureAgent {
+  constructor(options) {
+    this.options = options;
+    this.destroyed = false;
+    agents.push(this);
+  }
+
+  async destroy() {
+    this.destroyed = true;
+  }
+}
+
+function loadTypeScript(filePath) {
+  const source = readFileSync(filePath, "utf8");
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+      esModuleInterop: true,
+    },
+  }).outputText;
+  const exports = {};
+  const mockRequire = (name) => {
+    if (name === "server-only") return {};
+    if (name === "node:dns/promises") {
+      return { lookup: (...args) => resolveDns(...args) };
+    }
+    if (name === "undici") {
+      return {
+        Agent: FixtureAgent,
+        fetch: (...args) => fetchRequest(...args),
+      };
+    }
+    return require(name);
+  };
+  new Function("exports", "require", compiled)(exports, mockRequire);
+  return exports;
+}
+
+const { downloadPulseZip, pulseDownloadTestHelpers } = loadTypeScript(
+  "lib/pulse-public-download.ts"
+);
+const publicZip = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x01, 0x02, 0x03]);
+const requests = [];
+const dnsCalls = [];
+let responseForRequest;
+
+function publicAnswer(address = "8.8.8.8") {
+  return [{ address, family: address.includes(":") ? 6 : 4 }];
+}
+
+function resetFixtures() {
+  agents.length = 0;
+  requests.length = 0;
+  dnsCalls.length = 0;
+  resolveDns = async (hostname) => {
+    dnsCalls.push(hostname);
+    return publicAnswer();
+  };
+  responseForRequest = async () =>
+    new Response(publicZip, {
+      status: 200,
+      headers: { "content-type": "application/zip" },
+    });
+  fetchRequest = async (url, init) => {
+    const target = new URL(url);
+    const hostname = target.hostname.replace(/^\[|\]$/g, "");
+    const lookup = init.dispatcher.options.connect.lookup;
+    const pinnedAddresses = await new Promise((resolve, reject) => {
+      lookup(hostname, { all: true, family: 0 }, (error, addresses) => {
+        if (error) reject(error);
+        else resolve(addresses);
+      });
+    });
+    const request = { url: target.href, init, pinnedAddresses };
+    requests.push(request);
+    return responseForRequest(request);
+  };
+}
+
+function outputPath(name) {
+  return path.join(workDirectory, `${name}.zip`);
+}
+
+async function assertNoOutput(name) {
+  await assert.rejects(fs.access(outputPath(name)));
+}
+
+try {
+  resetFixtures();
+
+  for (const value of [
+    "https://downloads.gamehost.net/build.zip",
+    "https://github.com/acme/game/blob/v1/build.zip",
+    "https://[2001:4860:4860::8888]/build.zip",
+    "https://8.8.8.8/build.zip",
+  ]) {
+    assert(
+      pulseDownloadTestHelpers.parsePublicHttpsUrl(value),
+      `Expected a valid public HTTPS URL: ${value}`
+    );
+  }
+
+  for (const value of [
+    "http://downloads.gamehost.net/build.zip",
+    "https://localhost/build.zip",
+    "https://sub.localhost/build.zip",
+    "https://metadata.google.internal/latest/meta-data/",
+    "https://169.254.169.254/latest/meta-data/",
+    "https://127.0.0.1/build.zip",
+    "https://[::1]/build.zip",
+    "https://[fe80::1]/build.zip",
+    "https://[fc00::1]/build.zip",
+    "https://[::ffff:127.0.0.1]/build.zip",
+    "https://2130706433/build.zip",
+    "https://0x7f000001/build.zip",
+    "https://127.1/build.zip",
+    "https://%31%32%37.0.0.1/build.zip",
+    "https://downloads.gamehost.net./build.zip",
+    "https://downloads.gamehost.net:8443/build.zip",
+    "https://user@downloads.gamehost.net/build.zip",
+  ]) {
+    assert.equal(
+      pulseDownloadTestHelpers.parsePublicHttpsUrl(value),
+      null,
+      `Expected unsafe URL to be rejected: ${value}`
+    );
+  }
+
+  for (const address of [
+    "0.0.0.0",
+    "10.0.0.1",
+    "100.64.0.1",
+    "127.0.0.1",
+    "169.254.169.254",
+    "172.16.0.1",
+    "192.0.2.1",
+    "192.168.1.1",
+    "198.18.0.1",
+    "224.0.0.1",
+    "240.0.0.1",
+    "::",
+    "::1",
+    "::ffff:127.0.0.1",
+    "64:ff9b::a00:1",
+    "2001:db8::1",
+    "fc00::1",
+    "fe80::1",
+    "ff02::1",
+  ]) {
+    assert.equal(
+      pulseDownloadTestHelpers.isPublicAddress(address),
+      false,
+      `Expected prohibited address to be rejected: ${address}`
+    );
+  }
+  for (const address of [
+    "8.8.8.8",
+    "1.1.1.1",
+    "2001:4860:4860::8888",
+  ]) {
+    assert.equal(pulseDownloadTestHelpers.isPublicAddress(address), true);
+  }
+
+  assert.equal(
+    pulseDownloadTestHelpers.normaliseDownloadUrl(
+      new URL("https://github.com/acme/game/blob/v1/build.zip")
+    ).href,
+    "https://raw.githubusercontent.com/acme/game/v1/build.zip"
+  );
+  assert.deepEqual(
+    pulseDownloadTestHelpers.getGitHubReleaseAsset(
+      new URL("https://github.com/acme/game/releases/download/v1/build.zip")
+    ),
+    { owner: "acme", repo: "game", tag: "v1", assetName: "build.zip" }
+  );
+
+  resetFixtures();
+  const publicResult = await downloadPulseZip(
+    "https://downloads.gamehost.net/build.zip",
+    outputPath("public")
+  );
+  assert.equal(publicResult.bytes, publicZip.length);
+  assert.equal(publicResult.finalUrl, "https://downloads.gamehost.net/build.zip");
+  assert.deepEqual(await fs.readFile(outputPath("public")), publicZip);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].init.redirect, "manual");
+  assert.equal(requests[0].init.credentials, "omit");
+  assert.deepEqual(requests[0].pinnedAddresses, [
+    { address: "8.8.8.8", family: 4 },
+  ]);
+  assert.equal(requests[0].init.dispatcher.options.connect.rejectUnauthorized, undefined);
+  assert(agents.every((agent) => agent.destroyed));
+
+  resetFixtures();
+  resolveDns = async (hostname) => {
+    dnsCalls.push(hostname);
+    throw new Error("IP literals do not use DNS.");
+  };
+  const ipv6Result = await downloadPulseZip(
+    "https://[2001:4860:4860::8888]/build.zip",
+    outputPath("ipv6")
+  );
+  assert.equal(ipv6Result.bytes, publicZip.length);
+  assert.deepEqual(requests[0].pinnedAddresses, [
+    { address: "2001:4860:4860::8888", family: 6 },
+  ]);
+  assert.equal(dnsCalls.length, 0);
+
+  resetFixtures();
+  responseForRequest = async ({ url }) =>
+    url === "https://downloads.gamehost.net/build.zip"
+      ? new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://cdn.gamehost.net/objects/build.zip",
+          },
+        })
+      : new Response(publicZip, {
+          status: 200,
+          headers: { "content-type": "application/zip" },
+        });
+  const redirected = await downloadPulseZip(
+    "https://downloads.gamehost.net/build.zip",
+    outputPath("redirect")
+  );
+  assert.equal(requests.length, 2);
+  assert.deepEqual(dnsCalls, ["downloads.gamehost.net", "cdn.gamehost.net"]);
+  assert.equal(
+    redirected.finalUrl,
+    "https://cdn.gamehost.net/objects/build.zip"
+  );
+
+  resetFixtures();
+  responseForRequest = async () =>
+    new Response(null, {
+      status: 302,
+      headers: { location: "http://169.254.169.254/latest/meta-data/" },
+    });
+  await assert.rejects(
+    downloadPulseZip(
+      "https://downloads.gamehost.net/build.zip",
+      outputPath("private-redirect")
+    ),
+    /unsafe|non-HTTPS|public build host/i
+  );
+  assert.equal(requests.length, 1, "Private redirect target is never fetched.");
+  await assertNoOutput("private-redirect");
+
+  resetFixtures();
+  const redirectLimitedDownloader = pulseDownloadTestHelpers.createDownloader({
+    maxRedirects: 2,
+  });
+  responseForRequest = async () =>
+    new Response(null, {
+      status: 302,
+      headers: { location: "/next" },
+    });
+  await assert.rejects(
+    redirectLimitedDownloader(
+      "https://redirect-loop.gamehost.net/build.zip",
+      outputPath("redirect-limit")
+    ),
+    /too many build download redirects/
+  );
+  assert.equal(requests.length, 3);
+
+  resetFixtures();
+  let answerCount = 0;
+  resolveDns = async (hostname) => {
+    dnsCalls.push(hostname);
+    answerCount += 1;
+    return answerCount === 1
+      ? publicAnswer("8.8.8.8")
+      : publicAnswer("127.0.0.1");
+  };
+  const rebindingResult = await downloadPulseZip(
+    "https://rebind.gamehost.net/build.zip",
+    outputPath("rebind")
+  );
+  assert.equal(rebindingResult.bytes, publicZip.length);
+  assert.equal(answerCount, 1, "The connector uses the captured DNS answer.");
+  assert.deepEqual(requests[0].pinnedAddresses, [
+    { address: "8.8.8.8", family: 4 },
+  ]);
+
+  for (const answerSet of [
+    [{ address: "127.0.0.1", family: 4 }],
+    [
+      { address: "8.8.8.8", family: 4 },
+      { address: "169.254.169.254", family: 4 },
+    ],
+  ]) {
+    resetFixtures();
+    resolveDns = async (hostname) => {
+      dnsCalls.push(hostname);
+      return answerSet;
+    };
+    await assert.rejects(
+      downloadPulseZip(
+        "https://private-dns.gamehost.net/build.zip",
+        outputPath(`private-dns-${answerSet.length}`)
+      ),
+      /non-public/
+    );
+    assert.equal(requests.length, 0);
+  }
+
+  resetFixtures();
+  resolveDns = async () => {
+    throw new Error("fixture DNS failure");
+  };
+  await assert.rejects(
+    downloadPulseZip(
+      "https://dns-error.gamehost.net/build.zip",
+      outputPath("dns-error")
+    ),
+    /could not safely resolve/
+  );
+  assert.equal(requests.length, 0);
+
+  resetFixtures();
+  responseForRequest = async ({ url, init }) => {
+    if (url === "https://api.github.com/repos/acme/game/releases/assets/42") {
+      assert.equal(init.headers.Accept, "application/zip, application/octet-stream, */*");
+      return new Response(null, {
+        status: 302,
+        headers: {
+          location:
+            "https://release-assets.githubusercontent.com/acme/game/build.zip?token=fixture",
+        },
+      });
+    }
+    if (url.startsWith("https://api.github.com/")) {
+      assert.equal(init.headers.Accept, "application/vnd.github+json");
+      return Response.json({
+        assets: [
+          {
+            name: "game-build.zip",
+            url: "https://api.github.com/repos/acme/game/releases/assets/42",
+          },
+        ],
+      });
+    }
+    return new Response(publicZip, {
+      status: 200,
+      headers: { "content-type": "application/zip" },
+    });
+  };
+  const githubResult = await downloadPulseZip(
+    "https://github.com/acme/game/releases/download/v1/game-build.zip",
+    outputPath("github")
+  );
+  assert.equal(requests.length, 3);
+  assert.equal(requests[0].url, "https://api.github.com/repos/acme/game/releases/tags/v1");
+  assert.equal(
+    githubResult.finalUrl,
+    "https://release-assets.githubusercontent.com/acme/game/build.zip?token=fixture"
+  );
+  assert.deepEqual(
+    dnsCalls,
+    [
+      "api.github.com",
+      "api.github.com",
+      "release-assets.githubusercontent.com",
+    ]
+  );
+
+  resetFixtures();
+  responseForRequest = async ({ url }) =>
+    url.startsWith("https://api.github.com/")
+      ? Response.json({
+          assets: [
+            {
+              name: "game-build.zip",
+              url: "https://attacker.gamehost.net/releases/assets/42",
+            },
+          ],
+        })
+      : new Response(publicZip);
+  await assert.rejects(
+    downloadPulseZip(
+      "https://github.com/acme/game/releases/download/v1/game-build.zip",
+      outputPath("github-untrusted-asset")
+    ),
+    /validate the GitHub Release asset/
+  );
+  assert.equal(requests.length, 1, "Untrusted GitHub API URLs are not fetched.");
+
+  resetFixtures();
+  const timedDownloader = pulseDownloadTestHelpers.createDownloader({
+    timeoutMs: 20,
+  });
+  fetchRequest = async (_url, init) =>
+    new Promise((_resolve, reject) => {
+      init.signal.addEventListener(
+        "abort",
+        () => reject(new Error("aborted fixture request")),
+        { once: true }
+      );
+    });
+  await assert.rejects(
+    timedDownloader(
+      "https://slow.gamehost.net/build.zip",
+      outputPath("timeout")
+    ),
+    /timed out/
+  );
+  await assertNoOutput("timeout");
+
+  resetFixtures();
+  const stalledBodyDownloader = pulseDownloadTestHelpers.createDownloader({
+    timeoutMs: 20,
+  });
+  responseForRequest = async () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(publicZip);
+        },
+      }),
+      { status: 200 }
+    );
+  await assert.rejects(
+    stalledBodyDownloader(
+      "https://stalled-body.gamehost.net/build.zip",
+      outputPath("stalled-body")
+    ),
+    /timed out/
+  );
+  await assertNoOutput("stalled-body");
+
+  resetFixtures();
+  const limitedDownloader = pulseDownloadTestHelpers.createDownloader({
+    maxDownloadBytes: 8,
+  });
+  responseForRequest = async () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(Buffer.from("PK1234"));
+          controller.enqueue(Buffer.from("5678"));
+          controller.close();
+        },
+      }),
+      { status: 200 }
+    );
+  await assert.rejects(
+    limitedDownloader(
+      "https://large.gamehost.net/build.zip",
+      outputPath("too-large")
+    ),
+    /larger than/
+  );
+  await assertNoOutput("too-large");
+
+  resetFixtures();
+  const apiLimitedDownloader = pulseDownloadTestHelpers.createDownloader({
+    maxGitHubApiBytes: 16,
+  });
+  responseForRequest = async () =>
+    Response.json({
+      assets: [{ name: "build.zip", url: "https://api.github.com/too-large" }],
+      padding: "too large for this test limit",
+    });
+  await assert.rejects(
+    apiLimitedDownloader(
+      "https://github.com/acme/game/releases/download/v1/build.zip",
+      outputPath("api-too-large")
+    ),
+    /oversized GitHub Release response/
+  );
+  await assertNoOutput("api-too-large");
+
+  resetFixtures();
+  responseForRequest = async () =>
+    new Response("not a zip", {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  await assert.rejects(
+    downloadPulseZip(
+      "https://html.gamehost.net/build.zip",
+      outputPath("not-zip")
+    ),
+    /not a ZIP file/
+  );
+  await assertNoOutput("not-zip");
+
+  console.log(
+    "PASS PULSE ZIP download SSRF regressions: public HTTPS ZIPs, IPv4/IPv6 and obfuscated/private destinations, mixed DNS, pinned rebinding defense, public/private redirects, GitHub Release API and assets, timeouts, streaming byte limits, ZIP validation and TLS defaults."
+  );
+} finally {
+  await fs.rm(workDirectory, { recursive: true, force: true });
+}
