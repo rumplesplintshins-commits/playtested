@@ -26,7 +26,7 @@ class FixtureAgent {
   }
 }
 
-function loadTypeScript(filePath) {
+function loadTypeScript(filePath, overrides = {}) {
   const source = readFileSync(filePath, "utf8");
   const compiled = ts.transpileModule(source, {
     compilerOptions: {
@@ -37,6 +37,7 @@ function loadTypeScript(filePath) {
   }).outputText;
   const exports = {};
   const mockRequire = (name) => {
+    if (Object.hasOwn(overrides, name)) return overrides[name];
     if (name === "server-only") return {};
     if (name === "node:dns/promises") {
       return { lookup: (...args) => resolveDns(...args) };
@@ -205,7 +206,7 @@ try {
   assert.deepEqual(requests[0].pinnedAddresses, [
     { address: "8.8.8.8", family: 4 },
   ]);
-  assert.equal(requests[0].init.dispatcher.options.connect.rejectUnauthorized, undefined);
+  assert.equal(requests[0].init.dispatcher.options.connect.rejectUnauthorized, true);
   assert(agents.every((agent) => agent.destroyed));
 
   resetFixtures();
@@ -251,7 +252,7 @@ try {
   responseForRequest = async () =>
     new Response(null, {
       status: 302,
-      headers: { location: "http://169.254.169.254/latest/meta-data/" },
+      headers: { location: "https://169.254.169.254/latest/meta-data/" },
     });
   await assert.rejects(
     downloadPulseZip(
@@ -347,6 +348,15 @@ try {
         },
       });
     }
+    if (url === "https://api.github.com/repos/acme/game/releases/tags/v1") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          location:
+            "https://api.github.com/repos/acme/game/releases/tags/v1?redirected=1",
+        },
+      });
+    }
     if (url.startsWith("https://api.github.com/")) {
       assert.equal(init.headers.Accept, "application/vnd.github+json");
       return Response.json({
@@ -367,7 +377,7 @@ try {
     "https://github.com/acme/game/releases/download/v1/game-build.zip",
     outputPath("github")
   );
-  assert.equal(requests.length, 3);
+  assert.equal(requests.length, 4);
   assert.equal(requests[0].url, "https://api.github.com/repos/acme/game/releases/tags/v1");
   assert.equal(
     githubResult.finalUrl,
@@ -378,9 +388,30 @@ try {
     [
       "api.github.com",
       "api.github.com",
+      "api.github.com",
       "release-assets.githubusercontent.com",
     ]
   );
+
+  resetFixtures();
+  responseForRequest = async ({ url }) =>
+    url.startsWith("https://api.github.com/")
+      ? new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://[::1]/private-release",
+          },
+        })
+      : Response.json({ assets: [] });
+  await assert.rejects(
+    downloadPulseZip(
+      "https://github.com/acme/game/releases/download/v1/game-build.zip",
+      outputPath("github-private-redirect")
+    ),
+    /unsafe|non-HTTPS|public build host/i
+  );
+  assert.equal(requests.length, 1, "Private GitHub API redirects are never fetched.");
+  await assertNoOutput("github-private-redirect");
 
   resetFixtures();
   responseForRequest = async ({ url }) =>
@@ -428,11 +459,15 @@ try {
   const stalledBodyDownloader = pulseDownloadTestHelpers.createDownloader({
     timeoutMs: 20,
   });
+  let stalledBodyCancelled = false;
   responseForRequest = async () =>
     new Response(
       new ReadableStream({
         start(controller) {
           controller.enqueue(publicZip);
+        },
+        cancel() {
+          stalledBodyCancelled = true;
         },
       }),
       { status: 200 }
@@ -444,6 +479,7 @@ try {
     ),
     /timed out/
   );
+  assert.equal(stalledBodyCancelled, true, "A timed-out download cancels its response stream.");
   await assertNoOutput("stalled-body");
 
   resetFixtures();
@@ -471,6 +507,56 @@ try {
   await assertNoOutput("too-large");
 
   resetFixtures();
+  responseForRequest = async () =>
+    new Response(publicZip, {
+      status: 200,
+      headers: { "content-length": String(publicZip.length - 1) },
+    });
+  await assert.rejects(
+    downloadPulseZip(
+      "https://short-content-length.gamehost.net/build.zip",
+      outputPath("short-content-length")
+    ),
+    /incomplete/
+  );
+  await assertNoOutput("short-content-length");
+
+  resetFixtures();
+  responseForRequest = async () =>
+    new Response(publicZip, {
+      status: 200,
+      headers: { "content-length": "not-a-number" },
+    });
+  await assert.rejects(
+    downloadPulseZip(
+      "https://malformed-content-length.gamehost.net/build.zip",
+      outputPath("malformed-content-length")
+    ),
+    /invalid Content-Length/
+  );
+  await assertNoOutput("malformed-content-length");
+
+  resetFixtures();
+  responseForRequest = async () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(Buffer.from("PK"));
+          controller.error(new Error("fixture stream failure"));
+        },
+      }),
+      { status: 200 }
+    );
+  await assert.rejects(
+    downloadPulseZip(
+      "https://broken-stream.gamehost.net/build.zip",
+      outputPath("broken-stream")
+    ),
+    /safely download/
+  );
+  await assertNoOutput("broken-stream");
+
+  resetFixtures();
   const apiLimitedDownloader = pulseDownloadTestHelpers.createDownloader({
     maxGitHubApiBytes: 16,
   });
@@ -490,6 +576,31 @@ try {
 
   resetFixtures();
   responseForRequest = async () =>
+    new Response(
+      JSON.stringify({
+        assets: [
+          {
+            name: "build.zip",
+            url: "https://api.github.com/repos/acme/game/releases/assets/42",
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: { "content-length": "1" },
+      }
+    );
+  await assert.rejects(
+    downloadPulseZip(
+      "https://github.com/acme/game/releases/download/v1/build.zip",
+      outputPath("api-content-length-mismatch")
+    ),
+    /incomplete GitHub Release response/
+  );
+  await assertNoOutput("api-content-length-mismatch");
+
+  resetFixtures();
+  responseForRequest = async () =>
     new Response("not a zip", {
       status: 200,
       headers: { "content-type": "text/html" },
@@ -503,8 +614,131 @@ try {
   );
   await assertNoOutput("not-zip");
 
+  const savedEnvironment = new Map(
+    ["PULSE_EXECUTION_ENABLED", "PULSE_RUNNER_SECRET", "NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+      .map((key) => [key, process.env[key]])
+  );
+  process.env.PULSE_EXECUTION_ENABLED = "true";
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://fixture.supabase.test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "fixture-service-role";
+  delete process.env.PULSE_RUNNER_SECRET;
+
+  let pulseJobLookups = 0;
+  let pulseJobDeveloperId = "another-user";
+  let pulseJobStatus = "ACQUIRING_BUILD";
+  const routeClient = {
+    auth: {
+      getUser: async (token) => ({
+        data: { user: token === "valid-user-token" ? { id: "owner" } : null },
+        error: token === "valid-user-token" ? null : new Error("invalid token"),
+      }),
+    },
+    from(table) {
+      return {
+        select() { return this; },
+        eq() { return this; },
+        async maybeSingle() {
+          if (table === "game_submissions") {
+            return {
+              data: { id: "submission-1", developer_id: "owner", game_link: "https://games.example/build.zip" },
+              error: null,
+            };
+          }
+          pulseJobLookups += 1;
+          return {
+            data: {
+              id: "job-1",
+              submission_id: "submission-1",
+              developer_id: pulseJobDeveloperId,
+              status: pulseJobLookups === 1 ? "ACQUIRING_BUILD" : pulseJobStatus,
+              build_url: "https://games.example/build.zip",
+            },
+            error: null,
+          };
+        },
+      };
+    },
+  };
+  class FixtureNextResponse {
+    static json(body, options = {}) {
+      return { status: options.status ?? 200, json: async () => body };
+    }
+  }
+  const route = loadTypeScript("app/api/pulse/preflight/route.ts", {
+    "next/server": { NextResponse: FixtureNextResponse },
+    "@supabase/supabase-js": { createClient: () => routeClient },
+    "@/lib/pulse-public-download": {
+      downloadPulseZip: async () => {
+        throw new Error("Download should not be reached in authorization fixtures.");
+      },
+    },
+  });
+  const routeRequest = ({ token, runnerSecret, body }) => ({
+    headers: new Headers({
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(runnerSecret ? { "x-pulse-runner-secret": runnerSecret } : {}),
+    }),
+    json: async () => body,
+  });
+
+  try {
+    assert.equal(
+      (await route.POST(routeRequest({ body: { submissionId: "submission-1" } }))).status,
+      401,
+      "Unauthenticated preflight requests remain rejected."
+    );
+    assert.equal(
+      (await route.POST(routeRequest({ token: "invalid-token", body: { submissionId: "submission-1" } }))).status,
+      401,
+      "User-token requests remain behind the trusted-runner authentication gate."
+    );
+    assert.equal(
+      (await route.POST(routeRequest({
+        token: "valid-user-token",
+        body: { submissionId: "submission-1", jobId: "job-1" },
+      }))).status,
+      401,
+      "The execution endpoint continues to require trusted-runner authentication."
+    );
+
+    process.env.PULSE_RUNNER_SECRET = "fixture-runner-secret";
+    assert.equal(
+      (await route.POST(routeRequest({
+        runnerSecret: "fixture-runner-secret",
+        body: { submissionId: "submission-1" },
+      }))).status,
+      400,
+      "Trusted runner requests still require a queued job ID."
+    );
+    pulseJobLookups = 0;
+    assert.equal(
+      (await route.POST(routeRequest({
+        runnerSecret: "fixture-runner-secret",
+        body: { submissionId: "submission-1", jobId: "job-1" },
+      }))).status,
+      403,
+      "Trusted runner requests still verify job ownership against the submission owner."
+    );
+    pulseJobDeveloperId = "owner";
+    pulseJobStatus = "QUEUED";
+    pulseJobLookups = 0;
+    assert.equal(
+      (await route.POST(routeRequest({
+        runnerSecret: "fixture-runner-secret",
+        body: { submissionId: "submission-1", jobId: "job-1" },
+      }))).status,
+      409,
+      "Trusted runner jobs retain the existing allowed-start-status guard."
+    );
+  } finally {
+    for (const [key, value] of savedEnvironment) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+
   console.log(
-    "PASS PULSE ZIP download SSRF regressions: public HTTPS ZIPs, IPv4/IPv6 and obfuscated/private destinations, mixed DNS, pinned rebinding defense, public/private redirects, GitHub Release API and assets, timeouts, streaming byte limits, ZIP validation and TLS defaults."
+    "PASS PULSE ZIP download regressions: URL/IP validation, DNS pinning, redirect-chain validation, GitHub Release API/assets, explicit TLS, strict streaming limits and length checks, timeout/cancellation/partial cleanup, ZIP signature and authentication/ownership gates."
   );
 } finally {
   await fs.rm(workDirectory, { recursive: true, force: true });

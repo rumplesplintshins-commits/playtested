@@ -371,20 +371,25 @@ function validateGitHubAssetApiUrl(
   return url;
 }
 
-function rejectOversizeContentLength(
+function getContentLength(
   response: UndiciResponse,
-  maximumBytes: number
-): void {
+  maximumBytes: number,
+  tooLargeMessage: string
+): number | null {
   const contentLength = response.headers.get("content-length");
-  if (
-    contentLength &&
-    /^\d+$/.test(contentLength) &&
-    Number(contentLength) > maximumBytes
-  ) {
+  if (contentLength === null) return null;
+  if (!/^\d+$/.test(contentLength)) {
     throw new PublicDownloadError(
-      "The submitted build is larger than the 500 MB PULSE limit."
+      "PULSE received an invalid Content-Length header."
     );
   }
+
+  const parsedLength = BigInt(contentLength);
+  if (parsedLength > BigInt(maximumBytes)) {
+    throw new PublicDownloadError(tooLargeMessage);
+  }
+
+  return Number(parsedLength);
 }
 
 function createDownloader(
@@ -433,6 +438,7 @@ function createDownloader(
         bodyTimeout: BODY_TIMEOUT_MS,
         maxHeaderSize: MAX_HEADER_SIZE,
         connect: {
+          rejectUnauthorized: true,
           lookup: createPinnedLookup(hostname, addresses),
           timeout: CONNECT_TIMEOUT_MS,
         },
@@ -502,7 +508,11 @@ function createDownloader(
           );
         }
 
-        rejectOversizeContentLength(response, dependencies.maxGitHubApiBytes);
+        const expectedBytes = getContentLength(
+          response,
+          dependencies.maxGitHubApiBytes,
+          "PULSE rejected an oversized GitHub Release response."
+        );
         if (!response.body) {
           throw new PublicDownloadError(
             "PULSE received an empty GitHub Release response."
@@ -528,6 +538,12 @@ function createDownloader(
           }
         } finally {
           reader.releaseLock();
+        }
+
+        if (expectedBytes !== null && totalBytes !== expectedBytes) {
+          throw new PublicDownloadError(
+            "PULSE received an incomplete GitHub Release response."
+          );
         }
 
         try {
@@ -599,7 +615,11 @@ function createDownloader(
             );
           }
 
-          rejectOversizeContentLength(response, dependencies.maxDownloadBytes);
+          const expectedBytes = getContentLength(
+            response,
+            dependencies.maxDownloadBytes,
+            "The submitted build is larger than the 500 MB PULSE limit."
+          );
           if (!response.body) {
             throw new PublicDownloadError(
               "The submitted build downloaded as an empty file."
@@ -645,6 +665,11 @@ function createDownloader(
             if (stats.bytes === 0) {
               throw new PublicDownloadError(
                 "The submitted build downloaded as an empty file."
+              );
+            }
+            if (expectedBytes !== null && stats.bytes !== expectedBytes) {
+              throw new PublicDownloadError(
+                "The submitted build response was incomplete."
               );
             }
             if (
