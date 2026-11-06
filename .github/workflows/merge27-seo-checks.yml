@@ -40,7 +40,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - run: node tests/merge27-browser.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
