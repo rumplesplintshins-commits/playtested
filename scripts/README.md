@@ -30,6 +30,7 @@ Run commands from the repository root. Extend an existing relevant helper/test b
 | `npm run test:tester-browser` | Existing mocked tester browser suite; local Next server required. |
 | `npm run test:share:browser` | Mocked engagement browser suite; local Next server required. |
 | `npm run test:submissions:browser` | Mocked correction browser suite; local Next server required. |
+| `npm run test:pulse-zip-extraction` | Isolated malicious ZIP metadata/path/size rejection and nested browser-build extraction compatibility tests. |
 | `npm run test:pulse-ssrf` | Mocked PULSE URL safety, redirect, DNS-pinning, authentication and ownership regressions; no external network or database. |
 | `npm run test:pulse-zip-ssrf` | Mocked PULSE ZIP URL/IP validation, DNS pinning, redirect chains, GitHub Release API/assets, TLS, streamed byte and Content-Length limits, timeout/cancellation/partial-file cleanup, ZIP response validation, and runner ownership gates; no external network or database. |
 | `npm run test:recovery-safeguards` | Syntax/path/ignore checks and no-write export preview. No database connection or restore. |
