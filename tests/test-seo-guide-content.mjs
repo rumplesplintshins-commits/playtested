@@ -39,6 +39,7 @@ const requiredContent = [
   ["/playtesting", "How long should a playtest session be?"],
   ["/playtesting", "Do playtesters need development experience?"],
   ["/playtesting", "Is a playtest the same as a demo?"],
+  ["/playtesting", "publish either publicly to anyone or behind restricted access"],
   ["/find-playtesters", "If you are running a Steam Playtest"],
   ["/find-playtesters", "https://partner.steamgames.com/doc/features/playtest"],
   ["/find-playtesters", "How many playtesters do I need?"],
@@ -46,6 +47,7 @@ const requiredContent = [
   ["/find-playtesters", "Do I need to pay playtesters?"],
   ["/become-a-playtester", "Getting started with no experience"],
   ["/become-a-playtester", "What happens to my feedback after I submit it?"],
+  ["/become-a-playtester", "only accepted reports are delivered to the developer"],
   ["/become-a-playtester", "Can a playtesting offer be a scam?"],
   ["/become-a-playtester", "Do I need a microphone or a camera?"],
   ["/guides/playtest-feedback", "What if I could not finish the build?"],
@@ -77,6 +79,12 @@ const guide = read("../app/components/OrganicGuide.tsx");
 for (const rule of ["[&_h3]:mt-7", "[&_h3]:font-semibold", "[&_h3+p]:mt-2"]) {
   assert(guide.includes(rule), "OrganicGuide must style FAQ headings: " + rule);
 }
+
+// Accuracy guards: no universal free-to-test claim, no guaranteed developer read.
+assert(!sources["/become-a-playtester"].includes("A real playtest never needs"), "scam warning must stay conditional, not a universal claim");
+assert(!sources["/become-a-playtester"].includes("The developer reads it"), "feedback delivery must describe the review workflow, not a guaranteed read");
+const scam = sources["/become-a-playtester"].split("<h3>Can a playtesting offer be a scam?</h3>")[1] ?? "";
+assert(scam.includes("pay to qualify") && scam.includes("passwords") && scam.includes("personal documents"), "suspicious payment/password/document warnings must stay");
 
 // Steam Playtest claims must credit the official docs, not invented features.
 const steamSection = sources["/find-playtesters"].split("<h2>If you are running a Steam Playtest</h2>")[1] ?? "";
