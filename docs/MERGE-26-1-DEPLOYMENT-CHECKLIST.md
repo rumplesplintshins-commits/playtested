@@ -2,7 +2,7 @@
 
 **Not executed. Owner approval required before production writes, merge or Render deployment.** Target PR base `v11`; branch `codex/merge-26-1-performance`, based on `1c85227`. Merge 27 stays independent.
 
-Current gate assessment: [release readiness](MERGE-26-1-RELEASE-READINESS.md). Fresh Storage protection now covers126/126 objects, but the existing database dump predates current schema and is not an adequate current recovery point. Do not proceed on Storage verification alone.
+Current gate assessment: [completed independent backup verification](MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md). The fresh6November database export and126/126 Storage files pass integrity/coverage and consistency checks. The old dump is historical. Full isolated restoration remains Not Run; preserve the deferral and other recovery limitations explicitly. Reconcile freshness/Storage and obtain release approval before production writes.
 
 ## Preflight
 

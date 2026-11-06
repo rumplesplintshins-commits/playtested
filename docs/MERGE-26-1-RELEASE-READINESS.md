@@ -1,8 +1,8 @@
 # Merge 26.1 release readiness — 5 November 2026
 
-**NO-GO for production: current database recovery coverage is incomplete/unverified.** Production changes made: **none**. PR#29 is the release candidate; no merge or Render deployment is authorized by these checks. The shared Merge26 worktree and obsolete SEO PR#27 were left untouched.
+**Updated 6 November: fresh database/Storage integrity and coverage PASS. Production release is not authorised; full isolated restoration remains Not Run.** See [completed independent verification](MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md) for the superseding evidence and retained recovery limitations. Production changes made: **none**. PR#29 is the release candidate; no merge or Render deployment is authorized by these checks. The shared Merge26 worktree and obsolete SEO PR#27 were left untouched.
 
-6 November recovery-only follow-up: [managed-backup findings and exact operator export action](MERGE-26-1-DATABASE-RECOVERY-OPERATOR.md). Supabase lists no backup and PITR is disabled; no usable existing local PostgreSQL credentials were found. Native hidden-prompt export preparation/preview passes, but execution and fresh restore verification are blocked on operator credentials. The126-object Storage package and passing4caef4c application checks are not rerun or represented as a database recovery point.
+Historical 6 November recovery preparation: [managed-backup findings and operator export action](MERGE-26-1-DATABASE-RECOVERY-OPERATOR.md). The operator has since completed the fresh export and its independent verification; the blocked-database findings below describe earlier snapshots. They do not supersede the completed verification report.
 
 ## Completed technical verification
 
@@ -22,7 +22,7 @@ Production migration history ends with `20261105200930 merge26_catalogue_fixture
 
 Actual production function definitions were replayed into **synthetic isolated PGlite** and128–131 applied there: PASS.128 leaves the recognized production guard bodies, ACLs, owner and security attributes unchanged;129 retains catalogue invoker security; required column types match. Unknown body/history differences fail the verifier. This is a metadata compatibility rehearsal, **not a restored production database or full native restore rehearsal**. See `performance/MERGE-26-1-PRODUCTION-COMPATIBILITY.json` for exact file hashes/dependencies. The existing deployment checklist gives the ordered128→129→130→131 execution, per-file verification and rollback steps. Never replay127 over the newer hotfix.
 
-## Recovery — Storage complete, current database still blocked
+## Historical recovery findings before the completed export
 
 The previous Storage manifest covered66 objects/72,810,736 bytes. All66 retained files rehashed successfully, but fresh production inventory had60 additional objects. A **new download-only backup** was completed at23:06:16 UTC into the access-restricted local directory `C:\PrivateBackups\Playtested\Merge261\storage-20261105T2302Z`. It contains126 actual object files/92,507,259 bytes, with stable before/after bucket/object metadata and independent per-file SHA-256 checks. Manifest SHA-256: `c575e1c3a8a32da18338f909d38de2ee44d6dd5bdff1cfa472e03cc379dd7554`. Fresh reconciliation at23:42 UTC again found126 objects,0 missing and0 changed versions; bucket configuration is unchanged. No production upload/delete/overwrite or policy change occurred. Original66-object archive is preserved.
 
@@ -42,4 +42,4 @@ PR28 was independently rechecked open/draft/mergeable against current `v11`; its
 
 ## Exact next release action
 
-Finish/confirm latest-head CI, then obtain and verify the **current database recovery point** and record remaining recovery/manual acceptance decisions. Only after these gates pass request owner approval for the exact reviewed commit and128–131 file hashes. Until then: no production migrations, no `v11` merge and no Render deployment. Preferred rollback is an approved code revert retaining compatible schema/data; a database restore is a separately approved recovery incident with an explicit post-backup data-loss assessment.
+The fresh database/Storage backup coverage gate now passes; see the completed verification report. Confirm latest-head CI, recheck production fingerprints and backup/Storage freshness, and retain the documented full-restore deferral and remaining recovery/manual acceptance limitations. Request explicit owner approval for the exact reviewed commit and128–131 file hashes before production changes. No production migrations, `v11` merge or Render deployment are authorised yet. Preferred rollback is an approved code revert retaining compatible schema/data; a database restore is a separately approved recovery incident with an explicit post-backup data-loss assessment.

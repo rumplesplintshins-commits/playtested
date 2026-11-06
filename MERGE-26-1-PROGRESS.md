@@ -1,5 +1,7 @@
 # Merge 26.1 — Performance & UX Optimisation
 
+Latest6November recovery result: fresh operator export at00:42–00:43UTC independently passes hashes/full decode, current schema/security/migration coverage, Auth/application counts and consistency with126 rehashed Storage files. The missing-current-database blocker is cleared. Full isolated restore remains Not Run: installed Windows PostgreSQL lacks required Supabase Vault/cron extensions. No production writes/migrations/merge/deployment; explicit release approval still required. See `docs/MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md`; earlier blocked notes below are historical.
+
 Baseline-probe follow-up: current read-only management query confirms17.11 and both required schema objects. Failed operator run saved no baseline JSON, so its historical failed field is unknown. Probe now explicitly enforces a read-only transaction, saves per-condition diagnostics and retains all schema/version checks. PowerShell5.1 and isolated PostgreSQL tests pass; production export/restore remains unverified and release NO-GO.
 
 Windows operator follow-up: export URI parsing and null-safe cleanup corrected and regression-tested using dummy credentials on Windows PowerShell5.1. No production connection/export occurred; database recovery remains unverified and release NO-GO. Test: `tests/test-m261-export-powershell.ps1`.
