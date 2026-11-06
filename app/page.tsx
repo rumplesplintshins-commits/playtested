@@ -52,6 +52,23 @@ export default function Home() {
         <GameCatalogue />
       </section>
 
+      <section aria-labelledby="playtesting-guides" className="mx-auto max-w-7xl px-6 py-10">
+        <h2 id="playtesting-guides" className="font-[family-name:var(--font-display)] text-2xl font-bold">Learn about indie game playtesting</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">Practical guidance for developers looking for player feedback and players interested in testing indie games.</p>
+        <div className="mt-4 max-w-3xl space-y-3 text-sm leading-7 text-zinc-400">
+          <p>Our goal is to help players find the gems and skip the slop through clearer information and real player feedback. Playtested helps you discover indie games and playtest new releases before they reach a wider audience. Browse game listings, learn what each developer is building, and see how community playtesting can reveal strengths, confusing controls, bugs and performance issues.</p>
+          <p>For indie developers, structured playtests turn player opinions into useful feedback tied to a particular game build. For playtesters, trying an unfamiliar game is a chance to share clear observations about the experience. Whether you want to find playtesters for your own game or become a playtester yourself, the guides below explain how to get started.</p>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/playtesting", title: "What is playtesting?", description: "Understand what a playtest reveals." },
+            { href: "/find-playtesters", title: "Find playtesters", description: "Plan a focused test for your game." },
+            { href: "/become-a-playtester", title: "Become a playtester", description: "Learn how to test games and report findings." },
+            { href: "/guides/playtest-feedback", title: "Write useful feedback", description: "Make your observations actionable." },
+          ].map(guide => <Link key={guide.href} href={guide.href} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-[#77f29b]/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]"><h3 className="font-semibold text-[#77f29b]">{guide.title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{guide.description}</p></Link>)}
+        </div>
+      </section>
+
       <section
         id="about"
         className="mt-10 border-t border-white/[0.08] bg-[#0e110f]"
