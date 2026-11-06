@@ -89,7 +89,9 @@ try {
   const sitemap = await sitemapResponse.text();
   assert(sitemap.includes("https://playtested.co.uk/games/steam-912345"), "eligible Steam catalogue entry should be in sitemap");
   assert(sitemap.includes("https://playtested.co.uk/submissions/f4200000-0000-4000-8000-000000000002"), "approved game should remain in sitemap");
-  assert(!sitemap.includes("steam-999999"), "non-catalogue fixture must not appear in sitemap");
+  for (const excludedSteamId of ["912346", "912347", "912348", "999999"]) {
+    assert(!sitemap.includes(`steam-${excludedSteamId}`), `duplicate, incomplete, hidden or nonexistent Steam listing ${excludedSteamId} must not appear in sitemap`);
+  }
   assert.equal(new Set([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map(match => match[1])).size, [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].length, "sitemap should not contain duplicate URLs");
 
   const missing = await context.request.get(`${origin}/games/steam-999999`);

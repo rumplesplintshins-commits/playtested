@@ -33,25 +33,40 @@ export async function publicProfileLinks() {
   "use cache";
   cacheLife("hours");
   const client=publicClient(),profiles=new Map<string,{path:string;title:string}>();
-  for(let page=1;page<=490;page++) {
-    const result=await client.rpc("get_public_catalogue",{
-      p_page:page,
-      p_page_size:100,
-      p_search:"",
-      p_genre:"All genres",
-      p_verification:"All verification statuses",
-      p_ai_type:"All AI types",
-      p_include_nsfw:true,
-      p_sort:"Recently added",
-    });
+  const approvedSteamIds=new Set<string>();
+  const pageSize=100;
+  for(let offset=0;offset<49000;offset+=pageSize) {
+    const result=await client.from("approved_games").select("id,title,steam_app_id").order("id").range(offset,offset+pageSize-1);
     if(result.error||!Array.isArray(result.data))throw new Error("Public sitemap unavailable");
-    const rows=result.data as {source_type:string;game_id:string;steam_app_id:string|null;title:string|null}[];
-    for(const row of rows) {
-      if(row.source_type==="approved"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.game_id))profiles.set("/submissions/"+row.game_id,{path:"/submissions/"+row.game_id,title:row.title||"Game profile"});
-      if(row.source_type==="steam"&&/^[0-9]+$/.test(String(row.steam_app_id)))profiles.set("/games/steam-"+row.steam_app_id,{path:"/games/steam-"+row.steam_app_id,title:row.title||"Game profile"});
+    for(const row of result.data as {id:string;title:string|null;steam_app_id:string|null}[]) {
+      if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.id))profiles.set("/submissions/"+row.id,{path:"/submissions/"+row.id,title:row.title||"Game profile"});
+      const steamId=String(row.steam_app_id??"").trim();
+      if(steamId)approvedSteamIds.add(steamId);
+    }
+    if(result.data.length<pageSize)break;
+    if(offset+pageSize>=49000)throw new Error("Sitemap needs a reviewed partition before exceeding its URL limit");
+  }
+  // Keep these predicates aligned with get_public_catalogue. RLS also excludes hidden
+  // listings, while the public approved_games view filters unapproved submissions.
+  for(let offset=0;offset<49000;offset+=pageSize) {
+    const result=await client.from("imported_games").select("id,steam_app_id,title")
+      .eq("catalogue_eligible",true)
+      .eq("metadata_backfill_status","complete")
+      .not("title","is",null)
+      .not("developer_name","is",null)
+      .not("genre","is",null)
+      .not("image_url","is",null)
+      .order("steam_app_id")
+      .order("id")
+      .range(offset,offset+pageSize-1);
+    if(result.error||!Array.isArray(result.data))throw new Error("Public sitemap unavailable");
+    for(const row of result.data as {id:string;steam_app_id:string|number|null;title:string|null}[]) {
+      const steamId=String(row.steam_app_id??"").trim();
+      if(/^[0-9]+$/.test(steamId)&&!approvedSteamIds.has(steamId))profiles.set("/games/steam-"+steamId,{path:"/games/steam-"+steamId,title:row.title||"Game profile"});
     }
     if(profiles.size>48998)throw new Error("Sitemap needs a reviewed partition before exceeding its URL limit");
-    if(rows.length<100)return [...profiles.values()];
+    if(result.data.length<pageSize)return [...profiles.values()];
+    if(offset+pageSize>=49000)throw new Error("Sitemap needs a reviewed partition before exceeding its URL limit");
   }
   throw new Error("Sitemap needs a reviewed partition before exceeding its URL limit");
 }

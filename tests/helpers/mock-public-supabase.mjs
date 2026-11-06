@@ -22,12 +22,29 @@ const approvedGame = {
   ...steamGame,
   source_type: "approved",
   game_id: "f4200000-0000-4000-8000-000000000002",
-  steam_app_id: null,
+  steam_app_id: "912346",
   title: "Mock Approved Game",
   genre: "Adventure",
   has_playtested_profile: true,
 };
 const visibleCatalogue = [steamGame, approvedGame];
+const importedRows = [
+  {
+    id: steamGame.game_id,
+    steam_app_id: steamId,
+    title: steamGame.title,
+    developer_name: steamGame.developer_name,
+    genre: steamGame.genre,
+    description: steamGame.description,
+    steam_url: steamGame.game_link,
+    image_url: steamGame.image_url,
+    catalogue_eligible: true,
+    metadata_backfill_status: "complete",
+  },
+  { ...steamGame, id: "f4200000-0000-4000-8000-000000000003", steam_app_id: "912346", title: "Duplicate Import", catalogue_eligible: true, metadata_backfill_status: "complete" },
+  { ...steamGame, id: "f4200000-0000-4000-8000-000000000004", steam_app_id: "912347", title: "Incomplete Import", catalogue_eligible: true, metadata_backfill_status: "pending" },
+  { ...steamGame, id: "f4200000-0000-4000-8000-000000000005", steam_app_id: "912348", title: "Hidden Fixture", catalogue_eligible: true, metadata_backfill_status: "complete", hidden: true },
+];
 const importedGame = {
   id: steamGame.game_id,
   steam_app_id: steamId,
@@ -79,8 +96,31 @@ export async function startMockPublicSupabase(port = 32829) {
     }
 
     if (url.pathname === "/rest/v1/imported_games") {
-      const selected = url.searchParams.get("steam_app_id") === `eq.${steamId}` ? [importedGame] : [];
-      send(200, request.headers.accept?.includes("vnd.pgrst.object+json") ? selected[0] ?? null : selected);
+      const steamIdFilter = url.searchParams.get("steam_app_id");
+      const visibleRows = importedRows.filter(row => !row.hidden);
+      const rows = steamIdFilter
+        ? visibleRows.filter(row => String(row.steam_app_id) === steamIdFilter.slice(3) && row.catalogue_eligible && row.metadata_backfill_status === "complete")
+        : visibleRows.filter(row =>
+          url.searchParams.get("catalogue_eligible") === "eq.true" &&
+          url.searchParams.get("metadata_backfill_status") === "eq.complete" &&
+          row.catalogue_eligible &&
+          row.metadata_backfill_status === "complete" &&
+          row.title &&
+          row.developer_name &&
+          row.genre &&
+          row.image_url
+        );
+      const match = request.headers.range?.match(/(\d+)-(\d+)/);
+      const selected = match ? rows.slice(Number(match[1]), Number(match[2]) + 1) : rows;
+      const responseRows = steamIdFilter ? selected.map(() => importedGame) : selected;
+      send(200, request.headers.accept?.includes("vnd.pgrst.object+json") ? responseRows[0] ?? null : responseRows);
+      return;
+    }
+
+    if (url.pathname === "/rest/v1/approved_games") {
+      const match = request.headers.range?.match(/(\d+)-(\d+)/);
+      const rows = [approvedGame].map(row => ({ id: row.game_id, title: row.title, steam_app_id: row.steam_app_id }));
+      send(200, match ? rows.slice(Number(match[1]), Number(match[2]) + 1) : rows);
       return;
     }
 
