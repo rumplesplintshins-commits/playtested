@@ -1,6 +1,6 @@
 # Merge 26.1 release readiness — 5 November 2026
 
-Latest6November assessment: [final pre-release audit](MERGE-26-1-FINAL-PRE-RELEASE-AUDIT.md) recommends CONDITIONAL GO subject to explicit approval, unchanged/revalidated baseline, current backups and documented recovery/integration risks. All CI on da510b1 passed; no production writes occurred. The unfinished Copilot SSRF patch has no diff available for a final joint review.
+Latest6November assessment: [final pre-release audit](MERGE-26-1-FINAL-PRE-RELEASE-AUDIT.md) recommends CONDITIONAL GO subject to explicit approval, unchanged/revalidated baseline, current backups and documented recovery/integration risks. All CI on da510b1 and the aa84eb7 audit head passed; no production writes occurred. Copilot's subsequent local uncommitted SSRF diff is disjoint from this PR, but final combined dependency/build/security review remains pending its completion.
 
 **Updated 6 November: fresh database/Storage integrity and coverage PASS. Production release is not authorised; full isolated restoration remains Not Run.** See [completed independent verification](MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md) for the superseding evidence and retained recovery limitations. Production changes made: **none**. PR#29 is the release candidate; no merge or Render deployment is authorized by these checks. The shared Merge26 worktree and obsolete SEO PR#27 were left untouched.
 
