@@ -67,6 +67,34 @@ export default function Home() {
             { href: "/guides/playtest-feedback", title: "Write useful feedback", description: "Make your observations actionable." },
           ].map(guide => <Link key={guide.href} href={guide.href} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-[#77f29b]/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]"><h3 className="font-semibold text-[#77f29b]">{guide.title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{guide.description}</p></Link>)}
         </div>
+        <div className="mt-8 grid gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2 sm:p-6">
+          <div>
+            <h3 className="font-semibold text-white">Read the evidence in context</h3>
+            <p className="mt-2 text-sm leading-7 text-zinc-400">
+              A game profile can bring together the developer&apos;s listing,
+              activity from specific playtest builds and any assessment that
+              has been recorded. Not every game has tester responses or an
+              assessment. Community feedback and independent checks are shown
+              separately so you can see what information is available.
+            </p>
+            <Link href="/playtesting" className="mt-3 inline-block text-sm text-[#77f29b] underline underline-offset-4">
+              How playtesting works
+            </Link>
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Make feedback useful</h3>
+            <p className="mt-2 text-sm leading-7 text-zinc-400">
+              When a playtest is open, testers can focus on the build they
+              played and describe what happened, where it happened and what
+              they expected instead. Clear observations help a developer
+              understand a report without treating one person&apos;s experience
+              as a promise about every device or future update.
+            </p>
+            <Link href="/guides/playtest-feedback" className="mt-3 inline-block text-sm text-[#77f29b] underline underline-offset-4">
+              Tips for writing actionable feedback
+            </Link>
+          </div>
+        </div>
       </section>
 
       <section

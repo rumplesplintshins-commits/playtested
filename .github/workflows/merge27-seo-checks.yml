@@ -1,4 +1,4 @@
-name: Merge 27 SEO integration checks
+name: Merge 27/28 SEO and Core Web Vitals checks
 on:
   pull_request:
     branches: [v11]
@@ -8,13 +8,20 @@ on:
       - 'app/become-a-playtester/**'
       - 'app/guides/**'
       - 'app/components/OrganicGuide.tsx'
+      - 'app/components/SiteHeader.tsx'
+      - 'app/components/PublicGameGuides.tsx'
       - 'app/seo-social.png/**'
       - 'app/page.tsx'
+      - 'app/games/**/page.tsx'
+      - 'app/submissions/**/page.tsx'
       - 'next.config.ts'
       - 'app/sitemap.ts'
       - 'lib/organic-search.ts'
+      - 'lib/seo.ts'
+      - 'lib/public-game-seo.ts'
       - '.github/workflows/merge27-seo-checks.yml'
       - 'tests/merge27-browser.mjs'
+      - 'tests/merge28-cwv-browser.mjs'
   workflow_dispatch:
 jobs:
   validate:
@@ -27,7 +34,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/seo-social.png/route.tsx app/page.tsx app/sitemap.ts lib/organic-search.ts next.config.ts
+      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/components/SiteHeader.tsx app/components/PublicGameGuides.tsx app/seo-social.png/route.tsx app/page.tsx app/games/[slug]/page.tsx app/submissions/[id]/page.tsx app/sitemap.ts lib/organic-search.ts lib/seo.ts lib/public-game-seo.ts next.config.ts
       - run: npx tsc --noEmit
       - run: npm run build
         env:
@@ -35,6 +42,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
       - run: npx playwright install --with-deps chromium
       - run: node tests/merge27-browser.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
+      - run: node tests/merge28-cwv-browser.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
