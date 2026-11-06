@@ -1,5 +1,7 @@
 # Merge 26.1 — Performance & UX Optimisation
 
+Baseline-probe follow-up: current read-only management query confirms17.11 and both required schema objects. Failed operator run saved no baseline JSON, so its historical failed field is unknown. Probe now explicitly enforces a read-only transaction, saves per-condition diagnostics and retains all schema/version checks. PowerShell5.1 and isolated PostgreSQL tests pass; production export/restore remains unverified and release NO-GO.
+
 Windows operator follow-up: export URI parsing and null-safe cleanup corrected and regression-tested using dummy credentials on Windows PowerShell5.1. No production connection/export occurred; database recovery remains unverified and release NO-GO. Test: `tests/test-m261-export-powershell.ps1`.
 
 6 November: recovery-only check confirms no listed managed backup/PITR window or usable local PG connection. A native read-only hidden-prompt export helper is prepared and preview-validated; actual export requires operator credential entry. See `docs/MERGE-26-1-DATABASE-RECOVERY-OPERATOR.md`. No production change, migration, merge or deployment.

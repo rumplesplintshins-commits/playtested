@@ -34,6 +34,18 @@ The export does not contain Storage object bytes, provider secrets or a whole-se
 
 ## Release sequence after the gate is resolved
 
+### Baseline probe follow-up
+
+The failed `database-20261106-retry1` directory contains only an empty `probe-private.log`; the old script retained stderr but not the JSON used by its combined baseline check. Therefore the historical failed condition **cannot be established precisely from those diagnostics**. Do not claim that PostgreSQL was upgraded, a table was absent or the pooler ignored options without evidence. A fresh authorised SELECT-only management query returned `read_only:on`, `server_version:170011`, `listing_controls:true`, `migrations:true`. These establish the current version/schema on that connection, not the failed Session Pooler connection's old state.
+
+The smallest operational correction is explicit `BEGIN READ ONLY` / metadata SELECT / `ROLLBACK` commands on the same psql connection, rather than relying solely on startup `PGOPTIONS`. The actual transaction must still report read-only; both schema flags must be actual boolean true and the version must still be PostgreSQL17. No role/database defaults are changed. PostgreSQL17 pg_dump also establishes its own repeatable-read, read-only snapshot transaction ([upstream source](https://github.com/postgres/postgres/blob/REL_17_STABLE/src/bin/pg_dump/pg_dump.c)); the export is not permitted to substitute a write transaction. Existing startup restrictions remain additional protection.
+
+Before export the script now retains `probe-baseline.json`, containing only the fixed four baseline indicators, startup read-only default and per-condition pass/fail values. If any check fails, it names `read_only`, `listing_controls`, `migrations` or `postgres17` and stops. No check was removed or version range widened. Blank/malformed JSON and missing/nonboolean indicators fail closed. Actual full export/restore remains unverified.
+
+Validation passed: Windows PowerShell5.1 parsing/cleanup tests plus individually failing baseline conditions, malformed/unsupported versions, missing flags and false-string flags; isolated PGlite execution of the actual probe SQL with startup default off confirms transaction read-only, write rejection, unchanged defaults/data after rollback and detection of missing `listing_controls`. `node tests/test-m261-export-probe.mjs` is included in readiness CI. These tests use dummy/local data, not a credentialed production export.
+
+Use the same operator command above with fresh output directory `C:\PrivateBackups\Playtested\Merge261\database-20261106-retry2`. The prior failed folder remains untouched. If the new probe fails, inspect/share only its four indicators and check flags; never credentials or raw connection diagnostics. Release stays **NO-GO** until a new backup is completed and independently verified.
+
 1. Independently verify the fresh database export/provider recovery point and recovery feasibility; reconcile the126-object Storage backup and any subsequent changes.
 2. Confirm current production function/migration fingerprints still match the reviewed128–131 guards and exact candidate commit. Obtain explicit owner production-release approval.
 3. Apply only pending128→129→130→131, verifying each result/history/ACL/RLS and preservation before proceeding. Stop on unknown definitions or errors; never replay127 over the fixture hotfix or import development seeds.

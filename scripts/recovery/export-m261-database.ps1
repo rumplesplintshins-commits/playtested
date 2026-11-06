@@ -26,6 +26,17 @@ function ConvertFrom-M261ConnectionUrl {
     if((-not($direct -or $session)) -or $port -ne 5432 -or $database -ne 'postgres'){throw 'Wrong production project, database or pooling mode. Use direct/session port5432.'}
     return @{Host=$parsed.Host;Port=$port;Username=$username;Password=$password;Database=$database}
 }
+function Get-M261BaselineChecks {
+    param($Source)
+    [int]$version=0
+    $validVersion=[int]::TryParse([string]$Source.server_version,[ref]$version)
+    return [ordered]@{
+        read_only=($Source.read_only -ceq 'on')
+        listing_controls=($Source.listing_controls -is [bool] -and $Source.listing_controls)
+        migrations=($Source.migrations -is [bool] -and $Source.migrations)
+        postgres17=($validVersion -and $version -ge 170000 -and $version -lt 180000)
+    }
+}
 $ErrorActionPreference='Stop'
 $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')).TrimEnd('\')
 $destination=[IO.Path]::GetFullPath($OutputDirectory).TrimEnd('\')
@@ -53,11 +64,18 @@ try{
     $started=[DateTime]::UtcNow.ToString('o')
     # Native stderr is private; judge exit codes rather than PowerShell stderr records.
     $ErrorActionPreference='Continue'
-    $probe=& (Join-Path $PostgresBin 'psql.exe') -X -w -qAt --set=ON_ERROR_STOP=1 --command "select json_build_object('read_only',current_setting('transaction_read_only'),'server_version',current_setting('server_version_num'),'listing_controls',to_regclass('public.listing_controls') is not null,'migrations',to_regclass('supabase_migrations.schema_migrations') is not null)" 2> (Join-Path $destination 'probe-private.log')
+    # Separate commands share one connection. Do not depend on a pooler forwarding
+    # PGOPTIONS to make this transaction read-only. No server defaults are changed.
+    $probe=& (Join-Path $PostgresBin 'psql.exe') -X -w -qAt --set=ON_ERROR_STOP=1 --command 'BEGIN READ ONLY' --command "select json_build_object('read_only',current_setting('transaction_read_only'),'startup_default_read_only',current_setting('default_transaction_read_only'),'server_version',current_setting('server_version_num'),'listing_controls',to_regclass('public.listing_controls') is not null,'migrations',to_regclass('supabase_migrations.schema_migrations') is not null)" --command 'ROLLBACK' 2> (Join-Path $destination 'probe-private.log')
     $exit=$LASTEXITCODE;$ErrorActionPreference='Stop'
     if($exit -ne 0){throw 'Read-only connection probe failed. Private diagnostics retained; no export completed.'}
-    $source=($probe -join '') | ConvertFrom-Json
-    if($source.read_only -ne 'on' -or -not $source.listing_controls -or -not $source.migrations -or [int]$source.server_version -lt 170000 -or [int]$source.server_version -ge 180000){throw 'Unexpected source baseline/version; stop for review.'}
+    try{$source=($probe -join '') | ConvertFrom-Json}catch{throw 'Probe returned invalid JSON; no export started. Review private diagnostics.'}
+    $checks=Get-M261BaselineChecks $source
+    # Only these fixed, non-personal metadata fields are retained, never a URL,
+    # username/password, arbitrary query results or database row contents.
+    @{read_only=$source.read_only;startup_default_read_only=$source.startup_default_read_only;server_version=$source.server_version;listing_controls=$source.listing_controls;migrations=$source.migrations;checks=$checks} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $destination 'probe-baseline.json') -Encoding UTF8
+    $failed=@($checks.Keys | Where-Object {-not $checks[$_]})
+    if($failed.Count){throw ('Source safety checks failed: '+($failed -join ', ')+'. No export started. See private probe-baseline.json.')}
     $dump=Join-Path $destination 'database.dump';$roles=Join-Path $destination 'roles.sql'
     $ErrorActionPreference='Continue'
     & (Join-Path $PostgresBin 'pg_dump.exe') --no-password --format=custom --file=$dump 2> (Join-Path $destination 'dump-private.log')

@@ -5,7 +5,24 @@ $ast=[Management.Automation.Language.Parser]::ParseFile($main,[ref]$tokens,[ref]
 if($errors.Count){throw 'Export script syntax failure'}
 $definition=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'ConvertFrom-M261ConnectionUrl'},$false)
 . ([ScriptBlock]::Create($definition.Extent.Text))
+$baselineDefinition=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-M261BaselineChecks'},$false)
+. ([ScriptBlock]::Create($baselineDefinition.Extent.Text))
 function Assert([bool]$Condition,[string]$Message){if(-not $Condition){throw $Message}}
+$healthy=@{read_only='on';startup_default_read_only='off';server_version='170011';listing_controls=$true;migrations=$true}
+$checks=Get-M261BaselineChecks ([pscustomobject]$healthy)
+Assert (@($checks.Values | Where-Object {-not $_}).Count -eq 0) 'Actual read-only transaction with a writable startup default must pass'
+foreach($field in @('read_only','listing_controls','migrations','server_version')){
+ $bad=$healthy.Clone();$bad[$field]=if($field -eq 'read_only'){'off'}elseif($field -eq 'server_version'){'180001'}else{$false}
+ $checks=Get-M261BaselineChecks ([pscustomobject]$bad);$failed=@($checks.Keys | Where-Object {-not $checks[$_]})
+ $expected=if($field -eq 'server_version'){'postgres17'}else{$field}
+ Assert ($failed.Count -eq 1 -and $failed[0] -eq $expected) ('Failed condition not isolated: '+$field)
+}
+foreach($version in @($null,'not-a-version','160011','180000','2147483648')){$bad=$healthy.Clone();$bad.server_version=$version;Assert (-not (Get-M261BaselineChecks ([pscustomobject]$bad)).postgres17) 'Unsupported/malformed version passed'}
+foreach($field in @('listing_controls','migrations')){$bad=$healthy.Clone();$bad[$field]='false';Assert (-not (Get-M261BaselineChecks ([pscustomobject]$bad))[$field]) 'Truthy string bypassed required schema check'}
+Assert (@((Get-M261BaselineChecks $null).Values | Where-Object {$_}).Count -eq 0) 'Missing metadata passed'
+$text=[IO.File]::ReadAllText($main)
+Assert ($text.Contains("--command 'BEGIN READ ONLY'") -and $text.Contains("--command 'ROLLBACK'")) 'Explicit read-only transaction boundary missing'
+Assert ($text.Contains("'probe-baseline.json'")) 'Individual probe diagnostics not retained'
 $base='postgresql://postgres.qtcmzckdhgahuqqilmzj:'
 $suffix='@aws-0-eu-west-1.pooler.supabase.com:5432/postgres'
 $valid=$base+'dummy%3A%40%2F%23%25'+$suffix+'?sslmode=require'
@@ -60,3 +77,4 @@ foreach($mode in @('valid','invalid','empty','null','cancel','existing-env')){
  } $mode $main $valid
 }
 Write-Output ('PASS Windows PowerShell '+$PSVersionTable.PSVersion+': session/direct parsing, encoded/colon passwords, '+$invalid.Count+' invalid cases, empty/null/cancel prompts, actual entry-point boundary, environment restoration and secret disposal. Dummy credentials only; no native tools, network or files used.')
+Write-Output 'PASS baseline checks: each failed condition isolated; missing/false/string schema indicators and invalid/unsupported versions denied; actual read-only required independently of startup default; explicit transaction and retained diagnostics verified.'
