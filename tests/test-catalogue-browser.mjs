@@ -59,13 +59,13 @@ try {
  const calls=[];
  let fail=false, empty=false, recruitmentFailure=false,profileFailure=false;
  const recruitmentCalls=[];
- const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-generated','AI-assisted','No AI disclosed',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:24}));
+ const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:24}));
  rows[9]={...rows[9],source_type:'steam',steam_app_id:'789',has_playtested_profile:false,game_link:'https://store.steampowered.com/app/789/'};
  rows[10]={...rows[10],source_type:'steam',title:'Rail Estate',steam_app_id:'3762240',has_playtested_profile:true,game_link:'https://wrong.test/'};rows[11]={...rows[11],source_type:'steam',steam_app_id:'456',has_playtested_profile:true};
  await page.route('**/*',async route=>{
   const url=new URL(route.request().url());
   if(url.hostname==='localhost')return route.continue({headers:{...route.request().headers(),cookie:''}});
-  if(url.pathname.endsWith('/game_developer_links'))return route.fulfill({status:profileFailure?403:200,json:profileFailure?{code:'fixture'}:[{id:'link',imported_game_id:'11'}]});
+  if(url.pathname.endsWith('/rpc/m26_public_imported_profiles'))return route.fulfill({status:profileFailure?403:200,json:profileFailure?{code:'fixture'}:[{imported_game_id:'11'}]});
   if(url.pathname.endsWith('/rpc/get_public_catalogue')){calls.push(route.request().postDataJSON());return route.fulfill({status:fail?500:200,contentType:'application/json',body:JSON.stringify(fail?{message:'fixture failure'}:empty?[]:rows)});}
   if(url.pathname.endsWith('/rpc/get_game_community_reception'))return route.fulfill({json:[{submission_id:'0',accepted_test_count:2,rated_test_count:2,average_overall_score:8,recommend_positive_percent:100,reception_status:'Early results'}]});
   if(url.pathname.endsWith('/rpc/get_public_recruitment')){const body=route.request().postDataJSON();recruitmentCalls.push(body);return route.fulfill({status:recruitmentFailure?503:200,json:recruitmentFailure?{code:'PGRST202'}:body.p_games.map((game,i)=>({...game,recruiting:i===0||i===11}))});}
@@ -101,16 +101,16 @@ try {
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);assert.equal(recruitmentCalls.length,1,'Density must not request availability again');
  await expect(page.locator('article').first()).toContainText('Early results');
  await expect(page.locator('article').first()).toContainText('2 ratings');await expect(page.locator('article').first()).toContainText('1 out of 1 positive');
- for(const label of ['AI-generated','AI-assisted','No AI disclosed','AI Use Unknown'])assert(await page.locator('article').filter({hasText:label}).count()>0);
+ for(const label of ['AI Code Only','AI Content Only','No AI disclosed','AI Use Unknown'])assert(await page.locator('article').filter({hasText:label}).count()>0);
  await expect(page.getByText('No description provided.')).toHaveCount(1);
  await page.locator('article').first().locator('summary').click();await expect(page.locator('article').first().locator('details')).toHaveAttribute('open','');
  await page.getByRole('button',{name:'Next',exact:true}).click();await expect.poll(()=>calls.at(-1)?.p_page).toBe(2);await expect(comfortable).toHaveAttribute('aria-pressed','true');
  const requests=calls.length;await compact.click();await expect(page.getByRole('button',{name:'2',exact:true})).toHaveAttribute('aria-current','page');assert.equal(calls.length,requests,'Density must not refetch or reset page');
- await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted');await expect.poll(()=>calls.at(-1)?.p_ai_type).toBe('AI-assisted');await expect(compact).toHaveAttribute('aria-pressed','true');
+ await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Content only');await expect.poll(()=>calls.at(-1)?.p_ai_type).toBe('AI-assisted: Content only');await expect(compact).toHaveAttribute('aria-pressed','true');
  for(const width of [390,320,640])for(const mode of [comfortable,compact]){await page.setViewportSize({width,height:900});await mode.click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Reflow overflow at '+width);}
- profileFailure=true;recruitmentFailure=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-generated');await expect.poll(()=>recruitmentCalls.length).toBe(calls.length);await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(0);await expect(page.locator('a[href="/games/steam-456"]')).toHaveCount(0);await expect(page.locator('article')).toHaveCount(12);recruitmentFailure=false;
+ profileFailure=true;recruitmentFailure=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Code only');await expect.poll(()=>recruitmentCalls.length).toBe(calls.length);await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(0);await expect(page.locator('article').nth(11).getByRole('link',{name:'View game details'})).toHaveCount(0);await expect(page.locator('article').nth(11).getByRole('link',{name:/View Steam page/})).toHaveAttribute('href','https://store.steampowered.com/app/456/');await expect(page.locator('article')).toHaveCount(12);recruitmentFailure=false;
  empty=true;await page.getByRole('button',{name:'Clear filters',exact:true}).first().click();await expect(page.getByRole('heading',{name:'No games found'})).toBeVisible();
- fail=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-generated');await expect(page.getByText(/The catalogue could not be loaded/)).toBeVisible();await expect(page.getByRole('heading',{name:'No games found'})).toHaveCount(0);
+ fail=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Code only');await expect(page.getByText(/The catalogue could not be loaded/)).toBeVisible();await expect(page.getByRole('heading',{name:'No games found'})).toHaveCount(0);
  console.log('PASS catalogue: density, disclosure/missing data, small sample, full description, filter/page preservation, mobile and 640px reflow, empty/error. Backend mocked; no live access.');
 }finally{await browser.close();fs.unlinkSync(dir+'/page.tsx');fs.rmdirSync(dir);}
 
