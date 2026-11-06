@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { execFile } from "node:child_process";
+import { execFile, spawn, spawnSync } from "node:child_process";
 import { createReadStream } from "node:fs";
 import { mkdtemp, rm, writeFile, access } from "node:fs/promises";
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -208,6 +208,193 @@ function extractTechnicalRunId(stdout: string): string | null {
   return match?.[1] ?? null;
 }
 
+/* ============================================================
+
+   PULSE WORKER EXECUTION ISOLATION (PR #40)
+
+   The technical worker is launched with an explicit, minimal environment
+   allowlist instead of inheriting `process.env`. Supabase service-role
+   credentials, runner secrets and unrelated production secrets are never
+   mounted inside the worker process. The worker itself loads `.env.local`
+   from its working directory when it needs Supabase credentials.
+
+   Lifecycle: a wall-clock deadline (15 minutes), abort/cancellation and
+   unexpected failures all terminate the worker and its descendant
+   processes (Playwright/Chromium included) through a process-tree kill.
+   `execFile` alone only signals the direct child, which can leave
+   grandchildren orphaned on Windows, so the worker is spawned directly
+   and its process tree is killed on any non-successful exit path.
+
+   This is a hardening step, not a sandbox. An isolated execution host is
+   still required before untrusted game execution is safe to enable.
+
+   ============================================================ */
+
+const PULSE_WORKER_TIMEOUT_MS = 15 * 60 * 1000;
+const PULSE_WORKER_MAX_BUFFER = 50 * 1024 * 1024;
+
+// Non-secret variables the technical worker needs from the host environment.
+// The v6.10 worker loads its Supabase credentials from `.env.local` itself,
+// so service-role credentials and runner secrets are deliberately excluded.
+const PULSE_WORKER_ENV_ALLOWLIST = ["NEXT_PUBLIC_SUPABASE_URL"] as const;
+
+function buildPulseWorkerEnvironment(): { [key: string]: string } {
+  const environment: { [key: string]: string } = {};
+  for (const key of PULSE_WORKER_ENV_ALLOWLIST) {
+    const value = process.env[key];
+    if (value !== undefined && value !== "") {
+      environment[key] = value;
+    }
+  }
+  return environment;
+}
+
+function killProcessTree(pid: number): void {
+  if (process.platform === "win32") {
+    // taskkill /T terminates the process and its entire descendant tree.
+    try {
+      spawnSync("taskkill", ["/F", "/T", "/PID", String(pid)], {
+        windowsHide: true,
+      });
+    } catch {
+      // Best-effort cleanup only.
+    }
+    return;
+  }
+  try {
+    process.kill(-pid, "SIGTERM");
+  } catch {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      // Best-effort cleanup only.
+    }
+  }
+}
+
+class PulseWorkerTimeoutError extends Error {
+  constructor() {
+    super("PULSE worker exceeded the 15-minute execution deadline.");
+    this.name = "PulseWorkerTimeoutError";
+  }
+}
+
+type PulseWorkerOutcome = {
+  stdout: string;
+  stderr: string;
+  code: number | null;
+  signal: string | null;
+};
+
+function runPulseWorker(
+  workerPath: string,
+  args: string[],
+  options: {
+    cwd: string;
+    env: { [key: string]: string };
+    timeoutMs: number;
+    maxBuffer: number;
+    signal?: AbortSignal;
+  }
+): Promise<PulseWorkerOutcome> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let stdout = "";
+    let stderr = "";
+    let timerHandle: ReturnType<typeof setTimeout> | undefined;
+    let abortListener: (() => void) | undefined;
+
+    const child = spawn(process.execPath, [workerPath, ...args], {
+      cwd: options.cwd,
+      env: options.env as NodeJS.ProcessEnv,
+      windowsHide: true,
+    });
+
+    const pid = typeof child.pid === "number" ? child.pid : null;
+
+    const clear = (): void => {
+      if (timerHandle !== undefined) {
+        clearTimeout(timerHandle);
+        timerHandle = undefined;
+      }
+      if (abortListener && options.signal) {
+        options.signal.removeEventListener("abort", abortListener);
+        abortListener = undefined;
+      }
+      child.removeAllListeners();
+    };
+
+    const attachOutput = (error: Error & { stdout?: string; stderr?: string }): void => {
+      error.stdout = stdout;
+      error.stderr = stderr;
+    };
+
+    const fail = (error: Error & { killed?: boolean; stdout?: string; stderr?: string }): void => {
+      if (settled) return;
+      settled = true;
+      clear();
+      attachOutput(error);
+      if (pid !== null) {
+        killProcessTree(pid);
+      }
+      error.killed = true;
+      reject(error);
+    };
+
+    const settle = (code: number | null, signal: string | null): void => {
+      if (settled) return;
+      settled = true;
+      clear();
+      // A non-zero exit or a signal termination is a worker failure, mirroring
+      // execFile's behaviour so the route reports it as a failed run.
+      if ((code !== null && code !== 0) || signal !== null) {
+        const failure = new Error(
+          `PULSE worker exited with code ${code ?? signal}`
+        );
+        attachOutput(failure);
+        failure.killed = true;
+        reject(failure);
+        return;
+      }
+      resolve({ stdout, stderr, code, signal });
+    };
+
+    if (options.signal?.aborted) {
+      const cancelled = new Error("The PULSE worker was cancelled before it started.");
+      cancelled.name = "AbortError";
+      fail(cancelled);
+      return;
+    }
+
+    abortListener = (): void => {
+      const cancelled = new Error("The PULSE worker was cancelled.");
+      cancelled.name = "AbortError";
+      fail(cancelled);
+    };
+    options.signal?.addEventListener("abort", abortListener, { once: true });
+
+    timerHandle = setTimeout(() => {
+      fail(new PulseWorkerTimeoutError());
+    }, options.timeoutMs);
+
+    child.stdout.on("data", (chunk: Buffer | string): void => {
+      stdout += typeof chunk === "string" ? chunk : chunk.toString("utf8");
+      if (stdout.length > options.maxBuffer) {
+        fail(new Error("PULSE worker stdout exceeded the maximum buffer."));
+      }
+    });
+
+    child.stderr.on("data", (chunk: Buffer | string): void => {
+      stderr += typeof chunk === "string" ? chunk : chunk.toString("utf8");
+      if (stderr.length > options.maxBuffer) {
+        fail(new Error("PULSE worker stderr exceeded the maximum buffer."));
+      }
+    });
+
+    child.on("error", (error: Error): void => fail(error));
+    child.on("exit", (code: number | null, signal: string | null): void => settle(code, signal ?? null));
+  });
+}
 
 type TechnicalSessionEvidence = {
   id: string;
@@ -1021,10 +1208,12 @@ export async function POST(request: NextRequest) {
     let stderr = "";
 
     try {
-      const result = await execFileAsync(
-        process.execPath,
+      const workerEnvironment = buildPulseWorkerEnvironment();
+      const abortController = new AbortController();
+
+      const outcome = await runPulseWorker(
+        workerPath,
         [
-          workerPath,
           `--zip=${zipPath}`,
           `--game=${submission.title}`,
           `--build=${buildLabel}`,
@@ -1032,19 +1221,21 @@ export async function POST(request: NextRequest) {
         ],
         {
           cwd: process.cwd(),
-          env: process.env,
-          timeout: 15 * 60 * 1000,
-          maxBuffer: 50 * 1024 * 1024,
-          windowsHide: true,
+          env: workerEnvironment,
+          timeoutMs: PULSE_WORKER_TIMEOUT_MS,
+          maxBuffer: PULSE_WORKER_MAX_BUFFER,
+          signal: abortController.signal,
         }
       );
 
-      stdout = result.stdout ?? "";
-      stderr = result.stderr ?? "";
+      stdout = outcome.stdout ?? "";
+      stderr = outcome.stderr ?? "";
     } catch (workerError) {
       const failure = workerError as Error & {
         stdout?: string;
         stderr?: string;
+        code?: number | string;
+        killed?: boolean;
       };
 
       stdout = failure.stdout ?? "";
@@ -1052,6 +1243,8 @@ export async function POST(request: NextRequest) {
 
       console.error("PULSE worker execution failed:", {
         message: failure.message,
+        code: failure.code,
+        killed: failure.killed,
         stdout: stdout.slice(-6000),
         stderr: stderr.slice(-6000),
       });
