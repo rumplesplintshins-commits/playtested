@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 const migration=fs.readFileSync('supabase/migrations/202610310026_developer_claim_ownership_fix.sql','utf8');
 const discoveryMigration=fs.readFileSync('supabase/migrations/202610310027_claimable_catalogue_duplicate_discovery.sql','utf8');
+const duplicatePreventionMigration=fs.readFileSync('supabase/migrations/202611060029_prevent_duplicate_pending_claims.sql','utf8');
 const submit=fs.readFileSync('app/submit/page.tsx','utf8');
 const catalogueFixture=fs.readFileSync('supabase/tests/public-visibility-fixture.sql','utf8');
 
@@ -62,5 +63,13 @@ assert.match(submit,/Claim this game/);
 assert.match(submit,/claimant_id: user\.id/);
 assert.match(submit,/possibleDuplicate\.source === "imported"/);
 assert.match(submit,/claimError\.code === "23505"/);
+// Migration 029: three partial unique indexes prevent duplicate pending claims
+// per claimant per game target (NULL-safe because each index excludes NULL targets).
+assert.match(duplicatePreventionMigration,/game_claims_one_pending_imported_per_claimant/);
+assert.match(duplicatePreventionMigration,/game_claims_one_pending_approved_per_claimant/);
+assert.match(duplicatePreventionMigration,/game_claims_one_pending_submission_per_claimant/);
+assert.match(duplicatePreventionMigration,/WHERE status = 'Pending' AND imported_game_id IS NOT NULL/);
+assert.match(duplicatePreventionMigration,/WHERE status = 'Pending' AND approved_game_id IS NOT NULL/);
+assert.match(duplicatePreventionMigration,/WHERE status = 'Pending' AND submission_id IS NOT NULL/);
 
-console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, displayed-catalogue claim gate, title duplicate discovery, catalogue quality preservation, and claim UI wiring.');
+console.log('PASS developer claims: one current owner, atomic transfer, XP preservation, displayed-catalogue claim gate, title duplicate discovery, catalogue quality preservation, claim UI wiring, and duplicate pending-claim prevention via partial unique indexes.');
