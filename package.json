@@ -16,6 +16,7 @@
     "test:share:browser": "node tests/test-share-engagement-browser.mjs",
     "test:submissions": "node tests/test-submission-corrections.mjs",
     "test:submissions:browser": "node tests/test-submission-correction-browser.mjs",
+    "test:pulse-ssrf": "node tests/test-pulse-preflight-ssrf.mjs",
     "test:recovery-safeguards": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/test-backup-safeguards.ps1",
     "worker:pulse": "node --env-file=.env.local scripts/workers/pulse-job-runner-v9.mjs",
     "worker:steam": "node --env-file=.env.local scripts/workers/steam-queue-worker.mjs",
@@ -39,10 +40,12 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
+    "ipaddr.js": "2.2.0",
     "next": "16.4.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "sharp": "0.35.5"
+    "sharp": "0.35.5",
+    "undici": "6.29.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.12",

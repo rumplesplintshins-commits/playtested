@@ -30,6 +30,7 @@ Run commands from the repository root. Extend an existing relevant helper/test b
 | `npm run test:tester-browser` | Existing mocked tester browser suite; local Next server required. |
 | `npm run test:share:browser` | Mocked engagement browser suite; local Next server required. |
 | `npm run test:submissions:browser` | Mocked correction browser suite; local Next server required. |
+| `npm run test:pulse-ssrf` | Mocked PULSE URL safety, redirect, DNS-pinning, authentication and ownership regressions; no external network or database. |
 | `npm run test:recovery-safeguards` | Syntax/path/ignore checks and no-write export preview. No database connection or restore. |
 | `npm run worker:pulse` | Starts the real PULSE polling runner, using `.env.local`. |
 | `npm run worker:steam` | Starts the real Steam queue worker, using `.env.local`. |

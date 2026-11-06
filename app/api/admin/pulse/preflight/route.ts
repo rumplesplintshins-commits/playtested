@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { testPublicUrlReachability } from "@/lib/public-url-fetch";
 
 type CheckStatus = "passed" | "warning" | "failed" | "skipped";
 
@@ -111,85 +112,6 @@ function extractSteamAppId(value: string): string | null {
     return match?.[1] ?? null;
   } catch {
     return null;
-  }
-}
-
-async function testReachability(
-  url: string
-): Promise<{
-  reachable: boolean;
-  status: number | null;
-  finalUrl: string | null;
-  contentType: string | null;
-  durationMs: number;
-  error?: string;
-}> {
-  const started = Date.now();
-
-  try {
-    const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 8000);
-
-    let response: Response;
-
-    try {
-      response = await fetch(url, {
-        method: "HEAD",
-        redirect: "follow",
-        cache: "no-store",
-        signal: controller.signal,
-        headers: {
-          "User-Agent": "Playtested-PULSE/1.0",
-        },
-      });
-
-      if (response.status === 405 || response.status === 501) {
-        clearTimeout(timeout);
-
-        const secondController = new AbortController();
-
-        const secondTimeout = setTimeout(() => {
-          secondController.abort();
-        }, 8000);
-
-        try {
-          response = await fetch(url, {
-            method: "GET",
-            redirect: "follow",
-            cache: "no-store",
-            signal: secondController.signal,
-            headers: {
-              "User-Agent": "Playtested-PULSE/1.0",
-              Range: "bytes=0-0",
-            },
-          });
-        } finally {
-          clearTimeout(secondTimeout);
-        }
-      }
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    return {
-      reachable: response.status >= 200 && response.status < 500,
-      status: response.status,
-      finalUrl: response.url || url,
-      contentType: response.headers.get("content-type"),
-      durationMs: Date.now() - started,
-    };
-  } catch (error) {
-    return {
-      reachable: false,
-      status: null,
-      finalUrl: null,
-      contentType: null,
-      durationMs: Date.now() - started,
-      error: error instanceof Error ? error.message : "Request failed.",
-    };
   }
 }
 
@@ -482,7 +404,7 @@ export async function POST(request: NextRequest) {
     // ---------------------------------------------------------
 
     if (gameLink && isHttpUrl(gameLink)) {
-      const reachability = await testReachability(gameLink);
+      const reachability = await testPublicUrlReachability(gameLink);
 
       checks.push({
         check_key: "build_link_reachable",
@@ -597,7 +519,7 @@ export async function POST(request: NextRequest) {
     // ---------------------------------------------------------
 
     if (steamUrl && extractSteamAppId(steamUrl)) {
-      const steamReachability = await testReachability(steamUrl);
+      const steamReachability = await testPublicUrlReachability(steamUrl);
 
       checks.push({
         check_key: "steam_listing_reachable",
