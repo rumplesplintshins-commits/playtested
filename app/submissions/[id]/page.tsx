@@ -1,5 +1,6 @@
 import GamePcRequirements from "@/app/components/GamePcRequirements";
 import GameMediaGallery from "@/app/components/GameMediaGallery";
+import GameShareButton from "@/app/components/GameShareButton";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -336,12 +337,15 @@ export default async function SubmissionPage({
               PLAYTESTED COMMUNITY GAME
             </p>
 
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              {game.title}
-            </h1>
+            <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
+              <h1 className="min-w-0 flex-1 break-words font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
+                {game.title}
+              </h1>
+              <GameShareButton title={game.title || "Untitled game"} path={`/submissions/${id}`} />
+            </div>
 
             <p className="mt-1 text-sm text-zinc-400">
-              By {game.developer_name} ·{" "}
+              By <strong className="font-bold text-zinc-100">{game.developer_name || "Unknown developer"}</strong> ·{" "}
               {game.genre}
             </p>
 
