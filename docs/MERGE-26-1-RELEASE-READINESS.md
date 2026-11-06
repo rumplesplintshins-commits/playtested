@@ -2,6 +2,8 @@
 
 **NO-GO for production: current database recovery coverage is incomplete/unverified.** Production changes made: **none**. PR#29 is the release candidate; no merge or Render deployment is authorized by these checks. The shared Merge26 worktree and obsolete SEO PR#27 were left untouched.
 
+6 November recovery-only follow-up: [managed-backup findings and exact operator export action](MERGE-26-1-DATABASE-RECOVERY-OPERATOR.md). Supabase lists no backup and PITR is disabled; no usable existing local PostgreSQL credentials were found. Native hidden-prompt export preparation/preview passes, but execution and fresh restore verification are blocked on operator credentials. The126-object Storage package and passing4caef4c application checks are not rerun or represented as a database recovery point.
+
 ## Completed technical verification
 
 Existing implementation/worktree edits were preserved. Migration128 now explicitly wraps both guard reconciliations in one transaction; a new test demonstrates rollback of the first change when the second guard is unknown. The checklist/preflight signature is corrected to `m26_listing_hidden(uuid,boolean)`. The recovery verifier does not infer successful archive decoding from a supplied TOC; actual compatible `pg_restore` execution is required. Tests demonstrate missing objects, changed versions and corrupt bytes cannot pass coverage/integrity checks.

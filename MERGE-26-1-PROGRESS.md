@@ -1,5 +1,7 @@
 # Merge 26.1 — Performance & UX Optimisation
 
+6 November: recovery-only check confirms no listed managed backup/PITR window or usable local PG connection. A native read-only hidden-prompt export helper is prepared and preview-validated; actual export requires operator credential entry. See `docs/MERGE-26-1-DATABASE-RECOVERY-OPERATOR.md`. No production change, migration, merge or deployment.
+
 Latest follow-up: [release-readiness assessment](docs/MERGE-26-1-RELEASE-READINESS.md). Atomic128 reconciliation, corrected preflight signature, independent recovery verification and focused GitHub Actions coverage are added. Fresh Storage backup now covers126/126 objects; a current database recovery point remains BLOCKED. No production changes.
 
 Source: production branch `v11` at `1c85227`; isolated branch `codex/merge-26-1-performance`. Merge 26 and the separate Merge 27 SEO worktree have not been modified. Production inspection was read-only. No production migrations, merge, configuration changes or deployment have occurred.
