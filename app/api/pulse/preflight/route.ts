@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile, access, readFile } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdtemp, rm, writeFile, access } from "node:fs/promises";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
+import { downloadPulseZip } from "@/lib/pulse-public-download";
 
 const execFileAsync = promisify(execFile);
 
@@ -32,179 +34,12 @@ function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function isHttpUrl(value: string): boolean {
+function isHttpsUrl(value: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
+    return url.protocol === "https:";
   } catch {
     return false;
-  }
-}
-
-function normaliseDownloadUrl(value: string): string {
-  const url = new URL(value);
-
-  // A GitHub "blob" URL is a page, not the file itself.
-  if (
-    url.hostname.toLowerCase() === "github.com" &&
-    url.pathname.includes("/blob/")
-  ) {
-    const parts = url.pathname.split("/").filter(Boolean);
-    const blobIndex = parts.indexOf("blob");
-
-    if (blobIndex >= 2 && parts.length > blobIndex + 2) {
-      const owner = parts[0];
-      const repo = parts[1];
-      const ref = parts[blobIndex + 1];
-      const filePath = parts.slice(blobIndex + 2).join("/");
-
-      return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${filePath}`;
-    }
-  }
-
-  return value;
-}
-
-async function downloadZip(sourceUrl: string, destination: string) {
-  const normalisedUrl = normaliseDownloadUrl(sourceUrl);
-  const parsed = new URL(normalisedUrl);
-  const isGitHubReleaseAsset =
-    parsed.hostname.toLowerCase() === "github.com" &&
-    parsed.pathname.includes("/releases/download/");
-
-  let downloadUrl = normalisedUrl;
-  let requestHeaders: Record<string, string> = {
-    "User-Agent": "Playtested-PULSE/1.0",
-    Accept: "application/zip, application/octet-stream, */*",
-  };
-
-  /*
-    For GitHub Release assets, resolve the exact asset through GitHub's public
-    Releases API first. This avoids relying on the browser-facing
-    /releases/download/... route, which was returning 404 to the local
-    server process even though the same public asset downloaded in a browser.
-  */
-  if (isGitHubReleaseAsset) {
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    const releasesIndex = parts.indexOf("releases");
-    const downloadIndex = parts.indexOf("download");
-
-    if (
-      releasesIndex !== 2 ||
-      downloadIndex !== 3 ||
-      parts.length < 6 ||
-      !parts[0] ||
-      !parts[1] ||
-      !parts[4] ||
-      !parts[5]
-    ) {
-      throw new Error("PULSE could not parse the GitHub Release asset URL.");
-    }
-
-    const owner = decodeURIComponent(parts[0]);
-    const repo = decodeURIComponent(parts[1]);
-    const tag = decodeURIComponent(parts[4]);
-    const assetName = decodeURIComponent(parts.slice(5).join("/"));
-    const releaseApiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases/tags/${encodeURIComponent(tag)}`;
-
-    const releaseResponse = await fetch(releaseApiUrl, {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        "User-Agent": "Playtested-PULSE/1.0",
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-
-    if (!releaseResponse.ok) {
-      throw new Error(
-        `PULSE could not resolve the GitHub Release through the GitHub API (HTTP ${releaseResponse.status}).`
-      );
-    }
-
-    const release = (await releaseResponse.json()) as {
-      assets?: Array<{
-        name?: string;
-        url?: string;
-        browser_download_url?: string;
-      }>;
-    };
-
-    const asset = Array.isArray(release.assets)
-      ? release.assets.find((item) => item.name === assetName)
-      : undefined;
-
-    if (!asset?.url) {
-      const availableAssets = Array.isArray(release.assets)
-        ? release.assets
-            .map((item) => item.name)
-            .filter((name): name is string => Boolean(name))
-            .join(", ")
-        : "";
-
-      throw new Error(
-        availableAssets
-          ? `PULSE found the GitHub Release, but not the requested asset. Available assets: ${availableAssets}`
-          : "PULSE found the GitHub Release, but it contains no downloadable assets."
-      );
-    }
-
-    downloadUrl = asset.url;
-    requestHeaders = {
-      "User-Agent": "Playtested-PULSE/1.0",
-      Accept: "application/octet-stream",
-      "X-GitHub-Api-Version": "2022-11-28",
-    };
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120_000);
-
-  try {
-    const response = await fetch(downloadUrl, {
-      method: "GET",
-      redirect: "follow",
-      cache: "no-store",
-      signal: controller.signal,
-      headers: requestHeaders,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        isGitHubReleaseAsset
-          ? `PULSE resolved the GitHub Release asset, but GitHub could not deliver it (HTTP ${response.status}).`
-          : `PULSE could not download the submitted build (HTTP ${response.status}).`
-      );
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-
-    if (buffer.length === 0) {
-      throw new Error("The submitted build downloaded as an empty file.");
-    }
-
-    if (buffer.length > 500 * 1024 * 1024) {
-      throw new Error(
-        "The submitted build is larger than the 500 MB PULSE limit."
-      );
-    }
-
-    if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
-      const contentType = response.headers.get("content-type") ?? "unknown";
-      throw new Error(
-        `The submitted build response was not a ZIP file (${contentType}).`
-      );
-    }
-
-    await writeFile(destination, buffer);
-
-    return {
-      bytes: buffer.length,
-      finalUrl: response.url || downloadUrl,
-    };
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -226,8 +61,11 @@ type SecurityScanResult = {
 };
 
 async function sha256File(filePath: string): Promise<string> {
-  const buffer = await readFile(filePath);
-  return createHash("sha256").update(buffer).digest("hex");
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+  }
+  return hash.digest("hex");
 }
 
 function getClamScanPath(): string {
@@ -1005,7 +843,7 @@ export async function POST(request: NextRequest) {
       queuedBuildUrl
     ).trim();
 
-    if (!sourceUrl || !isHttpUrl(sourceUrl)) {
+    if (!sourceUrl || !isHttpsUrl(sourceUrl)) {
       return NextResponse.json(
         {
           success: false,
@@ -1020,7 +858,7 @@ export async function POST(request: NextRequest) {
 
     temporaryDirectory = await mkdtemp(join(tmpdir(), "playtested-pulse-"));
     const zipPath = join(temporaryDirectory, "submitted-build.zip");
-    const download = await downloadZip(sourceUrl, zipPath);
+    const download = await downloadPulseZip(sourceUrl, zipPath);
 
     await updatePulseJob("SECURITY_SCAN");
 
