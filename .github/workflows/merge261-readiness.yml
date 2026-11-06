@@ -1,0 +1,68 @@
+name: Merge 26.1 release readiness
+on:
+  pull_request:
+    branches: [v11]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-public-placeholder
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript and changed-code lint baseline
+        run: |
+          npx tsc --noEmit
+          node tests/test-m261-lint.mjs
+      - name: SQL guards, API security and realistic catalogue volume
+        run: |
+          node tests/test-m261-rules.mjs
+          node tests/test-m261-api.mjs
+          node tests/test-m261-migration-guards.mjs
+          node tests/test-m261-recovery-verifier.mjs
+          node tests/test-m261-export-probe.mjs
+          node tests/test-m261-catalogue-volume.mjs
+      - name: Existing release-critical regressions
+        run: |
+          node tests/test-game-screenshots.mjs
+          node tests/test-proxy-origin.mjs
+          node tests/test-submission-corrections.mjs --listings
+          node tests/test-developer-workspace.mjs --server-only
+          node tests/test-merge26-pc.mjs
+          node tests/test-merge26-48-hours.mjs
+          node tests/test-merge26-privacy-controls.mjs
+          node tests/test-merge26-tester-identity.mjs
+          node tests/test-merge26-feedback-approval.mjs
+          node tests/test-merge26-availability.mjs
+          node tests/test-merge26-security.mjs
+          node tests/test-notification-routing.mjs
+      - name: Production build
+        run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Local components and full admin mobile/zoom regressions
+        run: node tests/run-m261-browser.mjs
+      - name: Analytics reporting definitions and diagnostic panel
+        run: |
+          node tests/test-admin-game-activity-metrics.mjs
+          node tests/test-admin-game-metrics-browser.mjs
+      - name: Preserve measured evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: merge261-readiness-${{ github.sha }}
+          path: |
+            docs/performance/MERGE-26-1-*.json
+            .backup-tools/m261-readiness/browser-server.log
+          retention-days: 7

@@ -3,12 +3,12 @@
 import {assessmentLabel} from "../../lib/review-labels";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
+import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
-import {publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
+import {publicProfileClient,publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -338,78 +338,58 @@ function gameHref(game:CatalogueGame){
   return game.isImportedSteam&&!game.hasPlaytestedProfile ? game.gameLink : game.isSubmission ? `/submissions/${game.key}` : `/games/${game.slug}`;
 }
 
+type CataloguePage={games:CatalogueGame[];total:number};
+const pages=publicRequestCache<CataloguePage>();
+const receptionCache=publicRequestCache<CommunityReceptionRow[]>(30000,1);
+let previousView={search:"",genre:"All genres",verificationFilter:"All verification statuses",aiType:"All AI types",includeNsfw:false,sort:"Featured",page:1};
 export default function GameCatalogue() {
   const [density, setDensity] = useState<"compact" | "comfortable">("compact");
 
-  const [search, setSearch] = useState("");
-  const [genre, setGenre] = useState("All genres");
-  const [verificationFilter, setVerificationFilter] = useState(
-    "All verification statuses"
-  );
-  const [aiType, setAiType] = useState("All AI types");
-  const [includeNsfw, setIncludeNsfw] = useState(false);
-  const [sort, setSort] = useState("Featured");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(previousView.search);
+  const [genre, setGenre] = useState(previousView.genre);
+  const [verificationFilter, setVerificationFilter] = useState(previousView.verificationFilter);
+  const [aiType, setAiType] = useState(previousView.aiType);
+  const [includeNsfw, setIncludeNsfw] = useState(previousView.includeNsfw);
+  const [sort, setSort] = useState(previousView.sort);
+  const [page, setPage] = useState(previousView.page);
 
   const [games, setGames] = useState<CatalogueGame[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [attempt,setAttempt]=useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadGames() {
-      const supabase = createClient();
+    previousView={search,genre,verificationFilter,aiType,includeNsfw,sort,page};
+    let prefetchTimer:number|undefined;
+    const argsFor=(number:number)=>({p_page:number,p_page_size:PAGE_SIZE,p_search:search.trim(),p_genre:genre,p_verification:verificationFilter,p_ai_type:aiType,p_include_nsfw:includeNsfw,p_sort:sort});
+    const keyFor=(number:number)=>JSON.stringify(argsFor(number));
+    async function fetchPage(pageNumber:number):Promise<CataloguePage> {
+      return pages.get(keyFor(pageNumber),async()=>{
+      const supabase = publicProfileClient();
 
-      setLoaded(false);
-      setLoadError(false);
 
       const [catalogueResult, receptionResult] = await Promise.all([
-        supabase.rpc("get_public_catalogue", {
-          p_page: page,
-          p_page_size: PAGE_SIZE,
-          p_search: search.trim(),
-          p_genre: genre,
-          p_verification: verificationFilter,
-          p_ai_type: aiType,
-          p_include_nsfw: includeNsfw,
-          p_sort: sort,
-        }),
-        supabase.rpc("get_game_community_reception"),
+        supabase.rpc("get_public_catalogue",argsFor(pageNumber)),
+        receptionCache.get('public',async()=>{const r=await supabase.rpc("get_game_community_reception");if(r.error)throw r.error;return (r.data??[]) as CommunityReceptionRow[];}).then(data=>({data,error:null})).catch(error=>({data:[] as CommunityReceptionRow[],error})),
       ]);
 
-      if (cancelled) return;
-
-      if (catalogueResult.error) {
-        console.error("Could not load public catalogue:", catalogueResult.error);
-        setGames([]);
-        setTotalCount(0);
-        setLoadError(true);
-        setLoaded(true);
-        return;
-      }
+      if(catalogueResult.error)throw new Error("Public catalogue unavailable");
 
       if (receptionResult.error) {
         console.error("Could not load community reception:", receptionResult.error);
       }
 
       const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
-      const publicLinks=await publicLinkedImportedIds(rows.filter(row=>row.source_type==="steam").map(row=>row.game_id));
-      if(cancelled)return;
-      const recruiting = new Set<string>();
-      if(rows.length){
-        try{
-          const result=await supabase.rpc("get_public_recruitment",{p_games:rows.map(row=>({source_type:row.source_type,game_id:row.game_id}))});
-          if(cancelled)return;
-          if(result.error||!Array.isArray(result.data))console.warn("Catalogue recruitment summary unavailable",{rpc:"get_public_recruitment",code:result.error?.code||"invalid_response"});
-          else for(const row of result.data)if(row.recruiting===true)recruiting.add(`${row.source_type}:${row.game_id}`);
-        }catch{console.warn("Catalogue recruitment summary unavailable",{rpc:"get_public_recruitment",code:"request_failed"});}
-      }
-      if(cancelled)return;
-      const listingChanges=await listingUpdates(supabase,rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id})));
-      const intentData=await publicIntentCounts(supabase,rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id})));
-      if(cancelled)return;
+      const gameKeys=rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id}));
+      const [publicLinks,recruitment,listingChanges,intentData]=await Promise.all([
+        publicLinkedImportedIds(rows.filter(row=>row.source_type==="steam").map(row=>row.game_id),supabase),
+        rows.length?supabase.rpc("get_public_recruitment",{p_games:rows.map(row=>({source_type:row.source_type,game_id:row.game_id}))}).then(r=>r.error?[]:r.data??[]):Promise.resolve([]),
+        listingUpdates(supabase,gameKeys),publicIntentCounts(supabase,gameKeys),
+      ]);
+      const recruiting=new Set<string>((recruitment as {source_type:string;game_id:string;recruiting:boolean}[]).filter(r=>r.recruiting).map(r=>r.source_type+':'+r.game_id));
       const receptionRows = (receptionResult.data ?? []) as CommunityReceptionRow[];
 
       const receptionByImportedGame = new Map<string, CommunityReception>();
@@ -478,23 +458,34 @@ export default function GameCatalogue() {
         };
       });
 
-      setGames(mappedGames);
-      setTotalCount(
-        rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0
-      );
-      setLoaded(true);
+      return {games:mappedGames,total:rows.length?Number(rows[0].total_count??0):0};
+      });
+    }
+    async function loadGames(){
+      setLoadError(false);
+      const hit=pages.peek(keyFor(page));
+      if(!hit)setLoaded(false);
+      try{
+        const result=hit||await fetchPage(page);
+        if(cancelled)return;
+        setGames(result.games);setTotalCount(result.total);setLoaded(true);
+        if(page*PAGE_SIZE<result.total&&mayPrefetchPublicPage()){
+          prefetchTimer=window.setTimeout(()=>{void fetchPage(page+1).catch(()=>{});},400);
+        }
+      }catch{if(!cancelled){setLoadError(true);setLoaded(true);}}
     }
 
     const timer = window.setTimeout(
       () => {
         void loadGames();
       },
-      search.trim() ? 250 : 0
+      pages.peek(keyFor(page)) ? 0 : search.trim() ? 250 : 0
     );
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      window.clearTimeout(prefetchTimer);
     };
   }, [
     page,
@@ -504,6 +495,7 @@ export default function GameCatalogue() {
     aiType,
     includeNsfw,
     sort,
+    attempt,
   ]);
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -679,14 +671,13 @@ export default function GameCatalogue() {
 
         {loadError && (
           <p className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4 text-sm text-amber-100">
-            The catalogue could not be loaded. Please try again. Check the
-            browser console for details if the problem continues.
+            The requested catalogue results could not be loaded. Previously loaded results may remain visible. <button type="button" className="underline" onClick={()=>setAttempt(n=>n+1)}>Retry catalogue</button>
           </p>
         )}
 
         {games.length > 0 ? (
           <div data-catalogue-density={density} className={`grid ${density === "compact" ? "gap-4" : "gap-6"}`} style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${density === "compact" ? "240px" : "330px"}), 1fr))` }}>
-            {games.map((game) => (
+            {games.filter(game=>includeNsfw||!game.isNsfw).map((game) => (
               <GameCardContent
                 key={game.key}
                 game={game}

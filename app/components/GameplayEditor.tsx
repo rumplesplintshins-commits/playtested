@@ -50,5 +50,5 @@ export default function GameplayEditor({ id, admin = false, catalogueThumbnail }
     {!ready && message && <button onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry footage</button>}
     {ready && <form onSubmit={save} className="mt-4"><label className="text-sm">Gameplay video link<input type="url" maxLength={500} value={url} onChange={e => setUrl(e.target.value)} disabled={busy} className="mt-2 block w-full rounded border border-white/20 bg-[#101310] p-3" /></label><p className="mt-2 text-xs text-zinc-400">Clear the link and save to remove footage.</p><button disabled={busy} className="mt-3 rounded border border-emerald-300/40 px-4 py-2 text-sm">{busy ? "Saving…" : "Save gameplay footage"}</button></form>}
     {message && <p role="status" className="mt-3 text-sm">{message}</p>}
-  </section><ScreenshotManager id={id} management /></>;
+  </section><ScreenshotManager key={id} id={id} management /></>;
 }

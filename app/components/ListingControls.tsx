@@ -20,8 +20,8 @@ export default function ListingControls({id,kind="submission",title,approved=fal
   }catch(e){const message=e instanceof Error?e.message:"Listing change failed. Please retry.";setError(message);showToast(message,"error");}finally{lock.current=false;setBusy(false);}
  }
  if(value?.deleted)return <p role="status" className="my-4 rounded border border-white/10 p-4">Submission deleted.</p>;
- return <section aria-label="Listing visibility" className="my-4 rounded-xl border border-white/10 p-4 text-sm">
-  <h3 className="font-semibold">Listing visibility</h3>
+ return <section aria-label="Publication & test controls" className="my-4 rounded-xl border border-white/10 p-4 text-sm">
+  <h3 className="font-semibold">Publication &amp; test controls</h3><p className="mt-2 leading-6 text-zinc-400">Archive / unpublish hides a listing and stops new public testing while preserving history. Delete unapproved submission permanently removes only an eligible record without dependent history, after confirmation. Admin Test / Demo excludes a listing from public discovery and genuine analytics; it does not delete it.</p>
   {!value&&!error&&<p role="status" className="mt-2">Loading listing controls…</p>}
   {error&&<p role="alert" className="mt-2 text-amber-200">{error}</p>}
   {value&&<><p className="mt-2 text-zinc-400">{value.archived?"Archived: hidden from the public catalogue and new public testing. Your private feedback and history remain available.":"Existing review and publication rules apply."}{value.is_admin_test&&" Admin Test / Demo: excluded from public listings, ratings and genuine acquisition totals."}</p>
