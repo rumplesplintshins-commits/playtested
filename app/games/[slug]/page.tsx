@@ -3,8 +3,11 @@ import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
+import PublicGameGuides from "@/app/components/PublicGameGuides";
 import {notFound} from "next/navigation";
+import Link from "next/link";
 import {publicLinkedImportedIds} from "@/lib/public-profile-links";
+import {serializeJsonLd,videoGameStructuredData} from "@/lib/seo";
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;
   if(!slug.startsWith("steam-"))notFound();
@@ -171,9 +174,9 @@ export default async function GamePage({
           <ShareJourneyBanner />
           <section className="mx-auto max-w-6xl px-6 py-20">
             <h1 className="text-3xl font-bold">Game not found</h1>
-            <a href="/" className="mt-6 inline-block text-[#77f29b]">
+            <Link href="/" className="mt-6 inline-block text-[#77f29b]">
               Back to Game Discovery
-            </a>
+            </Link>
           </section>
         </main>
       );
@@ -211,12 +214,12 @@ export default async function GamePage({
               relationship is established.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
+              <Link
                 href="/"
                 className="rounded-md border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/[0.04]"
               >
                 Back to Game Discovery
-              </a>
+              </Link>
               {importedGame.steam_url && (
                 <TrackedAccessLink
                   href={importedGame.steam_url}
@@ -543,6 +546,7 @@ export default async function GamePage({
       <main className="min-h-screen bg-[#090b0a] text-zinc-100">
         <SiteHeader />
           <ShareJourneyBanner />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(videoGameStructuredData({name:importedGame.title||"Untitled game",path:`/games/steam-${steamAppId}`,description:importedGame.description,genre:importedGame.genre,image:importedGame.image_url}))}} />
 
         {intentData===null&&<p role="alert" className="mx-auto max-w-6xl px-6 py-4 text-sm text-amber-200">Public playtest reporting is unavailable. Please try again later.</p>}
         <section className="border-b border-white/[0.08] bg-gradient-to-br from-[#14251b] via-[#0c100d] to-[#090b0a]">
@@ -590,12 +594,12 @@ export default async function GamePage({
                       View Steam page ↗
                     </TrackedAccessLink>
                   )}
-                  <a
+                  <Link
                     href="/"
                     className="rounded-md border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/[0.04]"
                   >
                     Back to catalogue
-                  </a>
+                  </Link>
                 </div>
               </div>
 
@@ -1107,6 +1111,7 @@ export default async function GamePage({
           PLAYTESTED_ · Game information sourced from the catalogue. Playtested
           activity reflects activity recorded on Playtested.
         </p>
+        <PublicGameGuides />
       </main>
     );
   }
@@ -1120,9 +1125,9 @@ export default async function GamePage({
           <ShareJourneyBanner />
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h1 className="text-3xl font-bold">Game not found</h1>
-          <a href="/" className="mt-6 inline-block text-[#77f29b]">
+          <Link href="/" className="mt-6 inline-block text-[#77f29b]">
             Back to Game Discovery
-          </a>
+          </Link>
         </section>
       </main>
     );

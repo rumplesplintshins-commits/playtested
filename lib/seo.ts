@@ -13,6 +13,19 @@ export function publicMetadata(title:string,description:string,path:string):Meta
   };
 }
 
+export function videoGameStructuredData({name,path,description,genre,image}:{name:string;path:string;description:string|null;genre:string|null;image:string|null}) {
+  const data:Record<string,string>={"@context":"https://schema.org","@type":"VideoGame",name,url:new URL(path,SITE_ORIGIN).href};
+  if(description?.trim())data.description=description.trim();
+  if(genre?.trim())data.genre=genre.trim();
+  if(image){
+    try{
+      const imageUrl=new URL(image);
+      if(imageUrl.protocol==="https:"&&!imageUrl.username&&!imageUrl.password)data.image=imageUrl.href;
+    }catch{}
+  }
+  return data;
+}
+
 export function noIndexPath(path:string) {
   return /^\/(?:login|forgot-password|reset-password|auth|account|my-submissions|submit|tester|admin|library|share|playtest|demo-games)(?:\/|$)/.test(path);
 }
