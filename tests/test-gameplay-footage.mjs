@@ -8,7 +8,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 const model={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/gameplay-video.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(model);
 const require=createRequire(import.meta.url),component={},poster={};
 new Function('exports','require',ts.transpileModule(fs.readFileSync('app/components/VideoPoster.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(poster,require);
-new Function('exports','require',ts.transpileModule(fs.readFileSync('app/components/GameplayFootage.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(component,name=>name==='@/lib/gameplay-video'?model:name==='./VideoPoster'?poster:require(name));
+new Function('exports','require',ts.transpileModule(fs.readFileSync('app/components/GameplayFootage.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText)(component,name=>name==='@/lib/gameplay-video'?model:name==='./VideoPoster'?poster:name==='./GameplayVideoPlayer'?{}:require(name));
 for(const url of ['https://youtu.be/abcdefghijk','https://vimeo.com/123456','https://drive.google.com/file/d/abcdefghijk/view']){
  const video=model.gameplayVideo(url),markup=renderToStaticMarkup(createElement(component.default,{url}));
  assert(markup.includes(`Play ${video.provider} gameplay video`));assert(markup.includes('Open video in new tab'));

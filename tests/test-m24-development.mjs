@@ -159,7 +159,7 @@ try{
  await expect(adminPage.locator('iframe[src*="youtube"]')).toHaveCount(0);
  await adminPage.route('https://www.youtube-nocookie.com/**',route=>route.abort());
  await adminPage.getByRole('button',{name:'Play YouTube gameplay video'}).click();
- await expect(adminPage.locator('iframe[title="YouTube gameplay footage"]')).toHaveAttribute('src','https://www.youtube-nocookie.com/embed/abcdefghijk');
+ await expect(adminPage.locator('iframe[title="YouTube gameplay footage"]')).toHaveAttribute('src','https://www.youtube-nocookie.com/embed/abcdefghijk?enablejsapi=1&controls=0&playsinline=1');
  await adminPage.getByRole('button',{name:'Close player'}).click();
  for(const width of [390,1280]){await adminPage.setViewportSize({width,height:900});assert(await adminPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`Admin reflow ${width}`);}
  await adminPage.goto(origin+'/admin/analytics');await expect(adminPage.getByRole('heading',{name:'Submission conversions · last 30 days'})).toBeVisible();

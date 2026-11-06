@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import VideoPoster from "./VideoPoster";
+import GameplayVideoPlayer from "./GameplayVideoPlayer";
 import { gameplayVideo, type GameplayVideo } from "@/lib/gameplay-video";
 
 export default function GameplayFootage({ url, embedded = false, posterSources = [] }: { url: string; embedded?: boolean; posterSources?: string[] }) {
@@ -20,6 +21,11 @@ function GameplayPlayer({ video, embedded, posterSources }: { video: GameplayVid
   }, [phase]);
   function play() { setSlow(false); setPhase("loading"); }
   const Heading = embedded ? "h3" : "h2";
+
+  // YouTube uses a custom player with the IFrame Player API; Vimeo and Google Drive
+  // keep their native player controls as they do not expose equivalent APIs.
+  const isYouTube = video.provider === "YouTube";
+
   return <section className={embedded ? "min-w-0" : "my-5 min-w-0 rounded-xl border border-white/10 p-4 sm:p-5"}>
     <Heading className="text-lg font-semibold">Gameplay Footage</Heading>
     <p className="mt-2 text-sm leading-6 text-zinc-400">Hosted by {video.provider}. Clicking Play loads its player and shares connection information with that provider under its privacy terms. Start playback in the player; videos do not autoplay.</p>
@@ -31,11 +37,10 @@ function GameplayPlayer({ video, embedded, posterSources }: { video: GameplayVid
         <span className="relative z-10"><span className="block text-sm font-semibold text-zinc-100 sm:text-base">Play gameplay video</span><span className="mt-1 hidden text-xs text-zinc-400 sm:block">{video.provider} · Loads only when you choose</span></span>
       </button> : phase === "error" ? <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
         <p role="alert" className="text-sm font-semibold text-amber-200">Video unavailable</p>
-      </div> : <>
-        <iframe src={video.embed} title={`${video.provider} gameplay footage`} className="absolute inset-0 h-full w-full"
-          allow="fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
-          onLoad={() => setPhase(current => current === "loading" ? "ready" : current)} onError={() => setPhase(current => current === "idle" ? current : "error")} />
-      </>}
+      </div> : isYouTube ? <GameplayVideoPlayer videoId={video.videoId ?? ""} /> : <iframe src={video.embed} title={`${video.provider} gameplay footage`} className="absolute inset-0 h-full w-full"
+        allow="fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
+        onLoad={() => setPhase(current => current === "loading" ? "ready" : current)} onError={() => setPhase(current => current === "idle" ? current : "error")} />
+      }
     </div>
     {phase === "loading" && <p role="status" className="mt-2 text-xs text-zinc-400">{slow ? "The video is taking longer than expected. You can open it in a new tab instead." : "Loading video player…"}</p>}
     {phase === "error" && <p className="mt-3 text-sm text-zinc-400">The player could not load. Try again or open the video in a new tab to check its availability and sharing permissions.</p>}
