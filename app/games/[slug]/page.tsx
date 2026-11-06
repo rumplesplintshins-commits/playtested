@@ -4,6 +4,7 @@ import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
 import PublicGameGuides from "@/app/components/PublicGameGuides";
+import GameProfileBreadcrumb from "@/app/components/GameProfileBreadcrumb";
 import {notFound} from "next/navigation";
 import Link from "next/link";
 import {publicLinkedImportedIds} from "@/lib/public-profile-links";
@@ -546,6 +547,10 @@ export default async function GamePage({
       <main className="min-h-screen bg-[#090b0a] text-zinc-100">
         <SiteHeader />
           <ShareJourneyBanner />
+        <GameProfileBreadcrumb
+          name={importedGame.title || "Untitled game"}
+          path={`/games/steam-${steamAppId}`}
+        />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(videoGameStructuredData({name:importedGame.title||"Untitled game",path:`/games/steam-${steamAppId}`,description:importedGame.description,genre:importedGame.genre,image:importedGame.image_url}))}} />
 
         {intentData===null&&<p role="alert" className="mx-auto max-w-6xl px-6 py-4 text-sm text-amber-200">Public playtest reporting is unavailable. Please try again later.</p>}

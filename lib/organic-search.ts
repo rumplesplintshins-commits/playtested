@@ -8,6 +8,13 @@ export const organicPages = [
   { path: "/guides/playtest-feedback", title: "How to Write Useful Playtest Feedback", description: "Use a practical playtest feedback template to describe gameplay, performance and bugs with clear examples, reproduction steps and build context." },
 ] as const;
 
+export function publicContentSitemapEntries() {
+  return [
+    { url: `${organicOrigin}/community` },
+    ...organicPages.map(page => ({ url: organicOrigin + page.path })),
+  ];
+}
+
 export function organicMetadata(path: string): Metadata {
   const page = organicPages.find(page => page.path === path);
   if (!page) throw new Error("Unknown editorial page");

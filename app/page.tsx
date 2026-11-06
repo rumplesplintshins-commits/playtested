@@ -2,14 +2,14 @@
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
-import {SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION,serializeJsonLd} from "../lib/seo";
+import {SITE_ORIGIN,serializeJsonLd,websiteStructuredData} from "../lib/seo";
 export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd({"@context":"https://schema.org","@type":"WebSite",name:"Playtested",alternateName:SITE_TITLE,url:SITE_ORIGIN+"/",description:SITE_DESCRIPTION})}}/>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(websiteStructuredData())}}/>
 
       <section className="mx-auto max-w-7xl px-6 pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-w-3xl">
