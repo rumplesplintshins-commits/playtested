@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-import AdmZip from "adm-zip";
+import { extractPulseZipSafely } from "./pulse-zip-safety.mjs";
 
 import {
 
@@ -407,14 +407,6 @@ const reportPath = join(
   `technical-test-${timestampId}.json`
 
 );
-
-
-
-mkdirSync(extractDirectory, {
-
-  recursive: true,
-
-});
 
 
 
@@ -5862,18 +5854,9 @@ async function main() {
 
 
 
-  const zip =
-
-    new AdmZip(zipPath);
-
-
-
-  zip.extractAllTo(
-
-    extractDirectory,
-
-    true
-
+  const extraction = extractPulseZipSafely(zipPath, extractDirectory);
+  console.log(
+    `Validated and extracted ${extraction.entries} ZIP entries (${extraction.expandedBytes} bytes).`
   );
 
 
@@ -7191,4 +7174,3 @@ main()
     }
 
   });
-
