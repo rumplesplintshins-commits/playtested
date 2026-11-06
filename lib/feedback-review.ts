@@ -22,6 +22,8 @@ export type FeedbackReviewItem = {
   context: { title: string; build: string | null; instructions: string | null; focus_areas: string[] } | null;
   report: FeedbackQualityRecord & {
     id: string;
+    submitted_at?:string|null;
+    reviewed_at?:string|null;
     tester_id: string;
     feedback_usefulness?: string|null;
     status: string;
