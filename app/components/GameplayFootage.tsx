@@ -33,7 +33,7 @@ function GameplayPlayer({ video, embedded, posterSources }: { video: GameplayVid
         <p role="alert" className="text-sm font-semibold text-amber-200">Video unavailable</p>
       </div> : <>
         <iframe src={video.embed} title={`${video.provider} gameplay footage`} className="absolute inset-0 h-full w-full"
-          allow="fullscreen; picture-in-picture" referrerPolicy="no-referrer" allowFullScreen
+          allow="fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
           onLoad={() => setPhase(current => current === "loading" ? "ready" : current)} onError={() => setPhase(current => current === "idle" ? current : "error")} />
       </>}
     </div>
