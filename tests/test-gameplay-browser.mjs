@@ -10,7 +10,7 @@ const service=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPA
 const fixtures=JSON.parse(fs.readFileSync('technical-test-results/m24-development-fixtures.json','utf8'));
 const must=(result,label)=>{assert(!result.error,`${label} failed (${result.error?.code||result.error?.status||'unknown'})`);return result.data;};
 const providers=[
- {provider:'YouTube',url:'https://www.youtube.com/watch?v=abcdefghijk',embed:'https://www.youtube-nocookie.com/embed/abcdefghijk'},
+ {provider:'YouTube',url:'https://www.youtube.com/watch?v=abcdefghijk',embed:'https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1'},
  {provider:'Vimeo',url:'https://vimeo.com/123456',embed:'https://player.vimeo.com/video/123456?dnt=1'},
  {provider:'Google Drive',url:'https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/view',embed:'https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/preview'},
 ];
