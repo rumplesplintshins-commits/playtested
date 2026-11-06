@@ -64,6 +64,13 @@ try {
   await page.getByRole("heading", { name: "Mock Adventure" }).waitFor();
   await page.waitForTimeout(800);
   assert.equal(mock.getCatalogueCalls(), 1, "client hydration must reuse the server page without another catalogue RPC");
+  const gameCard = page.locator("#discover-games article").filter({ hasText: "Mock Adventure" });
+  assert.equal(await gameCard.getByRole("link", { name: "View Mock Adventure details" }).getAttribute("href"), "/games/steam-912345");
+  assert.equal(await gameCard.getByRole("link", { name: "Mock Adventure", exact: true }).getAttribute("href"), "/games/steam-912345");
+  const steamLink = gameCard.getByRole("link", { name: /View Steam page/ });
+  assert.equal(await steamLink.getAttribute("href"), "https://store.steampowered.com/app/912345/");
+  assert.equal(await steamLink.getAttribute("target"), "_blank");
+  assert.equal(await steamLink.getAttribute("rel"), "noopener noreferrer");
 
   for (const width of [320, 390, 853, 1280]) {
     await page.setViewportSize({ width, height: 900 });

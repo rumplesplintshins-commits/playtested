@@ -78,8 +78,13 @@ try {
  await expect(page.locator('article')).toHaveCount(12);
  const rail=page.locator('article').filter({hasText:'Rail Estate'}),profile=page.locator('article').filter({has:page.locator('a[href="/games/steam-456"]')});
  await expect(rail.locator('a')).toHaveCount(3);
- for(const a of await rail.locator('a').all()){await expect(a).toHaveAttribute('href','https://store.steampowered.com/app/3762240/');await expect(a).toHaveAttribute('target','_blank');await expect(a).toHaveAttribute('rel','noopener noreferrer');}
- await expect(rail.getByRole('link',{name:/View Steam page/})).toBeVisible();
+ await expect(rail.getByRole('link',{name:'View Rail Estate details'})).toHaveAttribute('href','/games/steam-3762240');
+ await expect(rail.getByRole('link',{name:'Rail Estate',exact:true})).toHaveAttribute('href','/games/steam-3762240');
+ const steamLink=rail.getByRole('link',{name:/View Steam page/});
+ await expect(steamLink).toHaveAttribute('href','https://store.steampowered.com/app/3762240/');
+ await expect(steamLink).toHaveAttribute('target','_blank');
+ await expect(steamLink).toHaveAttribute('rel','noopener noreferrer');
+ await expect(steamLink).toBeVisible();
  await rail.getByRole('link',{name:'Rail Estate',exact:true}).focus();await expect(rail.getByRole('link',{name:'Rail Estate',exact:true})).toBeFocused();
  await expect(page.locator('article').nth(9).getByRole('link',{name:/View Steam page/})).toHaveAttribute('href','https://store.steampowered.com/app/789/');
  await expect(profile.getByRole('link',{name:'View game details'})).toHaveAttribute('href','/games/steam-456');
