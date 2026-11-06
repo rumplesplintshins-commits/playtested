@@ -1,5 +1,7 @@
 # Merge 26.1 production deployment checklist
 
+Final approval-controlled runbook: [final pre-release audit](MERGE-26-1-FINAL-PRE-RELEASE-AUDIT.md). It records current CI/production evidence, per-migration idempotence, locally prepared atomic-ledger files, Copilot/Cline isolation, Render/manual verification, smoke tests and rollback decision tree. Recommendation is CONDITIONAL GO; no production operation is authorised yet.
+
 **Not executed. Owner approval required before production writes, merge or Render deployment.** Target PR base `v11`; branch `codex/merge-26-1-performance`, based on `1c85227`. Merge 27 stays independent.
 
 Current gate assessment: [completed independent backup verification](MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md). The fresh6November database export and126/126 Storage files pass integrity/coverage and consistency checks. The old dump is historical. Full isolated restoration remains Not Run; preserve the deferral and other recovery limitations explicitly. Reconcile freshness/Storage and obtain release approval before production writes.

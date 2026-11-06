@@ -1,5 +1,7 @@
 # Merge 26.1 — Performance & UX Optimisation
 
+Final pre-release audit6November: PR29 up to date/mergeable to v11, latest CI passing, read-only production fingerprints unchanged and128–131 pending; backup/data/Storage/ACL rechecks pass. Four atomic-ledger release files prepared/tested only locally. CONDITIONAL GO with explicit release approval, restore-deferral/freshness conditions and revalidation if Copilot/Cline changes land first; no edits to their worktrees and no production writes. See `docs/MERGE-26-1-FINAL-PRE-RELEASE-AUDIT.md`.
+
 Latest6November recovery result: fresh operator export at00:42–00:43UTC independently passes hashes/full decode, current schema/security/migration coverage, Auth/application counts and consistency with126 rehashed Storage files. The missing-current-database blocker is cleared. Full isolated restore remains Not Run: installed Windows PostgreSQL lacks required Supabase Vault/cron extensions. No production writes/migrations/merge/deployment; explicit release approval still required. See `docs/MERGE-26-1-COMPLETED-BACKUP-VERIFICATION.md`; earlier blocked notes below are historical.
 
 Baseline-probe follow-up: current read-only management query confirms17.11 and both required schema objects. Failed operator run saved no baseline JSON, so its historical failed field is unknown. Probe now explicitly enforces a read-only transaction, saves per-condition diagnostics and retains all schema/version checks. PowerShell5.1 and isolated PostgreSQL tests pass; production export/restore remains unverified and release NO-GO.
