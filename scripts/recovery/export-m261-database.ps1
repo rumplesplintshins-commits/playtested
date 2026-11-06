@@ -3,6 +3,29 @@ param(
     [string]$PostgresBin='C:\Program Files\PostgreSQL\17\bin',
     [switch]$Execute
 )
+function ConvertFrom-M261ConnectionUrl {
+    param([AllowNull()][AllowEmptyString()][string]$ConnectionText)
+    $invalid='Enter a complete PostgreSQL connection URL with a username and password. Percent-encode reserved password characters; do not include surrounding quotes.'
+    if([string]::IsNullOrWhiteSpace($ConnectionText)){throw 'No connection URL entered. Nothing was exported.'}
+    $text=$ConnectionText.Trim()
+    [Uri]$parsed=$null
+    if($text -match '\s|%(?![0-9a-fA-F]{2})' -or -not [Uri]::TryCreate($text,[UriKind]::Absolute,[ref]$parsed) -or $null -eq $parsed){throw $invalid}
+    if($parsed.Scheme -notin @('postgres','postgresql') -or [string]::IsNullOrWhiteSpace($parsed.Host) -or $parsed.Fragment){throw $invalid}
+    $info=$parsed.UserInfo
+    if([string]::IsNullOrEmpty($info) -or $info -match '%(?![0-9a-fA-F]{2})'){throw $invalid}
+    # Split at the first literal colon explicitly; avoid PowerShell5.1 overload binding.
+    $separator=$info.IndexOf([char]':')
+    if($separator -le 0 -or $separator -ge ($info.Length-1)){throw $invalid}
+    $username=[Uri]::UnescapeDataString($info.Substring(0,$separator))
+    $password=[Uri]::UnescapeDataString($info.Substring($separator+1))
+    if([string]::IsNullOrWhiteSpace($username) -or [string]::IsNullOrEmpty($password) -or $username -match '[\x00-\x1f\x7f]' -or $password -match '[\x00-\x1f\x7f]'){throw $invalid}
+    $database=[Uri]::UnescapeDataString($parsed.AbsolutePath.TrimStart('/'))
+    $port=if($parsed.Port -gt 0){$parsed.Port}else{5432}
+    $direct=$parsed.Host -eq 'db.qtcmzckdhgahuqqilmzj.supabase.co' -and $username -eq 'postgres'
+    $session=$parsed.Host.EndsWith('.pooler.supabase.com') -and $username -eq 'postgres.qtcmzckdhgahuqqilmzj'
+    if((-not($direct -or $session)) -or $port -ne 5432 -or $database -ne 'postgres'){throw 'Wrong production project, database or pooling mode. Use direct/session port5432.'}
+    return @{Host=$parsed.Host;Port=$port;Username=$username;Password=$password;Database=$database}
+}
 $ErrorActionPreference='Stop'
 $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')).TrimEnd('\')
 $destination=[IO.Path]::GetFullPath($OutputDirectory).TrimEnd('\')
@@ -10,21 +33,18 @@ if($destination.Equals($repo,[StringComparison]::OrdinalIgnoreCase) -or $destina
 if(Test-Path -LiteralPath $destination){throw 'Destination exists; nothing will be overwritten.'}
 foreach($tool in @('psql.exe','pg_dump.exe','pg_dumpall.exe','pg_restore.exe')){if(-not(Test-Path -LiteralPath (Join-Path $PostgresBin $tool))){throw ('Missing PostgreSQL tool: '+$tool)}}
 if(-not $Execute){Write-Output 'Preview: hidden existing production connection, read-only source probe, consistent custom export, password-free roles, archive list/full decode and coverage manifest. No files, credentials or connections accessed.';return}
-$secret=Read-Host 'Existing production PostgreSQL connection URL (hidden; do not paste into chat)' -AsSecureString
-$pointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+$secret=$null;$pointer=[IntPtr]::Zero;$connection=$null;$connectionText=$null
 $names=@('PGHOST','PGPORT','PGUSER','PGPASSWORD','PGDATABASE','PGSSLMODE','PGOPTIONS','PGAPPNAME','PGCONNECT_TIMEOUT','PGSERVICE','PGSERVICEFILE','PGPASSFILE')
 $saved=@{};foreach($name in $names){$saved[$name]=[Environment]::GetEnvironmentVariable($name,'Process')}
 try{
-    $uri=[Uri][Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-    $parts=$uri.UserInfo.Split(':',2)
-    if($uri.Scheme -notin @('postgres','postgresql') -or $parts.Count -ne 2){throw 'Expected an existing PostgreSQL connection URL.'}
-    $user=[Uri]::UnescapeDataString($parts[0]);$database=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/'))
-    $port=if($uri.Port -gt 0){$uri.Port}else{5432}
-    $direct=$uri.Host -eq 'db.qtcmzckdhgahuqqilmzj.supabase.co' -and $user -eq 'postgres'
-    $session=$uri.Host.EndsWith('.pooler.supabase.com') -and $user -eq 'postgres.qtcmzckdhgahuqqilmzj'
-    if((-not($direct -or $session)) -or $port -ne 5432 -or $database -ne 'postgres'){throw 'Wrong production project, database or pooling mode. Use direct/session port5432.'}
+    $secret=Read-Host 'Existing production PostgreSQL connection URL (hidden; do not paste into chat)' -AsSecureString
+    if($null -eq $secret -or $secret -isnot [Security.SecureString] -or $secret.Length -eq 0){throw 'No connection URL entered. Nothing was exported.'}
+    $pointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+    $connectionText=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+    $connection=ConvertFrom-M261ConnectionUrl -ConnectionText $connectionText
+    $connectionText=$null
     foreach($name in @('PGSERVICE','PGSERVICEFILE','PGPASSFILE')){[Environment]::SetEnvironmentVariable($name,$null,'Process')}
-    $env:PGHOST=$uri.Host;$env:PGPORT=[string]$port;$env:PGUSER=$user;$env:PGPASSWORD=[Uri]::UnescapeDataString($parts[1]);$env:PGDATABASE=$database
+    $env:PGHOST=$connection.Host;$env:PGPORT=[string]$connection.Port;$env:PGUSER=$connection.Username;$env:PGPASSWORD=$connection.Password;$env:PGDATABASE=$connection.Database
     $env:PGSSLMODE='require';$env:PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=0';$env:PGAPPNAME='m261-readonly-recovery-export';$env:PGCONNECT_TIMEOUT='15'
     New-Item -ItemType Directory -Path $destination | Out-Null
     $acl=Get-Acl -LiteralPath $destination;$acl.SetAccessRuleProtection($true,$false)
@@ -59,6 +79,7 @@ try{
     Write-Output 'Export/list/full decode/required coverage completed. Protected verification.json contains hashes. Independent verification and any agreed isolated restoration remain necessary; this does not authorize release.'
 }finally{
     foreach($name in $names){[Environment]::SetEnvironmentVariable($name,$saved[$name],'Process')}
-    $uri=$null;$parts=$null;$probe=$null
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer);$secret.Dispose()
+    $connection=$null;$connectionText=$null;$probe=$null
+    if($pointer -ne [IntPtr]::Zero){[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)}
+    if($secret -is [Security.SecureString]){$secret.Dispose()}
 }
