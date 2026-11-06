@@ -1,5 +1,7 @@
 # Merge 26.1 final pre-release audit — 6 November 2026
 
+**Update after PR30 deployment:** see [post-PR30 readiness](MERGE-26-1-POST-PR30-READINESS.md). PR29 now includes deployed security commit9334c19. The earlier database freshness clearance below is historical: production has changed since capture, and a fresh verified database export is required before migration approval.
+
 **Recommendation: CONDITIONAL GO for owner-controlled release, not permission to execute.** No production migrations, writes, merge or deployment occurred. The fresh backup coverage blocker is resolved. Conditions are explicit release approval, an unchanged/revalidated production baseline, current recovery/Storage coverage and retention of the documented restore-rehearsal risk. Final compatibility with an unpublished security patch cannot be certified.
 
 ## Candidate, CI and production evidence
