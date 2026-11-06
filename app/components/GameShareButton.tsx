@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SITE_ORIGIN } from "@/lib/seo";
+import { showToast } from "./ToastHost";
 
 type Props = { title: string; path: string };
 
 export default function GameShareButton({ title, path }: Props) {
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
   const root = useRef<HTMLDivElement>(null);
-  const canonicalUrl = `https://playtested.co.uk${path}`;
+  const trigger = useRef<HTMLButtonElement>(null);
+  const link = useRef<HTMLInputElement>(null);
+  const canonicalUrl = `${SITE_ORIGIN}${path}`;
 
   useEffect(() => {
     if (!open) return;
@@ -16,7 +19,11 @@ export default function GameShareButton({ title, path }: Props) {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     }
     function escape(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      const active = document.activeElement;
+      const insideWidget = active instanceof Node && root.current?.contains(active);
+      setOpen(false);
+      if (insideWidget) trigger.current?.focus();
     }
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", escape);
@@ -24,6 +31,15 @@ export default function GameShareButton({ title, path }: Props) {
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("keydown", escape);
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const input = link.current;
+    if (input) {
+      input.focus();
+      input.select();
+    }
   }, [open]);
 
   async function share() {
@@ -36,16 +52,15 @@ export default function GameShareButton({ title, path }: Props) {
         if ((error as DOMException)?.name === "AbortError") return;
       }
     }
-    setMessage("");
     setOpen((value) => !value);
   }
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(canonicalUrl);
-      setMessage("Game link copied");
+      showToast("Game link copied");
     } catch {
-      setMessage("Select and copy the link below");
+      showToast("Copying failed. Select the game link and copy it manually.", "error");
     }
   }
 
@@ -53,6 +68,7 @@ export default function GameShareButton({ title, path }: Props) {
     <div className="relative shrink-0" ref={root}>
       <button
         type="button"
+        ref={trigger}
         onClick={share}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -65,9 +81,8 @@ export default function GameShareButton({ title, path }: Props) {
         <div role="dialog" aria-label={`Share ${title}`} className="absolute right-0 top-full z-30 mt-2 w-[min(19rem,85vw)] rounded-xl border border-white/15 bg-[#141a16] p-4 text-left shadow-2xl">
           <p className="text-sm font-bold text-white">Share this game</p>
           <p className="mt-1 truncate text-xs text-zinc-400">{title}</p>
-          <input aria-label="Game link" readOnly value={canonicalUrl} onFocus={(event) => event.currentTarget.select()} className="mt-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-2 text-xs text-zinc-200" />
+          <input aria-label="Game link" readOnly ref={link} value={canonicalUrl} onFocus={(event) => event.currentTarget.select()} className="mt-3 w-full rounded-md border border-white/15 bg-black/30 px-2 py-2 text-xs text-zinc-200" />
           <button type="button" onClick={copy} className="mt-3 w-full rounded-md bg-[#77f29b] px-3 py-2 text-sm font-bold text-black hover:bg-[#a0f8b9]">Copy game link</button>
-          <p role="status" aria-live="polite" className="mt-2 min-h-4 text-xs text-[#a0f8b9]">{message}</p>
         </div>
       )}
     </div>

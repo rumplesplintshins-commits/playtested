@@ -338,7 +338,7 @@ export default async function SubmissionPage({
             </p>
 
             <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
-              <h1 className="min-w-0 flex-1 break-words font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl">
+              <h1 className="min-w-0 flex-1 break-words font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
                 {game.title}
               </h1>
               <GameShareButton title={game.title || "Untitled game"} path={`/submissions/${id}`} />

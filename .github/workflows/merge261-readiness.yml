@@ -48,11 +48,14 @@ jobs:
           node tests/test-merge26-availability.mjs
           node tests/test-merge26-security.mjs
           node tests/test-notification-routing.mjs
+          node tests/test-game-share.mjs
       - name: Production build
         run: npm run build
       - run: npx playwright install chromium
       - name: Local components and full admin mobile/zoom regressions
         run: node tests/run-m261-browser.mjs
+      - name: Game detail share button regressions
+        run: node tests/test-game-share-browser.mjs
       - name: Analytics reporting definitions and diagnostic panel
         run: |
           node tests/test-admin-game-activity-metrics.mjs
