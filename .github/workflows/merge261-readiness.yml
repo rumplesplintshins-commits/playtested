@@ -53,6 +53,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Local components and full admin mobile/zoom regressions
         run: node tests/run-m261-browser.mjs
+      - name: Analytics reporting definitions and diagnostic panel
+        run: |
+          node tests/test-admin-game-activity-metrics.mjs
+          node tests/test-admin-game-metrics-browser.mjs
       - name: Preserve measured evidence
         if: always()
         uses: actions/upload-artifact@v4
