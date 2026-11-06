@@ -215,15 +215,27 @@ function extractTechnicalRunId(stdout: string): string | null {
    The technical worker is launched with an explicit, minimal environment
    allowlist instead of inheriting `process.env`. Supabase service-role
    credentials, runner secrets and unrelated production secrets are never
-   mounted inside the worker process. The worker itself loads `.env.local`
-   from its working directory when it needs Supabase credentials.
+   passed through the environment. The worker runs in a dedicated temporary
+   working directory so it cannot read `.env.local` from the project root,
+   preventing file-based secret leakage.
 
    Lifecycle: a wall-clock deadline (15 minutes), abort/cancellation and
    unexpected failures all terminate the worker and its descendant
    processes (Playwright/Chromium included) through a process-tree kill.
+   On Linux the child is started in a dedicated POSIX process group
+   (detached: true); SIGTERM is followed by SIGKILL after a short grace
+   period. On Windows, taskkill /F /T /PID terminates the tree.
    `execFile` alone only signals the direct child, which can leave
    grandchildren orphaned on Windows, so the worker is spawned directly
    and its process tree is killed on any non-successful exit path.
+
+   Credential isolation note: the v6.10 worker still requires privileged
+   Supabase access (NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+   to create technical_test_runs and session records. Those credentials are
+   not passed through the worker environment and `.env.local` is not
+   reachable from the worker's CWD, so the worker cannot currently complete
+   a run successfully. This remaining exposure is a documented blocker for
+   running untrusted builds. Do not claim complete credential isolation.
 
    This is a hardening step, not a sandbox. An isolated execution host is
    still required before untrusted game execution is safe to enable.
@@ -236,6 +248,8 @@ const PULSE_WORKER_MAX_BUFFER = 50 * 1024 * 1024;
 // Non-secret variables the technical worker needs from the host environment.
 // The v6.10 worker loads its Supabase credentials from `.env.local` itself,
 // so service-role credentials and runner secrets are deliberately excluded.
+// The worker runs in a separate temp CWD so it cannot read `.env.local` from
+// the project root.
 const PULSE_WORKER_ENV_ALLOWLIST = ["NEXT_PUBLIC_SUPABASE_URL"] as const;
 
 function buildPulseWorkerEnvironment(): { [key: string]: string } {
@@ -249,7 +263,9 @@ function buildPulseWorkerEnvironment(): { [key: string]: string } {
   return environment;
 }
 
-function killProcessTree(pid: number): void {
+const PULSE_LINUX_SIGTERM_GRACE_MS = 5000;
+
+export function killProcessTree(pid: number): void {
   if (process.platform === "win32") {
     // taskkill /T terminates the process and its entire descendant tree.
     try {
@@ -261,6 +277,10 @@ function killProcessTree(pid: number): void {
     }
     return;
   }
+
+  // On Linux, spawn() with detached: true makes the child a process-group
+  // leader, so signalling -pid reaches only the worker's descendants and not
+  // the host process group. Escalate SIGTERM -> SIGKILL after a grace period.
   try {
     process.kill(-pid, "SIGTERM");
   } catch {
@@ -270,6 +290,18 @@ function killProcessTree(pid: number): void {
       // Best-effort cleanup only.
     }
   }
+
+  setTimeout(() => {
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        // Best-effort cleanup only.
+      }
+    }
+  }, PULSE_LINUX_SIGTERM_GRACE_MS).unref();
 }
 
 class PulseWorkerTimeoutError extends Error {
@@ -286,7 +318,14 @@ type PulseWorkerOutcome = {
   signal: string | null;
 };
 
-function runPulseWorker(
+export type PulseWorkerFailure = Error & {
+  killed?: boolean;
+  stdout?: string;
+  stderr?: string;
+  code?: number | string | null;
+};
+
+export function runPulseWorker(
   workerPath: string,
   args: string[],
   options: {
@@ -303,12 +342,22 @@ function runPulseWorker(
     let stderr = "";
     let timerHandle: ReturnType<typeof setTimeout> | undefined;
     let abortListener: (() => void) | undefined;
+    let closeListener: ((code: number | null, signal: string | null) => void) | undefined;
 
-    const child = spawn(process.execPath, [workerPath, ...args], {
+    const spawnOptions: { [key: string]: unknown } = {
       cwd: options.cwd,
       env: options.env as NodeJS.ProcessEnv,
       windowsHide: true,
-    });
+    };
+
+    // Linux: create a dedicated POSIX process group so killProcessTree can
+    // signal -pid without reaching the host process group. Windows does not
+    // need detached; taskkill /T handles the tree.
+    if (process.platform !== "win32") {
+      spawnOptions.detached = true;
+    }
+
+    const child = spawn(process.execPath, [workerPath, ...args], spawnOptions);
 
     const pid = typeof child.pid === "number" ? child.pid : null;
 
@@ -321,15 +370,19 @@ function runPulseWorker(
         options.signal.removeEventListener("abort", abortListener);
         abortListener = undefined;
       }
+      if (closeListener) {
+        child.removeListener("close", closeListener);
+        closeListener = undefined;
+      }
       child.removeAllListeners();
     };
 
-    const attachOutput = (error: Error & { stdout?: string; stderr?: string }): void => {
+    const attachOutput = (error: PulseWorkerFailure): void => {
       error.stdout = stdout;
       error.stderr = stderr;
     };
 
-    const fail = (error: Error & { killed?: boolean; stdout?: string; stderr?: string }): void => {
+    const fail = (error: PulseWorkerFailure): void => {
       if (settled) return;
       settled = true;
       clear();
@@ -350,7 +403,7 @@ function runPulseWorker(
       if ((code !== null && code !== 0) || signal !== null) {
         const failure = new Error(
           `PULSE worker exited with code ${code ?? signal}`
-        );
+        ) as PulseWorkerFailure;
         attachOutput(failure);
         failure.killed = true;
         reject(failure);
@@ -360,14 +413,14 @@ function runPulseWorker(
     };
 
     if (options.signal?.aborted) {
-      const cancelled = new Error("The PULSE worker was cancelled before it started.");
+      const cancelled = new Error("The PULSE worker was cancelled before it started.") as PulseWorkerFailure;
       cancelled.name = "AbortError";
       fail(cancelled);
       return;
     }
 
     abortListener = (): void => {
-      const cancelled = new Error("The PULSE worker was cancelled.");
+      const cancelled = new Error("The PULSE worker was cancelled.") as PulseWorkerFailure;
       cancelled.name = "AbortError";
       fail(cancelled);
     };
@@ -380,19 +433,25 @@ function runPulseWorker(
     child.stdout.on("data", (chunk: Buffer | string): void => {
       stdout += typeof chunk === "string" ? chunk : chunk.toString("utf8");
       if (stdout.length > options.maxBuffer) {
-        fail(new Error("PULSE worker stdout exceeded the maximum buffer."));
+        fail(new Error("PULSE worker stdout exceeded the maximum buffer.") as PulseWorkerFailure);
       }
     });
 
     child.stderr.on("data", (chunk: Buffer | string): void => {
       stderr += typeof chunk === "string" ? chunk : chunk.toString("utf8");
       if (stderr.length > options.maxBuffer) {
-        fail(new Error("PULSE worker stderr exceeded the maximum buffer."));
+        fail(new Error("PULSE worker stderr exceeded the maximum buffer.") as PulseWorkerFailure);
       }
     });
 
-    child.on("error", (error: Error): void => fail(error));
-    child.on("exit", (code: number | null, signal: string | null): void => settle(code, signal ?? null));
+    child.on("error", (error: Error): void => fail(error as PulseWorkerFailure));
+
+    // Settle on close, not exit: close fires after stdout/stderr streams are
+    // drained, so the captured output is complete before we resolve/reject.
+    closeListener = (code: number | null, signal: string | null): void => {
+      settle(code, signal ?? null);
+    };
+    child.on("close", closeListener);
   });
 }
 
@@ -835,6 +894,7 @@ export async function POST(request: NextRequest) {
   if(process.env.PULSE_EXECUTION_ENABLED!=="true")return NextResponse.json({success:false,error:"PULSE execution is unavailable on this host."},{status:503});
   if(!trustedRunner(request))return NextResponse.json({success:false,error:"Worker authentication required."},{status:401});
   let temporaryDirectory: string | null = null;
+  let workerCwd: string | null = null;
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -1044,6 +1104,11 @@ export async function POST(request: NextRequest) {
     await updatePulseJob("ACQUIRING_BUILD");
 
     temporaryDirectory = await mkdtemp(join(tmpdir(), "playtested-pulse-"));
+    // The worker runs in its own temp directory so it cannot read `.env.local`
+    // from the project root. This prevents SUPABASE_SERVICE_ROLE_KEY,
+    // PULSE_RUNNER_SECRET and other application secrets from being loaded by
+    // the worker process through file-based environment injection.
+    workerCwd = await mkdtemp(join(tmpdir(), "playtested-pulse-worker-"));
     const zipPath = join(temporaryDirectory, "submitted-build.zip");
     const download = await downloadPulseZip(sourceUrl, zipPath);
 
@@ -1220,7 +1285,7 @@ export async function POST(request: NextRequest) {
           "--profile=quick",
         ],
         {
-          cwd: process.cwd(),
+          cwd: workerCwd,
           env: workerEnvironment,
           timeoutMs: PULSE_WORKER_TIMEOUT_MS,
           maxBuffer: PULSE_WORKER_MAX_BUFFER,
@@ -1453,6 +1518,12 @@ export async function POST(request: NextRequest) {
   } finally {
     if (temporaryDirectory) {
       await rm(temporaryDirectory, {
+        recursive: true,
+        force: true,
+      }).catch(() => {});
+    }
+    if (workerCwd) {
+      await rm(workerCwd, {
         recursive: true,
         force: true,
       }).catch(() => {});

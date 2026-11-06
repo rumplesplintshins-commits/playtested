@@ -73,6 +73,10 @@ class FakeChild {
   }
   exit(code, signal) {
     this._exit = { code, signal };
+    // Emit close for listeners that wait on stream drainage (CR-6).
+    for (const listener of this.closeListeners || []) {
+      listener(code, signal);
+    }
   }
   hang() {
     // Never exit: simulates a worker that runs past its deadline.
@@ -83,11 +87,25 @@ class FakeChild {
         listener(this._exit.code, this._exit.signal);
       }
     }
+    if (event === "close") {
+      (this.closeListeners || (this.closeListeners = [])).push(listener);
+      if (this._exit) {
+        listener(this._exit.code, this._exit.signal);
+      }
+    }
+    return this;
+  }
+  removeListener(event, listener) {
+    if (event === "close" && this.closeListeners) {
+      const idx = this.closeListeners.indexOf(listener);
+      if (idx !== -1) this.closeListeners.splice(idx, 1);
+    }
     return this;
   }
   removeAllListeners() {
     this.stdout.removeAllListeners();
     this.stderr.removeAllListeners();
+    this.closeListeners = undefined;
     return this;
   }
 }
