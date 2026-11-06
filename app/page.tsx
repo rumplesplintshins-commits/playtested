@@ -3,9 +3,15 @@ import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
 import {SITE_ORIGIN,serializeJsonLd,websiteStructuredData} from "../lib/seo";
+import { connection } from "next/server";
+import { homepageCatalogueSeed } from "@/lib/homepage-catalogue";
 export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
+export const instant = false;
 
-export default function Home() {
+export default async function Home() {
+  await connection();
+  const initialCatalogue = await homepageCatalogueSeed();
+
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
@@ -49,7 +55,7 @@ export default function Home() {
       </section>
 
       <section id="discover-games">
-        <GameCatalogue />
+        <GameCatalogue initialCatalogue={initialCatalogue} />
       </section>
 
       <section aria-labelledby="playtesting-guides" className="mx-auto max-w-7xl px-6 py-10">

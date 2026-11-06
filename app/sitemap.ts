@@ -5,6 +5,6 @@ import { connection } from "next/server";
 export default async function sitemap() {
   await connection();
   const existing = await publicSitemap();
-  // Preserve approved-only public game enumeration and append crawlable content hubs.
+  // Preserve public game enumeration and append crawlable content hubs.
   return [...existing, ...publicContentSitemapEntries()];
 }
