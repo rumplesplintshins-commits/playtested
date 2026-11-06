@@ -11,8 +11,6 @@ declare global {
     mute(): void;
     unMute(): void;
     isMuted(): boolean;
-    requestFullScreen(): void;
-    exitFullScreen(): void;
     getPlayerState(): number;
     destroy(): void;
   }

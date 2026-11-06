@@ -30,6 +30,27 @@ const PLAYER_STATE = {
   CUED: 5,
 } as const;
 
+interface YTPlayer {
+  playVideo(): void;
+  pauseVideo(): void;
+  stopVideo(): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+  getVolume(): number;
+  setVolume(volume: number): void;
+  mute(): void;
+  unMute(): void;
+  isMuted(): boolean;
+  getPlayerState(): number;
+  destroy(): void;
+}
+
+interface YTPlayerEvent {
+  target: YTPlayer;
+  data?: number;
+}
+
 export default function GameplayVideoPlayer({
   videoId,
   onReady,
@@ -41,6 +62,7 @@ export default function GameplayVideoPlayer({
   const apiScriptRef = useRef<HTMLScriptElement | null>(null);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
   const [phase, setPhase] = useState<PlayerStatus>("idle");
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -62,11 +84,12 @@ export default function GameplayVideoPlayer({
     stopInactivityTimer();
     if (!isPlaying) return;
     inactivityTimerRef.current = setTimeout(() => {
-      setControlsVisible(false);
+      if (mountedRef.current) setControlsVisible(false);
     }, CONTROLS_HIDE_DELAY_MS);
   }, [isPlaying, stopInactivityTimer]);
 
   const resetControls = useCallback(() => {
+    if (!mountedRef.current) return;
     setControlsVisible(true);
     if (isPlaying) {
       startInactivityTimer();
@@ -75,18 +98,19 @@ export default function GameplayVideoPlayer({
 
   const hideControls = useCallback(() => {
     stopInactivityTimer();
-    setControlsVisible(false);
+    if (mountedRef.current) setControlsVisible(false);
   }, [stopInactivityTimer]);
 
   const togglePlay = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (isPlaying) {
+    const currentState = player.getPlayerState();
+    if (currentState === PLAYER_STATE.PLAYING || currentState === PLAYER_STATE.BUFFERING) {
       player.pauseVideo();
     } else {
       player.playVideo();
     }
-  }, [isPlaying]);
+  }, []);
 
   const seekTo = useCallback(
     (fraction: number) => {
@@ -94,9 +118,13 @@ export default function GameplayVideoPlayer({
       if (!player || duration <= 0) return;
       const targetTime = Math.max(0, Math.min(duration, fraction * duration));
       player.seekTo(targetTime, true);
-      setCurrentTime(targetTime);
-      setIsSeeking(true);
-      setTimeout(() => setIsSeeking(false), 500);
+      if (mountedRef.current) {
+        setCurrentTime(targetTime);
+        setIsSeeking(true);
+      }
+      setTimeout(() => {
+        if (mountedRef.current) setIsSeeking(false);
+      }, 500);
       resetControls();
     },
     [duration, resetControls]
@@ -105,22 +133,50 @@ export default function GameplayVideoPlayer({
   const toggleMute = useCallback(() => {
     const player = playerRef.current;
     if (!player) return;
-    if (isMuted) {
+    if (player.isMuted()) {
       player.unMute();
-      setIsMuted(false);
-      setVolume(100);
+      if (mountedRef.current) {
+        setIsMuted(false);
+        setVolume(100);
+      }
     } else {
       player.mute();
-      setIsMuted(true);
-      setVolume(0);
+      if (mountedRef.current) {
+        setIsMuted(true);
+        setVolume(0);
+      }
     }
     resetControls();
-  }, [isMuted, resetControls]);
+  }, [resetControls]);
 
   const toggleFullscreen = useCallback(() => {
-    const player = playerRef.current;
-    if (!player) return;
-    player.requestFullScreen();
+    const container = containerRef.current;
+    if (!container) return;
+    const el = container as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+    };
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void>;
+      webkitFullscreenElement?: Element | null;
+      exitFullscreen?: () => Promise<void>;
+      fullscreenElement?: Element | null;
+    };
+    const requestFullscreen =
+      el.requestFullscreen || el.webkitRequestFullscreen;
+    const exitFullscreen =
+      doc.exitFullscreen || doc.webkitExitFullscreen;
+    const isFullscreen = !!(
+      doc.fullscreenElement || doc.webkitFullscreenElement
+    );
+
+    if (isFullscreen) {
+      exitFullscreen?.call(doc);
+    } else {
+      requestFullscreen?.call(container).catch((error: unknown) => {
+        // Fullscreen may be blocked by browser policy or iframe permissions.
+        console.warn("Unable to enter fullscreen:", error);
+      });
+    }
   }, []);
 
   // Create the YT.Player instance once both the iframe and API are ready.
@@ -131,6 +187,7 @@ export default function GameplayVideoPlayer({
     playerRef.current = new YT.Player(iframe, {
       events: {
         onReady: (event: YTPlayerEvent) => {
+          if (!mountedRef.current) return;
           setPhase("ready");
           try {
             const vol = event.target.getVolume();
@@ -141,12 +198,12 @@ export default function GameplayVideoPlayer({
           } catch {
             // Player not fully ready yet
           }
-          setIsPlaying(true);
+          // Do NOT set isPlaying here — derive from player-state events.
           resetControls();
           onReady?.();
         },
         onStateChange: (event: YTPlayerEvent) => {
-          if (!window.YT) return;
+          if (!mountedRef.current) return;
           switch (event.data) {
             case PLAYER_STATE.PLAYING:
               setIsPlaying(true);
@@ -168,6 +225,7 @@ export default function GameplayVideoPlayer({
           }
         },
         onError: () => {
+          if (!mountedRef.current) return;
           setPhase("error");
           onError?.();
         },
@@ -177,13 +235,11 @@ export default function GameplayVideoPlayer({
 
   // Update current time while playing
   useEffect(() => {
-    const player = playerRef.current;
-    if (!player) return;
     timeIntervalRef.current = setInterval(() => {
-      const p = playerRef.current;
-      if (p && isPlaying && !isSeeking) {
+      const player = playerRef.current;
+      if (player && isPlaying && !isSeeking && mountedRef.current) {
         try {
-          setCurrentTime(p.getCurrentTime());
+          setCurrentTime(player.getCurrentTime());
         } catch {
           // Player might not be ready yet
         }
@@ -204,8 +260,9 @@ export default function GameplayVideoPlayer({
     );
     if (existingScript) {
       if (window.YT) {
-        // Use a microtask to avoid setState-in-effect warning
-        queueMicrotask(() => setApiReady(true));
+        queueMicrotask(() => {
+          if (mountedRef.current) setApiReady(true);
+        });
       }
       return;
     }
@@ -223,10 +280,12 @@ export default function GameplayVideoPlayer({
     };
   }, []);
 
-  // Global YouTube API ready callback
+  // Global YouTube API ready callback — registry pattern to support
+  // repeated openings and multiple player instances without callback races.
   useEffect(() => {
     const handleApiReady = () => {
       queueMicrotask(() => {
+        if (!mountedRef.current) return;
         setApiReady(true);
         if (iframeRef.current && !playerRef.current && window.YT) {
           createPlayer();
@@ -241,9 +300,11 @@ export default function GameplayVideoPlayer({
     };
 
     return () => {
+      // Restore the previous callback only if we still own the slot.
       if (window.onYouTubeIframeAPIReady === handleApiReady) {
         window.onYouTubeIframeAPIReady = previousReady;
       } else {
+        // A later instance took over; leave it in place.
         window.onYouTubeIframeAPIReady = previousReady;
       }
     };
@@ -355,6 +416,7 @@ export default function GameplayVideoPlayer({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       stopInactivityTimer();
       if (timeIntervalRef.current) {
         clearInterval(timeIntervalRef.current);
@@ -395,13 +457,14 @@ export default function GameplayVideoPlayer({
         onError={() => setPhase("error")}
       />
 
-      {/* Custom controls overlay */}
+      {/* Custom controls overlay — pointer-events-none so it does not
+          intercept iframe interactions; interactive controls re-enable it. */}
       {phase === "ready" && controlsVisible && (
         <div
           data-video-controls
-          className="absolute inset-0 flex items-end justify-between p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white transition-opacity duration-300 pointer-events-auto"
+          className="absolute inset-0 flex items-end justify-between p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white transition-opacity duration-300 pointer-events-none"
         >
-          <div className="flex items-center gap-3 w-full max-w-lg mx-auto">
+          <div className="flex items-center gap-3 w-full max-w-lg mx-auto pointer-events-auto">
             <button
               type="button"
               aria-label={isPlaying ? "Pause video" : "Play video"}
