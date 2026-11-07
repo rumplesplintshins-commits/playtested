@@ -1,4 +1,4 @@
-export type GameplayVideo = { provider: "YouTube" | "Vimeo" | "Google Drive"; url: string; embed: string; videoId?: string };
+export type GameplayVideo = { provider: "YouTube" | "Vimeo" | "Google Drive"; url: string; embed: string };
 export function gameplayVideo(value: string): GameplayVideo | null {
   try {
     const url = new URL(value.trim());
@@ -7,7 +7,7 @@ export function gameplayVideo(value: string): GameplayVideo | null {
     if (["youtube.com", "m.youtube.com", "youtu.be"].includes(host)) {
       const id = host === "youtu.be" ? url.pathname.slice(1) : url.pathname === "/watch" ? url.searchParams.get("v") : /^\/(?:shorts|embed)\/([\w-]+)$/.exec(url.pathname)?.[1];
       if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) return null;
-      return { provider: "YouTube", url: `https://www.youtube.com/watch?v=${id}`, embed: `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&controls=0&playsinline=1`, videoId: id };
+      return { provider: "YouTube", url: `https://www.youtube.com/watch?v=${id}`, embed: `https://www.youtube-nocookie.com/embed/${id}` };
     }
     if (host === "vimeo.com") {
       const id = /^\/([0-9]{1,12})\/?$/.exec(url.pathname)?.[1];
