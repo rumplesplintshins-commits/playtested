@@ -34,7 +34,7 @@ function GameplayPlayer({ video, embedded, posterSources }: { video: GameplayVid
         <span className="relative z-10"><span className="block text-sm font-semibold text-zinc-100 sm:text-base">Play gameplay video</span><span className="mt-1 hidden text-xs text-zinc-400 sm:block">{video.provider} · Loads only when you choose</span></span>
       </button> : phase === "error" ? <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
         <p role="alert" className="text-sm font-semibold text-amber-200">Video unavailable</p>
-      </div> : isYouTube ? <GameplayVideoPlayer videoId={video.videoId ?? ""} /> : <iframe src={video.embed} title={`${video.provider} gameplay footage`} className="absolute inset-0 h-full w-full"
+      </div> : isYouTube ? <GameplayVideoPlayer videoId={video.videoId ?? ""} onReady={() => setPhase(current => current === "loading" ? "ready" : current)} onError={() => setPhase(current => current === "idle" ? current : "error")} /> : <iframe src={video.embed} title={`${video.provider} gameplay footage`} className="absolute inset-0 h-full w-full"
         allow="fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen
         onLoad={() => setPhase(current => current === "loading" ? "ready" : current)} onError={() => setPhase(current => current === "idle" ? current : "error")} />
       }

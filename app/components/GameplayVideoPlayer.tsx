@@ -97,6 +97,7 @@ export default function GameplayVideoPlayer({
   const [phase, setPhase] = useState<PlayerStatus>("idle");
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const isPlayingRef = useRef(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(100);
@@ -113,19 +114,19 @@ export default function GameplayVideoPlayer({
 
   const startInactivityTimer = useCallback(() => {
     stopInactivityTimer();
-    if (!isPlaying) return;
+    if (!isPlayingRef.current) return;
     inactivityTimerRef.current = setTimeout(() => {
       if (mountedRef.current) setControlsVisible(false);
     }, CONTROLS_HIDE_DELAY_MS);
-  }, [isPlaying, stopInactivityTimer]);
+  }, [stopInactivityTimer]);
 
   const resetControls = useCallback(() => {
     if (!mountedRef.current) return;
     setControlsVisible(true);
-    if (isPlaying) {
+    if (isPlayingRef.current) {
       startInactivityTimer();
     }
-  }, [isPlaying, startInactivityTimer]);
+  }, [startInactivityTimer]);
 
   const hideControls = useCallback(() => {
     stopInactivityTimer();
@@ -151,6 +152,24 @@ export default function GameplayVideoPlayer({
       player.seekTo(targetTime, true);
       if (mountedRef.current) {
         setCurrentTime(targetTime);
+        setIsSeeking(true);
+      }
+      setTimeout(() => {
+        if (mountedRef.current) setIsSeeking(false);
+      }, 500);
+      resetControls();
+    },
+    [duration, resetControls]
+  );
+
+  const nudgeSeek = useCallback(
+    (deltaSeconds: number) => {
+      const player = playerRef.current;
+      if (!player || duration <= 0) return;
+      const target = Math.max(0, Math.min(duration, player.getCurrentTime() + deltaSeconds));
+      player.seekTo(target, true);
+      if (mountedRef.current) {
+        setCurrentTime(target);
         setIsSeeking(true);
       }
       setTimeout(() => {
@@ -237,15 +256,18 @@ export default function GameplayVideoPlayer({
           switch (event.data) {
             case PLAYER_STATE.PLAYING:
               setIsPlaying(true);
+              isPlayingRef.current = true;
               resetControls();
               break;
             case PLAYER_STATE.PAUSED:
               setIsPlaying(false);
+              isPlayingRef.current = false;
               setControlsVisible(true);
               stopInactivityTimer();
               break;
             case PLAYER_STATE.ENDED:
               setIsPlaying(false);
+              isPlayingRef.current = false;
               setControlsVisible(true);
               stopInactivityTimer();
               break;
@@ -369,7 +391,11 @@ export default function GameplayVideoPlayer({
     const handleClick = (e: MouseEvent) => {
       const container = containerRef.current;
       if (!container) return;
-      if (!container.contains(e.target as Node)) {
+      const node = e.target as Node;
+      // A click that replaces React-rendered subtrees detaches the event target
+      // (e.g. the play/pause icon swap) — only treat connected, genuinely
+      // outside clicks as "clicked elsewhere".
+      if (!container.contains(node) && node.isConnected) {
         hideControls();
       }
     };
@@ -408,19 +434,11 @@ export default function GameplayVideoPlayer({
           break;
         case "ArrowLeft":
           e.preventDefault();
-          const player = playerRef.current;
-          if (player) {
-            player.seekTo(player.getCurrentTime() - SEEK_INCREMENT_SECONDS, true);
-          }
-          resetControls();
+          nudgeSeek(-SEEK_INCREMENT_SECONDS);
           break;
         case "ArrowRight":
           e.preventDefault();
-          const player2 = playerRef.current;
-          if (player2) {
-            player2.seekTo(player2.getCurrentTime() + SEEK_INCREMENT_SECONDS, true);
-          }
-          resetControls();
+          nudgeSeek(SEEK_INCREMENT_SECONDS);
           break;
       }
     };
@@ -429,7 +447,7 @@ export default function GameplayVideoPlayer({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [togglePlay, toggleMute, toggleFullscreen, resetControls]);
+  }, [togglePlay, toggleMute, toggleFullscreen, nudgeSeek]);
 
   // Touch handler for mobile
   useEffect(() => {
@@ -446,6 +464,7 @@ export default function GameplayVideoPlayer({
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       stopInactivityTimer();
@@ -486,6 +505,15 @@ export default function GameplayVideoPlayer({
           if (phase === "idle") setPhase("loading");
         }}
         onError={() => setPhase("error")}
+      />
+
+      {/* Cross-origin iframes swallow pointer events, so keep an app-level
+          catch layer above the video: mouse activity over it reveals the
+          controls and clicking the video toggles playback. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        onClick={togglePlay}
       />
 
       {/* Custom controls overlay — pointer-events-none so it does not

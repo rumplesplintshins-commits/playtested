@@ -14,6 +14,15 @@ const providers=[
  {provider:'Vimeo',url:'https://vimeo.com/123456',embed:'https://player.vimeo.com/video/123456?dnt=1'},
  {provider:'Google Drive',url:'https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/view',embed:'https://drive.google.com/file/d/1Rri8jEjXA6cKEM4nqhaGTklLDxJkYlxZ/preview'},
 ];
+// Mocked YouTube IFrame Player API so the custom controls suite never touches
+// the real third-party script loader.
+const YT_IFRAME_API_MOCK=`
+(function(){
+ window.YT={PlayerState:{UNSTARTED:-1,ENDED:0,PLAYING:1,PAUSED:2,BUFFERING:3,CUED:5},Player:class{constructor(e,o){this._o=o||{};this.state=-1;this.currentTime=0;this.duration=120;this.volume=100;this.muted=false;if(this._o.events?.onReady)setTimeout(()=>this._o.events.onReady({target:this,data:undefined}),50);}playVideo(){this.state=1;}
+ pauseVideo(){this.state=2;}stopVideo(){this.state=2;}seekTo(s){this.currentTime=s;}getCurrentTime(){return this.currentTime;}getDuration(){return this.duration;}getVolume(){return this.volume;}setVolume(v){this.volume=v;}mute(){this.muted=true;}unMute(){this.muted=false;}isMuted(){return this.muted;}getPlayerState(){return this.state;}destroy(){this.state=-1;}}};
+ if(typeof window.onYouTubeIframeAPIReady==="function")setTimeout(()=>window.onYouTubeIframeAPIReady(),0);
+})();
+`;
 const hosts=new Set(['www.youtube-nocookie.com','player.vimeo.com','drive.google.com']);
 let browser,admin,original,oldFootage,changed=false;
 try{
@@ -35,8 +44,9 @@ try{
   for(const [kind,context] of Object.entries(contexts)){
    const page=await context.newPage();page.setDefaultTimeout(15000);
    let requests=0;
-   await page.route('**/*',route=>{
-    if(hosts.has(new URL(route.request().url()).hostname)){
+    await page.route('**/*',route=>{
+     if(route.request().url()==='https://www.youtube.com/iframe_api')return route.fulfill({contentType:'application/javascript',body:YT_IFRAME_API_MOCK});
+     if(hosts.has(new URL(route.request().url()).hostname)){
      requests++;
      return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Restricted video fixture</title><p>Video unavailable. Ask its owner for access.</p>'});
     }
