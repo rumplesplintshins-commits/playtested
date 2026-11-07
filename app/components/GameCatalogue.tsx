@@ -9,6 +9,7 @@ import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
 import {publicProfileClient,publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
+import type { HomepageCatalogueSeed, PublicCatalogueRow } from "@/lib/public-catalogue-types";
 
 type VerificationStatus = "Verified" | "Assessed" | "Not yet verified";
 
@@ -35,31 +36,6 @@ type CatalogueGame = {
   listingNotice: string;
   assessmentUnavailable: boolean;
   recommendationCounts?:IntentCounts;
-};
-
-type VerificationRow = {
-  game_id: string;
-  verification_status: VerificationStatus;
-  quality_score: number | null;
-};
-
-type CatalogueRpcRow = {
-  source_type: "approved" | "steam";
-  game_id: string;
-  steam_app_id: string | null;
-  title: string;
-  developer_name: string;
-  genre: string;
-  description: string;
-  image_url: string;
-  game_link: string;
-  ai_type: string;
-  verification_status: VerificationStatus;
-  quality_score: number | string | null;
-  submitted_at: string | null;
-  is_nsfw: boolean;
-  has_playtested_profile: boolean;
-  total_count: number | string;
 };
 
 type ReceptionStatus =
@@ -224,7 +200,7 @@ function GameCardContent({
   return (
     <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
       <a
-        href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
+        href={href}
         className="block aspect-video w-full overflow-hidden bg-[#202520] text-left"
         aria-label={`View ${game.title} details`}
       >
@@ -249,7 +225,7 @@ function GameCardContent({
           <GenreBadge genre={game.genre} />
         </div>
 
-        <a href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined} className="text-left">
+        <a href={href} className="text-left">
           <h3 className="text-lg font-semibold text-white hover:text-emerald-300">
             {game.title}
           </h3>
@@ -321,7 +297,9 @@ function GameCardContent({
         <div className="mt-auto space-y-3 pt-2">
 
           <a
-            href={href} target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined} rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
+            href={game.isImportedSteam&&!game.hasPlaytestedProfile?game.gameLink:href}
+            target={game.isImportedSteam&&!game.hasPlaytestedProfile?"_blank":undefined}
+            rel={game.isImportedSteam&&!game.hasPlaytestedProfile?"noopener noreferrer":undefined}
             className="block w-full rounded-md bg-emerald-400 px-3 py-2 text-center text-sm font-semibold text-black hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
           >
             {game.isImportedSteam && !game.hasPlaytestedProfile
@@ -335,34 +313,60 @@ function GameCardContent({
 }
 
 function gameHref(game:CatalogueGame){
-  return game.isImportedSteam&&!game.hasPlaytestedProfile ? game.gameLink : game.isSubmission ? `/submissions/${game.key}` : `/games/${game.slug}`;
+  return game.isImportedSteam ? `/games/${game.slug}` : game.isSubmission ? `/submissions/${game.key}` : `/games/${game.slug}`;
 }
 
 type CataloguePage={games:CatalogueGame[];total:number};
 const pages=publicRequestCache<CataloguePage>();
 const receptionCache=publicRequestCache<CommunityReceptionRow[]>(30000,1);
-let previousView={search:"",genre:"All genres",verificationFilter:"All verification statuses",aiType:"All AI types",includeNsfw:false,sort:"Featured",page:1};
-export default function GameCatalogue() {
+const defaultView={search:"",genre:"All genres",verificationFilter:"All verification statuses",aiType:"All AI types",includeNsfw:false,sort:"Featured",page:1};
+function initialGame(row:PublicCatalogueRow):CatalogueGame {
+  const isImportedSteam = row.source_type === "steam";
+  const steamAppId = normalizeSteamAppId(row.steam_app_id);
+  return {
+    key: row.game_id,
+    slug: isImportedSteam ? `steam-${steamAppId}` : `submission-${row.game_id}`,
+    title: row.title ?? "Untitled game",
+    developer: row.developer_name ?? "Unknown developer",
+    genre: row.genre ?? "Uncategorised",
+    description: row.description ?? "",
+    image: row.image_url ?? "",
+    aiType: row.ai_type ?? "AI use unknown",
+    score: Number(row.quality_score ?? 0),
+    gameLink: isImportedSteam ? steamStoreUrl(row.game_link, steamAppId) : row.game_link,
+    steamAppId,
+    isSubmission: !isImportedSteam,
+    isImportedSteam,
+    hasPlaytestedProfile: row.has_playtested_profile,
+    isNsfw: row.is_nsfw === true,
+    verificationStatus: row.verification_status ?? "Not yet verified",
+    submittedAt: row.submitted_at ?? "",
+    communityReception: null,
+    recruiting: false,
+    listingNotice: "",
+    assessmentUnavailable: true,
+  };
+}
+export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:HomepageCatalogueSeed}) {
   const [density, setDensity] = useState<"compact" | "comfortable">("compact");
 
-  const [search, setSearch] = useState(previousView.search);
-  const [genre, setGenre] = useState(previousView.genre);
-  const [verificationFilter, setVerificationFilter] = useState(previousView.verificationFilter);
-  const [aiType, setAiType] = useState(previousView.aiType);
-  const [includeNsfw, setIncludeNsfw] = useState(previousView.includeNsfw);
-  const [sort, setSort] = useState(previousView.sort);
-  const [page, setPage] = useState(previousView.page);
+  const [search, setSearch] = useState(defaultView.search);
+  const [genre, setGenre] = useState(defaultView.genre);
+  const [verificationFilter, setVerificationFilter] = useState(defaultView.verificationFilter);
+  const [aiType, setAiType] = useState(defaultView.aiType);
+  const [includeNsfw, setIncludeNsfw] = useState(defaultView.includeNsfw);
+  const [sort, setSort] = useState(defaultView.sort);
+  const [page, setPage] = useState(defaultView.page);
 
-  const [games, setGames] = useState<CatalogueGame[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const [games, setGames] = useState<CatalogueGame[]>(()=>initialCatalogue&&!initialCatalogue.error?initialCatalogue.rows.map(initialGame):[]);
+  const [totalCount, setTotalCount] = useState(initialCatalogue&&!initialCatalogue.error?initialCatalogue.total:0);
+  const [loaded, setLoaded] = useState(Boolean(initialCatalogue&&!initialCatalogue.error));
+  const [loadError, setLoadError] = useState(Boolean(initialCatalogue?.error));
   const [attempt,setAttempt]=useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    previousView={search,genre,verificationFilter,aiType,includeNsfw,sort,page};
     let prefetchTimer:number|undefined;
     const argsFor=(number:number)=>({p_page:number,p_page_size:PAGE_SIZE,p_search:search.trim(),p_genre:genre,p_verification:verificationFilter,p_ai_type:aiType,p_include_nsfw:includeNsfw,p_sort:sort});
     const keyFor=(number:number)=>JSON.stringify(argsFor(number));
@@ -370,9 +374,14 @@ export default function GameCatalogue() {
       return pages.get(keyFor(pageNumber),async()=>{
       const supabase = publicProfileClient();
 
+      const useInitialCatalogue=Boolean(initialCatalogue&&!initialCatalogue.error&&attempt===0&&pageNumber===1&&search.trim()===""&&genre==="All genres"&&verificationFilter==="All verification statuses"&&aiType==="All AI types"&&!includeNsfw&&sort==="Featured");
+      const seedPage=useInitialCatalogue?initialCatalogue:null;
+      if(initialCatalogue?.error&&attempt===0&&pageNumber===1)throw new Error("Server-rendered public catalogue unavailable");
 
       const [catalogueResult, receptionResult] = await Promise.all([
-        supabase.rpc("get_public_catalogue",argsFor(pageNumber)),
+        seedPage
+          ? Promise.resolve({data:seedPage.rows,error:null})
+          : supabase.rpc("get_public_catalogue",argsFor(pageNumber)),
         receptionCache.get('public',async()=>{const r=await supabase.rpc("get_game_community_reception");if(r.error)throw r.error;return (r.data??[]) as CommunityReceptionRow[];}).then(data=>({data,error:null})).catch(error=>({data:[] as CommunityReceptionRow[],error})),
       ]);
 
@@ -382,7 +391,7 @@ export default function GameCatalogue() {
         console.error("Could not load community reception:", receptionResult.error);
       }
 
-      const rows = (catalogueResult.data ?? []) as CatalogueRpcRow[];
+      const rows = (catalogueResult.data ?? []) as PublicCatalogueRow[];
       const gameKeys=rows.map(row=>({kind:row.source_type==="steam"?"imported":"approved",id:row.game_id}));
       const [publicLinks,recruitment,listingChanges,intentData]=await Promise.all([
         publicLinkedImportedIds(rows.filter(row=>row.source_type==="steam").map(row=>row.game_id),supabase),
@@ -458,7 +467,7 @@ export default function GameCatalogue() {
         };
       });
 
-      return {games:mappedGames,total:rows.length?Number(rows[0].total_count??0):0};
+      return {games:mappedGames,total:rows.length?Number(rows[0].total_count??0):seedPage?.total??0};
       });
     }
     async function loadGames(){
@@ -496,6 +505,7 @@ export default function GameCatalogue() {
     includeNsfw,
     sort,
     attempt,
+    initialCatalogue,
   ]);
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));

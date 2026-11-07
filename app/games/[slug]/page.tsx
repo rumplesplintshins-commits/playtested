@@ -4,6 +4,7 @@ import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
 import {gameMetadata} from "@/lib/public-game-seo";
 import PublicGameGuides from "@/app/components/PublicGameGuides";
+import GameProfileBreadcrumb from "@/app/components/GameProfileBreadcrumb";
 import {notFound} from "next/navigation";
 import Link from "next/link";
 import {publicLinkedImportedIds} from "@/lib/public-profile-links";
@@ -193,45 +194,54 @@ export default async function GamePage({
       );
     }
 
-    // Raw Steam imports deliberately do not get a Playtested profile.
-    // If the relationship is later removed, this URL stops behaving like a
-    // Playtested game page and the catalogue will return to the Steam action.
+    // Unlinked Steam imports remain catalogue listings, not claimed developer profiles.
     if (!developerLink) {
       return (
         <main className="min-h-screen bg-[#090b0a] text-zinc-100">
           <SiteHeader />
           <ShareJourneyBanner />
-          <section className="mx-auto max-w-6xl px-6 py-20">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              Steam catalogue listing
-            </p>
-            <h1 className="mt-3 text-3xl font-bold">
-              This game does not have a Playtested profile
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
-              This title is currently a catalogue-only Steam listing. A
-              Playtested game profile becomes available when a developer
-              relationship is established.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href="/"
-                className="rounded-md border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/[0.04]"
-              >
-                Back to Game Discovery
-              </Link>
-              {importedGame.steam_url && (
-                <TrackedAccessLink
-                  href={importedGame.steam_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md bg-[#77f29b] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#8af5a8]"
+          <GameProfileBreadcrumb
+            name={importedGame.title || "Untitled game"}
+            path={`/games/steam-${steamAppId}`}
+          />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(videoGameStructuredData({name:importedGame.title||"Untitled game",path:`/games/steam-${steamAppId}`,description:importedGame.description,genre:importedGame.genre,image:importedGame.image_url}))}} />
+          <section className="mx-auto grid max-w-6xl gap-8 px-6 py-12 md:grid-cols-[minmax(0,1fr)_360px] md:py-16">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                Steam catalogue listing · {importedGame.genre || "Uncategorised"}
+              </p>
+              <h1 className="mt-3 text-3xl font-bold md:text-5xl">
+                {importedGame.title || "Untitled game"}
+              </h1>
+              <p className="mt-4 text-sm text-zinc-400">By {importedGame.developer_name || "Developer not listed"}</p>
+              <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-zinc-300">
+                {importedGame.description?.trim() || "No description provided."}
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/"
+                  className="rounded-md border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/[0.04]"
                 >
-                  View Steam page ↗
-                </TrackedAccessLink>
-              )}
+                  Back to Game Discovery
+                </Link>
+                {importedGame.steam_url && (
+                  <TrackedAccessLink
+                    href={importedGame.steam_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md bg-[#77f29b] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#8af5a8]"
+                  >
+                    View Steam page ↗
+                  </TrackedAccessLink>
+                )}
+              </div>
             </div>
+            {importedGame.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={importedGame.image_url} alt={importedGame.title || "Game"} className="w-full rounded-xl border border-white/10 object-cover" />
+            )}
           </section>
+          <PublicGameGuides />
         </main>
       );
     }
@@ -546,6 +556,10 @@ export default async function GamePage({
       <main className="min-h-screen bg-[#090b0a] text-zinc-100">
         <SiteHeader />
           <ShareJourneyBanner />
+        <GameProfileBreadcrumb
+          name={importedGame.title || "Untitled game"}
+          path={`/games/steam-${steamAppId}`}
+        />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(videoGameStructuredData({name:importedGame.title||"Untitled game",path:`/games/steam-${steamAppId}`,description:importedGame.description,genre:importedGame.genre,image:importedGame.image_url}))}} />
 
         {intentData===null&&<p role="alert" className="mx-auto max-w-6xl px-6 py-4 text-sm text-amber-200">Public playtest reporting is unavailable. Please try again later.</p>}
