@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
+import { startMockPublicSupabase } from "./helpers/mock-public-supabase.mjs";
 
 const port = 32828;
+const mock = await startMockPublicSupabase();
 const origin = `http://127.0.0.1:${port}`;
 const viewports = [260, 390, 853, 1280];
 const repetitions = Number(process.env.MERGE28_CLS_REPETITIONS || 3);
@@ -16,7 +18,11 @@ await new Promise((resolve, reject) => {
 
 const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", String(port)], {
   stdio: ["ignore", "pipe", "pipe"],
-  env: process.env,
+  env: {
+    ...process.env,
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:32829",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "isolated-browser-test-key",
+  },
 });
 let logs = "";
 server.stdout.on("data", data => logs += data);
@@ -182,4 +188,5 @@ try {
 } finally {
   if (browser) await browser.close();
   server.kill();
+  await mock.close();
 }

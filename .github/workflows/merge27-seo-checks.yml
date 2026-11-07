@@ -1,7 +1,7 @@
 name: Merge 27/28 SEO and Core Web Vitals checks
 on:
   pull_request:
-    branches: [v11]
+    branches: [v11, seo/technical-aeo-geo-v11]
     paths:
       - 'app/playtesting/**'
       - 'app/find-playtesters/**'
@@ -10,6 +10,7 @@ on:
       - 'app/components/OrganicGuide.tsx'
       - 'app/components/SiteHeader.tsx'
       - 'app/components/PublicGameGuides.tsx'
+      - 'app/components/GameCatalogue.tsx'
       - 'app/seo-social.png/**'
       - 'app/page.tsx'
       - 'app/games/**/page.tsx'
@@ -22,6 +23,11 @@ on:
       - '.github/workflows/merge27-seo-checks.yml'
       - 'tests/merge27-browser.mjs'
       - 'tests/merge28-cwv-browser.mjs'
+      - 'tests/merge42-discoverability-browser.mjs'
+      - 'tests/helpers/mock-public-supabase.mjs'
+      - 'lib/homepage-catalogue.ts'
+      - 'lib/public-catalogue-types.ts'
+      - 'lib/public-profile-links.ts'
   workflow_dispatch:
 jobs:
   validate:
@@ -34,18 +40,22 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/components/SiteHeader.tsx app/components/PublicGameGuides.tsx app/seo-social.png/route.tsx app/page.tsx app/games/[slug]/page.tsx app/submissions/[id]/page.tsx app/sitemap.ts lib/organic-search.ts lib/seo.ts lib/public-game-seo.ts next.config.ts
+      - run: npx eslint app/playtesting app/find-playtesters app/become-a-playtester app/guides/playtest-feedback app/components/OrganicGuide.tsx app/components/SiteHeader.tsx app/components/PublicGameGuides.tsx app/seo-social.png/route.tsx app/page.tsx app/components/GameCatalogue.tsx app/games/[slug]/page.tsx app/submissions/[id]/page.tsx app/sitemap.ts lib/organic-search.ts lib/seo.ts lib/public-game-seo.ts lib/homepage-catalogue.ts lib/public-catalogue-types.ts next.config.ts
       - run: npx tsc --noEmit
       - run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:32829
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
       - run: npx playwright install chromium
       - run: node tests/merge27-browser.mjs
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:32829
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
       - run: node tests/merge28-cwv-browser.mjs
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:32829
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
+      - run: node tests/merge42-discoverability-browser.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:32829
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-for-build-only
