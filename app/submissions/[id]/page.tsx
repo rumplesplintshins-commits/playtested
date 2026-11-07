@@ -15,6 +15,7 @@ import CommunityReception, {
 import { createClient } from "../../../lib/supabase-server";
 import PublicGameGuides from "@/app/components/PublicGameGuides";
 import {serializeJsonLd,videoGameStructuredData} from "@/lib/seo";
+import GameProfileBreadcrumb from "@/app/components/GameProfileBreadcrumb";
 
 export const instant = false;
 
@@ -313,6 +314,10 @@ export default async function SubmissionPage({
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
           <ShareJourneyBanner />
+      <GameProfileBreadcrumb
+        name={game.title || "Untitled game"}
+        path={`/submissions/${id}`}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(videoGameStructuredData({name:game.title||"Untitled game",path:`/submissions/${id}`,description:game.description,genre:game.genre,image:game.image_url}))}} />
 
       <div className="mx-auto max-w-[1240px] px-4 py-4 sm:px-6">
