@@ -1,4 +1,5 @@
 import GamePcRequirements from "@/app/components/GamePcRequirements";
+import GameShareButton from "@/app/components/GameShareButton";
 import AnonymousTesterLabel from "@/app/components/AnonymousTesterLabel";
 import {assessmentLabel} from "../../../lib/review-labels";
 import IntentSummary from "@/app/components/IntentSummary";
@@ -583,12 +584,15 @@ export default async function GamePage({
                   {importedGame.genre || "Uncategorised"} · Game profile
                 </p>
 
-                <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight md:text-6xl">
-                  {importedGame.title || "Untitled game"}
-                </h1>
+                <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+                  <h1 className="min-w-0 flex-1 break-words font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight md:text-6xl">
+                    {importedGame.title || "Untitled game"}
+                  </h1>
+                  <GameShareButton title={importedGame.title || "Untitled game"} path={`/games/${slug}`} />
+                </div>
 
                 <p className="mt-3 text-lg text-zinc-400">
-                  by {importedGame.developer_name || "Unknown developer"}
+                  By <strong className="font-bold text-zinc-100">{importedGame.developer_name || "Unknown developer"}</strong>
                 </p>
 
                 <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-300">
