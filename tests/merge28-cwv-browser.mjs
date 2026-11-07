@@ -95,6 +95,10 @@ try {
       if (width === 390 && run === 0) {
         assert.equal(await page.locator('link[rel="canonical"]').getAttribute("href"), "https://playtested.co.uk");
         assert.equal(await page.locator('script[type="application/ld+json"]').count(), 1);
+        const homeSchema = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+        assert.equal(homeSchema["@context"], "https://schema.org");
+        assert(homeSchema["@graph"].some(entity => entity["@type"] === "Organization" && entity["@id"] === "https://playtested.co.uk/#organization"));
+        assert(homeSchema["@graph"].some(entity => entity["@type"] === "WebSite" && entity.publisher?.["@id"] === "https://playtested.co.uk/#organization"));
         assert.equal(await page.locator('header a[href="/login"]').count(), 1, "logged-out login link");
         assert.equal(await page.locator('header a[href="/login?mode=signup"]').count(), 1, "logged-out signup link");
         assert.equal(await page.locator('a[href="/login?mode=signup&role=developer&next=/my-submissions"]').count(), 1, "developer signup return path");
@@ -120,6 +124,12 @@ try {
     const sitemap = await fetch(origin + "/sitemap.xml");
     assert.equal(sitemap.status, 200, "public sitemap response");
     const xml = await sitemap.text();
+    const sitemapUrls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
+    assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, "sitemap should not contain duplicate URLs");
+    for (const requiredPath of ["/community", "/playtesting", "/find-playtesters", "/become-a-playtester", "/guides/playtest-feedback"]) {
+      assert(sitemapUrls.includes("https://playtested.co.uk" + requiredPath), `${requiredPath} should be included in the public sitemap`);
+    }
+    assert(sitemapUrls.every(url => url.startsWith("https://playtested.co.uk/")), "sitemap should contain only canonical production-origin URLs");
     const profilePaths = [...xml.matchAll(/<loc>https:\/\/playtested\.co\.uk(\/(?:games|submissions)\/[^<]+)<\/loc>/g)]
       .map(match => match[1]);
     const representativePaths = ["games", "submissions"]
@@ -144,8 +154,17 @@ try {
       const schemas = await page.locator('script[type="application/ld+json"]').allTextContents();
       assert(schemas.some(value => {
         const schema = JSON.parse(value);
-        return schema["@type"] === "VideoGame" && schema.url === canonical;
+        return schema["@type"] === "VideoGame" &&
+          schema.url === canonical &&
+          schema.mainEntityOfPage === canonical &&
+          schema.inLanguage === "en-GB";
       }), `${path} should expose truthful VideoGame JSON-LD`);
+      assert(schemas.some(value => {
+        const schema = JSON.parse(value);
+        return schema["@type"] === "BreadcrumbList" &&
+          schema.itemListElement?.[1]?.item === canonical;
+      }), `${path} should expose a canonical game-profile breadcrumb`);
+      assert.equal(await page.locator('nav[aria-label="Breadcrumb"] [aria-current="page"]').count(), 1, `${path} visible breadcrumb`);
       assert(await page.getByRole("navigation", { name: "Playtesting guides" }).isVisible(), `${path} guide links`);
     }
     await context.close();
