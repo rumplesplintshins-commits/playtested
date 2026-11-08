@@ -186,7 +186,15 @@ export default function NotificationBell() {
 
   async function openItem(item: NotificationItem) {
     const ok = await markRead(item);
-    if (ok && item.href) window.location.href = item.href;
+    if (ok && item.href) {
+      const destination = new URL(item.href, window.location.origin);
+      if (destination.origin !== window.location.origin) return;
+      if (item.title.toLowerCase().includes("game approved") && destination.pathname === "/my-submissions") {
+        destination.searchParams.set("tab", "games");
+        destination.searchParams.set("launch", "1");
+      }
+      window.location.href = destination.pathname + destination.search + destination.hash;
+    }
   }
 
   async function dismiss(item: NotificationItem) {

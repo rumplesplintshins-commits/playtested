@@ -2409,14 +2409,16 @@ export default function StartPlaytest({
 
                     <textarea
                       required
-                      minLength={20}
-                      maxLength={5000}
+                      minLength={30}
+                      maxLength={1000}
                       rows={4}
+                      aria-describedby="playtest-instructions-count"
                       value={instructions}
                       onChange={(event) => setInstructions(event.target.value)}
                       placeholder="For this test, please play through the opening section and focus on how clear the controls and objectives feel."
                       className="mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]"
                     />
+                    <span id="playtest-instructions-count" className={`mt-1 block text-right text-xs tabular-nums ${instructions.trim().length < 30 ? "text-amber-300" : "text-zinc-400"}`}>{instructions.length} / 1,000 characters · minimum 30</span>
                   </label>
 
                   <div>

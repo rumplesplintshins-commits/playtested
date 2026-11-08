@@ -1911,8 +1911,10 @@ export default function SubmitGamePage() {
         setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
         const changed=Object.entries(draft).some(([key,value])=>JSON.stringify(result.data[key]??null)!==JSON.stringify(value??null));
         if(changed){setError('An earlier save succeeded. Open Game submissions to correct that record; your current form values have not been discarded.');return;}
-        window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(result.data.id)}`);
-        window.dispatchEvent(new PopStateEvent("popstate"));
+        setSavedSubmissionId(result.data.id);
+        setSubmittedTitle(String(draft.title || "Your game"));
+        setSubmitted(true);
+        setError("");
       }catch{setError('Your save could not be confirmed. Your details remain here; retry the same request.');}
       finally{setSubmitting(false);}
       return;
@@ -2027,7 +2029,8 @@ export default function SubmitGamePage() {
         setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
         return;
       }
-      if(insertedSubmission.status==="Needs More Information"){window.history.replaceState(null,"",`/submit?edit=${encodeURIComponent(insertedSubmission.id)}`);window.dispatchEvent(new PopStateEvent("popstate"));return;}
+      // The submission is saved. Show confirmation rather than forcing a correction screen;
+      // developers can edit any missing details from Game submissions later.
 
       setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
       setSavedSubmissionId(insertedSubmission.id);
