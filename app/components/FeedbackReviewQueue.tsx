@@ -77,7 +77,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
   const [view, setView] = useState<"pending" | "history">("pending");
   const [notice, setNotice] = useState("");
   const pending = items.filter(needsFeedbackReview);
-  const history = items.filter(item => !needsFeedbackReview(item));
+  const history = items.filter(item => !needsFeedbackReview(item)).sort((a,b) => { const timeA = Date.parse(a.report.submitted_at || "") || 0; const timeB = Date.parse(b.report.submitted_at || "") || 0; return timeB - timeA || b.report.id.localeCompare(a.report.id); });
   const visible = view === "pending" ? pending : history;
   async function reload() { await refresh(); setNotice("Decision saved and audited."); }
   return <section aria-label="Playtest feedback reviews">
@@ -86,6 +86,6 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
     <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => setView("pending")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => setView("history")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
-    {loading ? <p className="mt-4 text-sm text-zinc-400">Loading reviews...</p> : !error && visible.length === 0 ? <p className="mt-4 text-sm text-zinc-400">{view === "pending" ? "No playtest feedback is awaiting review." : "No reviewed feedback yet."}</p> : visible.map(item => <ReviewCard key={item.report.id} item={item} reload={reload}/>)}
+    {loading ? <p className="mt-4 text-sm text-zinc-400">Loading reviews...</p> : !error && visible.length === 0 ? <p className="mt-4 text-sm text-zinc-400">{view === "pending" ? "No playtest feedback is awaiting review." : "No reviewed feedback yet."}</p> : visible.map(item => view === "history" ? <details key={item.report.id} className="group my-3 min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/40"><summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"><div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0"><span className="font-semibold text-zinc-100">{item.context?.title || "Legacy report"}</span><p className="mt-1 text-xs text-zinc-400">Submitted {ukDateTime(item.report.submitted_at)} · {item.report.review_outcome || "Reviewed"} · {item.report.base_xp_amount ?? 0} XP</p></div><span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span><span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload}/>)}
   </section>;
 }
