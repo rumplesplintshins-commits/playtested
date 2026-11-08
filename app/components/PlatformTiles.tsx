@@ -1,9 +1,11 @@
 "use client";
-import {useEffect,useRef,useState,type KeyboardEvent} from "react";
+import React,{useEffect,useRef,useState,type KeyboardEvent} from "react";
 import {PLATFORMS,type Platform,PLATFORM_INFO} from "@/lib/platforms";
 
 function PlatformTile({platform,selected,onSelect,disabled}:{platform:Platform;selected:boolean;onSelect:(platform:Platform)=>void;disabled?:boolean}){
   const info=PLATFORM_INFO[platform];
+  const iconEl = React.isValidElement(info.icon) ? (info.icon as React.ReactElement<{width?:number;height?:number;className?:string}>) : null;
+  const icon = iconEl ? React.cloneElement(iconEl, { width: 44, height: 44, className: "shrink-0" }) : info.icon;
   return (
     <button
       type="button"
@@ -12,13 +14,13 @@ function PlatformTile({platform,selected,onSelect,disabled}:{platform:Platform;s
       aria-label={info.label}
       disabled={disabled}
       onClick={()=>onSelect(platform)}
-      className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-4 text-center transition ${selected
+      className={`flex flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition ${selected
         ? "border-[#77f29b] bg-[#77f29b]/10 text-[#77f29b]"
         : "border-white/10 bg-[#101311] text-zinc-300 hover:border-white/25 hover:text-white"
       }`}
     >
+      <span className="shrink-0">{icon}</span>
       <span className="text-sm font-semibold">{info.label}</span>
-      {info.icon}
     </button>
   );
 }

@@ -342,7 +342,7 @@ function HistoricalPlaytestCard({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
               <p className="text-xs text-zinc-500">
-                Free Hub capacity
+                Hub places
               </p>
               <p className="mt-1 text-sm font-semibold text-zinc-200">
                 {includesPlaytestedTesters(playtest.audience)
@@ -3060,10 +3060,10 @@ export default function StartPlaytest({
         <div className="grid gap-4 sm:grid-cols-2">
           {includesPlaytestedTesters(audience) && (<label className="block">
             <span className="text-sm font-medium text-zinc-200">
-              {capacityPolicy?.places ?? "Checking"} Tester Hub places
+              {developerPlan.data?.plan === "free" ? "1 Tester Hub place (free plan reserve)" : `${capacityPolicy?.places ?? "Checking"} Tester Hub places`}
             </span>
 
-            <PlacesRules/>
+            {developerPlan.data?.plan === "pro" && <PlacesRules/>}
           </label>)}
 
           <label className="block">

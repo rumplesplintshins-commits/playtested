@@ -1,37 +1,34 @@
--- Free-plan intro offer: the first six Tester Hub campaigns each reserve up to
--- three accepted tester places; afterwards the free plan grants one launch with
--- one tester place per rolling 30 days. Campaign count and tester-place count
--- are tracked separately; drafts and community-only campaigns never consume
--- either allowance. Paid (Pro) rules are untouched.
--- Idempotent: only CREATE OR REPLACE statements.
+-- Free plan: one free playtest campaign per rolling 30 days, and each free
+-- campaign reserves one accepted tester place. Drafts and community-only
+-- campaigns never consume the allowance; closing a campaign does not renew
+-- it before the 30-day window passes. Paid (Pro) rules are untouched.
+-- Idempotent: only CREATE OR REPLACE statements. Replaces the withdrawn
+-- six-campaign introductory offer that briefly lived in this migration.
 
-create or replace function public._playtested_free_intro_at(p_developer_id uuid, p_checked_at timestamptz)
-returns table(campaigns_used integer, campaigns_limit integer, campaigns_remaining integer, max_places integer, next_at timestamptz)
+create or replace function public._playtested_free_allowance_at(p_developer_id uuid, p_checked_at timestamptz)
+returns table(campaigns_used integer, campaigns_limit integer, campaigns_remaining integer, place_cap integer, next_at timestamptz)
 language sql
 security definer
 set search_path to ''
 as $function$
   with usage as (
     select
-      count(*) filter (where tester_hub_started_at is not null)::integer as used,
+      count(*)::integer as used,
       max(tester_hub_started_at) as latest
     from public.community_playtests
     where developer_id = p_developer_id
-  ), place_allowance as (
-    select
-      case when used >= 6
-        then (select latest + interval '30 days' from usage where latest > p_checked_at - interval '30 days')
-      end as next_at
-    from usage
+      and tester_hub_started_at > p_checked_at - interval '30 days'
   )
   select
     usage.used,
-    6,
-    greatest(6 - usage.used, 0),
-    case when usage.used >= 6 then 1 else 3 end,
-    place_allowance.next_at
-  from usage cross join place_allowance;
+    1,
+    greatest(1 - usage.used, 0),
+    1,
+    case when usage.used > 0 then usage.latest + interval '30 days' end
+  from usage;
 $function$;
+
+drop function if exists public._playtested_free_intro_at(uuid, timestamptz);
 
 create or replace function public.fix_free_target()
 returns trigger
@@ -39,14 +36,13 @@ language plpgsql
 security definer
 set search_path to ''
 as $function$begin
-  -- Cap a fresh campaign's reserved places to the developer's current
-  -- free-plan allowance (intro campaigns: up to 3; after six campaigns: 1).
-  -- Pro plans keep the full policy capacity.
+  -- Free campaigns reserve exactly one accepted tester place; pro plans keep
+  -- the full policy capacity.
   new.target_testers:=least(
     (select places from public.testing_policy),
     coalesce((
-      select f.max_places
-      from public._playtested_free_intro_at(new.developer_id,coalesce(new.published_at,clock_timestamp())) f
+      select f.place_cap
+      from public._playtested_free_allowance_at(new.developer_id,coalesce(new.published_at,clock_timestamp())) f
       where (select plan from public._developer_plan(new.developer_id)) = 'free'
     ),(select places from public.testing_policy))
   );
@@ -68,20 +64,19 @@ begin
  if p.plan is null then raise exception 'Developer plan policy is not configured. Restore the Free/Pro policy seeds.'; end if;
  select * into w from public._playtested_developer_launch_window_at(auth.uid(),checked);
  if p.plan='free' then
-   select * into f from public._playtested_free_intro_at(auth.uid(),checked);
+   select * into f from public._playtested_free_allowance_at(auth.uid(),checked);
    return to_jsonb(p)||to_jsonb(w)||jsonb_build_object(
      'server_now',checked,
      'can_assign',exists(select 1 from public.profiles where id=auth.uid() and role='admin'),
      'window_hours',extract(epoch from p.launch_window)/3600,
      'gap_hours',extract(epoch from p.launch_gap)/3600,
-     -- free-plan intro offer (additive keys; legacy keys keep prior meanings)
-     'intro_campaigns_used',f.campaigns_used,
-     'intro_campaigns_limit',f.campaigns_limit,
-     'intro_campaigns_remaining',f.campaigns_remaining,
-     'intro_max_places',f.max_places,
+     -- free-plan rolling allowance (additive keys)
+     'free_campaigns_used',f.campaigns_used,
+     'free_campaigns_limit',f.campaigns_limit,
+     'free_campaigns_remaining',f.campaigns_remaining,
+     'free_place_cap',f.place_cap,
      'free_next_at',f.next_at,
-     -- one free tester place per rolling 30 days after the intro offer
-     'free_places_window_hours',720
+     'free_window_hours',720
    )||jsonb_build_object('next_at',f.next_at);
  end if;
  return to_jsonb(p)||to_jsonb(w)||jsonb_build_object('server_now',checked,'can_assign',exists(select 1 from public.profiles where id=auth.uid() and role='admin'),'window_hours',extract(epoch from p.launch_window)/3600,'gap_hours',extract(epoch from p.launch_gap)/3600);
@@ -100,16 +95,13 @@ as $function$declare r record;kind text;source_id uuid;w record;f record;v_plan 
  if r.active_playtest_status='draft' and allowed then
    select plan into v_plan from public._developer_plan(auth.uid());
    if v_plan='free' then
-     select * into f from public._playtested_free_intro_at(auth.uid(),clock_timestamp());
+     select * into f from public._playtested_free_allowance_at(auth.uid(),clock_timestamp());
      if f.campaigns_remaining>0 then
        r.tester_hub_eligible:=true;
-       r.tester_hub_reason:=format('Intro offer: %s of %s free campaigns used; this launch reserves up to %s tester places.',f.campaigns_used,f.campaigns_limit,f.max_places);
-     elsif f.next_at is null then
-       r.tester_hub_eligible:=true;
-       r.tester_hub_reason:='Free allowance available: one launch with one tester place per rolling 30 days.';
+       r.tester_hub_reason:=format('Free allowance available: %s of %s free campaigns used; this launch reserves one tester place.',f.campaigns_used,f.campaigns_limit);
      else
        r.tester_hub_eligible:=false;
-       r.tester_hub_reason:=format('Free allowance exhausted: one launch with one tester place per rolling 30 days. Next launch available %s.',to_char(f.next_at,'YYYY-MM-DD HH24:MI'));
+       r.tester_hub_reason:=format('Free allowance used: %s of %s free campaigns used. Next campaign available %s.',f.campaigns_used,f.campaigns_limit,to_char(f.next_at,'YYYY-MM-DD HH24:MI'));
        r.next_tester_hub_at:=f.next_at;
      end if;
    else
@@ -121,11 +113,11 @@ as $function$declare r record;kind text;source_id uuid;w record;f record;v_plan 
    -- legacy rolling-window wording from _pre_admission_eligibility.
    select plan into v_plan from public._developer_plan(auth.uid());
    if v_plan='free' then
-     select * into f from public._playtested_free_intro_at(auth.uid(),clock_timestamp());
+     select * into f from public._playtested_free_allowance_at(auth.uid(),clock_timestamp());
      if f.campaigns_remaining>0 then
-       r.tester_hub_reason:=format('Free intro offer: %s of %s campaigns used; a launch reserves up to %s tester places. Save a draft to publish.',f.campaigns_used,f.campaigns_limit,f.max_places);
+       r.tester_hub_reason:=format('Free allowance: %s of %s free campaigns used; a launch reserves one tester place. Save a draft to publish.',f.campaigns_used,f.campaigns_limit);
      else
-       r.tester_hub_reason:='Free plan: one launch with one tester place per rolling 30 days. Next launch available '||coalesce(to_char(f.next_at,'YYYY-MM-DD HH24:MI'),'now')||'. Save a draft to publish.';
+       r.tester_hub_reason:=format('Free allowance used: %s of %s free campaigns used. Next campaign available %s. Save a draft to publish.',f.campaigns_used,f.campaigns_limit,to_char(f.next_at,'YYYY-MM-DD HH24:MI'));
        r.next_tester_hub_at:=f.next_at;
      end if;
    end if;
@@ -192,8 +184,8 @@ BEGIN
     NEW.published_at := v_now;
   END IF;
 
-  -- Drafts may be prepared during a cooldown; first Hub publication is
-  -- the only event that consumes launch allowance. Resume/edit is free.
+  -- Drafts may be prepared during the allowance window; first Hub publication
+  -- is the only event that consumes launch allowance. Resume/edit is free.
   IF NEW.tester_hub_started_at IS NULL
      AND NEW.audience IN ('playtested_testers', 'both')
      AND NEW.status = 'paused' THEN
@@ -204,17 +196,17 @@ BEGIN
      AND NEW.audience IN ('playtested_testers', 'both')
      AND NEW.status = 'open' THEN
     IF (select plan from public._developer_plan(NEW.developer_id)) = 'free' THEN
-      -- Free plan: first six Tester Hub campaigns each reserve up to three
-      -- accepted tester places; afterwards one launch with one place per
-      -- rolling 30 days. Only the first Hub publication consumes allowance.
+      -- Free plan: one Tester Hub campaign per rolling 30 days, and that
+      -- campaign reserves exactly one accepted tester place. Only the first
+      -- Hub publication consumes the allowance.
       SELECT * INTO v_free
-      FROM public._playtested_free_intro_at(NEW.developer_id, v_now);
-      IF NEW.target_testers > v_free.max_places THEN
-        RAISE EXCEPTION 'Free plan place cap: a launch may reserve up to % accepted tester places (this campaign targets %). Drafts do not consume allowance until they are first published.',
-          v_free.max_places, NEW.target_testers;
+      FROM public._playtested_free_allowance_at(NEW.developer_id, v_now);
+      IF NEW.target_testers > v_free.place_cap THEN
+        RAISE EXCEPTION 'Free plan place cap: a launch may reserve up to % accepted tester place (this campaign targets %). Drafts do not consume allowance until they are first published.',
+          v_free.place_cap, NEW.target_testers;
       END IF;
       IF v_free.next_at IS NOT NULL THEN
-        RAISE EXCEPTION 'Tester Hub launch unavailable until %. Free plan: after the first six campaigns, one launch with one tester place per rolling 30 days applies.',
+        RAISE EXCEPTION 'Tester Hub launch unavailable until %. Free plan: one playtest campaign per rolling 30 days applies.',
           v_free.next_at;
       END IF;
     ELSE
@@ -230,4 +222,3 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
-
