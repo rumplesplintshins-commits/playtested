@@ -37,23 +37,18 @@ export interface PlatformInfo {
 }
 
 function svg(path: string, label: string): ReactNode {
-  return (
-    <svg
-      role="img"
-      aria-label={label}
-      className="shrink-0"
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {path}
-    </svg>
-  );
+  // Render actual SVG elements, not a string containing markup (React escapes strings).
+  // Paths are static, authored locally for these six platform icons.
+  const paths: Record<string, ReactNode> = {
+    Steam: <><circle cx="16.5" cy="7.5" r="4" /><circle cx="16.5" cy="7.5" r="1.5" /><path d="m3 15 5.5 2.5 5-5M3 19l5 2 4-2-1-4" /></>,
+    "PC / Other": <><rect x="2" y="3" width="20" height="15" rx="2" /><path d="M8 22h8M12 18v4" /></>,
+    Browser: <><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2c-3 3-4 6-4 10s1 7 4 10M12 2c3 3 4 6 4 10s-1 7-4 10" /></>,
+    Roblox: <><path d="m8 2 14 6-6 14L2 16 8 2Z" /><path d="m10 10 4 2-2 4-4-2 2-4Z" /></>,
+    Android: <><path d="M5 10a7 7 0 0 1 14 0v8H5v-8ZM8 3 6 1M16 3l2-2M8 18v3M16 18v3M2 11v6M22 11v6" /><path d="M9 10h.01M15 10h.01" /></>,
+    "iPhone / iPad": <><rect x="6" y="2" width="12" height="20" rx="2" /><path d="M10 5h4M11 19h2" /></>,
+  };
+  void path;
+  return <svg role="img" aria-label={label} className="shrink-0" width={44} height={44} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">{paths[label]}</svg>;
 }
 
 export const PLATFORM_INFO: Record<Platform, PlatformInfo> = {
