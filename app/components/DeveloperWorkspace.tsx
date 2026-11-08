@@ -6,12 +6,12 @@ import {useRouter} from "next/navigation";
 
 export type WorkspaceItem={campaignIds?:string[];missingCount?:number;correctionHref?:string;id:string;title:string;status:string;image?:string|null;context?:string;feedback?:string;active?:boolean;hasPlaytest?:boolean;hasFeedback?:boolean;content:ReactNode};
 type Tab="games"|"submissions"|"claims"|"diagnostics";
-type Selection={tab:Tab;filter:string;search:string;item:string;campaign?:string};
+type Selection={tab:Tab;filter:string;search:string;item:string;campaign?:string;launch?:boolean};
 const labels={games:"My games",submissions:"Game submissions",claims:"Developer claims",diagnostics:"Diagnostics"};
 const filters={games:["All","Active playtest","Current Hub feedback"],submissions:["All","Pending Review","Approved","Needs More Information","Rejected"],claims:["All","Pending","Approved","Needs More Information","Rejected"],diagnostics:["All"]};
 function readSelection():Selection{
  const query=new URLSearchParams(window.location.search);const value=query.get("tab");const tab:Tab=value==="claims"||value==="submissions"||value==="diagnostics"?value:"games";
- return {tab,filter:(tab==="diagnostics"||filters[tab].includes(query.get("filter")||""))?(query.get("filter")||"All"):"All",search:query.get("q")||"",item:query.get("game")||"",campaign:query.get("campaign")||undefined};
+ return {tab,filter:(tab==="diagnostics"||filters[tab].includes(query.get("filter")||""))?(query.get("filter")||"All"):"All",search:query.get("q")||"",item:query.get("game")||"",campaign:query.get("campaign")||undefined,launch:query.get("launch")==="1"};
 }
 export function WorkspaceRetry({message}:{message:string}){const router=useRouter();const [busy,setBusy]=useState(false);return <div role="alert" className="my-5 rounded-xl border border-amber-300/30 p-5 text-sm text-amber-100"><p>{message}</p><button type="button" disabled={busy} onClick={()=>{setBusy(true);router.refresh();setTimeout(()=>setBusy(false),1200);}} className="mt-3 rounded-lg border border-white/20 px-4 py-2 focus-visible:outline-2">{busy?"Refreshing…":"Refresh workspace"}</button></div>;}
 export default function DeveloperWorkspace({games,submissions,claims,diagnostics=[],diagnosticsReady=true,diagnosticsNotice,warnings=[],extras,feedbackCountsReady=true,showPlan=false}:{games:WorkspaceItem[];submissions:WorkspaceItem[];claims:WorkspaceItem[];diagnostics?:WorkspaceItem[];diagnosticsReady?:boolean;diagnosticsNotice?:ReactNode;warnings?:string[];extras?:ReactNode;feedbackCountsReady?:boolean;showPlan?:boolean}){
@@ -24,9 +24,9 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  const visible=items.filter(item=>item.title.toLowerCase().includes(selection.search.trim().toLowerCase())&&(effectiveFilter==="All"||(effectiveFilter==="Active playtest"?item.active:effectiveFilter==="Current Hub feedback"?item.hasFeedback:item.status===effectiveFilter))).sort((a,b)=>selection.tab==="submissions"||selection.tab==="claims"?priority(a.status)-priority(b.status):0);
  // A claimed Steam game may have several relationship IDs collapsed into one card.
  const selected=visible.find(item=>item.id===selection.item)||visible.find(item=>selection.campaign&&item.campaignIds?.includes(selection.campaign))||visible[0];
- const [scrollRequest,setScrollRequest]=useState<{id:string;tab:Tab;feedback:boolean}|null>(null);
+ const [scrollRequest,setScrollRequest]=useState<{id:string;tab:Tab;feedback:boolean;launch?:boolean}|null>(null);
  const handledScroll=useRef<typeof scrollRequest>(null);
- useEffect(()=>{function sync(){const next=readSelection();setSelection(next);setMobileDetail(!!next.item);if(next.item&&next.campaign)setScrollRequest({id:next.item,tab:next.tab,feedback:true});}sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);
+ useEffect(()=>{function sync(){const next=readSelection();setSelection(next);setMobileDetail(!!next.item);if(next.item&&(next.campaign||next.launch))setScrollRequest({id:next.item,tab:next.tab,feedback:!!next.campaign,launch:next.launch});}sync();window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);
  useEffect(()=>{
   if(!scrollRequest||handledScroll.current===scrollRequest)return;
   handledScroll.current=scrollRequest;
@@ -52,6 +52,7 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
    if(target===root&&root.scrollHeight>root.clientHeight)root.scrollTo({top:0,behavior});
    target.scrollIntoView({block:"start",inline:"nearest",behavior});
   }
+  if(scrollRequest.launch){const target=detail.querySelector<HTMLElement>("[data-start-playtest]");if(target){scroll(target);return;}}
   if(!scrollRequest.feedback){scroll(root);return;}
   // The result panel may mount only after its disclosure opens. Observe that commit, not a timer.
   const reveal=()=>{const target=detail.querySelector<HTMLElement>('[data-build-feedback]');if(target&&target.getClientRects().length){scroll(target);return true;}return false;};
