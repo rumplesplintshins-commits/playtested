@@ -40,11 +40,11 @@ function svg(path: string, label: string): ReactNode {
   // Render actual SVG elements, not a string containing markup (React escapes strings).
   // Paths are static, authored locally for these six platform icons.
   const paths: Record<string, ReactNode> = {
-    Steam: <><circle cx="16.5" cy="7.5" r="4" /><circle cx="16.5" cy="7.5" r="1.5" /><path d="m3 15 5.5 2.5 5-5M3 19l5 2 4-2-1-4" /></>,
+    Steam: <><circle cx="12" cy="12" r="10.2" fill="currentColor" stroke="none"/><circle cx="16.9" cy="7.7" r="3.8" fill="#101311" stroke="none"/><circle cx="16.9" cy="7.7" r="2.35" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="m5.1 12.5 4.2 1.75 3.55-2.55M3.6 15.7l4.2 1.75a2.55 2.55 0 1 0 1.8-4.77l-2.5-1.04" fill="none" stroke="#101311" strokeWidth="1.45"/><circle cx="8.7" cy="15.55" r="1.5" fill="#101311" stroke="none"/></>,
     "PC / Other": <><rect x="2" y="3" width="20" height="15" rx="2" /><path d="M8 22h8M12 18v4" /></>,
     Browser: <><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2c-3 3-4 6-4 10s1 7 4 10M12 2c3 3 4 6 4 10s-1 7-4 10" /></>,
     Roblox: <><path d="m8 2 14 6-6 14L2 16 8 2Z" /><path d="m10 10 4 2-2 4-4-2 2-4Z" /></>,
-    Android: <><path d="M5 10a7 7 0 0 1 14 0v8H5v-8ZM8 3 6 1M16 3l2-2M8 18v3M16 18v3M2 11v6M22 11v6" /><path d="M9 10h.01M15 10h.01" /></>,
+    Android: <><path d="M5 10a7 7 0 0 1 14 0Z" fill="currentColor" stroke="none"/><rect x="5" y="11" width="14" height="8" rx="1.1" fill="currentColor" stroke="none"/><rect x="2" y="11" width="2.2" height="7" rx="1.1" fill="currentColor" stroke="none"/><rect x="19.8" y="11" width="2.2" height="7" rx="1.1" fill="currentColor" stroke="none"/><rect x="7.3" y="18" width="2.3" height="4.5" rx="1.15" fill="currentColor" stroke="none"/><rect x="14.4" y="18" width="2.3" height="4.5" rx="1.15" fill="currentColor" stroke="none"/><path d="M8.1 4.1 6.7 2M15.9 4.1 17.3 2" stroke="currentColor" strokeWidth="1.2"/><circle cx="9" cy="7.7" r=".7" fill="#101311" stroke="none"/><circle cx="15" cy="7.7" r=".7" fill="#101311" stroke="none"/></>,
     "iPhone / iPad": <><rect x="6" y="2" width="12" height="20" rx="2" /><path d="M10 5h4M11 19h2" /></>,
   };
   void path;
