@@ -1208,6 +1208,7 @@ async function DeveloperDashboard() {
 
                   <ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved/>
                   <a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>
+                  <div data-start-playtest>
                   <StartPlaytest
                     gameTitle={game.gameTitle}
                     gameSource={{
@@ -1218,6 +1219,7 @@ async function DeveloperDashboard() {
                     existingPlaytest={game.latestPlaytest}
                     playtests={game.playtests}
                   />
+                  </div>
                   <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
                 </div>
               </article>
