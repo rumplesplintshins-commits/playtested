@@ -185,6 +185,7 @@ type CommunityPlaytestRow = {
   status: PlaytestStatus;
   created_at: string;
   published_at: string | null;
+  completed_at: string | null;
 };
 
 type LinkedPlaytest = {
@@ -201,6 +202,7 @@ type LinkedPlaytest = {
   releaseLabel: string | null;
   createdAt: string;
   publishedAt: string | null;
+  completedAt: string | null;
 };
 
 type DeveloperReceptionRow = {
@@ -351,6 +353,7 @@ function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
     releaseLabel: playtest.release_label,
     createdAt: playtest.created_at,
     publishedAt: playtest.published_at,
+    completedAt: playtest.completed_at,
   };
 }
 
@@ -633,7 +636,8 @@ async function DeveloperDashboard() {
           release_label,
           status,
           created_at,
-          published_at
+          published_at,
+          completed_at
         `
       )
       .eq("developer_id", user.id)
@@ -1070,7 +1074,7 @@ async function DeveloperDashboard() {
 
   return <DeveloperWorkspace diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
+ games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1159,7 +1163,7 @@ async function DeveloperDashboard() {
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500">
                     <span>
                       {game.latestPlaytest
-                        ? `Playtest: ${game.latestPlaytest.status}`
+                        ? `Playtest: ${game.latestPlaytest.completedAt ? "completed" : game.latestPlaytest.status}`
                         : "No playtest"}
                     </span>
                     <span>·</span>

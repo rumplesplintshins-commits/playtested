@@ -51,13 +51,33 @@ function BellIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
 }
 
+type PanelPlacement = { left: number; top: number; width: number; maxHeight: number };
+
+// The panel is positioned under the bell button itself (never over it), right
+// aligned with it and clamped to the viewport so it stays reachable on mobile
+// widths and at every browser zoom level.
+function computePlacement(button: HTMLElement): PanelPlacement {
+  const rect = button.getBoundingClientRect();
+  const viewport = window.innerWidth;
+  const margin = 16;
+  const width = Math.max(280, Math.min(410, viewport - margin * 2));
+  const rightEdge = Math.min(Math.max(rect.right + 2, margin + width), viewport - margin);
+  const left = rightEdge - width;
+  const top = Math.ceil(rect.bottom) + 8;
+  const maxHeight = Math.max(220, window.innerHeight - top - margin);
+  return { left, top, width, maxHeight };
+}
+
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<PanelPlacement | null>(null);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const requestVersion=useRef(0);
 
   async function load() {
@@ -90,11 +110,42 @@ export default function NotificationBell() {
     return () => {requestVersion.current++;window.clearInterval(timer);window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
   }, []);
 
+  function toggle() {
+    const next = !open;
+    if (next) {
+      const button = buttonRef.current;
+      if (button) setPlacement(computePlacement(button));
+      void load();
+    }
+    setOpen(next);
+  }
+
+  // Keep the panel anchored beneath the bell while it is open (zoom, resize
+  // and page scroll never detach the panel from its bell).
+  useEffect(() => {
+    if (!open) return;
+    function reposition() {
+      const button = buttonRef.current;
+      if (button) setPlacement(computePlacement(button));
+    }
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     function down(event: MouseEvent | TouchEvent) {
       if (open && ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     }
-    function key(event: KeyboardEvent) { if (event.key === "Escape") setOpen(false); }
+    function key(event: KeyboardEvent) {
+      if (event.key === "Escape" && open) {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    }
     document.addEventListener("mousedown", down);
     document.addEventListener("touchstart", down);
     document.addEventListener("keydown", key);
@@ -104,6 +155,26 @@ export default function NotificationBell() {
       document.removeEventListener("keydown", key);
     };
   }, [open]);
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!open || panelRef.current === null) return;
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const panel = panelRef.current;
+    const focusable = Array.from(
+      panel.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])")
+    );
+    if (focusable.length === 0) return;
+    const active = document.activeElement instanceof HTMLElement && panel.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+    let next: number;
+    if (event.key === "ArrowDown") next = active ? (focusable.indexOf(active) + 1) % focusable.length : 0;
+    else if (event.key === "ArrowUp") next = active ? (focusable.indexOf(active) - 1 + focusable.length) % focusable.length : focusable.length - 1;
+    else if (event.key === "Home") next = 0;
+    else next = focusable.length - 1;
+    focusable[next]?.focus();
+  }
 
   async function markRead(item: NotificationItem) {
     if (item.read_at) return true;
@@ -138,20 +209,20 @@ export default function NotificationBell() {
 
   const hasRead = items.some((item) => item.read_at);
 
-  return <div ref={ref} className="relative">
-    <button type="button" aria-label={`Notifications${unreadTotal ? `, ${unreadTotal} unread` : ""}`} aria-expanded={open} onClick={() => { const next = !open; setOpen(next); if (next) void load(); }} className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${open ? "border-[#77f29b]/60 bg-[#77f29b]/10 text-[#77f29b]" : "border-white/15 text-zinc-300 hover:border-white/30 hover:bg-white/[0.04] hover:text-white"}`}>
+  return <div ref={ref} onKeyDown={onKeyDown} className="relative">
+    <button ref={buttonRef} type="button" aria-label={`Notifications${unreadTotal ? `, ${unreadTotal} unread` : ""}`} aria-expanded={open} aria-controls="notification-bell-panel" aria-haspopup="true" onClick={toggle} className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${open ? "border-[#77f29b]/60 bg-[#77f29b]/10 text-[#77f29b]" : "border-white/15 text-zinc-300 hover:border-white/30 hover:bg-white/[0.04] hover:text-white"}`}>
       <BellIcon/>
       {unreadTotal > 0 && <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#77f29b] px-1 text-[10px] font-bold leading-none text-[#09100b] ring-2 ring-[#0e110f]">{unreadTotal > 9 ? "9+" : unreadTotal}</span>}
     </button>
-    {open && <div role="region" aria-label="Notifications" className="fixed left-3 right-3 top-[68px] overflow-hidden rounded-xl border border-white/10 bg-[#111512] shadow-2xl shadow-black/50 sm:absolute sm:left-auto sm:right-0 sm:top-[46px] sm:w-[410px]">
-      <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] px-4 py-3.5">
+    {open && placement && <div ref={panelRef} id="notification-bell-panel" role="region" aria-label="Notifications" tabIndex={-1} style={{ left: placement.left, top: placement.top, width: placement.width, maxHeight: placement.maxHeight }} className="fixed z-50 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#111512] shadow-2xl shadow-black/50 focus-visible:outline-2 focus-visible:outline-emerald-300">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.08] px-4 py-3.5">
         <div><p className="font-semibold text-white">Notifications</p><p className="mt-0.5 text-xs text-zinc-500">{unreadTotal === 0 ? "No unread notifications" : `${unreadTotal} unread`}</p></div>
         <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
           {unreadTotal > 0 && <button type="button" onClick={() => void markAll()} className="text-xs font-medium text-[#77f29b] hover:text-[#9af8b4]">Mark all read</button>}
           {hasRead && <button type="button" title="Hide read notifications from this popup" onClick={clearReadFromBell} className="text-xs font-medium text-zinc-400 hover:text-white">Clear read</button>}
         </div>
       </div>
-      <div className="max-h-[min(430px,65vh)] min-w-0 overflow-x-hidden overflow-y-auto">
+      <div style={{ maxHeight: placement ? Math.max(120, placement.maxHeight) : undefined }} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         {loading && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-400">Loading notifications...</div> : error && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-300">{error}</div> : items.length === 0 ? <div className="px-5 py-10 text-center"><p className="text-sm text-zinc-300">No recent notifications</p><p className="mt-1 text-xs text-zinc-500">Older notifications remain in your notification history.</p></div> : items.map((item) => {
           const unread = !item.read_at;
           return <div key={item.id} className={`group flex gap-3 border-b border-white/[0.06] px-4 py-3.5 last:border-b-0 ${unread ? "bg-[#77f29b]/[0.035]" : ""}`}>
@@ -165,3 +236,5 @@ export default function NotificationBell() {
     </div>}
   </div>;
 }
+
+export const __bellPlacementForTest = { computePlacement };
