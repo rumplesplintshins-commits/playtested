@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
-export const SITE_ORIGIN = "https://playtested.co.uk";
+// Local previews set NEXT_PUBLIC_SITE_ORIGIN so production-mode `next start`
+// mutations keep their same-origin checks. Production leaves it unset.
+export const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://playtested.co.uk";
 export const SITE_TITLE = "Playtested | Discover Indie Games & Playtest New Releases";
 export const SITE_DESCRIPTION = "Discover promising indie games, read structured player feedback and join community playtests that help developers improve new releases.";
 const image = {url:"/images/roles/player-role.png",width:2171,height:724,alt:"Playtested - indie game discovery and community playtesting"};
