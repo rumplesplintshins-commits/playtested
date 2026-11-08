@@ -28,6 +28,7 @@
     "recovery:readiness": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/recovery/check-backup-readiness.ps1",
     "recovery:export": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/recovery/backup-database.ps1",
     "test:reservations": "node tests/test-testing-policy.mjs --reservations-only",
+    "test:campaign-completion": "node tests/test-campaign-completion.mjs",
     "test:reservations:concurrency": "node tests/test-testing-policy.mjs --reservations-concurrency",
     "test:feedback-quality": "node tests/test-testing-policy.mjs --graded-quality",
     "test:feedback-quality:concurrency": "node tests/test-testing-policy.mjs --quality-concurrency",
@@ -39,7 +40,9 @@
     "test:merge24": "node tests/test-submission-contacts.mjs && node tests/test-m24-analytics.mjs && node tests/test-gameplay-footage.mjs && node tests/test-m24-submission-inputs.mjs && node tests/test-platform-users.mjs && node tests/test-game-screenshots.mjs && node tests/test-notification-routing.mjs && node tests/test-video-posters.mjs && node tests/test-m24-final-fixes.mjs",
     "test:pulse-zip-ssrf": "node tests/test-pulse-zip-download-ssrf.mjs",
     "test:seo-structured-data": "node tests/test-seo-structured-data.mjs",
-    "test:seo-community-browser": "node tests/test-seo-community-browser.mjs"
+    "test:seo-community-browser": "node tests/test-seo-community-browser.mjs",
+    "test:bell-placement": "node tests/test-notification-bell-placement-browser.mjs",
+    "test:campaign-controls": "node tests/test-start-playtest-controls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

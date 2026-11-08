@@ -49,6 +49,7 @@ type ExistingPlaytest = {
   releaseLabel: string | null;
   createdAt: string;
   publishedAt: string | null;
+  completedAt?: string | null;
 };
 
 type PlaytestedTestProgress = {
@@ -166,7 +167,11 @@ function playtestStatusClasses(status: PlaytestStatus) {
   return "border-white/10 bg-white/[0.04] text-zinc-300";
 }
 
-function playtestStatusLabel(status: PlaytestStatus) {
+function playtestStatusLabel(status: PlaytestStatus, completedAt?: string | null) {
+  if (status === "closed" && completedAt) {
+    return "Completed";
+  }
+
   if (status === "open") {
     return "Playtest open";
   }
@@ -1580,7 +1585,7 @@ function BuildResultsPanel({
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <span>{isCurrent ? "Current build" : "Historical build"}</span>
           <span>·</span>
-          <span>{playtestStatusLabel(selectedPlaytest.status)}</span>
+          <span>{playtestStatusLabel(selectedPlaytest.status, selectedPlaytest.completedAt)}</span>
           <span>·</span>
           <span>{historyFormatDate(selectedPlaytest.publishedAt ?? selectedPlaytest.createdAt)}</span>
         </div>
@@ -1674,6 +1679,7 @@ export default function StartPlaytest({
   const [acceptedIndependentFeedback, setAcceptedIndependentFeedback] =
     useState<AcceptedIndependentFeedback[]>([]);
   const [setupExpanded, setSetupExpanded] = useState(false);
+  const setupPanelId=useId();
 
   const [resultsExpanded, setResultsExpanded] = useState(true);
   const resultsPanelId=useId();
@@ -1699,6 +1705,14 @@ export default function StartPlaytest({
     );
 
   useEffect(()=>{if(!existingPlaytest || existingPlaytest.status === "closed")return; let active=true;void createClient().rpc("get_campaign_testing_details",{p_id:existingPlaytest.id}).then(({data,error})=>{if(active){setSettingsError(error?.message||(!data?"Campaign eligibility settings unavailable.":""));if(data){setSavedAudienceKey(audienceSelectionKey(data.minimum_rank,data.testing_genre||"",data.genre_restricted));setEvidenceLocked(data.build_locked);setMinimumRank(data.minimum_rank);setTestingGenre(data.testing_genre||"");setGenreRestricted(data.genre_restricted);setSettingsCampaignId(existingPlaytest.id);}}});return()=>{active=false;};},[existingPlaytest]);
+
+  // Deep-linked manage mode still needs accepted/target progress for the header.
+  const progressRequestedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editing || !existingPlaytest || progressRequestedFor.current === existingPlaytest.id) return;
+    progressRequestedFor.current = existingPlaytest.id;
+    void loadPlaytestResults(existingPlaytest.id);
+  }, [editing, existingPlaytest?.id]);
   useEffect(() => {
     let active = true;
 
@@ -2262,6 +2276,28 @@ export default function StartPlaytest({
 
             <h4 className="mt-2 text-xl font-semibold">{gameTitle}</h4>
 
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${playtestStatusClasses(
+                  existingPlaytest.status
+                )}`}
+              >
+                {playtestStatusLabel(existingPlaytest.status, existingPlaytest.completedAt)}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300">
+                {playtestedProgress
+                  ? `${playtestedProgress.accepted_count} of ${existingPlaytest.targetTesters} accepted, target ${existingPlaytest.targetTesters}`
+                  : `Target ${existingPlaytest.targetTesters} accepted tests`}
+              </span>
+              {playtestedProgress &&
+                Math.max(0, playtestedProgress.submitted_count) >
+                  playtestedProgress.accepted_count + playtestedProgress.rejected_count && (
+                  <span className="rounded-full border border-amber-300/25 bg-amber-300/[0.06] px-3 py-1.5 text-xs font-medium text-amber-200">
+                    Awaiting moderation
+                  </span>
+                )}
+            </div>
+
             <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
               Manage the current testing round, community sharing and player
               feedback from one place.
@@ -2292,6 +2328,8 @@ export default function StartPlaytest({
             <section className="rounded-xl border border-white/10 bg-white/[0.02]">
               <button
                 type="button"
+                aria-expanded={setupExpanded}
+                aria-controls={setupPanelId}
                 onClick={() => setSetupExpanded((current) => !current)}
                 className="flex w-full items-center justify-between gap-4 p-5 text-left focus-visible:outline-2 focus-visible:outline-emerald-300"
               >
@@ -2304,15 +2342,14 @@ export default function StartPlaytest({
                   </p>
                 </div>
 
-                <span className="text-lg text-zinc-400">
-                  {setupExpanded ? "-" : "+"}
-                </span>
+                <DisclosureControl expanded={setupExpanded}/>
               </button>
 
-              <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} publishedTargeting={existingPlaytest?.publishedAt&&includesPlaytestedTesters(existingPlaytest.audience)&&savedAudienceKey?JSON.parse(savedAudienceKey) as [number,string,boolean]:undefined} />
               {setupExpanded && (
+                <div id={setupPanelId} className="border-t border-white/10 p-5">
+              <CampaignAudienceFields minimumRank={minimumRank} setMinimumRank={setMinimumRank} genre={testingGenre} setGenre={setTestingGenre} restricted={genreRestricted} setRestricted={setGenreRestricted} onAvailability={setAudienceAvailability} enabled={testerHubSelected} publishedTargeting={existingPlaytest?.publishedAt&&includesPlaytestedTesters(existingPlaytest.audience)&&savedAudienceKey?JSON.parse(savedAudienceKey) as [number,string,boolean]:undefined} />
                 <form
-                  className="space-y-6 border-t border-white/10 p-5"
+                  className="mt-5 space-y-6 border-t border-white/10 pt-5"
                   onSubmit={handleUpdate}
                 >
                   <label className="block">
@@ -2636,6 +2673,7 @@ export default function StartPlaytest({
                     </button>
                   </div>
                 </form>
+                </div>
               )}
             </section>
 
@@ -2691,7 +2729,7 @@ export default function StartPlaytest({
                   <span className="mr-1.5">●</span>
                 )}
 
-                {playtestStatusLabel(existingPlaytest.status)}
+                {playtestStatusLabel(existingPlaytest.status, existingPlaytest.completedAt)}
               </span>
 
               {existingPlaytest.releaseLabel && (

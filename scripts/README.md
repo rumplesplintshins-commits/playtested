@@ -23,6 +23,9 @@ Run commands from the repository root. Extend an existing relevant helper/test b
 | `npm run test:feedback-quality:concurrency` | Real multi-connection review edits/reversals/rollback in the same disposable no-network Docker harness. |
 | `npm run test:feedback-quality:browser` | Mocked admin review flow, live preview, partial awards and edited reasons; local Next server required. |
 | `npm run test:reservations` | New four-place/72h rules in an isolated embedded PostgreSQL fixture. |
+| `npm run test:campaign-completion` | Campaign completion lifecycle (accepted-only counting, idempotent close+notification, moderation/reconsideration alerts, preserved targets) in an isolated embedded PostgreSQL fixture. |
+| `npm run test:bell-placement` | Mocked notification-bell panel placement: beneath the bell, right aligned, viewport clamped on desktop/mobile, resize repositioning, Escape/arrow keyboard support; local Next server required. |
+| `npm run test:campaign-controls` | Mocked Manage Playtest controls: progress/status pills, disclosure toggle, locked-build notice, pause/close status RPCs with confirmation; local Next server required. |
 | `npm run test:reservations:concurrency` | Real multi-connection PostgreSQL 17 checks; creates/removes one disposable Docker container with no network or source credentials. Docker/image must already be available. |
 | `npm run test:testing-policy` | Existing testing-policy suite; embedded isolated PostgreSQL fixture, then tester helper checks. |
 | `npm run test:share` | Mocked link/API checks and embedded isolated attribution SQL tests. |
