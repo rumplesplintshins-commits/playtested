@@ -38,12 +38,12 @@ export interface PlatformInfo {
 
 function svg(path: string, label: string): ReactNode {
   // Render actual SVG elements, not a string containing markup (React escapes strings).
-  // Paths are static, authored locally for these six platform icons.
+  // Steam and Roblox paths are the canonical Simple Icons brand SVG silhouettes; other icons are UI pictograms.
   const paths: Record<string, ReactNode> = {
-    Steam: <><circle cx="12" cy="12" r="10.2" fill="currentColor" stroke="none"/><circle cx="16.9" cy="7.7" r="3.8" fill="#101311" stroke="none"/><circle cx="16.9" cy="7.7" r="2.35" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="m5.1 12.5 4.2 1.75 3.55-2.55M3.6 15.7l4.2 1.75a2.55 2.55 0 1 0 1.8-4.77l-2.5-1.04" fill="none" stroke="#101311" strokeWidth="1.45"/><circle cx="8.7" cy="15.55" r="1.5" fill="#101311" stroke="none"/></>,
+    Steam: <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z" fill="currentColor" stroke="none" />,
     "PC / Other": <><rect x="2" y="3" width="20" height="15" rx="2" /><path d="M8 22h8M12 18v4" /></>,
     Browser: <><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2c-3 3-4 6-4 10s1 7 4 10M12 2c3 3 4 6 4 10s-1 7-4 10" /></>,
-    Roblox: <><path d="m8 2 14 6-6 14L2 16 8 2Z" /><path d="m10 10 4 2-2 4-4-2 2-4Z" /></>,
+    Roblox: <path d="M18.926 23.998 0 18.892 5.075.002 24 5.108ZM15.348 10.09l-5.282-1.453-1.414 5.273 5.282 1.453z" fill="currentColor" stroke="none" />,
     Android: <><path d="M5 10a7 7 0 0 1 14 0Z" fill="currentColor" stroke="none"/><rect x="5" y="11" width="14" height="8" rx="1.1" fill="currentColor" stroke="none"/><rect x="2" y="11" width="2.2" height="7" rx="1.1" fill="currentColor" stroke="none"/><rect x="19.8" y="11" width="2.2" height="7" rx="1.1" fill="currentColor" stroke="none"/><rect x="7.3" y="18" width="2.3" height="4.5" rx="1.15" fill="currentColor" stroke="none"/><rect x="14.4" y="18" width="2.3" height="4.5" rx="1.15" fill="currentColor" stroke="none"/><path d="M8.1 4.1 6.7 2M15.9 4.1 17.3 2" stroke="currentColor" strokeWidth="1.2"/><circle cx="9" cy="7.7" r=".7" fill="#101311" stroke="none"/><circle cx="15" cy="7.7" r=".7" fill="#101311" stroke="none"/></>,
     "iPhone / iPad": <><rect x="6" y="2" width="12" height="20" rx="2" /><path d="M10 5h4M11 19h2" /></>,
   };
