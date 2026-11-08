@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
+import {platformBadge,platformOf} from "@/lib/platforms";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
 import {publicProfileClient,publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
@@ -21,6 +22,7 @@ type CatalogueGame = {
   genre: string;
   description: string;
   image: string;
+  platform: string | null;
   aiType: string;
   score: number;
   gameLink?: string;
@@ -180,6 +182,23 @@ function GenreBadge({ genre }: { genre: string }) {
   );
 }
 
+function PlatformBadge({ platform }: { platform: string | null }) {
+  const badge = platformBadge(platformOf(platform));
+  if (!badge) return null;
+  const styles: Record<string, string> = {
+    Web: "border-sky-400/35 bg-sky-400/10 text-sky-200",
+    Roblox: "border-violet-400/35 bg-violet-400/10 text-violet-200",
+    Mobile: "border-amber-400/35 bg-amber-400/10 text-amber-200",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider ${styles[badge]}`}
+    >
+      {badge}
+    </span>
+  );
+}
+
 function GameCardContent({
   game,
   href,
@@ -241,6 +260,7 @@ function GameCardContent({
           ) : (
             <VerificationBadge status={game.verificationStatus} />
           )}
+          <PlatformBadge platform={game.platform} />
           <span title="AI-use disclosure; not independent verification" className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${disclosureStyle}`}>
             {disclosureLabel}
           </span>
@@ -341,6 +361,7 @@ function initialGame(row:PublicCatalogueRow):CatalogueGame {
     isNsfw: row.is_nsfw === true,
     verificationStatus: row.verification_status ?? "Not yet verified",
     submittedAt: row.submitted_at ?? "",
+    platform: row.platform ?? null,
     communityReception: null,
     recruiting: false,
     listingNotice: "",
@@ -459,6 +480,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
           isNsfw: row.is_nsfw === true,
           verificationStatus: row.verification_status ?? "Not yet verified",
           submittedAt: row.submitted_at ?? "",
+          platform: row.platform ?? null,
           communityReception,
           recruiting: recruiting.has(`${row.source_type}:${row.game_id}`),
           listingNotice: listingNotice(update),
