@@ -92,14 +92,14 @@ returns table(has_active_playtest boolean, active_playtest_id uuid, active_playt
 language plpgsql
 security definer
 set search_path to ''
-as $function$declare r record;kind text;source_id uuid;w record;f record;plan text;allowed boolean;begin
+as $function$declare r record;kind text;source_id uuid;w record;f record;v_plan text;allowed boolean;begin
  select * into r from public._pre_admission_eligibility(p_imported_game_id,p_approved_game_id,p_submission_id);
  kind:=case when p_imported_game_id is not null then 'imported' when p_approved_game_id is not null then 'approved' else 'submission' end;source_id:=coalesce(p_imported_game_id,p_approved_game_id,p_submission_id);
  allowed:=public._listing_has_admission(kind,source_id) and public._listing_current_claim(kind,source_id,auth.uid()) and not exists(select 1 from public.game_submissions where kind<>'imported' and id=source_id and status<>'Approved') and not exists(select 1 from public.imported_games where kind='imported' and id=source_id and catalogue_review_status in('held_for_review','excluded'));
  if not allowed then r.tester_hub_eligible:=false;r.tester_hub_reason:='Complete initial listing admission and obtain admin approval before publishing to Tester Hub.';end if;
  if r.active_playtest_status='draft' and allowed then
-   select plan into plan from public._developer_plan(auth.uid());
-   if plan='free' then
+   select plan into v_plan from public._developer_plan(auth.uid());
+   if v_plan='free' then
      select * into f from public._playtested_free_intro_at(auth.uid(),clock_timestamp());
      if f.campaigns_remaining>0 then
        r.tester_hub_eligible:=true;
@@ -115,6 +115,19 @@ as $function$declare r record;kind text;source_id uuid;w record;f record;plan te
    else
      select * into w from public._playtested_developer_launch_window_at(auth.uid(),clock_timestamp());
      if w.next_at is null then r.tester_hub_eligible:=true;r.tester_hub_reason:='Approved listing: draft may be published when campaign requirements are met.';end if;
+   end if;
+ elsif allowed and coalesce(r.active_playtest_status,'')<>'draft' then
+   -- No draft yet: explain the current free-plan allowance instead of the
+   -- legacy rolling-window wording from _pre_admission_eligibility.
+   select plan into v_plan from public._developer_plan(auth.uid());
+   if v_plan='free' then
+     select * into f from public._playtested_free_intro_at(auth.uid(),clock_timestamp());
+     if f.campaigns_remaining>0 then
+       r.tester_hub_reason:=format('Free intro offer: %s of %s campaigns used; a launch reserves up to %s tester places. Save a draft to publish.',f.campaigns_used,f.campaigns_limit,f.max_places);
+     else
+       r.tester_hub_reason:='Free plan: one launch with one tester place per rolling 30 days. Next launch available '||coalesce(to_char(f.next_at,'YYYY-MM-DD HH24:MI'),'now')||'. Save a draft to publish.';
+       r.next_tester_hub_at:=f.next_at;
+     end if;
    end if;
  end if;
  return query select r.has_active_playtest,r.active_playtest_id,r.active_playtest_status,r.tester_hub_eligible,r.tester_hub_reason,r.next_tester_hub_at,r.tester_hub_rounds_last_30_days;
@@ -217,3 +230,4 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
+
