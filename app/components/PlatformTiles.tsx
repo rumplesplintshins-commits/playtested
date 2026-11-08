@@ -17,8 +17,8 @@ function PlatformTile({platform,selected,onSelect,disabled}:{platform:Platform;s
         : "border-white/10 bg-[#101311] text-zinc-300 hover:border-white/25 hover:text-white"
       }`}
     >
-      <span className="text-sm font-semibold">{info.label}</span>
       {info.icon}
+      <span className="text-sm font-semibold">{info.label}</span>
     </button>
   );
 }
