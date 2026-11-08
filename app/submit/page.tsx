@@ -23,6 +23,9 @@ import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
 import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
 import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
 import SiteHeader from "../components/SiteHeader";
+import PlatformTiles from "../components/PlatformTiles";
+import PlatformLinkField from "../components/PlatformLinkField";
+import {type Platform} from "@/lib/platforms";
 
 import { createClient } from "../../lib/supabase";
 import { GAME_GENRES } from "../../lib/genres";
@@ -518,6 +521,10 @@ export default function SubmitGamePage() {
   const [releaseStatus, setReleaseStatus] =
 
     useState<ReleaseStatus | "">("");
+
+  const [platform, setPlatform] = useState<Platform>("steam");
+  const [steamUrl, setSteamUrl] = useState("");
+  const [gameLink, setGameLink] = useState("");
 
   const [savedSubmissionId,setSavedSubmissionId]=useState<string|undefined>();
   const [pulseOpen, setPulseOpen] = useState(false);
@@ -1241,7 +1248,7 @@ export default function SubmitGamePage() {
     if(imageUploading||screenshotSelecting){setError("Wait for the thumbnail upload to finish before submitting.");return;}
     const footageInput=String(formData.get("gameplayVideo")||"").trim();
     if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
-    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),game_link:String(formData.get('gameLink')||'').trim(),steam_url:String(formData.get('steamUrl')||'').trim()||null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
+    const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),platform,game_link:platform==="steam"?"":gameLink,steam_url:platform==="steam"?steamUrl:null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
     let pcMinimum,pcRecommended;try{pcMinimum=parsePcSpecs(pcRequirements.minimum,true);pcRecommended=parsePcSpecs(pcRequirements.recommended,true);}catch(e){setError(e instanceof Error?e.message:"Check optional PC requirements.");return;}
 
 
@@ -1269,15 +1276,8 @@ export default function SubmitGamePage() {
 
 
 
-    const steamUrl = String(
-
-      formData.get("steamUrl") ?? ""
-
-    ).trim();
-
-
-
     const submittedReleaseStatus = String(
+
 
       formData.get("releaseStatus") ?? ""
 
@@ -1937,15 +1937,13 @@ export default function SubmitGamePage() {
 
           ).trim(),
 
-          game_link: String(
+          game_link: platform==="steam" ? "" : gameLink,
 
-            formData.get("gameLink") ?? ""
-
-          ).trim(),
-
-          steam_url: steamUrl || null,
+          steam_url: platform==="steam" ? steamUrl || null : null,
 
           steam_app_id: steamAppId,
+
+          platform,
 
           image_url: submittedImageUrl || null,
 
@@ -2034,7 +2032,7 @@ export default function SubmitGamePage() {
       setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
       setSavedSubmissionId(insertedSubmission.id);
       setSubmittedTitle(title);setSubmitted(true);resetDuplicateState();
-      setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");setGameTitle("");form.reset();
+      setImageUrl("");setImageStatus("empty");setDescription("");setAiExplanation("");setReleaseStatus("");setGameTitle("");setPlatform("steam");setSteamUrl("");setGameLink("");form.reset();
       setPulseOpen(false);setPulseStage("idle");
       // The optional queue is handled independently after the successful save.
     } catch (err) {
@@ -3655,62 +3653,47 @@ export default function SubmitGamePage() {
 
 
               <label className={labelClass}>
-                Playable build / tester access link
-                <input
-                  name="gameLink"
-                  type="url"
-                  placeholder="https://..."
-                  className={inputClass}
-                />
-
+                Platform *
+                <PlatformTiles value={platform} onChange={setPlatform} disabled={submitting}/>
                 <span className="mt-2 block text-xs leading-5 text-zinc-500">
-                  Optional. Add a link where Playtested testers could download or
-                  access a playable build, such as itch.io, Google Drive,
-                  Dropbox, a browser build, Steam Playtest or your own hosted
-                  download. Playtested does not host the game file itself. You
-                  can provide or replace the build link later when starting a
-                  specific playtest round.
+                  Choose where your game is available. The link field below
+                  changes to match the platform and Steam IDs are only required
+                  for Steam games.
                 </span>
               </label>
 
-
-
-              <label className={labelClass}>
-
-                Steam store page / public listing (optional)
-
-                <input
-
-                  name="steamUrl"
-
-                  type="url"
-
-                  placeholder="https://store.steampowered.com/app/..."
-
-                  className={inputClass}
-
-                  onChange={() => {
-
-                    resetDuplicateState();
-
-                  }}
-
-                />
-
-
-
-                <span className="mt-2 block text-xs leading-5 text-zinc-500">
-
-                  Add the public Steam store page if the game has one. This is
-                  separate from the playable build link above. If the game
-                  already exists in the Playtested catalogue, we'll match it
-                  using its Steam App ID. Existing games can be claimed rather
-                  than duplicated. Unreleased games and games hosted elsewhere
-                  are also welcome.
-
-                </span>
-
-              </label>
+              <div>
+                {platform==="steam"?(
+                  <>
+                    <label className={labelClass}>
+                      Steam store page *
+                      <input
+                        name="steamUrl"
+                        type="url"
+                        value={steamUrl}
+                        onChange={(event)=>{setSteamUrl(event.target.value);resetDuplicateState();}}
+                        placeholder="https://store.steampowered.com/app/..."
+                        className={inputClass}
+                      />
+                      <span className="mt-2 block text-xs leading-5 text-zinc-500">
+                        Add the public Steam store page for this game. Playtested
+                        matches Steam games by App ID to avoid duplicate
+                        listings.
+                      </span>
+                    </label>
+                  </>
+                ):(
+                  <PlatformLinkField
+                    platform={platform}
+                    steamUrl={steamUrl}
+                    gameLink={gameLink}
+                    onChange={(field,value)=>{
+                      if(field==="steamUrl")setSteamUrl(value);else setGameLink(value);
+                    }}
+                    disabled={submitting}
+                  />
+                )}
+              </div>
 
 
 

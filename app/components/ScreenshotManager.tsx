@@ -65,13 +65,28 @@ export default function ScreenshotManager({ id, management=false }: { id: string
     } catch (e) { setMessage(e instanceof Error ? e.message : "Could not remove screenshot. Please retry."); }
     finally { lock.current=false;setBusy(false);heading.current?.focus({preventScroll:true}); }
   }
+  async function reorder(fromSlot:number,toSlot:number){
+    if(lock.current)return;lock.current=true;setBusy(true);setMessage("");
+    try{
+      const slots=new Set(screenshots.map(shot=>shot.slot));
+      if(!slots.has(toSlot))return;
+      const order=screenshots.map(shot=>shot.slot).sort((a,b)=>a-b);
+      const i=order.indexOf(fromSlot),j=order.indexOf(toSlot);[order[i],order[j]]=[order[j],order[i]];
+      const response=await fetch(`/api/game-media/${encodeURIComponent(id)}/reorder`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order})});
+      if(!response.ok)throw new Error((await response.json()).error||"Could not reorder screenshots.");
+      setScreenshots(previous=>previous.map(shot=>shot.slot===fromSlot?{...shot,slot:toSlot}:shot.slot===toSlot?{...shot,slot:fromSlot}:shot).sort((a,b)=>a.slot-b.slot));
+      setMessage("Screenshot order updated.");
+      if(management)developerSaved("Screenshot order updated.",{preserveScroll:true});
+    }catch(e){setMessage(e instanceof Error ? e.message : "Could not reorder screenshots. Please retry.");}
+    finally{lock.current=false;setBusy(false);}
+  }
   return <section className="my-5 min-w-0 [overflow-anchor:none] rounded-xl border border-white/10 p-5"><h3 ref={heading} tabIndex={-1} className="font-semibold">Screenshots (optional)</h3>
     <p className="mt-2 text-sm leading-6 text-zinc-400">Up to five JPG, PNG or WebP screenshots, 5 MB each and 25 megapixels maximum. These are separate from your catalogue thumbnail. Images keep their proportions and are displayed publicly only while the game is approved.</p>
     {!ready && !message && <p role="status" className="mt-3 text-sm">Loading screenshots…</p>}
     {!ready && message && <button type="button" onClick={() => setRetry(n => n + 1)} className="mt-3 rounded border px-3 py-2">Retry screenshots</button>}
     {ready && <fieldset disabled={busy} className="mt-4 min-w-0 space-y-4"><legend className="sr-only">Manage screenshots</legend>
       <p className="text-sm text-zinc-400">{screenshots.length ? `${screenshots.length} / 5 screenshots` : "No screenshots yet."}</p>
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2">{screenshots.map(shot => <div key={shot.slot} className="min-w-0 rounded-lg border border-white/10 p-3"><img loading="lazy" src={previews[shot.slot]||screenshotUrl(id, shot, true)} alt={`Screenshot ${shot.slot}`} className="aspect-video w-full rounded bg-black/40 object-contain" /><div className="mt-3 flex flex-wrap gap-3"><label className="cursor-pointer rounded border border-white/20 px-3 py-2 text-sm focus-within:outline-2 focus-within:outline-emerald-300">Replace screenshot {shot.slot}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={`Replace screenshot ${shot.slot}`} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ""; void upload(files, shot.slot); }} /></label><button type="button" onClick={() => void remove(shot.slot)} className="rounded border border-white/20 px-3 py-2 text-sm">Remove screenshot {shot.slot}</button></div></div>)}</div>
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">{screenshots.map(shot=>{const ordered=screenshots.map(s=>s.slot).sort((a,b)=>a-b);const below=ordered.reduce((acc,s)=>s<shot.slot?s:acc,undefined as number|undefined);const above=ordered.find(s=>s>shot.slot);return (<div key={shot.slot} className="min-w-0 rounded-lg border border-white/10 p-3"><img loading="lazy" src={previews[shot.slot]||screenshotUrl(id, shot, true)} alt={`Screenshot ${shot.slot}`} className="aspect-video w-full rounded bg-black/40 object-contain" /><div className="mt-3 flex flex-wrap gap-3"><label className="cursor-pointer rounded border border-white/20 px-3 py-2 text-sm focus-within:outline-2 focus-within:outline-emerald-300">Replace screenshot {shot.slot}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={`Replace screenshot ${shot.slot}`} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ""; void upload(files, shot.slot); }} /></label><button type="button" onClick={() => void remove(shot.slot)} className="rounded border border-white/20 px-3 py-2 text-sm">Remove screenshot {shot.slot}</button>{below!==undefined?<button type="button" onClick={()=>void reorder(shot.slot,below)} className="rounded border border-white/20 px-3 py-2 text-sm" title="Move screenshot up">&#8593;</button>:null}{above!==undefined?<button type="button" onClick={()=>void reorder(shot.slot,above)} className="rounded border border-white/20 px-3 py-2 text-sm" title="Move screenshot down">&#8595;</button>:null}</div></div>);})}</div>
       <label className={`inline-block rounded border border-emerald-300/30 px-4 py-2 text-sm focus-within:outline-2 focus-within:outline-emerald-300 ${screenshots.length === 5 ? "opacity-40" : "cursor-pointer"}`}>Add screenshots<input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={screenshots.length === 5 || busy} className="sr-only" aria-label="Add screenshots" onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ""; void upload(files); }} /></label>
     </fieldset>}
     {busy && <div className="mt-3"><progress aria-label="Screenshot upload progress" value={progress} max={100} className="w-full"/><p role="status" className="text-sm">Transfer {progress}%. Validation and storage may continue after transfer completes.</p></div>}{message && <p role="status" className="mt-3 text-sm">{message}</p>}
