@@ -2,6 +2,12 @@
 -- Forward-only. Re-defines get_public_catalogue to include platform. Do NOT apply to production without review.
 begin;
 
+-- Integration fix (merge of three feature branches): get_public_catalogue
+-- already exists on v11 with a different RETURN row type, so Postgres refuses
+-- "create or replace" with a changed row shape. Drop the old signature first
+-- (arg types are identical, so callers are unaffected by the swap).
+drop function if exists public.get_public_catalogue(integer, integer, text, text, text, text, boolean, text);
+
 create or replace function public.get_public_catalogue(p_page integer DEFAULT 1, p_page_size integer DEFAULT 12, p_search text DEFAULT ''::text, p_genre text DEFAULT 'All genres'::text, p_verification text DEFAULT 'All verification statuses'::text, p_ai_type text DEFAULT 'All AI types'::text, p_include_nsfw boolean DEFAULT false, p_sort text DEFAULT 'Featured'::text)
  RETURNS TABLE(source_type text, game_id uuid, steam_app_id text, title text, developer_name text, genre text, description text, image_url text, game_link text, ai_type text, verification_status text, quality_score numeric, submitted_at timestamp with time zone, is_nsfw boolean, has_playtested_profile boolean, total_count bigint, platform text)
  LANGUAGE sql

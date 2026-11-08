@@ -61,6 +61,10 @@ begin
               issues := issues || jsonb_build_array(jsonb_build_object('field','game_link','label','Google Play or Android URL','reason','Use a Google Play or supported Android game URL.'));
             when platform = 'ios' and link !~* 'apple\.com' then
               issues := issues || jsonb_build_array(jsonb_build_object('field','game_link','label','App Store or iOS URL','reason','Use an App Store or supported iOS URL.'));
+            -- Integration fix (three-branch merge): pc had no CASE branch, so
+            -- any valid PC "External game or download page" link raised
+            -- "case not found" instead of passing the completeness backstop.
+            else null;
           end case;
         end if;
         v := public.submission_trim(p->>'steam_url');

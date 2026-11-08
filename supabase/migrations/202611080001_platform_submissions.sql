@@ -48,22 +48,38 @@ begin
   end if;
 end $$;
 
+-- approved_games is a VIEW over game_submissions in the production-derived
+-- schema, so "alter table" fails there. Integration fix (merge of three
+-- feature branches): replace the view definition with the platform column
+-- appended; fall back to a plain column add if it is a real table. The check
+-- constraint is skipped for views (Postgres 15 does not support them there);
+-- value safety for views is provided by the game_submissions check above and
+-- the normalize_platform helper.
 do $$
+declare
+  v_relkind char;
 begin
-  if not exists (
-    select 1 from information_schema.columns
-    where table_schema='public' and table_name='approved_games' and column_name='platform'
-  ) then
-    alter table public.approved_games add column platform text;
+  select c.relkind into v_relkind
+  from pg_class c
+  where c.oid = 'public.approved_games'::regclass;
+  if v_relkind is null then
+    return;
   end if;
-end $$;
-
-do $$
-begin
-  if not exists (
+  if exists (
     select 1 from information_schema.columns
     where table_schema='public' and table_name='approved_games' and column_name='platform'
   ) then
+    return;
+  end if;
+  if v_relkind = 'v' then
+    execute 'create or replace view public.approved_games as
+      select id, title, developer_name, genre, description, game_link, image_url,
+             price, ai_type, ai_areas, ai_explanation, evidence_link, submitted_at,
+             steam_app_id, platform
+      from public.game_submissions
+      where status = ''Approved'' and not beta_fixture_hidden(id)';
+  else
+    alter table public.approved_games add column platform text;
     alter table public.approved_games
       add constraint approved_games_platform_check
       check (platform is null or platform in ('steam','pc','browser','roblox','android','ios'));
