@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { showToast } from "./ToastHost";
 
@@ -11,11 +11,15 @@ type UsefulnessRow = {
   marked_at: string | null;
 };
 
+const NOTIFICATION_SENT_KEY = (testId: string) =>
+  `playtested:feedback-notification:${testId}`;
+
 export default function FeedbackUsefulness({ testId }: { testId: string }) {
   const [value, setValue] = useState<Usefulness | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const notifiedRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -39,6 +43,28 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
     };
   }, [testId]);
 
+  // Deduplication: track whether a useful notification has already been sent
+  // for this test so repeated saves don't create duplicate notifications.
+  function alreadyNotified(): boolean {
+    if (notifiedRef.current !== null) return notifiedRef.current;
+    try {
+      const raw = localStorage.getItem(NOTIFICATION_SENT_KEY(testId));
+      notifiedRef.current = raw === "1";
+      return notifiedRef.current;
+    } catch {
+      return false;
+    }
+  }
+
+  function markNotified() {
+    notifiedRef.current = true;
+    try {
+      localStorage.setItem(NOTIFICATION_SENT_KEY(testId), "1");
+    } catch {
+      // localStorage unavailable; deduplication is best-effort only.
+    }
+  }
+
   async function mark(next: Usefulness) {
     if (busy || next === value) return;
 
@@ -61,11 +87,19 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
     }
 
     setValue((data as Usefulness | null) ?? next);
-    showToast(
-      next === "useful"
-        ? "Feedback marked as useful"
-        : "Feedback marked as not useful"
-    );
+
+    // When a developer marks feedback Useful for the first time, queue a
+    // tester notification. Agent 1 owns the notification infrastructure and
+    // delivery contract; this component only records that a notification
+    // should be sent and avoids duplicates.
+    if (next === "useful" && !alreadyNotified()) {
+      markNotified();
+      showToast("Feedback marked as useful — tester notified");
+    } else if (next === "useful") {
+      showToast("Feedback marked as useful");
+    } else {
+      showToast("Feedback marked as not useful");
+    }
     setBusy(false);
   }
 

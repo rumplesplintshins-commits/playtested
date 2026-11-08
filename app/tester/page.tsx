@@ -39,6 +39,7 @@ type TestGame = {
   image_url: string | null;
   ai_type: string | null;
   focus_areas: string[];
+  platform?: string | null;
 };
 
 type TestClaim = FeedbackQualityRecord & {
@@ -97,6 +98,25 @@ function getAccessButtonLabel(accessType: TestAccessType) {
     default:
       return "Open game access ↗";
   }
+}
+
+// Agent 2 platform contract integration: six platform values.
+// Browser → Web; Roblox → Roblox; Android/iOS → Mobile; Steam/PC → no special badge.
+// Android and iOS kept distinct for eligibility. Do not invent database values.
+function platformBadge(platform?: string | null) {
+  if (!platform) return null;
+  const p = platform.toLowerCase();
+  if (p === "browser" || p === "web") {
+    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Web</span>;
+  }
+  if (p === "roblox") {
+    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Roblox</span>;
+  }
+  if (p === "android" || p === "ios") {
+    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Mobile</span>;
+  }
+  // Steam/PC: no special badge per Agent 2 contract
+  return null;
 }
 
 function getAccessInstructions(accessType: TestAccessType) {
@@ -685,7 +705,7 @@ function TesterPage() {
   const feedbackDraftControllerRef = useRef<FeedbackDraftController | null>(null);
 
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
-  const [genreFilter,setGenreFilter] = useState("preferred");
+  const [genreFilter,setGenreFilter] = useState("all");
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
   const [discoveryReady,setDiscoveryReady] = useState(false);
   // Keep the available-games view intact when visiting a public game profile.
@@ -1243,6 +1263,7 @@ function TesterPage() {
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
                                   {game.genre || "Uncategorised"}
                                 </p>
+                                {game.platform && <span className="ml-2">{platformBadge(game.platform)}</span>}
 
                                 <h3 className="mt-2 text-2xl font-bold text-white">
                                   {game.title}
@@ -1298,6 +1319,7 @@ function TesterPage() {
                           <p className="text-xs uppercase tracking-wider text-[#77f29b]">
                             {game.genre || "Uncategorised"}
                           </p>
+                          {game.platform && <span className="ml-2">{platformBadge(game.platform)}</span>}
 
                           <h3 className="mt-2 text-xl font-semibold">
                             {game.title}
@@ -1583,8 +1605,8 @@ function TesterPage() {
                   </div>
                 </div>
 
-                <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All genres" : "All eligible genres"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
-                <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible genres. Set your interests in Account.":"All genres includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
+                <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
+                <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible games. Set your interests in Account.":"All games includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
                 {hasActiveTest && (
                   <div id="one-active-test-note" className="mt-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">
                     <p className="font-semibold text-zinc-200">One test at a time</p>
