@@ -5,6 +5,7 @@ import {GamePcFields,type RequirementsDraft} from "./PcSpecificationFields";
 import {parsePcSpecs,pcDraft} from "@/lib/pc-specifications";
 import {developerSaved} from "@/lib/developer-save";
 import GameplayEditor from "./GameplayEditor";
+import ScreenshotManager from "./ScreenshotManager";
 import {useEffect,useState,type FormEvent} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -94,6 +95,7 @@ const [platform,setPlatform]=useState<Platform>("steam");const [steamUrl,setStea
     <div className="flex flex-wrap gap-3">{!listingKind&&<button type="button" disabled={busy} onClick={()=>void save(false)} className="rounded-lg border border-white/20 px-5 py-3 text-sm">{busy?"Saving…":"Save edits"}</button>}<button type="submit" disabled={busy||imageUploading} className="rounded-lg bg-emerald-400 px-5 py-3 text-sm font-semibold text-black">{listingKind?"Save changes":"Resubmit for review"}</button></div>
     <p className="text-sm leading-6 text-zinc-400">{listingKind?"Only requirements affected by your changes are revalidated. Unchanged legacy omissions do not block unrelated edits. Invalid changes are not published.":"Resubmitting incomplete details saves them as Needs More Information. Complete submissions return to Pending Review, never straight to Approved."}</p>
    </form>}
+   <ScreenshotManager id={id} management />
    <p role="status" className="my-4 text-sm text-emerald-200">{notice}</p>
    {!!data.history.length&&<details className="mt-6 rounded-xl border border-white/10 p-5"><summary className="cursor-pointer text-sm font-semibold">Submission decision history</summary><div className="mt-4 space-y-4">{data.history.map(event=><article key={event.id} className="rounded-lg border border-white/10 bg-white/[0.02] p-4"><div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="text-sm font-semibold text-zinc-100">{historyLabels[event.kind]||"Submission updated"}</h3><time className="text-xs text-zinc-500" dateTime={event.created_at}>{new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(event.created_at))}</time></div><p className="mt-2 text-sm text-zinc-300">{event.previous_status||"New"} → {event.new_status}</p>{(event.review_reason||event.previous_review_reason)&&<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-400">{event.review_reason||event.previous_review_reason}</p>}</article>)}</div></details>}
   </>}
