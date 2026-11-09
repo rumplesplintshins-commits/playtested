@@ -1,6 +1,6 @@
 begin;
 -- Additive RPC; retain the legacy RPC for old clients and application rollback.
-create function public.admin_game_activity_metrics() returns jsonb
+create or replace function public.admin_game_activity_metrics() returns jsonb
 language sql stable security definer set search_path='' as $$
  with published as (
   -- Catalogue-approved view and imported profile/eligibility/dedup rules.
