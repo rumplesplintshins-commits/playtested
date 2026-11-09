@@ -145,17 +145,101 @@ end;
 $$;
 
 -- Reorder screenshot slots without re-uploading or queueing image cleanup.
-create or replace function public.reorder_game_screenshots(p_id uuid, p_order jsonb) returns void
+create or replace function public.reorder_game_screenshots(
+  p_id uuid,
+  p_order jsonb
+) returns void
 language plpgsql security definer set search_path='' as $$
-declare owner_id uuid;
+declare
+  owner_id uuid;
+  original_slots integer[];
+  original_paths text[];
+  original_revisions uuid[];
+  requested_slots integer[];
+  screenshot_count integer;
+  source_index integer;
+  i integer;
 begin
-  select developer_id into owner_id from public.game_submissions where id=p_id for update;
-  if not found then raise exception 'Submission unavailable.'; end if;
-  if jsonb_typeof(p_order)<>'array' or p_order is null then raise exception 'Provide an ordered slot list.'; end if;
-  update public.game_screenshots set slot=-slot where submission_id=p_id;
-  update public.game_screenshots g set slot=o.idx
-  from jsonb_array_elements(p_order) with ordinality as t(val,idx)
-  where g.submission_id=p_id and g.slot=-(t.val)::int;
+  select developer_id into owner_id
+  from public.game_submissions
+  where id = p_id
+  for update;
+
+  if not found then
+    raise exception 'Submission unavailable.';
+  end if;
+
+  if owner_id is distinct from auth.uid() then
+    raise exception 'You cannot reorder screenshots for this submission.';
+  end if;
+
+  if p_order is null or jsonb_typeof(p_order) <> 'array' then
+    raise exception 'Provide an ordered slot list.';
+  end if;
+
+  select
+    array_agg(slot::integer order by slot),
+    array_agg(object_path order by slot),
+    array_agg(revision order by slot),
+    count(*)::integer
+  into
+    original_slots,
+    original_paths,
+    original_revisions,
+    screenshot_count
+  from public.game_screenshots
+  where submission_id = p_id;
+
+  if exists (
+    select 1
+    from jsonb_array_elements_text(p_order) as item(value)
+    where value !~ '^[1-5]$'
+  ) then
+    raise exception 'Invalid screenshot slot.';
+  end if;
+
+  select array_agg(value::integer order by ordinality)
+  into requested_slots
+  from jsonb_array_elements_text(p_order)
+       with ordinality as item(value, ordinality);
+
+  if coalesce(array_length(requested_slots, 1), 0) <> screenshot_count
+     or coalesce((
+       select array_agg(v order by v)
+       from unnest(requested_slots) as v
+     ), '{}'::integer[]) <> coalesce(original_slots, '{}'::integer[])
+  then
+    raise exception 'Screenshot order must contain every existing slot exactly once.';
+  end if;
+
+  if screenshot_count = 0 then
+    return;
+  end if;
+
+  -- Temporary unique paths satisfy the existing path constraint.
+  -- No screenshot rows are deleted and slots never become invalid.
+  for i in 1..screenshot_count loop
+    update public.game_screenshots
+    set object_path = format(
+      '%s/%s/%s.webp',
+      p_id,
+      gen_random_uuid(),
+      gen_random_uuid()
+    )
+    where submission_id = p_id
+      and slot = original_slots[i];
+  end loop;
+
+  -- Assign original image paths and revisions in the requested order.
+  for i in 1..screenshot_count loop
+    source_index := array_position(original_slots, requested_slots[i]);
+
+    update public.game_screenshots
+    set object_path = original_paths[source_index],
+        revision = original_revisions[source_index]
+    where submission_id = p_id
+      and slot = original_slots[i];
+  end loop;
 end;
 $$;
 

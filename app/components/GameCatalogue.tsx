@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
-import {platformBadge,platformOf} from "@/lib/platforms";
+import {PLATFORM_INFO,PLATFORMS,platformBadge,platformOf,type Platform} from "@/lib/platforms";
 import {publicIntentCounts,type IntentCounts} from "@/lib/intent-counts";
 import IntentSummary from "./IntentSummary";
 import {publicProfileClient,publicLinkedImportedIds,steamStoreUrl} from "@/lib/public-profile-links";
@@ -121,6 +121,11 @@ const verificationOptions = [
   "Assessed",
   "Not yet verified",
   "Steam listings",
+];
+
+const platformOptions = [
+  { value: "all", label: "All platforms" },
+  ...PLATFORMS.map((value) => ({ value, label: PLATFORM_INFO[value].label })),
 ];
 
 const PAGE_SIZE = 12;
@@ -339,7 +344,7 @@ function gameHref(game:CatalogueGame){
 type CataloguePage={games:CatalogueGame[];total:number};
 const pages=publicRequestCache<CataloguePage>();
 const receptionCache=publicRequestCache<CommunityReceptionRow[]>(30000,1);
-const defaultView={search:"",genre:"All genres",verificationFilter:"All verification statuses",aiType:"All AI types",includeNsfw:false,sort:"Featured",page:1};
+const defaultView={search:"",genre:"All genres",platform:"all" as const,verificationFilter:"All verification statuses",aiType:"All AI types",includeNsfw:false,sort:"Featured",page:1};
 function initialGame(row:PublicCatalogueRow):CatalogueGame {
   const isImportedSteam = row.source_type === "steam";
   const steamAppId = normalizeSteamAppId(row.steam_app_id);
@@ -373,6 +378,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
 
   const [search, setSearch] = useState(defaultView.search);
   const [genre, setGenre] = useState(defaultView.genre);
+  const [platform, setPlatform] = useState<"all" | Platform>(defaultView.platform);
   const [verificationFilter, setVerificationFilter] = useState(defaultView.verificationFilter);
   const [aiType, setAiType] = useState(defaultView.aiType);
   const [includeNsfw, setIncludeNsfw] = useState(defaultView.includeNsfw);
@@ -389,13 +395,13 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
     let cancelled = false;
 
     let prefetchTimer:number|undefined;
-    const argsFor=(number:number)=>({p_page:number,p_page_size:PAGE_SIZE,p_search:search.trim(),p_genre:genre,p_verification:verificationFilter,p_ai_type:aiType,p_include_nsfw:includeNsfw,p_sort:sort});
+    const argsFor=(number:number)=>({p_page:number,p_page_size:PAGE_SIZE,p_search:search.trim(),p_genre:genre,p_verification:verificationFilter,p_ai_type:aiType,p_include_nsfw:includeNsfw,p_sort:sort,p_platform:platform});
     const keyFor=(number:number)=>JSON.stringify(argsFor(number));
     async function fetchPage(pageNumber:number):Promise<CataloguePage> {
       return pages.get(keyFor(pageNumber),async()=>{
       const supabase = publicProfileClient();
 
-      const useInitialCatalogue=Boolean(initialCatalogue&&!initialCatalogue.error&&attempt===0&&pageNumber===1&&search.trim()===""&&genre==="All genres"&&verificationFilter==="All verification statuses"&&aiType==="All AI types"&&!includeNsfw&&sort==="Featured");
+      const useInitialCatalogue=Boolean(initialCatalogue&&!initialCatalogue.error&&attempt===0&&pageNumber===1&&search.trim()===""&&genre==="All genres"&&platform==="all"&&verificationFilter==="All verification statuses"&&aiType==="All AI types"&&!includeNsfw&&sort==="Featured");
       const seedPage=useInitialCatalogue?initialCatalogue:null;
       if(initialCatalogue?.error&&attempt===0&&pageNumber===1)throw new Error("Server-rendered public catalogue unavailable");
 
@@ -522,6 +528,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
     page,
     search,
     genre,
+    platform,
     verificationFilter,
     aiType,
     includeNsfw,
@@ -536,6 +543,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
   function resetFilters() {
     setSearch("");
     setGenre("All genres");
+    setPlatform("all");
     setVerificationFilter("All verification statuses");
     setAiType("All AI types");
     setIncludeNsfw(false);
@@ -589,6 +597,22 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             {genres.map((item) => (
               <option key={item} value={item}>
                 {item}
+              </option>
+            ))}
+          </select>
+
+          <select
+            aria-label="Filter by platform"
+            value={platform}
+            onChange={(event) => {
+              setPlatform(event.target.value as "all" | Platform);
+              setPage(1);
+            }}
+            className={fieldClass}
+          >
+            {platformOptions.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </select>

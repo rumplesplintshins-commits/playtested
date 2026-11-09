@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import ts from 'typescript';
 import { chromium, expect as baseExpect } from 'playwright/test';
@@ -31,7 +31,7 @@ try {
    else if(url.pathname.endsWith('/profiles'))data={id:uid,role:'admin',roles:['tester','developer'],tester_xp:0,developer_xp:0,completed_tests:0};
    else if(url.pathname.endsWith('/rpc/get_quality_review_queue'))data=[pending,reviewed];
    else if(url.pathname.endsWith('/rpc/review_test_quality')) {const body=request.postDataJSON();assert.equal(body.p_test_id,pending.report.id);assert.ok(Object.values(body.p_criteria).every(Boolean));assert.ok(body.p_reason.trim());approvals++;pending.report.review_outcome='accepted';pending.report.status='reviewed';pending.report.xp_awarded=true;pending.events.push({id:4,kind:'accepted',reason:body.p_reason,xp_delta:100});data=null;}
-   else if(request.method()!=='GET'&&!url.pathname.includes('/rpc/get_'))throw Error('Unexpected mutation blocked');
+   else if(request.method()!=='GET'&&!url.pathname.includes('/rpc/get_')&&!url.pathname.endsWith('/rpc/m26_admin_review_activity'))throw Error('Unexpected mutation blocked: '+request.method()+' '+request.url());
    return route.fulfill({status:200,headers,json:data});
   }
   if(url.origin===origin) {if(url.pathname.startsWith('/api/'))return route.fulfill({json:[]});const headers={...request.headers()};delete headers.cookie;return route.continue({headers});}
@@ -41,7 +41,7 @@ try {
  for(const width of [1280,390]){
   await page.setViewportSize({width,height:800});await page.goto(origin+'/admin/submissions');
   await expect(page.getByRole('heading',{name:'Scroll fixture 0',exact:true})).toBeVisible();
-  const right=page.getByText('Submission review',{exact:true}).locator('xpath=ancestor::section[1]');
+  const right=page.getByRole('heading',{name:'Listing review',exact:true}).locator('xpath=ancestor::section[1]');
   assert.equal(await right.evaluate(element=>getComputedStyle(element).position),'static');
   await page.getByRole('heading',{name:'Optional independent gameplay assessment',exact:true}).click();
   const save=page.getByRole('button',{name:'Save independent assessment',exact:true});

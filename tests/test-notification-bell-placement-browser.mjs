@@ -29,8 +29,12 @@ try{
  assert.equal(box.width,410);
  assert(Math.abs(box.right-buttonBox.right)<=3,'Panel is right-aligned with the bell');
  assert(box.top>=buttonBox.bottom+7,'Panel opens beneath the bell instead of covering it');
- // Narrow viewport: the panel clamps to the window and reveals no horizontal scroll.
+ // Narrow viewport: wait for the resize handler and React rerender before asserting.
  await page.setViewportSize({width:375,height:667});
+ await expect.poll(async()=>panel.evaluate(node=>{
+  const r=node.getBoundingClientRect();
+  return r.left>=15&&r.right<=360;
+ }),{timeout:5000}).toBe(true);
  const mobile=await panel.evaluate(node=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width,top:r.top};});
  const mobileButton=await bell.evaluate(node=>node.getBoundingClientRect().bottom);
  assert(mobile.left>=15,'Clamped panel honours the left margin on mobile');

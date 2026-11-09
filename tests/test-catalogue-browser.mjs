@@ -76,6 +76,7 @@ try {
  await page.goto(origin+'/catalogue-fixture');
  const compact=page.getByRole('button',{name:'Compact',exact:true}),comfortable=page.getByRole('button',{name:'Comfortable',exact:true});
  await expect(page.locator('article')).toHaveCount(12);
+ assert.equal(calls[0].p_platform,'all','Initial catalogue query includes the all-platforms filter');
  const rail=page.locator('article').filter({hasText:'Rail Estate'}),profile=page.locator('article').filter({has:page.locator('a[href="/games/steam-456"]')});
  await expect(rail.locator('a')).toHaveCount(3);
  await expect(rail.getByRole('link',{name:'View Rail Estate details'})).toHaveAttribute('href','/games/steam-3762240');
@@ -107,11 +108,18 @@ try {
  await page.getByRole('button',{name:'Next',exact:true}).click();await expect.poll(()=>calls.at(-1)?.p_page).toBe(2);await expect(comfortable).toHaveAttribute('aria-pressed','true');
  const requests=calls.length;await compact.click();await expect(page.getByRole('button',{name:'2',exact:true})).toHaveAttribute('aria-current','page');assert.equal(calls.length,requests,'Density must not refetch or reset page');
  await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Content only');await expect.poll(()=>calls.at(-1)?.p_ai_type).toBe('AI-assisted: Content only');await expect(compact).toHaveAttribute('aria-pressed','true');
- for(const width of [390,320,640])for(const mode of [comfortable,compact]){await page.setViewportSize({width,height:900});await mode.click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Reflow overflow at '+width);}
+ const platformFilter=page.getByRole('combobox',{name:'Filter by platform'});
+ assert.deepEqual(await platformFilter.locator('option').allTextContents(),['All platforms','Steam','PC / Other','Browser','Roblox','Android','iPhone / iPad']);
+ await page.getByRole('button',{name:'Next',exact:true}).click();await expect.poll(()=>calls.at(-1)?.p_page).toBe(2);
+ await platformFilter.selectOption('browser');await expect.poll(()=>calls.at(-1)?.p_platform).toBe('browser');assert.equal(calls.at(-1).p_page,1,'Changing platform returns to the first database page');
+ assert.equal(calls.at(-1).p_ai_type,'AI-assisted: Content only','Platform combines with existing filters');
+ await page.getByRole('combobox',{name:'Filter by genre'}).selectOption('Action');await expect.poll(()=>calls.at(-1)?.p_genre).toBe('Action');assert.equal(calls.at(-1).p_platform,'browser','Genre and platform filters share the database query');
+ for(const width of [390,320,640,853,1280])for(const mode of [comfortable,compact]){await page.setViewportSize({width,height:900});await mode.click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Reflow overflow at '+width);}
  profileFailure=true;recruitmentFailure=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Code only');await expect.poll(()=>recruitmentCalls.length).toBe(calls.length);await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(0);await expect(page.locator('article').nth(11).getByRole('link',{name:'View game details'})).toHaveCount(0);await expect(page.locator('article').nth(11).getByRole('link',{name:/View Steam page/})).toHaveAttribute('href','https://store.steampowered.com/app/456/');await expect(page.locator('article')).toHaveCount(12);recruitmentFailure=false;
- empty=true;await page.getByRole('button',{name:'Clear filters',exact:true}).first().click();await expect(page.getByRole('heading',{name:'No games found'})).toBeVisible();
- fail=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Code only');await expect(page.getByText(/The catalogue could not be loaded/)).toBeVisible();await expect(page.getByRole('heading',{name:'No games found'})).toHaveCount(0);
- console.log('PASS catalogue: density, disclosure/missing data, small sample, full description, filter/page preservation, mobile and 640px reflow, empty/error. Backend mocked; no live access.');
+ empty=true;await platformFilter.selectOption('pc');await expect.poll(()=>calls.at(-1)?.p_platform).toBe('pc');await expect(page.getByRole('heading',{name:'No games found'})).toBeVisible();
+ await page.getByRole('button',{name:'Clear filters',exact:true}).first().click();await expect(platformFilter).toHaveValue('all');
+ fail=true;await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Code only');await expect(page.getByText(/requested catalogue results could not be loaded/i)).toBeVisible();await expect(page.getByRole('heading',{name:'No games found'})).toHaveCount(0);
+ console.log('PASS catalogue: density, disclosure/missing data, full description, combined platform filters, pagination, mobile/tablet and 100%/150%-equivalent reflow, empty/error. Backend mocked; no live access.');
 }finally{await browser.close();fs.unlinkSync(dir+'/page.tsx');fs.rmdirSync(dir);}
 
 async function voteBrowser(){

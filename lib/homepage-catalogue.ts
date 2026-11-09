@@ -16,6 +16,7 @@ async function loadHomepageCatalogue(): Promise<Omit<HomepageCatalogueSeed, "err
     p_ai_type: "All AI types",
     p_include_nsfw: false,
     p_sort: "Featured",
+    p_platform: "all",
   });
 
   if (error) {
