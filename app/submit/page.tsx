@@ -2900,7 +2900,7 @@ export default function SubmitGamePage() {
                 <p className="mt-2">{optionalSaveWarning}</p>
                 <a href="/my-submissions?tab=submissions" className="mt-3 inline-block underline underline-offset-2">Open Game submissions to update this game</a>
               </div>
-            )
+            )}
 
 
 
