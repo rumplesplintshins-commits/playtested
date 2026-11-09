@@ -26,6 +26,7 @@ try{
   if(path.endsWith('/user'))data=user;
   else if(path.endsWith('/profiles'))data={id:uid,roles:['developer','tester'],role:'admin',tester_xp:0,developer_xp:0};
   else if(path.endsWith('/game_submissions')){if(req.method()==='POST'){events.push('insert');row={...body,status:validation(body).issues.length?'Needs More Information':'Pending Review',submission_revision:0,review_reason:'',submitted_at:'2026-10-28'};Object.assign(row,{completeness_issues:validation(row).issues,completeness_message:validation(row).message});data=row;}else data=[legacy,...(row?[row]:[])];}
+  else if(path.endsWith('/game_submission_contacts'))data={submission_id:row?.id,developer_id:uid,contact_email:null,contact_discord:null,contact_reddit:null,contact_allowed:false,updated_at:new Date().toISOString()};
   else if(path.endsWith('/rpc/find_possible_game_duplicates')){events.push('duplicates');data=[];}
   else if(path.endsWith('/rpc/submission_completeness'))data=validation(body.p);
   else if(path.endsWith('/rpc/get_my_submission_correction')){assert.equal(body.p_id,row.id);data=correction();}
@@ -38,11 +39,13 @@ try{
   else if(path.endsWith('/rpc/route_incomplete_submissions')){batches++;assert.equal(body.p_records[0].id,legacy.id);legacy.status='Needs More Information';legacy.completeness_message=validation(legacy).message;data=1;}
   else if(path.endsWith('/rpc/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:[]};
   else if(path.endsWith('/rpc/get_campaign_testing_details'))data={available:2,testing:0,submitted:0};
+  else if(path.endsWith('/rpc/create_game_with_pc_requirements'))data={id:'d1000000-0000-4000-8000-000000000010',developer_id:uid,status:'Pending Review'};
+  else if(path.endsWith('/rpc/record_submission_acquisition'))data={id:'d1000000-0000-4000-8000-000000000010'};
   else if(req.method()!=='GET'&&!path.includes('/rpc/get_'))throw new Error('Unexpected mocked mutation: '+path);
   return route.fulfill({status,headers,json:data});
  });
  const page=await context.newPage();await page.goto(origin+'/submit');
- await page.locator('[name="title"]').fill('Correction fixture');await page.locator('[name="developer"]').fill('Fixture studio');await page.locator('[name="genre"]').selectOption('Action');await page.locator('[name="releaseStatus"]').selectOption('Not announced');await page.locator('textarea[name="description"]').fill('A small game to test');await page.locator('[name="aiType"]').selectOption('AI-assisted');
+ await page.locator('[name="title"]').fill('Correction fixture');await page.locator('[name="developer"]').fill('Fixture studio');await page.locator('[name="genre"]').selectOption('Action');await page.locator('[name="releaseStatus"]').selectOption('Not announced');await page.locator('textarea[name="description"]').fill('A small game to test');await page.locator('[name="aiType"]').selectOption('AI-assisted: Code only');
  await page.getByRole('button',{name:'Submit application',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Complete submission information',exact:true})).toBeVisible();assert.equal(row.status,'Needs More Information');assert(events.indexOf('duplicates')<events.indexOf('insert'),'Existing duplicate checks run before saving');assert.equal(events.filter(event=>event==='insert').length,1);
  await expect(page.getByRole('link',{name:'AI-use explanation: Required'})).toBeVisible();await expect(page.getByRole('link',{name:/Supporting evidence.*Required/})).toHaveCount(0);
