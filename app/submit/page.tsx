@@ -527,6 +527,7 @@ export default function SubmitGamePage() {
   const [gameLink, setGameLink] = useState("");
 
   const [savedSubmissionId,setSavedSubmissionId]=useState<string|undefined>();
+  const [optionalSaveWarning,setOptionalSaveWarning]=useState("");
   const [pulseOpen, setPulseOpen] = useState(false);
   const [pulseStage, setPulseStage] = useState<PulseStage>("idle");
   const [pulseReport, setPulseReport] = useState<PulseReport | null>(null);
@@ -1905,7 +1906,11 @@ export default function SubmitGamePage() {
         if(result.error||!result.data){setError(result.error?.message||'Your save could not be confirmed. Your details remain here.');return;}
         setPcDirty(false);const contactError = await savePrivateContact(client, result.data.id, user.id, formData);
         if (contactError) {
-          setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
+          setSavedSubmissionId(result.data.id);
+          setSubmittedTitle(String(draft.title || "Your game"));
+          setOptionalSaveWarning(contactError);
+          setError("");
+          setSubmitted(true);
           return;
         }
         setScreenshotFiles([]);setPcRequirements({minimum:{},recommended:{}});setPcDirty(false);
@@ -2026,7 +2031,11 @@ export default function SubmitGamePage() {
 
       setPcDirty(false);const contactError = await savePrivateContact(supabase, insertedSubmission.id, user.id, formData);
       if (contactError) {
-        setError("Your game was saved, but some optional details were not saved. Do not submit a duplicate. Open Game submissions to retry. " + contactError);
+        setSavedSubmissionId(insertedSubmission.id);
+        setSubmittedTitle(title);
+        setOptionalSaveWarning(contactError);
+        setError("");
+        setSubmitted(true);
         return;
       }
       // The submission is saved. Show confirmation rather than forcing a correction screen;
@@ -2884,6 +2893,14 @@ export default function SubmitGamePage() {
               Playtested and is awaiting review.
 
             </p>
+
+            {optionalSaveWarning && (
+              <div role="status" className="mt-5 rounded-lg border border-amber-300/30 bg-amber-300/5 p-4 text-sm text-amber-100">
+                <p className="font-semibold">Game saved — optional media needs attention</p>
+                <p className="mt-2">{optionalSaveWarning}</p>
+                <a href="/my-submissions?tab=submissions" className="mt-3 inline-block underline underline-offset-2">Open Game submissions to update this game</a>
+              </div>
+            )
 
 
 
