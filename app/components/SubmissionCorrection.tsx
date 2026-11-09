@@ -23,7 +23,7 @@ export default function SubmissionCorrection({id,listingKind}:{id:string;listing
  const router=useRouter();
  const topRef=useRef<HTMLElement|null>(null);
  const [toast,setToast]=useState("");
- const showResult=(message:string,success:boolean)=>{setToast(message);if(!success)setError(message);window.scrollTo({top:0,behavior:"smooth"});};
+ const showResult=(message:string,success:boolean)=>{if(success){setError("");setToast(message);}else{setToast("");setError(message);}window.scrollTo({top:0,behavior:"smooth"});};
  const [pcRequirements,setPcRequirements]=useState<RequirementsDraft>({minimum:{},recommended:{}});
 const [data,setData]=useState<Correction|null>(null);const [fields,setFields]=useState<Record<string,string>>({});
 const [areas,setAreas]=useState<string[]>([]);const [imageUploading,setImageUploading]=useState(false);
