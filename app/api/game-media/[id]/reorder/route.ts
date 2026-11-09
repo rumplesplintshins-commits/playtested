@@ -26,7 +26,7 @@ export async function POST(request:Request,context:Context){
   const expected=[...slots].sort((a,b)=>a-b);
   const provided=[...order].sort((a,b)=>a-b);
   if(expected.length!==provided.length||expected.some((s,i)=>s!==provided[i]))return reply("The slot order must list every existing screenshot exactly once.",400);
-  const {error:reorderError}=await service.rpc("reorder_game_screenshots",{p_id:id,p_order:order});
+  const {error:reorderError}=await client.rpc("reorder_game_screenshots",{p_id:id,p_order:order});
   if(reorderError)return reply("Screenshots could not be reordered. Please retry.",503);
   return NextResponse.json({saved:true},{headers});
 }
