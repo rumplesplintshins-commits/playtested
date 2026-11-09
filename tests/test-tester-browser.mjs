@@ -38,7 +38,9 @@ try{
      else if(url.pathname.endsWith('/test_review_events'))data=reviewEvents;
      else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
      else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:restrictionReason}];
-     else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
+      else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
+      else if(url.pathname.endsWith('/account_pc_specs'))data={specs:null};
+      else if(url.pathname.endsWith('/get_my_testing_activity_media'))data={items:[]};
      else if(url.pathname.endsWith('/submit_community_game_test')){
        if(failSubmit){status=400;data={message:'Simulated submission failure',code:'P0001'};failSubmit=false;}
        else claim={...claim,status:'submitted'};

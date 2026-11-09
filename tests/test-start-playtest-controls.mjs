@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {chromium,expect} from 'playwright/test';
 const origin=process.env.TEST_APP_URL||'http://localhost:3000';
-const dir='app/start-playtest-fixture',file=dir+'/page.tsx';assert(!fs.existsSync(dir));fs.mkdirSync(dir);
+const dir='app/start-playtest-fixture',file=dir+'/page.tsx';fs.rmSync(dir,{recursive:true,force:true});assert(!fs.existsSync(dir));fs.mkdirSync(dir);
 fs.writeFileSync(file,`import StartPlaytest from '../components/StartPlaytest';
 const playtest={id:'build-current',status:'open' as const,shareToken:'token-fix',accessLink:'https://example.test/build',instructions:'Run the tutorial loop.',focusAreas:['Overall experience'],audience:'both' as const,targetTesters:3,estimatedMinutes:30,releaseLabel:'v1',createdAt:'2026-10-20T10:00:00.000Z',publishedAt:'2026-10-21T10:00:00.000Z'};
 export default function Page(){return <main className="min-h-screen bg-[#090b0a] p-6 text-white"><StartPlaytest gameTitle="Alpha" gameSource={{importedGameId:'imported-a',approvedGameId:null,submissionId:'submission-a'}} existingPlaytest={playtest} playtests={[playtest]}/></main>}`);
@@ -34,6 +34,7 @@ try{
   }else if(url.pathname.startsWith('/rest/v1/community_playtests'))return route.fulfill({json:[]});
   else if(name==='get_testing_audience_availability')return route.fulfill({json:true});
   else if(name==='get_developer_quality_reports')return route.fulfill({json:[]});
+  if(name==='get_feedback_tester_identities')return route.fulfill({json:[]});
   else if(name==='get_test_feedback_usefulness_for_developer')return route.fulfill({json:{average_score:null,signals:{}}});
   throw Error('Unexpected request '+url.pathname);
  });
