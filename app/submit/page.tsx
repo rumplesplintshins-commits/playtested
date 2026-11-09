@@ -670,20 +670,22 @@ export default function SubmitGamePage() {
 
   useEffect(() => {
     if (!pulseOpen || pulseStage === "idle") {
-      setPulseProgress(0);
-      return;
+      const t = setTimeout(() => setPulseProgress(0), 0);
+      return () => clearTimeout(t);
     }
 
     if (pulseStage === "complete") {
-      setPulseProgress(100);
-      return;
+      const t = setTimeout(() => setPulseProgress(100), 0);
+      return () => clearTimeout(t);
     }
 
     if (pulseStage === "error") {
       return;
     }
 
-    setPulseProgress((current) => Math.max(current, pulseStage === "connecting" ? 8 : 22));
+    const t = setTimeout(() => {
+      setPulseProgress((current) => Math.max(current, pulseStage === "connecting" ? 8 : 22));
+    }, 0);
 
     const timer = window.setInterval(() => {
       setPulseProgress((current) => {
@@ -706,7 +708,7 @@ export default function SubmitGamePage() {
       });
     }, pulseStage === "running" ? 900 : 220);
 
-    return () => window.clearInterval(timer);
+    return () => { clearTimeout(t); window.clearInterval(timer); };
   }, [pulseOpen, pulseStage]);
 
   function resetDuplicateState() {
@@ -2225,7 +2227,7 @@ export default function SubmitGamePage() {
                       <p className="mt-2 text-xs leading-5 text-zinc-400">
                         This is a new technical-worker execution. PULSE is not reusing
                         the previous result; the completed report below will show
-                        this run's own ID and measurements.
+                        this run&apos;s own ID and measurements.
                       </p>
                     </div>
                   </div>
@@ -3466,7 +3468,7 @@ export default function SubmitGamePage() {
                 </div>
                 <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
                   <input type="checkbox" name="contactAllowed" className="mt-1 accent-[#77f29b]" />
-                  <span>I'm happy for the Playtested operator to contact me about my game, submission or playtesting opportunities.</span>
+                  <span>I&apos;m happy for the Playtested operator to contact me about my game, submission or playtesting opportunities.</span>
                 </label>
                 <p className="mt-2 text-xs text-zinc-500">Optional permission; essential service messages about your submission are separate.</p>
               </fieldset>

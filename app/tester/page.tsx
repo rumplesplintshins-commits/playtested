@@ -279,20 +279,20 @@ function FeedbackForm({
       if (raw !== null) {
         try {
           restored = readFeedbackDraft(raw, accountId, claim.id);
-          setDraftStatus("saved");
+          setTimeout(() => setDraftStatus("saved"), 0);
         } catch {
-          setDraftStatus("invalid");
+          setTimeout(() => setDraftStatus("invalid"), 0);
         }
       } else {
-        setDraftStatus("empty");
+        setTimeout(() => setDraftStatus("empty"), 0);
       }
     } catch {
-      setDraftStatus("unavailable");
+      setTimeout(() => setDraftStatus("unavailable"), 0);
     }
     draftRef.current = restored;
-    setDraft(restored);
+    setTimeout(() => setDraft(restored), 0);
     readyRef.current = true;
-    setReady(true);
+    setTimeout(() => setReady(true), 0);
     const controller = {
       canClose: () => !unsavedRef.current || window.confirm("Draft saving is unavailable. Closing will discard your unsaved answers. Close anyway?"),
     };
@@ -726,9 +726,13 @@ function TesterPage() {
         return;
       }
       if (saved.expanded && typeof saved.expanded === "object") {
-        setExpandedAvailableGames(saved.expanded);
+        const expanded = saved.expanded;
+        setTimeout(() => setExpandedAvailableGames(expanded), 0);
       }
-      if (typeof saved.genre === "string") setGenreFilter(saved.genre);
+      if (typeof saved.genre === "string") {
+        const genre = saved.genre;
+        setTimeout(() => setGenreFilter(genre), 0);
+      }
     } catch {
       sessionStorage.removeItem("playtested:tester-return");
     }
@@ -1163,7 +1167,7 @@ function TesterPage() {
   );
 
   const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : (g.platform??"steam")===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
-  useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});setJustClaimedId(null);},[justClaimedId,displayedActiveGames]);
+  useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});const t=setTimeout(()=>setJustClaimedId(null),0);return () => clearTimeout(t);},[justClaimedId,displayedActiveGames]);
   const unmetRequirementsCount = availableGames.filter(game => game.can_claim === false).length;
   const testableGamesCount = availableGames.length - unmetRequirementsCount;
   function getStatusLabel(claim: TestClaim) {

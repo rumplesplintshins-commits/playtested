@@ -158,7 +158,8 @@ export default function GameBuildManager({ submissionId, gameTitle }: Props) {
   }, [submissionId]);
 
   useEffect(() => {
-    void loadBuilds();
+    const timer = setTimeout(() => loadBuilds(), 0);
+    return () => clearTimeout(timer);
   }, [loadBuilds]);
 
   const latestRunByBuild = useMemo(() => {

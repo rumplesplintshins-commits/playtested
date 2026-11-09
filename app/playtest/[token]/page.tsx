@@ -249,7 +249,7 @@ export default async function CommunityPlaytestPage({
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold">
-                  You're ready to join the test
+                  You&apos;re ready to join the test
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
@@ -265,7 +265,7 @@ export default async function CommunityPlaytestPage({
         </div>
 
         <p className="mt-6 text-center text-xs leading-5 text-zinc-600">
-          Community playtests are organised by the game's developer. Community
+          Community playtests are organised by the game&apos;s developer. Community
           feedback is kept separate from independent Playtested testing.
         </p>
       </section>

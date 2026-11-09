@@ -133,7 +133,7 @@ type PlaytestEligibility = {
 
 function CampaignAllowancePanel({eligibility,loading,error,currentPlaytest,onRetry}:{eligibility:PlaytestEligibility|null;loading:boolean;error:string;currentPlaytest:ExistingPlaytest|null;onRetry:()=>void}){
  const active=currentPlaytest?.status==="open"||currentPlaytest?.status==="paused"||(eligibility?.has_active_playtest&&["open","paused"].includes(eligibility.active_playtest_status||""));
- return <>{active&&<p className="my-3 text-sm text-amber-200">This game's current round must be closed before another round can launch.</p>}{error&&<p role="alert" className="my-3 text-sm text-amber-200">{error} <button type="button" onClick={onRetry} disabled={loading} className="rounded border border-amber-300/30 px-3 py-2">Retry eligibility</button></p>}</>;
+ return <>{active&&<p className="my-3 text-sm text-amber-200">This game&apos;s current round must be closed before another round can launch.</p>}{error&&<p role="alert" className="my-3 text-sm text-amber-200">{error} <button type="button" onClick={onRetry} disabled={loading} className="rounded border border-amber-300/30 px-3 py-2">Retry eligibility</button></p>}</>;
 }
 
 const RELEASE_LABEL_MAX_LENGTH = 30;
@@ -1527,8 +1527,8 @@ function BuildResultsPanel({
   }
 
   useEffect(() => {
-    void loadResults(selectedId);
-    return()=>{resultRequest.current++;};
+    const timer = setTimeout(() => loadResults(selectedId), 0);
+    return()=>{resultRequest.current++;clearTimeout(timer);};
   }, [selectedId]);
 
   return (
@@ -1660,7 +1660,8 @@ export default function StartPlaytest({
       estimatedMinutes &&
       Number(estimatedMinutes) > 30
     ) {
-      setEstimatedMinutes("30");
+      const timer = setTimeout(() => setEstimatedMinutes("30"), 0);
+      return () => clearTimeout(timer);
     }
   }, [developerPlan.data?.plan, estimatedMinutes]);
   const [releaseLabel, setReleaseLabel] = useState("");
@@ -1874,24 +1875,27 @@ export default function StartPlaytest({
       return;
     }
 
-    setAccessLink(existingPlaytest.accessLink);
-    setAccessType(existingPlaytest.accessType ?? "other");
-    setInstructions(existingPlaytest.instructions);
-    setFocusAreas(
-      existingPlaytest.focusAreas.length > 0
-        ? existingPlaytest.focusAreas
-        : ["Overall experience"]
-    );
-    setAudience(existingPlaytest.audience);
-    setEstimatedMinutes(
-      existingPlaytest.estimatedMinutes === null
-        ? ""
-        : developerPlan.data?.plan !== "pro" &&
-            existingPlaytest.estimatedMinutes > 30
+    const timer = setTimeout(() => {
+      setAccessLink(existingPlaytest.accessLink);
+      setAccessType(existingPlaytest.accessType ?? "other");
+      setInstructions(existingPlaytest.instructions);
+      setFocusAreas(
+        existingPlaytest.focusAreas.length > 0
+          ? existingPlaytest.focusAreas
+          : ["Overall experience"]
+      );
+      setAudience(existingPlaytest.audience);
+      setEstimatedMinutes(
+        existingPlaytest.estimatedMinutes === null
+          ? ""
+          : developerPlan.data?.plan !== "pro" &&
+              existingPlaytest.estimatedMinutes > 30
           ? "30"
           : String(existingPlaytest.estimatedMinutes)
-    );
-    setReleaseLabel(existingPlaytest.releaseLabel ?? "");
+      );
+      setReleaseLabel(existingPlaytest.releaseLabel ?? "");
+    }, 0);
+    return () => clearTimeout(timer);
   }, [editing, existingPlaytest]);
 
   useEffect(() => {
@@ -1899,7 +1903,8 @@ export default function StartPlaytest({
       return;
     }
 
-    void loadPlaytestResults(existingPlaytest.id);
+    const timer = setTimeout(() => loadPlaytestResults(existingPlaytest.id), 0);
+    return () => clearTimeout(timer);
   }, [existingPlaytest?.id, existingPlaytest?.status]);
 
   function clearMessage() {
@@ -2851,7 +2856,7 @@ export default function StartPlaytest({
             {developerPlan.loading ? <p className="text-sm text-zinc-400">Checking your next campaign allowance…</p> : developerPlan.data && developerPlan.data.rounds_used >= developerPlan.data.launch_limit ? (
               <div className="rounded-lg border border-amber-300/20 bg-amber-300/[0.04] p-4">
                 <p className="font-semibold text-zinc-100">Get more playtests</p>
-                <p className="mt-2 text-sm text-zinc-300">You've used your {developerPlan.data.plan === "free" ? "free" : "Pro"} campaign allowance for this rolling 30-day period. Your completed feedback stays available.</p>
+                <p className="mt-2 text-sm text-zinc-300">You&apos;ve used your {developerPlan.data.plan === "free" ? "free" : "Pro"} campaign allowance for this rolling 30-day period. Your completed feedback stays available.</p>
                 {developerPlan.data.next_at && <p className="mt-2 text-sm text-zinc-400">Next included campaign: {new Date(developerPlan.data.next_at).toLocaleString("en-GB")}.</p>}
                 <p className="mt-3 text-sm text-zinc-400">Pro upgrades and additional campaign purchases are coming soon; no payment will be taken here.</p>
                 <button type="button" onClick={() => void developerPlan.refresh()} className="mt-3 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-zinc-100 hover:border-emerald-300/50">Refresh allowance</button>

@@ -97,7 +97,8 @@ export default function ImportedSteamCatalogue() {
   }, [search, filter, page]);
 
   useEffect(() => {
-    void loadGames();
+    const timer = setTimeout(() => loadGames(), 0);
+    return () => clearTimeout(timer);
   }, [loadGames]);
 
   function applySearch() {

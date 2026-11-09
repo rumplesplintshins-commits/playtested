@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 
 type NotificationItem = {
@@ -69,6 +70,7 @@ function computePlacement(button: HTMLElement): PanelPlacement {
 }
 
 export default function NotificationBell() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<PanelPlacement | null>(null);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -100,14 +102,14 @@ export default function NotificationBell() {
   }
 
   useEffect(() => {
-    void load();
+    const timer = setTimeout(() => load(), 0);
     const changed = () => void load();
     const refreshVisible=()=>{if(document.visibilityState==='visible')void load();};
-    const timer=window.setInterval(refreshVisible,NOTIFICATION_POLL_MS);
+    const pollTimer=window.setInterval(refreshVisible,NOTIFICATION_POLL_MS);
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);
     window.addEventListener('focus',refreshVisible);
     document.addEventListener('visibilitychange',refreshVisible);
-    return () => {requestVersion.current++;window.clearInterval(timer);window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
+    return () => {requestVersion.current++;window.clearInterval(pollTimer);window.clearTimeout(timer);window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, changed);window.removeEventListener('focus',refreshVisible);document.removeEventListener('visibilitychange',refreshVisible);};
   }, []);
 
   function toggle() {
@@ -193,7 +195,7 @@ export default function NotificationBell() {
         destination.searchParams.set("tab", "games");
         destination.searchParams.set("launch", "1");
       }
-      window.location.href = destination.pathname + destination.search + destination.hash;
+      router.push(destination.pathname + destination.search + destination.hash);
     }
   }
 

@@ -38,13 +38,16 @@ export default function LoginPage() {
     const requestedNext = getSafeNextPath(params.get("next"));
     const error = params.get("error");
 
-    setMode(requestedMode);
-    setNextPath(requestedNext);
-    setConfirmationFailed(error === "auth_callback_failed");
-    setAgeConfirmationRequired(error === "age_confirmation_required");
+    const timer = setTimeout(() => {
+      setMode(requestedMode);
+      setNextPath(requestedNext);
+      setConfirmationFailed(error === "auth_callback_failed");
+      setAgeConfirmationRequired(error === "age_confirmation_required");
 
-    if (error === "age_confirmation_required") setMode("signup");
-    if (requestedMode === "signup" && isSignupRole(requestedRole)) setSignupRoles([requestedRole]);
+      if (error === "age_confirmation_required") setMode("signup");
+      if (requestedMode === "signup" && isSignupRole(requestedRole)) setSignupRoles([requestedRole]);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   function toggleRole(role: SignupRole) {
@@ -123,7 +126,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-16 text-white">
       <div className="mx-auto max-w-md">
-        <a href="/" className="text-2xl font-bold tracking-tight">Playtested<span className="text-emerald-400">.</span></a>
+        <Link href="/" className="text-2xl font-bold tracking-tight">Playtested<span className="text-emerald-400">.</span></Link>
         <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900 p-8">
           <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-slate-400">{mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in to continue to this community playtest." : "Sign in to your Playtested account." : nextPath.startsWith("/playtest/") ? "Create your account to join this community playtest." : "Choose all the ways you want to use Playtested."}</p>

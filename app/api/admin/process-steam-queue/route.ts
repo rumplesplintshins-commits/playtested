@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
 
@@ -302,7 +302,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function updateQueueItem(
-  adminSupabase: any,
+  adminSupabase: SupabaseClient,
   appId: string,
   values: Record<string, unknown>
 ) {
@@ -317,7 +317,7 @@ async function updateQueueItem(
 }
 
 async function deferRemainingItems(
-  adminSupabase: any,
+  adminSupabase: SupabaseClient,
   items: QueueItem[],
   errorMessage: string
 ) {
@@ -353,7 +353,7 @@ function getCounts(results: ResultItem[]) {
   };
 }
 
-async function storeCooldown(adminSupabase: any, seconds: number) {
+async function storeCooldown(adminSupabase: SupabaseClient, seconds: number) {
   const cooldownUntil = new Date(
     Date.now() + seconds * 1000
   ).toISOString();
@@ -377,7 +377,7 @@ async function storeCooldown(adminSupabase: any, seconds: number) {
 }
 
 async function deferAndStop(
-  adminSupabase: any,
+  adminSupabase: SupabaseClient,
   queueItems: QueueItem[],
   index: number,
   results: ResultItem[],

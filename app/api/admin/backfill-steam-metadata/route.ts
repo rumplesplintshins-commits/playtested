@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase-server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
 
@@ -178,7 +178,7 @@ function wait(milliseconds: number): Promise<void> {
 }
 
 async function updateTracking(
-  adminSupabase: any,
+  adminSupabase: SupabaseClient,
   id: string,
   values: Record<string, unknown>
 ) {
@@ -192,7 +192,7 @@ async function updateTracking(
   }
 }
 
-async function countPending(adminSupabase: any) {
+async function countPending(adminSupabase: SupabaseClient) {
   const { count, error } = await adminSupabase
     .from("imported_games")
     .select("id", { count: "exact", head: true })
@@ -211,7 +211,7 @@ async function countPending(adminSupabase: any) {
 
 export async function POST() {
   const batchStartedAt = Date.now();
-  let adminSupabase: any = null;
+  let adminSupabase: SupabaseClient | null = null;
   let lockToken: string | null = null;
   let lockAcquired = false;
 

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import AdminSteamReferrals from "@/app/components/AdminSteamReferrals";
 import GamePcRequirements from "../../components/GamePcRequirements";
 import DisclosureControl from "../../components/DisclosureControl";
@@ -761,15 +762,17 @@ export default function AdminSubmissionsPage() {
   }
 
   useEffect(() => {
-    if (!selectedSubmission) {
-      setDraftStatus("Pending Review");
-      setReviewReasonDraft("");
-      return;
-    }
-
-    setDraftStatus(selectedSubmission.status);
-    setReviewReasonDraft(selectedSubmission.reviewReason);
-    setPageError("");
+    const timer = setTimeout(() => {
+      if (!selectedSubmission) {
+        setDraftStatus("Pending Review");
+        setReviewReasonDraft("");
+      } else {
+        setDraftStatus(selectedSubmission.status);
+        setReviewReasonDraft(selectedSubmission.reviewReason);
+        setPageError("");
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [
     selectedSubmission?.id,
     selectedSubmission?.status,
@@ -777,16 +780,18 @@ export default function AdminSubmissionsPage() {
   ]);
 
   useEffect(() => {
-    if (!selectedClaim) {
-      setClaimStatusDraft("Pending");
-      setClaimAdminNotesDraft("");
-      return;
-    }
-
-    setClaimStatusDraft(selectedClaim.status);
-    setClaimAdminNotesDraft(selectedClaim.adminNotes);
-    setClaimError("");
-    setClaimMessage("");
+    const timer = setTimeout(() => {
+      if (!selectedClaim) {
+        setClaimStatusDraft("Pending");
+        setClaimAdminNotesDraft("");
+      } else {
+        setClaimStatusDraft(selectedClaim.status);
+        setClaimAdminNotesDraft(selectedClaim.adminNotes);
+        setClaimError("");
+        setClaimMessage("");
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [
     selectedClaim?.id,
     selectedClaim?.status,
@@ -795,8 +800,8 @@ export default function AdminSubmissionsPage() {
 
   useEffect(() => {
     if (!isAdmin || !selectedId) {
-      setVerification(emptyVerification);
-      setVerificationLoaded(false);
+      setTimeout(() => setVerification(emptyVerification), 0);
+      setTimeout(() => setVerificationLoaded(false), 0);
       return;
     }
 
@@ -1484,12 +1489,12 @@ export default function AdminSubmissionsPage() {
           page.
         </p>
 
-        <a
+        <Link
           href="/"
           className="mt-5 inline-block text-emerald-400 underline"
         >
           Return home
-        </a>
+        </Link>
       </main>
     );
   }
@@ -2195,7 +2200,7 @@ export default function AdminSubmissionsPage() {
                                       labelClass
                                     }
                                   >
-                                    Developer's AI
+Developer&apos;s AI
                                     explanation
                                   </p>
                                   <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-300">

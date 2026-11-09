@@ -163,7 +163,8 @@ export default function CommunityDiscussion({
   }, [postId, supabase]);
 
   useEffect(() => {
-    void loadDiscussion();
+    const timer = setTimeout(() => loadDiscussion(), 0);
+    return () => clearTimeout(timer);
   }, [loadDiscussion]);
 
   async function submitComment() {
