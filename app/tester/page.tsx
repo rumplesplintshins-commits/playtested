@@ -706,6 +706,8 @@ function TesterPage() {
 
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
   const [genreFilter,setGenreFilter] = useState("all");
+  const [platformFilter,setPlatformFilter] = useState("all");
+  const [justClaimedId,setJustClaimedId] = useState<string|null>(null);
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
   const [discoveryReady,setDiscoveryReady] = useState(false);
   // Keep the available-games view intact when visiting a public game profile.
@@ -1007,6 +1009,7 @@ function TesterPage() {
     ]);
 
     showMessage(`You've claimed "${game.title}".`, "success");
+    setJustClaimedId(game.submission_id);
     setClaimingId(null);
   }
 
@@ -1159,7 +1162,8 @@ function TesterPage() {
       claim.status === "reviewed" || claim.status === "expired"
   );
 
-  const availableGames=eligibleGames.filter(g=>genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter])));
+  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : (g.platform??"steam")===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
+  useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});setJustClaimedId(null);},[justClaimedId,displayedActiveGames]);
   const unmetRequirementsCount = availableGames.filter(game => game.can_claim === false).length;
   const testableGamesCount = availableGames.length - unmetRequirementsCount;
   function getStatusLabel(claim: TestClaim) {
@@ -1192,7 +1196,7 @@ function TesterPage() {
                 return (
                   <article
                     key={claim?.id||game.submission_id}
-                    id={"tester-campaign-"+game.submission_id}
+                    id={claim?.status==="claimed"||claim?.status==="in_progress"?"active-test-"+game.submission_id:"tester-campaign-"+game.submission_id}
                     className={`flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${
                       activeTestId
                         ? claim?.id === activeTestId
@@ -1605,6 +1609,7 @@ function TesterPage() {
                   </div>
                 </div>
 
+                <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
                 <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
                 <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible games. Set your interests in Account.":"All games includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
                 {hasActiveTest && (
