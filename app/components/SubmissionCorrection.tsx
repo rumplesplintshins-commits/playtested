@@ -5,7 +5,6 @@ import {GamePcFields,type RequirementsDraft} from "./PcSpecificationFields";
 import {parsePcSpecs,pcDraft} from "@/lib/pc-specifications";
 import {developerSaved} from "@/lib/developer-save";
 import GameplayEditor from "./GameplayEditor";
-import ScreenshotManager from "./ScreenshotManager";
 import {useEffect,useRef,useState,type FormEvent} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -77,7 +76,6 @@ const [platform,setPlatform]=useState<Platform>("steam");const [steamUrl,setStea
   {error&&<div role="alert" className="my-5 rounded-xl border border-red-300/30 p-4 text-sm text-red-200"><p>{error}</p>{!data&&<button onClick={()=>{setLoading(true);setRetry(value=>value+1);}} className="mt-3 rounded border px-3 py-2">Retry loading</button>}</div>}
   {data&&<>
    {(!listingKind||listingKind==="submission")&&<><SubmissionContact id={id}/><GameplayEditor id={id}/></>}
-   <ScreenshotManager id={id} management />
    <div className="my-5 rounded-xl border border-white/10 p-5"><h2 className="break-words [overflow-wrap:anywhere] text-lg font-semibold">{String(data.submission.title)} · {String(data.submission.status)}</h2>
    <p className="mt-3 text-sm font-medium text-zinc-300">Automatic completeness check</p>{allIssues.length?<ul className="mt-3 space-y-2 text-sm leading-6 text-amber-200">{allIssues.map(issue=><li key={issue.field}><a href={`#correction-${issue.field}`} className="underline">{issue.label}: {issue.reason}</a></li>)}</ul>:<p className="mt-2 text-sm text-emerald-200">Required details for this action are complete.</p>}
    <p className="mt-4 text-sm leading-6 text-zinc-400">Reviewer playtesting, performance checks and public assessment notes are separate internal tasks. They are not your missing submission fields.</p></div>
