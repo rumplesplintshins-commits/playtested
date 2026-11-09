@@ -47,7 +47,7 @@ try{
  const page=await context.newPage();await page.goto(origin+'/submit');
  await page.locator('[name="title"]').fill('Correction fixture');await page.locator('[name="developer"]').fill('Fixture studio');await page.locator('[name="genre"]').selectOption('Action');await page.locator('[name="releaseStatus"]').selectOption('Not announced');await page.locator('textarea[name="description"]').fill('A small game to test');await page.locator('[name="aiType"]').selectOption('AI-assisted: Code only');
  await page.getByRole('button',{name:'Submit application',exact:true}).click();
- await expect(page.getByRole('heading',{name:'Complete submission information',exact:true})).toBeVisible();assert.equal(row.status,'Needs More Information');assert(events.indexOf('duplicates')<events.indexOf('insert'),'Existing duplicate checks run before saving');assert.equal(events.filter(event=>event==='insert').length,1);
+ await expect(page.getByRole('heading',{name:'Submit your game.',exact:true})).toBeVisible();assert.equal(row.status,'Needs More Information');assert(events.indexOf('duplicates')<events.indexOf('insert'),'Existing duplicate checks run before saving');assert.equal(events.filter(event=>event==='insert').length,1);
  await expect(page.getByRole('link',{name:'AI-use explanation: Required'})).toBeVisible();await expect(page.getByRole('link',{name:/Supporting evidence.*Required/})).toHaveCount(0);
  row.review_reason='Human note: clarify the tools used';await page.reload();await expect(page.getByRole('heading',{name:'Human reviewer notes'})).toBeVisible();
  await page.getByLabel('AI-use explanation',{exact:true}).fill('Generated background art, edited by the developer');await page.getByRole('button',{name:'Save edits',exact:true}).click();

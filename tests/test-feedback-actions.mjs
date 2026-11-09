@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 const nativeRequire=createRequire(import.meta.url);
-const require=name=>name==='./AnonymousTesterLabel'?anonymousLabel:nativeRequire(name);
+const require=name=>name==='./AnonymousTesterLabel'?anonymousLabel:name==='@/lib/feedback-identities'?load('lib/feedback-identities.ts'):name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:nativeRequire(name);
 const load=(path,resolve=require)=>{
  const exports={};
  const code=ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;

@@ -97,7 +97,7 @@ async function seoChecks(){
 }
 
 async function navigationChecks(){
- const origin=process.env.TEST_APP_URL||'http://localhost:3000';
+const origin=process.env.TEST_APP_URL||'http://localhost:3000';
  const browser=await chromium.launch({headless:true});
  const user={id:'a1000000-0000-4000-8000-000000000001',aud:'authenticated',role:'authenticated',email:'fixture@example.test',app_metadata:{provider:'email'},user_metadata:{}};
  const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');const token=encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})+'.fixture';
@@ -139,7 +139,9 @@ const navigation=load('lib/auth-navigation.ts');
 for(const value of [null,'https://example.test','//example.test','/\\example.test','/%5cexample.test','/%2fexample.test','/\n/example.test','/%00evil','/%zz'])assert.equal(navigation.getSafeNextPath(value),'/');
 for(const value of ['/tester','/my-submissions','/playtest/fixture?view=report#feedback'])assert.equal(navigation.getSafeNextPath(value),value);
 let outcome='success',calls=0;
-const callback=load('app/auth/callback/route.ts',name=>name.endsWith('/auth-navigation')?navigation:name.endsWith('/supabase-server')?{createClient:async()=>({auth:{exchangeCodeForSession:async()=>{calls++;if(outcome==='throw')throw new Error('private diagnostic');return {error:outcome==='fail'?new Error('private diagnostic'):null};}}})}:require(name));
+process.env.NODE_ENV='development';
+const supabaseMock={createClient:async()=>({auth:{exchangeCodeForSession:async()=>{calls++;if(outcome==='throw')throw new Error('private diagnostic');return {error:outcome==='fail'?new Error('private diagnostic'):null,data:{user:{id:'fixture-user',aud:'authenticated',email:'fixture@example.test',created_at:'2026-01-01T00:00:00Z',last_sign_in_at:'2026-01-01T00:00:00Z',user_metadata:{age_18_confirmed:true}}}}}}})};
+const callback=load('app/auth/callback/route.ts',name=>name.endsWith('/auth-navigation')?navigation:name.endsWith('/supabase-server')?supabaseMock:require(name));
 for(const target of ['/tester','/my-submissions','/playtest/fixture?view=report#feedback','//example.test','/%5cexample.test']){
  const response=await callback.GET(new Request(`http://localhost:3000/auth/callback?code=fixture&next=${encodeURIComponent(target)}`));
  assert.equal(response.headers.get('location'),'http://localhost:3000'+navigation.getSafeNextPath(target));
