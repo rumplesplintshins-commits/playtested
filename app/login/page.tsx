@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
@@ -20,35 +20,34 @@ function isSignupRole(value: string | null): value is SignupRole {
 }
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [initialUrlState] = useState<{ mode: "login" | "signup"; nextPath: string; confirmationFailed: boolean; ageConfirmationRequired: boolean; signupRoles: SignupRole[] }>(() => {
+    if (typeof window === "undefined") {
+      return { mode: "login", nextPath: "/", confirmationFailed: false, ageConfirmationRequired: false, signupRoles: ["player"] };
+    }
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get("mode") === "signup" ? "signup" : "login";
+    const urlRole = params.get("role");
+    const urlNext = getSafeNextPath(params.get("next"));
+    const urlError = params.get("error");
+    return {
+      mode: urlError === "age_confirmation_required" ? "signup" : urlMode,
+      nextPath: urlNext,
+      confirmationFailed: urlError === "auth_callback_failed",
+      ageConfirmationRequired: urlError === "age_confirmation_required",
+      signupRoles: urlMode === "signup" && isSignupRole(urlRole) ? [urlRole] : ["player"],
+    };
+  });
+
+  const [mode, setMode] = useState<"login" | "signup">(initialUrlState.mode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signupRoles, setSignupRoles] = useState<SignupRole[]>(["player"]);
+  const [signupRoles, setSignupRoles] = useState<SignupRole[]>(initialUrlState.signupRoles);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
-  const [nextPath, setNextPath] = useState("/");
+  const [nextPath, setNextPath] = useState(initialUrlState.nextPath);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [confirmationFailed, setConfirmationFailed] = useState(false);
-  const [ageConfirmationRequired, setAgeConfirmationRequired] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedMode = params.get("mode") === "signup" ? "signup" : "login";
-    const requestedRole = params.get("role");
-    const requestedNext = getSafeNextPath(params.get("next"));
-    const error = params.get("error");
-
-    const timer = setTimeout(() => {
-      setMode(requestedMode);
-      setNextPath(requestedNext);
-      setConfirmationFailed(error === "auth_callback_failed");
-      setAgeConfirmationRequired(error === "age_confirmation_required");
-
-      if (error === "age_confirmation_required") setMode("signup");
-      if (requestedMode === "signup" && isSignupRole(requestedRole)) setSignupRoles([requestedRole]);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const [confirmationFailed, setConfirmationFailed] = useState(initialUrlState.confirmationFailed);
+  const [ageConfirmationRequired, setAgeConfirmationRequired] = useState(initialUrlState.ageConfirmationRequired);
 
   function toggleRole(role: SignupRole) {
     setSignupRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);

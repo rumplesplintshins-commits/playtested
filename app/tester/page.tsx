@@ -705,38 +705,36 @@ function TesterPage() {
   const feedbackDraftControllerRef = useRef<FeedbackDraftController | null>(null);
 
   const [preferredGenres,setPreferredGenres] = useState<string[]>([]);
-  const [genreFilter,setGenreFilter] = useState("all");
-  const [platformFilter,setPlatformFilter] = useState("all");
-  const [justClaimedId,setJustClaimedId] = useState<string|null>(null);
-  const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>({});
-  const [discoveryReady,setDiscoveryReady] = useState(false);
-  // Keep the available-games view intact when visiting a public game profile.
-  useEffect(() => {
+  const [savedTesterReturn, setSavedTesterReturn] = useState<{ genre?: string; expanded?: Record<string, boolean> } | null>(() => {
+    if (typeof sessionStorage === "undefined") return null;
     try {
       const raw = sessionStorage.getItem("playtested:tester-return");
-      if (!raw) return;
-      const saved = JSON.parse(raw) as {
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as {
         expanded?: Record<string, boolean>;
         genre?: string;
         scrollY?: number;
         savedAt?: number;
       };
-      if (!saved.savedAt || Date.now() - saved.savedAt > 30 * 60 * 1000) {
+      if (!parsed.savedAt || Date.now() - parsed.savedAt > 30 * 60 * 1000) {
         sessionStorage.removeItem("playtested:tester-return");
-        return;
+        return null;
       }
-      if (saved.expanded && typeof saved.expanded === "object") {
-        const expanded = saved.expanded;
-        setTimeout(() => setExpandedAvailableGames(expanded), 0);
-      }
-      if (typeof saved.genre === "string") {
-        const genre = saved.genre;
-        setTimeout(() => setGenreFilter(genre), 0);
-      }
+      return { genre: parsed.genre, expanded: parsed.expanded };
     } catch {
       sessionStorage.removeItem("playtested:tester-return");
+      return null;
     }
-  }, []);
+  });
+  const [genreFilter,setGenreFilter] = useState(savedTesterReturn?.genre ?? "all");
+  const [platformFilter,setPlatformFilter] = useState("all");
+  const [justClaimedId,setJustClaimedId] = useState<string|null>(null);
+  const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>(
+    savedTesterReturn?.expanded && typeof savedTesterReturn.expanded === "object"
+      ? savedTesterReturn.expanded
+      : {}
+  );
+  const [discoveryReady,setDiscoveryReady] = useState(false);
 
   useEffect(() => {
     if (!games.length) return;

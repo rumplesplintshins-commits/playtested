@@ -1653,17 +1653,12 @@ export default function StartPlaytest({
   const [settingsError,setSettingsError] = useState("");
   const [testingGenre,setTestingGenre] = useState("");
   const [genreRestricted,setGenreRestricted] = useState(false);
-  const [estimatedMinutes, setEstimatedMinutes] = useState("30");
-  useEffect(() => {
-    if (
-      developerPlan.data?.plan !== "pro" &&
-      estimatedMinutes &&
-      Number(estimatedMinutes) > 30
-    ) {
-      const timer = setTimeout(() => setEstimatedMinutes("30"), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [developerPlan.data?.plan, estimatedMinutes]);
+  const [rawEstimatedMinutes, setRawEstimatedMinutes] = useState("30");
+  const estimatedMinutes =
+    developerPlan.data?.plan !== "pro" &&
+    Number(rawEstimatedMinutes) > 30
+      ? "30"
+      : rawEstimatedMinutes;
   const [releaseLabel, setReleaseLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -1885,12 +1880,9 @@ export default function StartPlaytest({
           : ["Overall experience"]
       );
       setAudience(existingPlaytest.audience);
-      setEstimatedMinutes(
+      setRawEstimatedMinutes(
         existingPlaytest.estimatedMinutes === null
           ? ""
-          : developerPlan.data?.plan !== "pro" &&
-              existingPlaytest.estimatedMinutes > 30
-          ? "30"
           : String(existingPlaytest.estimatedMinutes)
       );
       setReleaseLabel(existingPlaytest.releaseLabel ?? "");
@@ -1919,7 +1911,7 @@ export default function StartPlaytest({
     setMinimumRank(0); setTestingGenre(""); setGenreRestricted(false);
     setFocusAreas(["Overall experience"]);
     setAudience("playtested_testers");
-    setEstimatedMinutes("30");
+    setRawEstimatedMinutes("30");
     setReleaseLabel("");
     clearMessage();
   }
@@ -1994,10 +1986,10 @@ export default function StartPlaytest({
 
     const target = 2;
 
-    const minutes =
-      estimatedMinutes.trim() === ""
-        ? null
-        : Number(estimatedMinutes);
+      const minutes =
+        rawEstimatedMinutes.trim() === ""
+          ? null
+          : Number(rawEstimatedMinutes);
 
     if (
       minutes !== null &&
@@ -2570,7 +2562,7 @@ export default function StartPlaytest({
 
                       <DurationPicker
                         value={estimatedMinutes}
-                        onChange={setEstimatedMinutes}
+                        onChange={setRawEstimatedMinutes}
                         isPro={developerPlan.data?.plan === "pro"}
                         className="mt-2"
                       />
@@ -3081,7 +3073,7 @@ export default function StartPlaytest({
 
             <DurationPicker
               value={estimatedMinutes}
-              onChange={setEstimatedMinutes}
+              onChange={setRawEstimatedMinutes}
               isPro={developerPlan.data?.plan === "pro"}
               className="mt-2"
             />
