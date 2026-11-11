@@ -236,6 +236,7 @@ function HistoricalPlaytestCard({
   const [acceptedFeedback, setAcceptedFeedback] = useState<
     AcceptedIndependentFeedback[]
   >([]);
+  const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
 
   async function loadResults() {
     if (loading) {
@@ -272,6 +273,7 @@ function HistoricalPlaytestCard({
           "Could not load historical playtest results."
       );
       setLoading(false);
+      setTesterGenres({});
       return;
     }
 
@@ -286,6 +288,37 @@ function HistoricalPlaytestCard({
     setAcceptedFeedback(
       (feedbackResult.data ?? []) as AcceptedIndependentFeedback[]
     );
+
+    const testIds = ((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]).map(f => f.test_id);
+    if (testIds.length > 0) {
+      const { data: testRows } = await supabase
+        .from("community_game_tests")
+        .select("id, tester_id")
+        .in("id", testIds);
+      const testerIds = Array.from(new Set((testRows ?? []).map(r => r.tester_id).filter((id): id is string => Boolean(id))));
+      if (testerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, preferred_genres")
+          .in("id", testerIds);
+        const genreMap = new Map<string, string[]>();
+        for (const p of profiles ?? []) {
+          genreMap.set(p.id, (p.preferred_genres ?? []) as string[]);
+        }
+        const testerGenresMap: Record<string, string[]> = {};
+        for (const row of testRows ?? []) {
+          if (row.tester_id) {
+            testerGenresMap[row.id] = genreMap.get(row.tester_id) ?? [];
+          }
+        }
+        setTesterGenres(testerGenresMap);
+      } else {
+        setTesterGenres({});
+      }
+    } else {
+      setTesterGenres({});
+    }
+
     setLoading(false);
   }
 
@@ -456,7 +489,10 @@ function HistoricalPlaytestCard({
                                 <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3">
                                   <p className="text-sm font-semibold text-zinc-200">
-                                    <AnonymousTesterLabel testId={response.test_id} />
+                      <AnonymousTesterLabel
+                        testId={response.test_id}
+                        genres={testerGenres?.[response.test_id]}
+                      />
                                   </p>
                                   <p className="mt-1 text-xs font-normal text-zinc-500">
                                     {response.submitted_at
@@ -794,12 +830,15 @@ function ResultsDashboard({
   playtest,
   communityResults,
   independentProgress,
-  acceptedFeedback,feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
+  acceptedFeedback,
+  testerGenres,
+  feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
   playtest: ExistingPlaytest;
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  testerGenres?: Record<string, string[]>;
   feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
 }) {
   const [snapshotExpanded,setSnapshotExpanded]=useState(true);
@@ -1475,6 +1514,7 @@ function BuildResultsPanel({
   const [communityResults, setCommunityResults] = useState<CommunityPlaytestResults | null>(null);
   const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
   const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
+  const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
@@ -1503,6 +1543,7 @@ function BuildResultsPanel({
       setCommunityResults(null);
       setIndependentProgress(null);
       setAcceptedFeedback([]);
+      setTesterGenres({});
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
@@ -1517,6 +1558,37 @@ function BuildResultsPanel({
     const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+
+    const testIds = ((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]).map(f => f.test_id);
+    if (testIds.length > 0) {
+      const { data: testRows } = await supabase
+        .from("community_game_tests")
+        .select("id, tester_id")
+        .in("id", testIds);
+      const testerIds = Array.from(new Set((testRows ?? []).map(r => r.tester_id).filter((id): id is string => Boolean(id))));
+      if (testerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, preferred_genres")
+          .in("id", testerIds);
+        const genreMap = new Map<string, string[]>();
+        for (const p of profiles ?? []) {
+          genreMap.set(p.id, (p.preferred_genres ?? []) as string[]);
+        }
+        const testerGenresMap: Record<string, string[]> = {};
+        for (const row of testRows ?? []) {
+          if (row.tester_id) {
+            testerGenresMap[row.id] = genreMap.get(row.tester_id) ?? [];
+          }
+        }
+        setTesterGenres(testerGenresMap);
+      } else {
+        setTesterGenres({});
+      }
+    } else {
+      setTesterGenres({});
+    }
+
     setLoading(false);
     } catch {
       if(request!==resultRequest.current)return;
@@ -1607,6 +1679,7 @@ function BuildResultsPanel({
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
+            testerGenres={testerGenres}
           />
         ) : null}
       </div>
