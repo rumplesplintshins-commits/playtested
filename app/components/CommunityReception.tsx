@@ -28,6 +28,8 @@ export type CommunityReceptionFeedback = {
   id: string;
   playtestId: string;
   releaseLabel: string;
+  testerRankLabel?: string;
+  testerRankTone?: string;
   enjoyedMost: string | null;
   frustrations: string | null;
   bugsFound: string | null;
@@ -617,8 +619,8 @@ export default function CommunityReception({
                     className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold text-[#77f29b]">
-                        <AnonymousTesterLabel testId={response.id}/>
+                      <p className="text-xs font-semibold">
+                        <AnonymousTesterLabel testId={response.id} rankLabel={response.testerRankLabel} rankTone={response.testerRankTone}/>
                       </p>
 
                       <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">

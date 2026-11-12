@@ -1,4 +1,5 @@
 "use client";
+import DeveloperXpHistory from "../components/DeveloperXpHistory";
 import AccountPcSpecifications from "../components/AccountPcSpecifications";
 import { TesterRankPanel, GenrePreferences } from "../components/TestingPolicy";
 
@@ -99,8 +100,6 @@ export default function AccountPage() {
     <main className="min-h-screen bg-[#090b0a] text-white">
       <SiteHeader />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
-        {!loading&&<AccountPcSpecifications/>}
-        {!loading && roles.includes("tester") && <><TesterRankPanel /><GenrePreferences /></>}
         <header>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Playtested account</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Your account</h1>
@@ -159,6 +158,13 @@ export default function AccountPage() {
                 </div>
               </div>
             </section>
+
+            {roles.includes("developer") && <DeveloperXpHistory />}
+
+            <div className="min-w-0">
+              <AccountPcSpecifications />
+              {roles.includes("tester") && <><TesterRankPanel /><GenrePreferences /></>}
+            </div>
 
             <section className="mt-8 rounded-2xl border border-red-400/25 bg-[#0d110f] p-5 sm:p-7">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">Danger zone</p>

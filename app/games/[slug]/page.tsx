@@ -22,6 +22,7 @@ import { connection } from "next/server";
 import SiteHeader from "../../components/SiteHeader";
 import { games } from "../../data/games";
 import { createClient } from "../../../lib/supabase-server";
+import {testerRankPresentation} from "../../../lib/tester-rank";
 
 export const instant = false;
 
@@ -73,6 +74,13 @@ type CommunityReceptionRow = {
 };
 
 type AcceptedCommunityFeedback = {
+  current_rank: number | null;
+  overall_score: number | null;
+  gameplay_score: number | null;
+  performance_score: number | null;
+  recommend_game: string | null;
+  continue_playing: string | null;
+  hours_played: number | null;
   id: string;
   playtest_id: string | null;
   enjoyed_most: string | null;
@@ -335,29 +343,11 @@ export default async function GamePage({
       .map((playtest) => playtest.id)
       .filter((playtestId): playtestId is string => Boolean(playtestId));
 
-    let acceptedFeedback: AcceptedCommunityFeedback[] = [];
-
-    if (playtestIds.length > 0) {
-      const { data: acceptedFeedbackData, error: acceptedFeedbackError } =
-        await supabase
-          .from("community_game_tests")
-          .select(
-            "id, playtest_id, enjoyed_most, frustrations, bugs_found, biggest_improvement, feedback"
-          )
-          .in("playtest_id", playtestIds)
-          .eq("review_outcome", "accepted")
-          .order("reviewed_at", { ascending: true });
-
-      if (acceptedFeedbackError) {
-        console.error(
-          "Could not load accepted community feedback:",
-          acceptedFeedbackError
-        );
-      }
-
-      acceptedFeedback =
-        (acceptedFeedbackData ?? []) as AcceptedCommunityFeedback[];
-    }
+    const { data: acceptedFeedbackData, error: acceptedFeedbackError } = await supabase.rpc(
+      "get_public_imported_playtest_feedback", { p_imported_game_id: importedGame.id }
+    );
+    if (acceptedFeedbackError) console.error("Could not load public community feedback:", acceptedFeedbackError);
+    const acceptedFeedback = (acceptedFeedbackData ?? []) as AcceptedCommunityFeedback[];
 
     const detailedFeedback = acceptedFeedback.filter(
       (response) =>
@@ -368,20 +358,17 @@ export default async function GamePage({
         response.feedback
     );
 
+    // The public read model resolves ranks through the existing privacy guard.
+    const rankByFeedbackId = new Map<string, { label: string; tone: string }>();
+    for (const row of acceptedFeedback) {
+      const rank = testerRankPresentation(row.current_rank);
+      if (rank.known) rankByFeedbackId.set(row.id, { label: rank.label, tone: rank.text });
+    }
+
     let playtestRoundSummaries: PlaytestRoundSummary[] = [];
 
     if (playtestIds.length > 0) {
-      const { data: roundTestsData, error: roundTestsError } = await supabase
-        .from("community_game_tests")
-        .select(
-          "playtest_id, overall_score, gameplay_score, performance_score, recommend_game, continue_playing, bugs_found, hours_played"
-        )
-        .in("playtest_id", playtestIds)
-        .eq("review_outcome", "accepted");
-
-      if (roundTestsError) {
-        console.error("Could not load playtest round history:", roundTestsError);
-      }
+      const roundTestsData = acceptedFeedback;
 
       const positiveIntent = (value: string | null) =>
         value === "definitely" || value === "probably";
@@ -965,9 +952,9 @@ export default async function GamePage({
                           className="rounded-lg border border-white/10 bg-[#0b0e0c] p-4"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-semibold text-[#77f29b]">
-                              <AnonymousTesterLabel testId={response.id}/>
-                            </p>
+                          <p className="text-xs font-semibold">
+                              <AnonymousTesterLabel testId={response.id} rankLabel={rankByFeedbackId.get(response.id)?.label} rankTone={rankByFeedbackId.get(response.id)?.tone}/>
+                          </p>
                             <span className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">
                               Accepted
                             </span>

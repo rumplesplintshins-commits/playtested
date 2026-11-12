@@ -734,6 +734,7 @@ function TesterPage() {
       ? savedTesterReturn.expanded
       : {}
   );
+  const [expandedHistoryClaims, setExpandedHistoryClaims] = useState<Record<string, boolean>>({});
   const [discoveryReady,setDiscoveryReady] = useState(false);
 
   useEffect(() => {
@@ -1700,53 +1701,91 @@ function TesterPage() {
                   claim.review_outcome === "rejected";
                 const pending = claim.status === "submitted";
 
+                const isExpanded = expandedHistoryClaims[claim.id] ?? false;
+                const toggleCard = () => setExpandedHistoryClaims(prev => ({ ...prev, [claim.id]: !prev[claim.id] }));
+
                 return (
                   <article
                     id={`testing-activity-${claim.id}`}
                     key={claim.id}
-                    className="scroll-mt-24 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+                    className="scroll-mt-24 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-4 cursor-pointer"
+                    onClick={(event) => { if (!(event.target as HTMLElement).closest("button, a, input, select, textarea, summary, details")) toggleCard(); }}
                   >
-                    <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={feedbackUsefulness[claim.id]??claim.feedback_usefulness} status={getStatusLabel(claim)}/>
-                    <div className="mt-3 min-w-0">
-                      <p className="mt-2 text-sm text-zinc-300">{feedbackQualityLabel(claim)}</p>
-                      <div className="mt-2"><ActivityStorefrontLink testId={claim.id} url={media?.store_url}/></div>
-                      {claim.submitted_at&&<p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}
-                      {claim.submitted_at&&<details className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-200">View my submitted feedback</summary><div className="mt-3 space-y-3 text-zinc-300">{claim.overall_score!=null&&<p><span className="text-zinc-500">Overall:</span> {claim.overall_score}/10</p>}{claim.gameplay_score!=null&&<p><span className="text-zinc-500">Gameplay:</span> {claim.gameplay_score}/10</p>}{claim.performance_score!=null&&<p><span className="text-zinc-500">Performance:</span> {claim.performance_score}/10</p>}{claim.hours_played!=null&&<p><span className="text-zinc-500">Time played:</span> {claim.hours_played} hours</p>}{claim.continue_playing&&<p><span className="text-zinc-500">Continue playing:</span> {claim.continue_playing.replaceAll("_"," ")}</p>}{claim.recommend_game&&<p><span className="text-zinc-500">Recommend:</span> {claim.recommend_game.replaceAll("_"," ")}</p>}{claim.enjoyed_most&&<div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}{claim.frustrations&&<div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}{claim.bugs_found&&<div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}{claim.biggest_improvement&&<div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}{claim.feedback&&<div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}</div></details>}
-                      {accepted&&claim.review_reason&&<p className="mt-2 text-sm text-zinc-400">Admin reason: {claim.review_reason}</p>}
-                      {reviewHistoryError&&<p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
-                      {reviewHistory.some(event=>event.test_id===claim.id)&&<details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-zinc-100 [&::-webkit-details-marker]:hidden">
-                          <span className="flex items-center gap-2"><span aria-hidden="true" className="text-emerald-400">◷</span> XP & review history <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs font-normal text-zinc-400">{reviewHistory.filter(event=>event.test_id===claim.id).length} events</span></span>
-                          <span className="text-xs font-normal text-zinc-400"><span className="group-open:hidden">Show +</span><span className="hidden group-open:inline">Hide −</span></span>
-                        </summary>
-                        <ol className="space-y-3 border-t border-white/10 p-3 sm:p-4">
-                          {reviewHistory.filter(event=>event.test_id===claim.id).map(event=><li key={event.id} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.025] p-3 sm:p-4">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div><p className="font-semibold capitalize text-zinc-100">{event.kind.replaceAll("_"," ")}</p><p className="mt-1 text-xs text-zinc-400">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"}</p></div>
-                              <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${event.xp_delta>0?"border-emerald-400/30 bg-emerald-400/10 text-emerald-300":event.xp_delta<0?"border-red-400/30 bg-red-400/10 text-red-300":"border-white/10 text-zinc-300"}`}>{event.xp_delta>0?"+":""}{event.xp_delta} XP change</span>
-                            </div>
-                            {event.rubric_version!=null?<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">Feedback quality</p><p className="mt-1 text-lg font-semibold text-white">{event.quality_score??"—"}%</p></div>
-                              <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award==null?"Not recorded":`${event.actual_xp_award} XP`}</p></div>
-                              <div className="col-span-2 rounded-lg bg-black/30 p-3 sm:col-span-1"><p className="text-xs text-zinc-400">Rubric</p><p className="mt-1 text-lg font-semibold text-white">Version {event.rubric_version}</p></div>
-                            </div>:<p className="mt-3 text-xs text-zinc-400">Legacy review · score not recorded</p>}
-                            {event.reason&&<div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Review reason</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">{event.reason}</p></div>}
-                          </li>)}
-                        </ol>
-                      </details>}
-                      {(rejected||(accepted&&claim.quality_rubric_version!=null&&typeof claim.base_xp_amount==="number"&&claim.base_xp_amount<100)) && <Reconsideration testId={claim.id} reason={claim.review_reason} />}
-                      <p className="mt-2 text-xs text-zinc-500">
-                        {claim.status==="expired" ? "Your draft is kept. Reclaim a place to continue; expiry has no XP penalty." : pending
-                          ? "Your feedback has been submitted and is awaiting admin review."
-                          : accepted
-                            ? `Accepted. ${feedbackQualityLabel(claim)}.`
-                            : rejected
-                              ? "Your test was reviewed but was not accepted for XP."
-                              : "Your test has been reviewed."}
-                      </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={(feedbackUsefulness[claim.id]??claim.feedback_usefulness)==='useful'?'useful':undefined} usefulOnly status={getStatusLabel(claim)}/>
+                      <button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button>
                     </div>
-                    {claim.status==="expired"&&<div className="flex flex-wrap gap-2"><button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!,title:claim.game_title??game?.title??"this game"} as TestGame)} className="rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>{<button type="button" onClick={()=>setActiveTestId(claim.id)} className="rounded-lg border border-white/20 px-3 py-2 text-sm">Open saved draft</button>}{!claim.playtest_id&&!claim.reclaim_campaign_id&&<p className="text-xs text-zinc-400">This historical test needs a published campaign before it can be reclaimed.</p>}</div>}
-
+                    <div className="mt-3 min-w-0">
+                      {/* Submission details remain visible in either state. */}
+                      {(
+                        <>
+                          {claim.submitted_at && <p className="mt-2 text-xs text-zinc-500">Submitted {new Date(claim.submitted_at).toLocaleString()}</p>}
+                          {claim.hours_played != null && <p className="mt-1 text-xs text-zinc-500">Time played: {claim.hours_played} hours</p>}
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            {claim.overall_score != null && <span className="rounded-full border border-white/10 px-2 py-0.5 text-zinc-300">Overall: {claim.overall_score}/10</span>}
+                            {claim.gameplay_score != null && <span className="rounded-full border border-white/10 px-2 py-0.5 text-zinc-300">Gameplay: {claim.gameplay_score}/10</span>}
+                            {claim.performance_score != null && <span className="rounded-full border border-white/10 px-2 py-0.5 text-zinc-300">Performance: {claim.performance_score}/10</span>}
+                          </div>
+                        </>
+                      )}
+                      {/* Expanded written feedback, XP history and secondary controls. */}
+                      {isExpanded && (
+                        <>
+                          <div className="mt-3" onClick={(event) => event.stopPropagation()}>
+                            <ActivityStorefrontLink testId={claim.id} url={media?.store_url} />
+                          </div>
+                          <p className="mt-2 text-xs text-zinc-500">{claim.submitted_at && `Submitted ${new Date(claim.submitted_at).toLocaleString()}`}</p>
+                          {claim.hours_played != null && <p className="mt-1 text-xs text-zinc-500">Time played: {claim.hours_played} hours</p>}
+                          <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm space-y-3">
+                            {claim.enjoyed_most && <div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}
+                            {claim.frustrations && <div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}
+                            {claim.bugs_found && <div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}
+                            {claim.biggest_improvement && <div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}
+                            {claim.feedback && <div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}
+                          </div>
+                          {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
+                          {reviewHistory.some(event=>event.test_id===claim.id) && (
+                            <details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm" onClick={(e) => e.stopPropagation()}>
+                              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-zinc-100 [&::-webkit-details-marker]:hidden">
+                                <span className="flex items-center gap-2"><span aria-hidden="true" className="text-emerald-400">◷</span> XP & review history <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs font-normal text-zinc-400">{reviewHistory.filter(event=>event.test_id===claim.id).length} events</span></span>
+                                <span className="text-xs font-normal text-zinc-400"><span className="group-open:hidden">Show +</span><span className="hidden group-open:inline">Hide −</span></span>
+                              </summary>
+                              <ol className="space-y-3 border-t border-white/10 p-3 sm:p-4">
+                                {reviewHistory.filter(event=>event.test_id===claim.id).map(event=><li key={event.id} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.025] p-3 sm:p-4" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div><p className="font-semibold capitalize text-zinc-100">{event.kind.replaceAll("_"," ")}</p><p className="mt-1 text-xs text-zinc-400">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"}</p></div>
+                                    <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${event.xp_delta>0?"border-emerald-400/30 bg-emerald-400/10 text-emerald-300":event.xp_delta<0?"border-red-400/30 bg-red-400/10 text-red-300":"border-white/10 text-zinc-300"}`}>{event.xp_delta>0?"+":""}{event.xp_delta} XP change</span>
+                                  </div>
+                                  {event.rubric_version!=null?<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                    <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">Feedback quality</p><p className="mt-1 text-lg font-semibold text-white">{event.quality_score??"—"}%</p></div>
+                                    <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award==null?"Not recorded":`${event.actual_xp_award} XP`}</p></div>
+                                    <div className="col-span-2 rounded-lg bg-black/30 p-3 sm:col-span-1"><p className="text-xs text-zinc-400">Rubric</p><p className="mt-1 text-lg font-semibold text-white">Version {event.rubric_version}</p></div>
+                                  </div>:<p className="mt-3 text-xs text-zinc-400">{event.kind === "tester_feedback_useful" ? "One-time Useful feedback bonus" : event.kind === "review_bonus_correction" ? "Previous review bonus correction" : event.kind === "developer_feedback_reviewed" ? "Previous review bonus" : "Legacy review · score not recorded"}</p>}
+                                  {event.reason&&<div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Review reason</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">{event.reason}</p></div>}
+                                </li>)}
+                              </ol>
+                            </details>
+                          )}
+                          {rejected && (<div onClick={(e) => e.stopPropagation()}>
+                            <Reconsideration testId={claim.id} reason={claim.review_reason} />
+                          </div>)}
+                          <p className="mt-2 text-xs text-zinc-500">
+                            {claim.status==="expired" ? "Your draft is kept. Reclaim a place to continue; expiry has no XP penalty." : pending
+                              ? "Your feedback has been submitted and is awaiting admin review."
+                              : accepted
+                                ? `Accepted. ${feedbackQualityLabel(claim)}.`
+                                : rejected
+                                  ? "Your test was reviewed but was not accepted for XP."
+                                  : "Your test has been reviewed."}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    {claim.status==="expired"&&<div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={(e)=>{e.stopPropagation();void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!,title:claim.game_title??game?.title??"this game"} as TestGame)}} className="rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>
+                      <button type="button" onClick={(e)=>{e.stopPropagation();setActiveTestId(claim.id)}} className="rounded-lg border border-white/20 px-3 py-2 text-sm">Open saved draft</button>
+                      {!claim.playtest_id&&!claim.reclaim_campaign_id&&<p className="text-xs text-zinc-400">This historical test needs a published campaign before it can be reclaimed.</p>}
+                    </div>}
                   </article>
                 );
               })}

@@ -236,6 +236,7 @@ function HistoricalPlaytestCard({
   const [acceptedFeedback, setAcceptedFeedback] = useState<
     AcceptedIndependentFeedback[]
   >([]);
+  const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
 
   async function loadResults() {
     if (loading) {
@@ -247,7 +248,7 @@ function HistoricalPlaytestCard({
 
     const supabase = createClient();
 
-    const [communityResult, progressResult, feedbackResult] =
+    const [communityResult, progressResult, feedbackResult, genresResult] =
       await Promise.all([
         supabase.rpc("get_developer_community_playtest_results", {
           p_playtest_id: playtest.id,
@@ -258,20 +259,22 @@ function HistoricalPlaytestCard({
         supabase.rpc("get_developer_accepted_playtest_feedback", {
           p_playtest_id: playtest.id,
         }),
+        supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtest.id }),
       ]);
 
     if (
       communityResult.error ||
       progressResult.error ||
-      feedbackResult.error
+      feedbackResult.error || genresResult.error
     ) {
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ??
           "Could not load historical playtest results."
       );
       setLoading(false);
+      setTesterGenres({});
       return;
     }
 
@@ -286,6 +289,12 @@ function HistoricalPlaytestCard({
     setAcceptedFeedback(
       (feedbackResult.data ?? []) as AcceptedIndependentFeedback[]
     );
+
+    setTesterGenres(Object.fromEntries(
+      ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
+        .map(row => [row.test_id, row.preferred_genres ?? []])
+    ));
+
     setLoading(false);
   }
 
@@ -456,7 +465,10 @@ function HistoricalPlaytestCard({
                                 <FeedbackSignal testId={response.test_id} />
                                 <summary className="cursor-pointer list-none p-3">
                                   <p className="text-sm font-semibold text-zinc-200">
-                                    <AnonymousTesterLabel testId={response.test_id} />
+                      <AnonymousTesterLabel
+                        testId={response.test_id}
+                        genres={testerGenres?.[response.test_id]}
+                      />
                                   </p>
                                   <p className="mt-1 text-xs font-normal text-zinc-500">
                                     {response.submitted_at
@@ -794,12 +806,15 @@ function ResultsDashboard({
   playtest,
   communityResults,
   independentProgress,
-  acceptedFeedback,feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
+  acceptedFeedback,
+  testerGenres,
+  feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
   playtest: ExistingPlaytest;
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  testerGenres?: Record<string, string[]>;
   feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
 }) {
   const [snapshotExpanded,setSnapshotExpanded]=useState(true);
@@ -1240,18 +1255,25 @@ function ResultsDashboard({
               className="rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.025]"
             >
               <summary className="cursor-pointer list-none p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 basis-48">
                     <p className="text-sm font-semibold text-zinc-100">
                       <AnonymousTesterLabel testId={response.test_id} />
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    {Boolean(testerGenres?.[response.test_id]?.length) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
+                        {testerGenres![response.test_id].map(genre => (
+                          <span key={genre} className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-semibold text-zinc-400">{genre}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p className={`${testerGenres?.[response.test_id]?.length ? "mt-2.5" : "mt-1"} text-xs text-zinc-500`}>
                       {response.submitted_at
                         ? historyFormatDate(response.submitted_at)
                         : "Submission date unavailable"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
+                  <span className="max-w-full shrink-0 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
                     Independent · Accepted
                   </span>
                 </div>
@@ -1475,6 +1497,7 @@ function BuildResultsPanel({
   const [communityResults, setCommunityResults] = useState<CommunityPlaytestResults | null>(null);
   const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
   const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
+  const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
@@ -1491,22 +1514,24 @@ function BuildResultsPanel({
 
     const supabase = createClient();
     try {
-    const [communityResult, progressResult, feedbackResult] = await Promise.all([
+    const [communityResult, progressResult, feedbackResult, genresResult] = await Promise.all([
       supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
+      supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtestId }),
     ]);
     if(request!==resultRequest.current)return;
     setLoadedBuildId(playtestId);
 
-    if (communityResult.error || progressResult.error || feedbackResult.error) {
+    if (communityResult.error || progressResult.error || feedbackResult.error || genresResult.error) {
       setCommunityResults(null);
       setIndependentProgress(null);
       setAcceptedFeedback([]);
+      setTesterGenres({});
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ??
           "Could not load results for this build."
       );
       setLoading(false);
@@ -1517,6 +1542,12 @@ function BuildResultsPanel({
     const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+
+    setTesterGenres(Object.fromEntries(
+      ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
+        .map(row => [row.test_id, row.preferred_genres ?? []])
+    ));
+
     setLoading(false);
     } catch {
       if(request!==resultRequest.current)return;
@@ -1607,6 +1638,7 @@ function BuildResultsPanel({
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
+            testerGenres={testerGenres}
           />
         ) : null}
       </div>
@@ -2250,6 +2282,7 @@ export default function StartPlaytest({
     setEditing(true);
 
     if (existingPlaytest) {
+      progressRequestedFor.current = existingPlaytest.id;
       void loadPlaytestResults(existingPlaytest.id);
     }
   }

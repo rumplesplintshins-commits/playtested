@@ -575,7 +575,7 @@ async function DeveloperDashboard() {
   ] = await Promise.all([
     supabase
       .from("game_submissions")
-      .select("*")
+      .select("id, title, genre, status, submitted_at, review_reason")
       .eq("developer_id", user.id)
       .order("submitted_at", { ascending: false }),
 

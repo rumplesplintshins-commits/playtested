@@ -45,7 +45,20 @@ try {
  await fail(`select claim_community_game_test('${id(20)}')`,/already/);
  await as(2);await sql(`select claim_community_game_test('${id(20)}')`);
  await as(3);await fail(`select claim_community_game_test('${id(20)}')`,/full/);
- await fail(`select claim_community_game_test('${id(10)}')`,/published Tester Hub campaign/);
+ // Submission completeness (migration 010) holds this fixture for more information.
+ // The claim RPC rejects it before INSERT; the separate insert guard still
+ // prevents bypassing the published-campaign requirement.
+ assert.equal((await one(`select status from game_submissions where id='${id(10)}'`)).status,'Needs More Information');
+ const claimsBeforeRefusal=await one(`select count(*) n from community_game_tests`);
+ const placesBeforeRefusal=await one(`select * from campaign_places('${id(20)}')`);
+ await fail(`select claim_community_game_test('${id(10)}')`,error=>{
+  assert.equal(error.code,'P0001');
+  assert.equal(error.message,'This game is not available for community testing.');
+  return true;
+ });
+ await fail(`insert into community_game_tests(submission_id,tester_id,status) values('${id(10)}','${id(3)}','claimed')`,/published Tester Hub campaign/);
+ assert.deepEqual(await one('select count(*) n from community_game_tests'),claimsBeforeRefusal,'Denied claims do not create participation');
+ assert.deepEqual(await one(`select * from campaign_places('${id(20)}')`),placesBeforeRefusal,'Denied claims do not consume campaign places');
  await as(1);await sql(`select release_community_game_test('${id(20)}')`);
  assert.equal((await one(`select * from campaign_places('${id(20)}')`)).available,1);
  await as(3);await sql(`select claim_community_game_test('${id(20)}')`);
@@ -85,7 +98,18 @@ try {
  await sql(`update profiles set tester_xp=100 where id='${id(3)}'`);
  await sql(`select replace_unusable_test('${report}','Documented unusable evidence exception')`);
  assert.equal((await one(`select * from campaign_places('${id(20)}')`)).available,1);
- await as(2);await sql(`update community_playtests set minimum_rank=3,genre_restricted=true,testing_genre='Action' where id='${id(20)}'`);
+ await as(2);
+ // Publishing impossible targeting must still fail. Seed a real qualifying
+ // audience using the existing disposable legacy-award fixtures, not a bypass.
+ await fail(`update community_playtests set minimum_rank=3,genre_restricted=true,testing_genre='Action' where id='${id(20)}'`,/No registered testers match/);
+ // Legacy rank mapping uses awarded tests, without fabricating rubric scores.
+ await sql(`insert into game_submissions(id,title,status,genre,developer_id,developer_name,description,game_link,ai_type)
+ select md5('rank-source-'||n)::uuid,'Rank fixture','Approved','Action','${id(5)}','Dev','Description','https://example.test','Unknown' from generate_series(1,60) n;
+ insert into community_game_tests(submission_id,tester_id,status,review_outcome,xp_awarded)
+ select md5('rank-source-'||n)::uuid,'${id(1)}','reviewed','accepted',true from generate_series(1,60) n`);
+ await sql(`update profiles set tester_xp=5000,preferred_genres=array['Action'] where id='${id(1)}'`);
+ assert.equal((await one(`select tester_rank('${id(1)}') rank`)).rank,3,'The fixture supplies an earned Platinum audience');
+ await sql(`update community_playtests set minimum_rank=3,genre_restricted=true,testing_genre='Action' where id='${id(20)}'`);
  assert.equal((await db.query('select * from get_available_community_test_games()')).rows.some(r=>r.submission_id===id(20)),true,'existing active claim stays visible');
  const existing=(await one(`select id from community_game_tests where tester_id='${id(2)}'`)).id;
  await sql(`select start_community_game_test('${existing}');select submit_community_game_test('${existing}',8,8,'No bugs','',0,8,'probably','probably','Movement','None','Tutorial','{}')`);
@@ -109,11 +133,7 @@ try {
  insert into community_playtests(developer_id,submission_id,title,access_link,instructions,status,audience) values('${id(5)}','${id(10)}','Draft','https://example.test','Instructions','draft','both')`);
  assert.equal((await one(`select rounds_used n from _playtested_launch_window(null,null,'${id(10)}')`)).n,1,'draft and community publication do not consume allowance');
  await fail(`update community_playtests set status='open' where submission_id='${id(10)}' and status='draft'`,/One Tester Hub launch/);
- // Legacy rank mapping uses awarded tests, without fabricating rubric scores.
- await sql(`insert into game_submissions(id,title,status,genre,developer_id,developer_name,description,game_link,ai_type)
- select md5('rank-source-'||n)::uuid,'Rank fixture','Approved','Action','${id(5)}','Dev','Description','https://example.test','Unknown' from generate_series(1,60) n;
- insert into community_game_tests(submission_id,tester_id,status,review_outcome,xp_awarded)
- select md5('rank-source-'||n)::uuid,'${id(1)}','reviewed','accepted',true from generate_series(1,60) n`);
+ // Reuse the historical awards seeded above; rank thresholds remain unchanged.
  for(const [xp,rank] of [[0,0],[499,0],[500,1],[1999,1],[2000,2],[4999,2],[5000,3]]) {
    await sql(`update profiles set tester_xp=${xp} where id='${id(1)}'`);
    assert.equal((await one(`select tester_rank('${id(1)}') rank`)).rank,rank,`XP boundary ${xp}`);

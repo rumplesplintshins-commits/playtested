@@ -39,8 +39,10 @@ try{
      else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
      else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:restrictionReason}];
       else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
+      else if(url.pathname.endsWith('/get_game_pc_requirements'))data=null;
+      else if(url.pathname.endsWith('/tester_availability_preferences'))data=[];
       else if(url.pathname.endsWith('/account_pc_specs'))data={specs:null};
-      else if(url.pathname.endsWith('/get_my_testing_activity_media'))data={items:[]};
+      else if(url.pathname.endsWith('/get_my_testing_activity_media'))data=[];
      else if(url.pathname.endsWith('/submit_community_game_test')){
        if(failSubmit){status=400;data={message:'Simulated submission failure',code:'P0001'};failSubmit=false;}
        else claim={...claim,status:'submitted'};
@@ -57,6 +59,7 @@ try{
  page.setDefaultTimeout(15000);
  await page.goto(`${origin}/tester`);
  await expect(page.getByRole('heading',{name:'Bronze Tester'})).toBeVisible();
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('preferred');
  await expect(page.getByRole('heading',{name:'Adventure fixture'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Strategy restricted fixture'})).toHaveCount(0);
  await page.getByLabel('Testing genre',{exact:false}).selectOption('all');
@@ -122,7 +125,16 @@ try{
  // Expiry must not unmount an in-memory editor if browser draft storage is unavailable.
  claim={...claim,reservation_expires_at:new Date(Date.now()+10000).toISOString()};await page.clock.install({time:Date.now()});await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();await page.evaluate(()=>{window.__draftSet=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key.startsWith('playtested:feedback-draft:'))throw new Error('Fixture storage unavailable');return window.__draftSet.call(this,key,value)}});await page.locator('form textarea').nth(0).fill('Memory only expired draft');await page.clock.fastForward(11000);await expect(page.getByRole('button',{name:'Submit review'})).toBeDisabled();await expect(page.locator('form textarea').nth(0)).toHaveValue('Memory only expired draft');await expect(page.getByText(/Reservation expired. Your draft is kept/)).toBeVisible();await page.evaluate(()=>{Storage.prototype.setItem=window.__draftSet});
 
- claim={...claim,status:'reviewed',review_outcome:'accepted',xp_awarded:true,base_xp_amount:60,quality_rubric_version:2,feedback_quality_score:60,review_reason:'Specific observations; please add task focus and a takeaway.'};reviewEvents=[{id:1,test_id:test,kind:'accepted',reason:claim.review_reason,xp_delta:-40,rubric_version:2,quality_score:60,actual_xp_award:60}];await page.reload();await expect(page.getByText(/Feedback quality 60%/).first()).toBeVisible();await expect(page.getByText(/Admin reason: Specific observations/)).toBeVisible();await expect(page.getByRole('button',{name:'Send request'})).toBeVisible();await page.getByText('XP and review history',{exact:true}).click();await expect(page.getByText(/XP change -40/)).toBeVisible();assert(!(await page.locator('body').innerText()).includes('earned 100 XP'));
+ claim={...claim,status:'reviewed',review_outcome:'accepted',xp_awarded:true,base_xp_amount:60,quality_rubric_version:2,feedback_quality_score:60,review_reason:'Approved',submitted_at:new Date().toISOString(),hours_played:1,overall_score:8};reviewEvents=[{id:1,test_id:test,kind:'accepted',reason:'Approved',xp_delta:60,rubric_version:2,quality_score:60,actual_xp_award:60}];await page.reload();
+ const history=page.locator('#testing-activity-'+test);
+ await expect(history).toBeVisible();await expect(history.getByText('Overall: 8/10',{exact:true})).toBeVisible();
+ await expect(history.getByText(/Not yet rated|Waiting|Not useful|Admin reason:|Quality review reason:/i)).toHaveCount(0);
+ await history.locator('h3').click();await expect(history.getByRole('button',{name:'Collapse testing history'})).toHaveAttribute('aria-expanded','true');
+ await expect(history.getByRole('button',{name:'Send request'})).toHaveCount(0);
+ await expect(history.getByText(/Feedback quality 60%/).first()).toBeVisible();
+ await history.locator('summary').click();await expect(history.getByText('60 XP change',{exact:false})).toBeVisible();await expect(history.getByRole('button',{name:'Collapse testing history'})).toBeVisible();
+ await history.getByRole('button',{name:'Collapse testing history'}).click();await expect(history.getByRole('button',{name:'Expand testing history'})).toBeVisible();
+ console.log('PASS accepted history: header and diamond toggle, preserved scores/time/XP history, no reconsideration or unrated badges; nested history stays expanded.');
  console.log('PASS reservation browser: server deadline/final-24h warning, expired activity and freed active slot, disabled expired submission, retained draft after reload/failed reclaim, same-ID successful reclaim and editor continuity; desktop/mobile no overflow. All backend traffic mocked.');
  console.log('PASS: mocked-service browser check — preferred/All genres, blank ratings, drafts after failed submission/reload/release, cleanup after confirmed submission/release. No live Supabase calls.');
 }finally{await browser.close();}
