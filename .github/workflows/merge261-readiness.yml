@@ -26,6 +26,7 @@ jobs:
         run: |
           npx tsc --noEmit
           node tests/test-m261-lint.mjs
+          node tests/test-browser-security.mjs
       - name: SQL guards, API security and realistic catalogue volume
         run: |
           node tests/test-m261-rules.mjs

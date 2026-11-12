@@ -155,14 +155,14 @@ try{
  let signup=null;
  await page.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());
-  if(url.hostname==='localhost')return route.continue();
+  if(url.origin===new URL(origin).origin)return route.continue();
   const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*'};
   if(request.method()==='OPTIONS')return route.fulfill({status:204,headers});
   if(url.pathname.endsWith('/auth/v1/signup')){signup={url:url.href,body:request.postDataJSON()};return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({id:'fixture-user',aud:'authenticated',email:'fixture@example.test',identities:[]})});}
   return route.fulfill({status:200,headers,contentType:'application/json',body:'[]'});
  });
  await page.goto(origin+'/auth/callback?next=/tester');
- await expect(page.getByRole('alert',{name:"We couldn't confirm your email link"})).toContainText('Your destination is saved: Tester Hub');
+ await expect(page.getByRole('alert').filter({hasText:'Your destination is saved:'})).toContainText('Your destination is saved: Tester Hub');
  await expect(page.getByLabel('Email address')).toBeVisible();
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
@@ -172,9 +172,10 @@ try{
  await expect(page.getByRole('checkbox',{name:/Game Developer/})).toBeChecked();
  await expect(page.getByText('After signing in, continue to My Games.',{exact:false})).toBeVisible();
  await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');
+ await page.getByRole('checkbox',{name:/18/}).check();
  await page.getByRole('button',{name:'Create account',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('After confirmation, continue to My Games.');
- assert.equal(signup.body.data.signup_roles[0],'developer');
+ assert.equal(signup.body.data.signup_roles[0],'developer');assert.equal(signup.body.data.age_18_confirmed,true);
  assert.equal(new URL(signup.body.email_redirect_to||new URL(signup.url).searchParams.get('redirect_to')).searchParams.get('next'),'/my-submissions');
  await page.screenshot({path:'.backup-tools/auth-handoff-mobile.png',fullPage:true});
  console.log('PASS: browser callback recovery, destination preservation across mode switch, role preselection, signup confirmation copy, keyboard labels and 320/390/1280 widths. No real signup/email/source writes.');
