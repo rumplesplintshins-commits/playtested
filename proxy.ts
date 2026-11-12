@@ -33,6 +33,15 @@ export async function proxy(request: NextRequest) {
 
   if(noIndexPath(request.nextUrl.pathname))response.headers.set("X-Robots-Tag","noindex, follow");
 
+  // Apply after getClaims/setAll: auth refresh replaces the response above.
+  // Keep refreshed cookies and robots headers on the very same response.
+  const path = request.nextUrl.pathname;
+  const sessionCookie = request.cookies.getAll().some(({ name }) =>
+    name.startsWith("sb-") && name.includes("auth-token")
+  );
+  if (sessionCookie || noIndexPath(path) || /^\/(?:api|notifications)(?:\/|$)/.test(path)) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
   return response;
 }
 
