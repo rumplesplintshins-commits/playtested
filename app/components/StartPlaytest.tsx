@@ -248,7 +248,7 @@ function HistoricalPlaytestCard({
 
     const supabase = createClient();
 
-    const [communityResult, progressResult, feedbackResult] =
+    const [communityResult, progressResult, feedbackResult, genresResult] =
       await Promise.all([
         supabase.rpc("get_developer_community_playtest_results", {
           p_playtest_id: playtest.id,
@@ -259,17 +259,18 @@ function HistoricalPlaytestCard({
         supabase.rpc("get_developer_accepted_playtest_feedback", {
           p_playtest_id: playtest.id,
         }),
+        supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtest.id }),
       ]);
 
     if (
       communityResult.error ||
       progressResult.error ||
-      feedbackResult.error
+      feedbackResult.error || genresResult.error
     ) {
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ??
           "Could not load historical playtest results."
       );
       setLoading(false);
@@ -289,35 +290,10 @@ function HistoricalPlaytestCard({
       (feedbackResult.data ?? []) as AcceptedIndependentFeedback[]
     );
 
-    const testIds = ((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]).map(f => f.test_id);
-    if (testIds.length > 0) {
-      const { data: testRows } = await supabase
-        .from("community_game_tests")
-        .select("id, tester_id")
-        .in("id", testIds);
-      const testerIds = Array.from(new Set((testRows ?? []).map(r => r.tester_id).filter((id): id is string => Boolean(id))));
-      if (testerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, preferred_genres")
-          .in("id", testerIds);
-        const genreMap = new Map<string, string[]>();
-        for (const p of profiles ?? []) {
-          genreMap.set(p.id, (p.preferred_genres ?? []) as string[]);
-        }
-        const testerGenresMap: Record<string, string[]> = {};
-        for (const row of testRows ?? []) {
-          if (row.tester_id) {
-            testerGenresMap[row.id] = genreMap.get(row.tester_id) ?? [];
-          }
-        }
-        setTesterGenres(testerGenresMap);
-      } else {
-        setTesterGenres({});
-      }
-    } else {
-      setTesterGenres({});
-    }
+    setTesterGenres(Object.fromEntries(
+      ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
+        .map(row => [row.test_id, row.preferred_genres ?? []])
+    ));
 
     setLoading(false);
   }
@@ -1279,18 +1255,25 @@ function ResultsDashboard({
               className="rounded-xl border border-[#77f29b]/15 bg-[#77f29b]/[0.025]"
             >
               <summary className="cursor-pointer list-none p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 basis-48">
                     <p className="text-sm font-semibold text-zinc-100">
                       <AnonymousTesterLabel testId={response.test_id} />
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    {Boolean(testerGenres?.[response.test_id]?.length) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
+                        {testerGenres![response.test_id].map(genre => (
+                          <span key={genre} className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-semibold text-zinc-400">{genre}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p className={`${testerGenres?.[response.test_id]?.length ? "mt-2.5" : "mt-1"} text-xs text-zinc-500`}>
                       {response.submitted_at
                         ? historyFormatDate(response.submitted_at)
                         : "Submission date unavailable"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
+                  <span className="max-w-full shrink-0 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
                     Independent · Accepted
                   </span>
                 </div>
@@ -1531,15 +1514,16 @@ function BuildResultsPanel({
 
     const supabase = createClient();
     try {
-    const [communityResult, progressResult, feedbackResult] = await Promise.all([
+    const [communityResult, progressResult, feedbackResult, genresResult] = await Promise.all([
       supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
+      supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtestId }),
     ]);
     if(request!==resultRequest.current)return;
     setLoadedBuildId(playtestId);
 
-    if (communityResult.error || progressResult.error || feedbackResult.error) {
+    if (communityResult.error || progressResult.error || feedbackResult.error || genresResult.error) {
       setCommunityResults(null);
       setIndependentProgress(null);
       setAcceptedFeedback([]);
@@ -1547,7 +1531,7 @@ function BuildResultsPanel({
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ??
           "Could not load results for this build."
       );
       setLoading(false);
@@ -1559,35 +1543,10 @@ function BuildResultsPanel({
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
 
-    const testIds = ((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]).map(f => f.test_id);
-    if (testIds.length > 0) {
-      const { data: testRows } = await supabase
-        .from("community_game_tests")
-        .select("id, tester_id")
-        .in("id", testIds);
-      const testerIds = Array.from(new Set((testRows ?? []).map(r => r.tester_id).filter((id): id is string => Boolean(id))));
-      if (testerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, preferred_genres")
-          .in("id", testerIds);
-        const genreMap = new Map<string, string[]>();
-        for (const p of profiles ?? []) {
-          genreMap.set(p.id, (p.preferred_genres ?? []) as string[]);
-        }
-        const testerGenresMap: Record<string, string[]> = {};
-        for (const row of testRows ?? []) {
-          if (row.tester_id) {
-            testerGenresMap[row.id] = genreMap.get(row.tester_id) ?? [];
-          }
-        }
-        setTesterGenres(testerGenresMap);
-      } else {
-        setTesterGenres({});
-      }
-    } else {
-      setTesterGenres({});
-    }
+    setTesterGenres(Object.fromEntries(
+      ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
+        .map(row => [row.test_id, row.preferred_genres ?? []])
+    ));
 
     setLoading(false);
     } catch {
@@ -2323,6 +2282,7 @@ export default function StartPlaytest({
     setEditing(true);
 
     if (existingPlaytest) {
+      progressRequestedFor.current = existingPlaytest.id;
       void loadPlaytestResults(existingPlaytest.id);
     }
   }

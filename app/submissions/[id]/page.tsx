@@ -13,6 +13,7 @@ import CommunityReception, {
   type CommunityReceptionFeedback,
 } from "../../components/CommunityReception";
 import { createClient } from "../../../lib/supabase-server";
+import {testerRankPresentation} from "../../../lib/tester-rank";
 import PublicGameGuides from "@/app/components/PublicGameGuides";
 import {serializeJsonLd,videoGameStructuredData} from "@/lib/seo";
 import GameProfileBreadcrumb from "@/app/components/GameProfileBreadcrumb";
@@ -249,6 +250,16 @@ export default async function SubmissionPage({
     (feedbackData ??
       []) as PublicFeedbackRow[];
 
+    // Use the authorised rank-only RPC; never infer rank from missing XP.
+    const rankByFeedbackId = new Map<string, { label: string; tone: string }>();
+    if (feedbackRows.length) {
+      const { data } = await supabase.rpc("get_feedback_tester_identities", { p_test_ids: feedbackRows.map(row => row.id) });
+      for (const row of data ?? []) {
+        const rank = testerRankPresentation(row.current_rank);
+        if (rank.known) rankByFeedbackId.set(row.test_id, { label: rank.label, tone: rank.text });
+      }
+    }
+
   const receptionFeedback: CommunityReceptionFeedback[] =
     feedbackRows.map((row) => ({
       id: row.id,
@@ -258,6 +269,9 @@ export default async function SubmissionPage({
       releaseLabel:
         row.release_label ||
         "Unlabelled build",
+
+      testerRankLabel: rankByFeedbackId.get(row.id)?.label,
+      testerRankTone: rankByFeedbackId.get(row.id)?.tone,
 
       enjoyedMost:
         row.enjoyed_most,

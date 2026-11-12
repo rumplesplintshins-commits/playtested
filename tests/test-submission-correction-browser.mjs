@@ -30,16 +30,22 @@ try{
   else if(path.endsWith('/rpc/find_possible_game_duplicates')){events.push('duplicates');data=[];}
   else if(path.endsWith('/rpc/submission_completeness'))data=validation(body.p);
   else if(path.endsWith('/rpc/get_my_submission_correction')){assert.equal(body.p_id,row.id);data=correction();}
-  else if(path.endsWith('/rpc/save_my_submission_correction')){
+  else if(path.endsWith('/rpc/save_my_submission_correction')||path.endsWith('/rpc/save_game_edit_with_pc_requirements')){
+   if(path.endsWith('/rpc/save_game_edit_with_pc_requirements'))assert.equal(body.p_kind,'correction');
    assert.equal(body.p_id,row.id);assert(!('status' in body.p_fields));assert(!('review_reason' in body.p_fields));
    if(failSave){failSave=false;status=400;data={code:'fixture',message:'Simulated save failure; edits remain.'};}
    else{row={...row,...body.p_fields,submission_revision:row.submission_revision+1};const check=validation(row);if(body.p_resubmit)row.status=check.issues.length?'Needs More Information':'Pending Review';row.completeness_issues=check.issues;row.completeness_message=check.message;data=correction();}
   }
   else if(path.endsWith('/rpc/preview_submission_completeness'))data=legacy.status==='Pending Review'?[{id:legacy.id,title:legacy.title,revision:legacy.submission_revision,validation:validation(legacy)}]:[];
   else if(path.endsWith('/rpc/route_incomplete_submissions')){batches++;assert.equal(body.p_records[0].id,legacy.id);legacy.status='Needs More Information';legacy.completeness_message=validation(legacy).message;data=1;}
+  else if(path.endsWith('/rpc/m26_admin_review_activity'))data=[];
   else if(path.endsWith('/rpc/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:[]};
   else if(path.endsWith('/rpc/get_campaign_testing_details'))data={available:2,testing:0,submitted:0};
-  else if(path.endsWith('/rpc/create_game_with_pc_requirements'))data={id:'d1000000-0000-4000-8000-000000000010',developer_id:uid,status:'Pending Review'};
+  else if(path.endsWith('/rpc/create_game_with_pc_requirements')){
+   assert.equal(body.p_fields.developer_id,uid);assert.equal(body.p_fields.status,'Pending Review');
+   events.push('insert');row={...body.p_fields,status:validation(body.p_fields).issues.length?'Needs More Information':'Pending Review',submission_revision:0,review_reason:'',submitted_at:'2026-10-28'};
+   Object.assign(row,{completeness_issues:validation(row).issues,completeness_message:validation(row).message});data=row;
+  }
   else if(path.endsWith('/rpc/record_submission_acquisition'))data={id:'d1000000-0000-4000-8000-000000000010'};
   else if(req.method()!=='GET'&&!path.includes('/rpc/get_'))throw new Error('Unexpected mocked mutation: '+path);
   return route.fulfill({status,headers,json:data});
@@ -47,14 +53,16 @@ try{
  const page=await context.newPage();await page.goto(origin+'/submit');
  await page.locator('[name="title"]').fill('Correction fixture');await page.locator('[name="developer"]').fill('Fixture studio');await page.locator('[name="genre"]').selectOption('Action');await page.locator('[name="releaseStatus"]').selectOption('Not announced');await page.locator('textarea[name="description"]').fill('A small game to test');await page.locator('[name="aiType"]').selectOption('AI-assisted: Code only');
  await page.getByRole('button',{name:'Submit application',exact:true}).click();
- await expect(page.getByRole('heading',{name:'Submit your game.',exact:true})).toBeVisible();assert.equal(row.status,'Needs More Information');assert(events.indexOf('duplicates')<events.indexOf('insert'),'Existing duplicate checks run before saving');assert.equal(events.filter(event=>event==='insert').length,1);
+ await expect(page.getByRole('heading',{name:'Submit your game.',exact:true})).toBeVisible();await expect.poll(()=>row?.status).toBe('Needs More Information');assert(events.indexOf('duplicates')<events.indexOf('insert'),'Existing duplicate checks run before saving');assert.equal(events.filter(event=>event==='insert').length,1);
+ await expect(page.getByRole('heading',{name:'Submission saved',exact:true})).toBeVisible();
+ await page.goto(origin+'/submit?edit='+row.id);
  await expect(page.getByRole('link',{name:'AI-use explanation: Required'})).toBeVisible();await expect(page.getByRole('link',{name:/Supporting evidence.*Required/})).toHaveCount(0);
- row.review_reason='Human note: clarify the tools used';await page.reload();await expect(page.getByRole('heading',{name:'Human reviewer notes'})).toBeVisible();
+ row.review_reason='Human note: clarify the tools used';await page.reload();await expect(page.getByRole('heading',{name:'Reviewer Notes',exact:true})).toBeVisible();
  await page.getByLabel('AI-use explanation',{exact:true}).fill('Generated background art, edited by the developer');await page.getByRole('button',{name:'Save edits',exact:true}).click();
  await expect(page.getByRole('alert').filter({hasText:'Simulated save failure'})).toBeVisible();await expect(page.getByLabel('AI-use explanation',{exact:true})).toHaveValue('Generated background art, edited by the developer');
- await page.getByRole('button',{name:'Save edits',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'Edits saved.'})).toBeVisible();assert.equal(row.status,'Needs More Information');
- await page.getByLabel('Supporting evidence link (optional)',{exact:true}).fill('https://example.test/disclosure');await page.getByRole('button',{name:'Resubmit for review',exact:true}).click();
- await expect(page.getByRole('status').filter({hasText:'Resubmitted for review'})).toBeVisible();assert.equal(row.status,'Pending Review');assert.equal(row.review_reason,'Human note: clarify the tools used');
+ await page.getByRole('button',{name:'Save edits',exact:true}).click();await expect(page.locator('p[role="status"]').filter({hasText:'Edits saved.'})).toBeVisible();assert.equal(row.status,'Needs More Information');
+ await page.getByLabel('Game thumbnail',{exact:true}).fill('https://example.test/cover.png');await page.locator('input[name="steamUrl"]').fill('https://store.steampowered.com/app/912345/');await page.getByRole('button',{name:'Resubmit for review',exact:true}).click();
+ await expect(page.locator('p[role="status"]').filter({hasText:'Resubmitted for review'})).toBeVisible();assert.equal(row.status,'Pending Review');assert.equal(row.evidence_link,'','Optional evidence is not required for resubmission');assert.equal(row.review_reason,'Human note: clarify the tools used');
  await page.goto(origin+'/admin/submissions');await expect(page.getByRole('heading',{name:'Legacy pending fixture',exact:true})).toBeVisible();assert.equal(batches,0);assert.equal(legacy.status,'Pending Review');
  await page.locator('summary').filter({hasText:'Check existing pending submissions'}).click();await page.getByRole('button',{name:'Preview completeness',exact:true}).click();await expect(page.getByText('1 pending submission has missing developer details.')).toBeVisible();assert.equal(batches,0);
  await page.getByRole('checkbox',{name:/Legacy pending fixture/}).check();page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Return selected for information (1)'}).click();await expect(page.getByText('1 submission updated. No email was sent.')).toBeVisible();

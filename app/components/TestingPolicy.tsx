@@ -13,10 +13,10 @@ export function QualityGuidance({ collapsible = false }: { collapsible?: boolean
     const content = <div className="space-y-3 text-sm leading-6 text-zinc-400">
       <ul className="list-disc space-y-1 pl-5">{Object.values(QUALITY_CRITERIA).map(c => <li key={c}>{c}</li>)}</ul>
       <p>Useful praise and honest criticism earn equal treatment. An admin first assesses credible originality/non-spam and relevance, then awards 0 to 100 XP for feedback quality in 20 XP steps. This is an assessment of usefulness, not automated originality verification or proof of subjective opinions. Finding no bugs is valid.</p>
-      <p>Ratings, positivity, polished English, length and time played do not determine quality or XP. Do not invent bugs or criticism.</p>
+      <p>Game scores, positivity, polished English, length and time played do not determine admin quality XP. A developer marking accepted feedback Useful adds a separate one-time +5 Tester XP bonus; Not useful adds none. Do not invent bugs or criticism.</p>
     </div>;
     if (collapsible) return <details className="group my-4 rounded-xl border border-white/[0.08] bg-white/[0.015]">
-      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden"><span className="font-medium text-zinc-300">Feedback and XP guide <span className="ml-2 font-normal text-zinc-500">Up to 100 XP per report</span></span><span className="text-xs text-zinc-500"><span className="group-open:hidden">Show guide +</span><span className="hidden group-open:inline">Hide guide −</span></span></summary>
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden"><span className="font-medium text-zinc-300">Feedback and XP guide <span className="ml-2 font-normal text-zinc-500">Up to 100 quality XP per report</span></span><span className="text-xs text-zinc-500"><span className="group-open:hidden">Show guide +</span><span className="hidden group-open:inline">Hide guide −</span></span></summary>
       <div className="border-t border-white/[0.06] px-5 py-4">{content}</div>
     </details>;
     return <aside className="my-4 space-y-3 rounded-xl border border-white/10 p-4"><p className="text-sm font-semibold text-white">How feedback earns XP</p>{content}</aside>;

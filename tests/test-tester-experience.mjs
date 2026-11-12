@@ -88,33 +88,13 @@ const groups2 = context.getTesterGameGroups(games, claimsInProgress);
 assert.equal(groups2.activeGames.length, 1, 'In-progress claim counts as active');
 assert.equal(groups2.availableGames.length, 1, 'No other game becomes active while one is in progress');
 
-// --- Feedback usefulness state ---
-// DeveloperUsefulnessBadge distinguishes three states: useful, not_useful, not yet rated
-// (tested via component render in test-feedback-actions.mjs pattern)
-// Here we verify the type contract: usefulness can be "useful" | "not_useful" | null
-
-// --- Useful notification deduplication ---
-// Verified via FeedbackUsefulness component localStorage key
-// (tested in component integration; unit test below checks the key format)
-
-const notificationKey = `playtested:feedback-notification:test-123`;
-assert.equal(notificationKey, 'playtested:feedback-notification:test-123', 'Notification dedup key is per-test');
-
-// --- XP invariance ---
-// Developer usefulness ratings must not independently change XP awards.
-// FeedbackQualityRecord includes xp_awarded boolean and base_xp_amount,
-// separate from feedback_usefulness string field.
-// This is a design invariant verified by code review:
-// - mark_test_feedback_usefulness RPC does not modify XP
-// - get_my_testing_progress RPC computes XP independently of usefulness
-assert.ok(true, 'XP invariance: developer usefulness is a separate field from xp_awarded/base_xp_amount');
+// Usefulness XP, ledger idempotency, notification deduplication and privacy are
+// exercised against SQL in test-feedback-review-xp.mjs and real localhost in
+// test-feedback-review-xp-local-browser.mjs; no client-only XP assertions here.
 
 // --- Mobile and 150% zoom ---
 // These are CSS/responsive concerns verified via browser testing.
 // The page uses Tailwind responsive classes (sm:, md:) and no fixed widths that break at 150% zoom.
 // Verified via test-tester-browser.mjs viewport tests (390px and 1280px).
 
-console.log('PASS: tester experience — expand/collapse defaults, platform badges (Web/Roblox/Mobile/none), '
-  + 'Android/iOS distinctness, one active test separation, feedback usefulness state contract, '
-  + 'notification deduplication key format, XP invariance design. '
-  + 'Browser tests for mobile/150% zoom are in test-tester-browser.mjs.');
+console.log('PASS: tester experience - expand/collapse defaults, platform badges, Android/iOS distinction and one active test separation. XP and notification rules are covered by test-feedback-review-xp.mjs and the localhost browser suite.');
