@@ -1731,6 +1731,9 @@ function TesterPage() {
                       {/* Expanded written feedback, XP history and secondary controls. */}
                       {isExpanded && (
                         <>
+                          <div className="mt-3" onClick={(event) => event.stopPropagation()}>
+                            <ActivityStorefrontLink testId={claim.id} url={media?.store_url} />
+                          </div>
                           <p className="mt-2 text-xs text-zinc-500">{claim.submitted_at && `Submitted ${new Date(claim.submitted_at).toLocaleString()}`}</p>
                           {claim.hours_played != null && <p className="mt-1 text-xs text-zinc-500">Time played: {claim.hours_played} hours</p>}
                           <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm space-y-3">
