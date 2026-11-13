@@ -5,6 +5,8 @@ import {type ActivityMedia} from '@/lib/testing-activity';
 import GamePcRequirements from "../components/GamePcRequirements";
 import {PrivatePcProvider} from "../components/AccountPcSpecifications";
 import DisclosureControl from "../components/DisclosureControl";
+import TestBriefPreview from "../components/TestBriefPreview";
+import MinimisedTestGame from "../components/MinimisedTestGame";
 
 import {currentJourney} from "@/lib/share-links";
 import {TrackedAccessLink,ShareJourneyBanner} from "../components/ShareJourney";
@@ -15,7 +17,7 @@ import { GAME_GENRES, matchesGenrePreferences } from "../../lib/genres";
 import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
 
-import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
+import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, PlacesRules, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
 
 function receivedReservationClock(serverNow:string){return {server:Date.parse(serverNow),local:Date.now()};}
 
@@ -729,6 +731,7 @@ function TesterPage() {
   const [genreFilter,setGenreFilter] = useState(savedTesterReturn?.genre ?? "all");
   const [platformFilter,setPlatformFilter] = useState("all");
   const [justClaimedId,setJustClaimedId] = useState<string|null>(null);
+  const [minimisedActiveGames, setMinimisedActiveGames] = useState<Record<string, boolean>>({});
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>(
     savedTesterReturn?.expanded && typeof savedTesterReturn.expanded === "object"
       ? savedTesterReturn.expanded
@@ -1166,6 +1169,8 @@ function TesterPage() {
   );
 
   const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : (g.platform??"steam")===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
+  const minimisedAvailableGames = availableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
+  const expandedAvailableList = availableGames.filter(game => expandedAvailableGames[game.submission_id] !== false);
   useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});const t=setTimeout(()=>setJustClaimedId(null),0);return () => clearTimeout(t);},[justClaimedId,displayedActiveGames]);
   const unmetRequirementsCount = availableGames.filter(game => game.can_claim === false).length;
   const testableGamesCount = availableGames.length - unmetRequirementsCount;
@@ -1186,6 +1191,29 @@ function TesterPage() {
     return "Reviewed";
   }
 
+  function minimiseGame(game: TestGame, group: "available" | "active") {
+    if (group === "available") setExpandedAvailableGames(previous => ({ ...previous, [game.submission_id]: false }));
+    else setMinimisedActiveGames(previous => ({ ...previous, [game.submission_id]: true }));
+    requestAnimationFrame(() => document.getElementById(`expand-${group}-${game.submission_id}`)?.focus());
+  }
+
+  function renderMinimisedGames(items: TestGame[], group: "available" | "active") {
+    if (!items.length) return null;
+    return <section className="mt-5" aria-labelledby={`minimised-${group}-heading`}>
+      <h3 id={`minimised-${group}-heading`} className="text-sm font-semibold text-zinc-300">{group === "active" ? "Minimised active tests" : "Minimised games"} <span className="text-zinc-500">({items.length})</span></h3>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map(game => {
+          const claim = group === "active" ? claims.find(item => claimMatchesGame(item, game) && (item.status === "claimed" || item.status === "in_progress")) : undefined;
+          const status = claim ? `${claim.status === "claimed" ? "Place reserved" : "Testing in progress"}${claim.reservation_expires_at ? ` · Due ${new Date(claim.reservation_expires_at).toLocaleString()}` : ""}` : undefined;
+          return <MinimisedTestGame key={game.submission_id} game={game} status={status} group={group} onExpand={() => {
+            if (group === "available") setExpandedAvailableGames(previous => ({ ...previous, [game.submission_id]: true }));
+            else setMinimisedActiveGames(previous => ({ ...previous, [game.submission_id]: false }));
+            requestAnimationFrame(() => document.getElementById(`minimise-${group}-${game.submission_id}`)?.focus());
+          }} />;
+        })}
+      </div>
+    </section>;
+  }
   function renderGameCard(game: TestGame) {
     const { link: accessLink, type: accessType } = resolveTestAccess(game);
 
@@ -1200,7 +1228,7 @@ function TesterPage() {
                   <article
                     key={claim?.id||game.submission_id}
                     id={claim?.status==="claimed"||claim?.status==="in_progress"?"active-test-"+game.submission_id:"tester-campaign-"+game.submission_id}
-                    className={`flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${
+                    className={`flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${
                       activeTestId
                         ? claim?.id === activeTestId
                           ? "w-full"
@@ -1208,7 +1236,15 @@ function TesterPage() {
                         : ""
                     }`}
                   >
-                    {game.image_url && activeTestId !== claim?.id && (
+                    {claim && activeTestId !== claim.id && (
+                      <div data-active-test-header className="flex min-h-10 items-center justify-between gap-4 px-4 py-2">
+                        <span className="text-xs text-zinc-400">Active test</span>
+                        <button id={`minimise-active-${game.submission_id}`} type="button" aria-label="Minimise active test" aria-expanded={true} onClick={() => minimiseGame(game, "active")} className="inline-flex shrink-0 items-center justify-center rounded p-1 text-zinc-400 hover:text-white focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          <DisclosureControl expanded />
+                        </button>
+                      </div>
+                    )}
+                    {activeTestId !== claim?.id && (game.image_url ? (
                       <a
                         href={`/tester?campaign=${encodeURIComponent(game.submission_id)}`}
                         onClick={async (event) => {
@@ -1238,31 +1274,27 @@ function TesterPage() {
                         <img
                           src={game.image_url}
                           alt={`View details for ${game.title}`}
-                          className="h-48 w-full shrink-0 object-cover"
+                          className="h-32 w-full shrink-0 object-cover"
                         />
                       </a>
-                    )}
+                    ) : <div aria-hidden="true" className="flex h-32 shrink-0 items-center justify-center border-b border-white/10 bg-black/20 text-sm text-zinc-500">No thumbnail provided</div>)}
 
-                    <GamePcRequirements id={game.submission_id} kind="campaign" compact/>
-                    <CampaignPlaces id={game.submission_id} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
-                    <ReservationNotice claimed={!!claim} expiresAt={claim?.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
-                    {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
                     <div
-                      className={`flex flex-1 flex-col ${
+                      className={`flex min-h-0 min-w-0 flex-1 flex-col ${
                         activeTestId === claim?.id
                           ? "w-full p-6 sm:p-8"
-                          : "p-5"
+                          : "p-4"
                       }`}
                     >
                       {activeTestId === claim?.id ? (
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
                           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)] lg:items-start">
-                            <div className="flex min-w-0 gap-5">
+                            <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
                               {game.image_url && (
                                 <img
                                   src={game.image_url}
                                   alt=""
-                                  className="h-24 w-40 shrink-0 rounded-xl border border-white/10 object-cover sm:h-28 sm:w-48"
+                                  className="h-28 w-full max-w-48 shrink-0 rounded-xl border border-white/10 object-cover sm:w-40"
                                 />
                               )}
 
@@ -1272,19 +1304,14 @@ function TesterPage() {
                                 </p>
                                 {game.platform && <span className="ml-2">{platformBadge(game.platform)}</span>}
 
-                                <h3 className="mt-2 text-2xl font-bold text-white">
+                                <h3 title={game.title} className="mt-2 line-clamp-2 break-words text-2xl font-bold text-white [overflow-wrap:anywhere]">
                                   {game.title}
                                 </h3>
 
-                                <p className="mt-1 text-sm text-zinc-400">
+                                <p className="mt-1 truncate text-sm text-zinc-400">
                                   By {game.developer_name}
                                 </p>
 
-                                {game.ai_type && (
-                                  <span className="mt-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                                    {game.ai_type}
-                                  </span>
-                                )}
                               </div>
                             </div>
 
@@ -1312,46 +1339,41 @@ function TesterPage() {
                             </div>
                           </div>
 
-                          <div className="mt-5 border-t border-white/10 pt-5">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                              Developer instructions
-                            </p>
-                            <p className="mt-2 text-sm leading-6 text-zinc-300">
-                              {game.description}
-                            </p>
-                          </div>
                         </div>
                       ) : (
                         <>
-                          <p className="text-xs uppercase tracking-wider text-[#77f29b]">
+                          <div className="flex min-h-6 min-w-0 items-center justify-between gap-2">
+                          <p className="min-w-0 truncate text-xs uppercase tracking-wider text-[#77f29b]">
                             {game.genre || "Uncategorised"}
                           </p>
-                          {game.platform && <span className="ml-2">{platformBadge(game.platform)}</span>}
+                          {game.platform && <span className="shrink-0">{platformBadge(game.platform)}</span>}
+                          </div>
 
-                          <h3 className="mt-2 text-xl font-semibold">
+                          <h3 title={game.title} className="mt-2 line-clamp-2 h-12 break-words text-xl font-semibold leading-6 [overflow-wrap:anywhere]">
                             {game.title}
                           </h3>
 
-                          <p className="mt-1 text-sm text-zinc-400">
+                          <p title={game.developer_name} className="mt-1 truncate text-sm text-zinc-400">
                             By {game.developer_name}
                           </p>
 
-                          <p className="mt-4 text-sm leading-6 text-zinc-300">
-                            {game.description}
-                          </p>
-
-                          {game.ai_type && (
-                            <div className="mt-4">
-                              <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">
-                                {game.ai_type}
-                              </span>
-                            </div>
-                          )}
                         </>
                       )}
 
-                      <div className="mt-auto space-y-3 pt-6">
+                      <div className="mt-3 min-w-0 shrink-0 border-t border-white/10 pt-2 [&>section]:my-0 [&_summary]:px-3 [&_summary]:py-2">
+                        <GamePcRequirements id={game.submission_id} kind="campaign" compact/>
+                        <CampaignPlaces id={game.submission_id} showRules={false} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
+                        {claim && <ReservationNotice claimed expiresAt={claim.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>}
+                        {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
                         {!claim && game.can_claim === false && <div className="text-sm text-amber-200"><p>{game.restriction_reason || "Testing requirements not met"}</p>{/^Requires .+ interest$/.test(game.restriction_reason || "") && <p className="mt-1 text-zinc-400">If this genre genuinely suits you, <a href="/account#testing-interests" className="underline underline-offset-2 hover:text-white">Edit interests</a>.</p>}</div>}
+                      </div>
+                      <TestBriefPreview instructions={game.description} />
+                      <div className="mt-3 flex min-h-8 shrink-0 flex-wrap items-start gap-2" aria-label="Playtest badges">
+                        {game.ai_type && <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">{game.ai_type}</span>}
+                        {activeTestId !== claim?.id && game.focus_areas?.map(area => <span key={area} className="rounded-full border border-[#77f29b]/20 px-3 py-1 text-xs text-[#b9f9ca]">{area}</span>)}
+                      </div>
+                      <div className="mt-auto shrink-0 space-y-3 pt-4">
+
                         {!claim ? (
                           <button
                             type="button"
@@ -1360,7 +1382,7 @@ function TesterPage() {
                             }
                             aria-describedby={hasActiveTest ? "one-active-test-note" : undefined}
                             onClick={() => void claimGame(game)}
-                            className="w-full rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-12 w-full rounded-lg bg-[#77f29b] px-3 py-2 text-sm font-semibold leading-4 text-[#09100b] hover:bg-[#9af8b4] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {claimingId === game.submission_id
                               ? "Starting..."
@@ -1574,8 +1596,9 @@ function TesterPage() {
                 </p>
               ) : (
                 <>
+                  {!activeTestId && renderMinimisedGames(displayedActiveGames.filter(game => minimisedActiveGames[game.submission_id]), "active")}
                   <div className={`mt-6 grid items-stretch gap-6 ${activeTestId ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
-                    {displayedActiveGames.map(renderGameCard)}
+                    {displayedActiveGames.filter(game => activeTestId || !minimisedActiveGames[game.submission_id]).map(renderGameCard)}
                   </div>
                   {!activeTestId && unavailableActiveClaims.length > 0 && (
                     <div className="mt-4 space-y-3">
@@ -1615,6 +1638,16 @@ function TesterPage() {
                 <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
                 <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
                 <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible games. Set your interests in Account.":"All games includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
+                <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-2 [&_summary]:text-xs [&_summary]:underline [&_summary]:underline-offset-4" aria-label="Testing information">
+                  <PlacesRules hours={capacityPolicy?.reservation_hours}/>
+                  <details className="mt-2 text-sm leading-6 text-zinc-400">
+                    <summary className="w-fit cursor-pointer py-2 underline underline-offset-4">Reservation deadlines</summary>
+                    <div className="mt-2 max-w-prose rounded-lg border border-white/10 bg-white/[0.025] p-3">
+                      <ReservationNotice now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>
+                      <p className="mt-2 text-xs">Each confirmed reservation keeps its original server-issued deadline. Starting testing or refreshing places does not extend it. Your active test shows its own submission deadline.</p>
+                    </div>
+                  </details>
+                </div>
                 {hasActiveTest && (
                   <div id="one-active-test-note" className="mt-5 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-zinc-400">
                     <p className="font-semibold text-zinc-200">One test at a time</p>
@@ -1627,34 +1660,22 @@ function TesterPage() {
                   </div>
                 )}
 
+                {renderMinimisedGames(minimisedAvailableGames, "available")}
                 {availableGames.length === 0 ? (
                   <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-400">
                     No new games are available for you to claim right now. You can continue any active tests above; submitted tests remain in Testing activity below.
                   </p>
+                ) : expandedAvailableList.length === 0 ? (
+                  <p className="mt-4 text-sm text-zinc-400">All matching games are minimised. Expand a tile above to see its testing actions.</p>
                 ) : (
-                  <div className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {availableGames.map((game) => (
-                      <details
-                        key={game.submission_id}
-                        open={expandedAvailableGames[game.submission_id] !== false}
-                        onToggle={(event) => {
-                          const isOpen = event.currentTarget.open;
-                          setExpandedAvailableGames((previous) =>
-                            previous[game.submission_id] === isOpen
-                              ? previous
-                              : { ...previous, [game.submission_id]: isOpen }
-                          );
-                        }}
-                        className="min-w-0 self-start rounded-xl border border-white/10 bg-white/[0.02] open:border-[#77f29b]/25"
-                      >
-                        <summary aria-expanded={expandedAvailableGames[game.submission_id]!==false} aria-controls={`tester-card-${game.submission_id}`} className="flex cursor-pointer list-none select-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#77f29b]">
-                          <span>{game.title}
-                          <span className="ml-2 text-xs font-normal text-zinc-400">
-                            · {game.genre || "Other"} · {game.developer_name}
-                          </span></span><DisclosureControl expanded={expandedAvailableGames[game.submission_id]!==false}/>
-                        </summary>
-                        <div id={`tester-card-${game.submission_id}`} className="p-2 pt-0">{renderGameCard(game)}</div>
-                      </details>
+                  <div className="mt-6 grid items-stretch gap-6 sm:auto-rows-fr sm:grid-cols-2 lg:grid-cols-3">
+                    {expandedAvailableList.map((game) => (
+                      <div key={game.submission_id} data-tester-game={game.submission_id} className="flex h-full min-w-0 flex-col rounded-xl border border-white/10 bg-white/[0.02]">
+                        <button id={`minimise-available-${game.submission_id}`} type="button" aria-label={`Minimise ${game.title}`} aria-expanded={true} aria-controls={`tester-card-${game.submission_id}`} onClick={() => minimiseGame(game, "available")} className="flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-t-xl px-4 py-2 text-left text-xs text-zinc-400 hover:text-white focus-visible:outline-2 focus-visible:outline-[#77f29b]">
+                          <span>Minimise game</span><DisclosureControl expanded />
+                        </button>
+                        <div id={`tester-card-${game.submission_id}`} className="flex min-h-0 min-w-0 flex-1 flex-col p-2 pt-0">{renderGameCard(game)}</div>
+                      </div>
                     ))}
                   </div>
                 )}
