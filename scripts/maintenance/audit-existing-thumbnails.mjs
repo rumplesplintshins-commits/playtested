@@ -9,7 +9,6 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { createClient } from '@supabase/supabase-js';
@@ -82,7 +81,8 @@ for (const item of objects) {
   if (error || !data) throw new Error('Download failed for ' + item.name + ': ' + (error?.message ?? 'empty response'));
   const buffer = Buffer.from(await data.arrayBuffer());
   const hash = crypto.createHash('sha256').update(buffer).digest('hex');
-  const originalName = hash + '.bin';
+  const localId = crypto.createHash('sha256').update(item.name).digest('hex');
+  const originalName = localId + '.bin';
   await fs.writeFile(path.join(dest, 'originals', originalName), buffer, { flag: 'wx' });
   const record = { storagePath: item.name, originalFile: 'originals/' + originalName,
     originalBytes: buffer.length, originalSha256: hash, optimisedFile: null, optimisedBytes: null };
@@ -95,7 +95,7 @@ for (const item of objects) {
       const candidate = await image.rotate().resize({ width: 960, height: 960, fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 78, effort: 5 }).toBuffer();
       if (candidate.length < buffer.length) {
-        const name = hash + '.webp';
+        const name = localId + '.webp';
         await fs.writeFile(path.join(dest, 'optimised', name), candidate, { flag: 'wx' });
         record.optimisedFile = 'optimised/' + name;
         record.optimisedBytes = candidate.length;
