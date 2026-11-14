@@ -19,6 +19,7 @@ import {uploadScreenshot} from "../components/ScreenshotManager";
 import ContactEmailInput from "../components/ContactEmailInput";
 import {contactEmailError,normalizeContactEmail} from "@/lib/contact-email";
 import {isHostedThumbnail,thumbnailExtension} from "@/lib/thumbnail";
+import {optimiseThumbnail} from "@/lib/optimise-thumbnail";
 import {gameplayVideo,gameplayGuidance} from "@/lib/gameplay-video";
 import {discoverySources,submissionAcquisition} from "@/lib/acquisition";
 import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-completeness";
@@ -764,12 +765,13 @@ export default function SubmitGamePage() {
         return;
       }
 
-      const extension = file.name.split(".").pop()?.toLowerCase() ||
-        (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
+      const uploadFile = await optimiseThumbnail(file);
+      const extension = uploadFile.name.split(".").pop()?.toLowerCase() ||
+        (uploadFile.type === "image/png" ? "png" : uploadFile.type === "image/webp" ? "webp" : "jpg");
       const objectPath = user.id + "/" + crypto.randomUUID() + "." + extension;
       const { error: uploadError } = await supabase.storage
         .from("game-thumbnails")
-        .upload(objectPath, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+        .upload(objectPath, uploadFile, { cacheControl: "3600", upsert: false, contentType: uploadFile.type });
 
       if (uploadError) {
         setError("Could not upload thumbnail: " + uploadError.message);
