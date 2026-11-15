@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 
 :root {
@@ -33,4 +32,16 @@ body {
 
 .font-display {
   font-family: var(--font-display), sans-serif;
+}
+
+/* Keep the three build-feedback tabs readable on narrow mobile screens. */
+@media (max-width: 639px) {
+  [role="tablist"][aria-label="Build feedback"] > [role="tab"] {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
 }

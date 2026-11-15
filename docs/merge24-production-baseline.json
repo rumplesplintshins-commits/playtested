@@ -1,0 +1,71 @@
+{
+  "auditedAt": "2026-11-04T15:59:35.473Z",
+  "productionProject": "qtcmzckdhgahuqqilmzj",
+  "developmentProject": "ktifgybnkdaotdxrvjgq",
+  "productionMigrationHistoryPresent": false,
+  "requiredAbsentRelations": [
+    "contact_email_policy",
+    "game_screenshot_cleanup",
+    "game_screenshots",
+    "game_submission_contacts",
+    "gameplay_footage",
+    "m24_page_views",
+    "m24_submission_acquisition",
+    "notification_delivery_keys"
+  ],
+  "replacedFunctions": [
+    {
+      "signature": "_create_notification(p_recipient uuid, p_kind text, p_title text, p_message text, p_href text, p_entity_type text, p_entity_id uuid, p_dedupe_key text)",
+      "sha256": "e42d20c471a9bd8d157e437877cc78a81ed87082984b5073958466a54f9b9820",
+      "md5": "7bc4f757b095ff2e67cda2d548a5fe67"
+    },
+    {
+      "signature": "get_my_developer_plan()",
+      "sha256": "c936f32e11736463c31f665c7935bf10347acac17e427425f61761be7e7ed3b7",
+      "md5": "3537ecb6794946dbce13c1f7e745db26"
+    },
+    {
+      "signature": "notify_submission_lifecycle()",
+      "sha256": "e549872cc568be60f223c9b2decafe01b9c80565765bed2b4514eef306ffc281",
+      "md5": "7f8330267249e2cb02eca2365ad98b4b"
+    },
+    {
+      "signature": "submission_completeness(p jsonb)",
+      "sha256": "747bcf7436b10ca88f7f528312a77208900f56d5dabd4f026160cf8b14c12101",
+      "md5": "dd4d95683defba84197cd2643f24f524"
+    }
+  ],
+  "existingPlanPolicy": [
+    {
+      "genre_targeting": false,
+      "launch_gap": "00:00:00",
+      "launch_limit": 1,
+      "launch_window": "720:00:00",
+      "plan": "free",
+      "rank_targeting": false
+    },
+    {
+      "genre_targeting": true,
+      "launch_gap": "48:00:00",
+      "launch_limit": 15,
+      "launch_window": "720:00:00",
+      "plan": "pro",
+      "rank_targeting": true
+    }
+  ],
+  "existingTestingPolicy": [
+    {
+      "base_xp": 100,
+      "launch_window": "720:00:00",
+      "launches": 1,
+      "places": 3,
+      "reservation_window": "72:00:00",
+      "reservations_activated_at": "2026-10-28T21:50:03.001143+00:00",
+      "singleton": true
+    }
+  ],
+  "notes": [
+    "No user records included. Schema metadata and configuration only.",
+    "Production seed values must be preserved. Do not copy development ACLs."
+  ]
+}

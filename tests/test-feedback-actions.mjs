@@ -1,0 +1,34 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {createRequire} from 'node:module';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+const nativeRequire=createRequire(import.meta.url);
+const require=name=>name==='./AnonymousTesterLabel'?anonymousLabel:name==='@/lib/feedback-identities'?load('lib/feedback-identities.ts'):name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:nativeRequire(name);
+const load=(path,resolve=require)=>{
+ const exports={};
+ const code=ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+ new Function('exports','require',code)(exports,resolve);return exports;
+};
+const anonymousLabel=load('app/components/AnonymousTesterLabel.tsx',name=>name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:name==='@/lib/tester-rank'?load('lib/tester-rank.ts'):require(name));
+const model=load('lib/feedback-actions.ts');
+assert.deepEqual(model.readFeedbackActions(model.writeFeedbackActions({a:'Planned',b:'Fixed',c:'accepted',d:null})),{a:'Planned',b:'Fixed'});
+assert.deepEqual(model.readFeedbackActions(model.writeFeedbackActions({a:'Reviewed',b:'Planned'})),{a:'Reviewed',b:'Planned'});
+assert.deepEqual(model.readFeedbackActions('{"a":"Planned"}'),{},'Unversioned records cannot bypass retention');
+assert.deepEqual(model.readFeedbackActions(JSON.stringify({version:2,updatedAt:new Date(Date.now()-181*86400000).toISOString(),values:{a:'Fixed'}})),{},'Expired records are removed');
+for(const raw of [null,'broken','[]','null','4'])assert.deepEqual(model.readFeedbackActions(raw),{});
+const loadingComponent=load('app/components/FeedbackActions.tsx',name=>name==='./AnonymousTesterLabel'?anonymousLabel:name==='@/lib/feedback-review'?load('lib/feedback-review.ts',require):name==='@/lib/feedback-actions'?model:name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:require(name));assert(renderToStaticMarkup(createElement(loadingComponent.FeedbackActions,{campaignId:'loading',reports:[]})).includes('Loading saved follow-up actions'));
+const component=load('app/components/FeedbackActions.tsx',name=>name==='react'?{...require('react'),useState(initial){const [value,set]=require('react').useState(initial);return [initial===false?true:value,set];}}:name==='@/lib/feedback-review'?load('lib/feedback-review.ts',require):name==='@/lib/feedback-actions'?model:name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:require(name));
+const reports=[{id:'independent:1',source:'Playtested tester 1',date:'2026-10-28T10:00:00Z',enjoyed:'Movement felt responsive',frustration:'Door was unclear',improvement:'Label the exit',bugs:'<script>unsafe</script>'},{id:'community:1',source:'Community tester 1',date:null,enjoyed:'Good music',frustration:null,improvement:null,bugs:null}];
+const markup=renderToStaticMarkup(createElement(component.FeedbackActions,{campaignId:'build-a',reports}));
+for(const text of ['2 to investigate','Label the exit','Movement felt responsive','Community tester 1','saved in this browser','Developer action for Playtested tester 1'])assert(markup.includes(text),text);
+assert(markup.includes('&lt;script&gt;unsafe&lt;/script&gt;'),'Report text is escaped');
+assert(!markup.includes('<script>unsafe'));
+assert(markup.includes('disabled=""'),'Editing disabled before authenticated storage loads');
+const empty=renderToStaticMarkup(createElement(component.FeedbackActions,{campaignId:'empty',reports:[]}));
+assert(empty.includes('Accepted tester reports and community responses will appear here.'));
+console.log('PASS: stored-state validation, report/source cards, verbatim escaped text, counts, authenticated-loading guard and empty state. No source writes.');
+
+const qualityModel=load('lib/feedback-review.ts');assert(qualityModel.feedbackQualityLabel({quality_rubric_version:2,feedback_quality_score:0,base_xp_amount:0}).includes('0 XP'));assert(qualityModel.feedbackQualityLabel({base_xp_amount:100}).includes('quality score not recorded'));
+const react=require('react');let qualityInjected=false;const graded=load('app/components/FeedbackActions.tsx',name=>name==='react'?{...react,useState(initial){if(!qualityInjected){qualityInjected=true;return [{'1':{quality_rubric_version:2,feedback_quality_score:60,base_xp_amount:60,review_outcome:'accepted'}},()=>{}];}const state=react.useState(initial);return [initial===false?true:state[0],state[1]];}}:name==='@/lib/feedback-review'?qualityModel:name==='@/lib/feedback-actions'?model:name==='@/lib/supabase'?{createClient(){throw new Error('Unexpected network access');}}:require(name));const gradedMarkup=renderToStaticMarkup(createElement(graded.FeedbackActions,{campaignId:'build-a',reports}));assert(gradedMarkup.includes('Feedback quality 60%'));assert(gradedMarkup.includes('60 XP'));assert(!gradedMarkup.includes('100 XP'));console.log('PASS: actual developer feedback card renders recorded score/award; zero and legacy labels remain honest. Mocked state only.');

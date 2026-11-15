@@ -1,0 +1,95 @@
+{
+  "verified_at": "2026-11-06T09:49:54.415Z",
+  "scope": "Database restore and migration rehearsal; not full application/provider disaster recovery",
+  "production_writes": 0,
+  "production_baseline": "9334c192283a7152069f445f70438a863abb033a",
+  "candidate": "cbcf840e4bcb2e8b995faeb5f5c87935a69a7f81",
+  "restore": {
+    "status": "PASS",
+    "image": "public.ecr.aws/supabase/postgres:17.11.0.011",
+    "network": "none",
+    "published_ports": 0,
+    "storage": "disposable tmpfs",
+    "backup_mount": "read-only",
+    "cron_execution": "off",
+    "full_pg_restore_exit": 0,
+    "roles_bootstrap": "Original role attributes restored; explicitly seeded missing ADMIN memberships for recorded supabase_admin grantor, then replayed original membership statements. Extra rehearsal_admin bootstrap superuser exists only in disposable target; no passwords imported.",
+    "metadata_comparison": {
+      "counts": true,
+      "tables": true,
+      "policies": true,
+      "functions": true,
+      "migrations": true,
+      "storage": true,
+      "extensions": true
+    },
+    "data_preservation": {
+      "method": "Sorted multiset of SHA256 per COPY record; independent of PostgreSQL scan order, preserves duplicates",
+      "compared_tables": 111,
+      "changed_tables": [],
+      "expected_ledger_rows": {
+        "before": 29,
+        "after": 33
+      },
+      "status": "PASS"
+    },
+    "cleanup": "PASS: exact created container ID removed; tmpfs discarded; no pre-existing container changed"
+  },
+  "migrations": [
+    {
+      "version": "202611060128",
+      "status": "PASS",
+      "pack_sha256": "06f8c3e1390dd4378604b6b59e8cf65a225ded34ec0ec2b7191326fa088f15a7"
+    },
+    {
+      "version": "202611060129",
+      "status": "PASS",
+      "pack_sha256": "daf8aa5966f68ece86bb51708f46b0b6c460ae56fd40c3fad40b4d1582a170a8"
+    },
+    {
+      "version": "202611060130",
+      "status": "PASS",
+      "pack_sha256": "ebda0673d43dceb34a940831282934352883890fb78a0159fdc0d050d770ec20"
+    },
+    {
+      "version": "202611060131",
+      "status": "PASS",
+      "pack_sha256": "dd8001eb88beb1dc15b317e3366a29d4034fcc10a5d3b1b2378dca71e7d80497"
+    }
+  ],
+  "postflight": {
+    "catalogue": {
+      "rows": 12,
+      "total": 9554,
+      "unique_ids": 12
+    },
+    "catalogue_ms": 292,
+    "postflight": {
+      "anon_metrics": false,
+      "authenticated_metrics": false,
+      "service_metrics": true,
+      "valid_indexes": 2,
+      "title_triggers": 2,
+      "catalogue_security_invoker": true,
+      "cron_disabled": true
+    }
+  },
+  "production_recheck": {
+    "captured_at": "2026-11-06T09:47:21.666155+00:00",
+    "last_migration": {
+      "name": "merge26_catalogue_fixture_guard_plpgsql_hotfix",
+      "version": "20261105200930"
+    },
+    "migrations_unchanged": true,
+    "relevant_functions_unchanged": true,
+    "policies_unchanged": true,
+    "triggers_unchanged": true
+  },
+  "limitations": [
+    "No production write or live performance guarantee",
+    "No full web/auth/Storage-service restore or provider secret/configuration restoration tested",
+    "Restored cron definitions retained but execution deliberately disabled",
+    "Freshness/source drift must be rechecked immediately before release"
+  ],
+  "release_authorized": false
+}

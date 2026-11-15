@@ -1,0 +1,34 @@
+// Metadata only: never reads .env, SQL row contents, or production credentials.
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+const docker=process.env.REHEARSAL_DOCKER||'C:/Users/OWNER/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe';
+const dir='.backup-tools/rehearsal';
+const sha=b=>createHash('sha256').update(b).digest('hex');
+function command(exe,args,input){const r=spawnSync(exe,args,{input,encoding:'utf8',maxBuffer:16*1024*1024});if(r.status!==0)throw Error('Local evidence command failed; raw output withheld');return r.stdout;}
+const baseline=JSON.parse(fs.readFileSync(`${dir}/original-columns.json`));
+const exported=JSON.parse(fs.readFileSync(`${dir}/row-count-verification.json`)).tables.map(x=>x.table);
+const canonical=t=>`"${t.s}"."${t.t}"`;
+const additional=baseline.filter(t=>!exported.includes(canonical(t)));
+const absent=exported.filter(t=>!baseline.some(b=>canonical(b)===t));
+if(exported.length!==59||baseline.length!==65||additional.length!==6||absent.length)throw Error('Table-count reconciliation failed');
+const extraCounts=JSON.parse(command(docker,['exec','-i','playtested-rehearsal-db','psql','-X','-qAt','-U','supabase_admin','-d','postgres','--set=ON_ERROR_STOP=1'],`select json_agg(x) from (${additional.map(t=>`select '${canonical(t)}' name,count(*) baseline_rows from rehearsal_baseline."${t.s}__${t.t}"`).join(' union all ')}) x;`));
+const auditPath='docs/managed-schema-recovery-audit.json';
+const sourceAudit=fs.existsSync(auditPath)?JSON.parse(fs.readFileSync(auditPath)):null;
+const reconciliation={exported_copy_tables:59,initialized_baseline_tables:65,additional_initialized_tables:extraCounts,exported_tables_absent_from_baseline:absent,source_table_counts:sourceAudit?.source_reconciliation_table_counts||null,notes:sourceAudit?['Source vector tables are empty; iceberg tables do not exist on the inspected source.','Auth migration history is 82 rows on both; Storage history is 74 on source versus 75 locally. These are platform histories initialized locally, not missing application data.']:[]};
+fs.writeFileSync('docs/rehearsal-table-reconciliation.json',JSON.stringify(reconciliation,null,2)+'\n');
+console.log(JSON.stringify(reconciliation,null,2));
+const script=`const fs=require('fs'),path=require('path'),crypto=require('crypto');const files=[];function walk(p){if(!fs.existsSync(p))return;const st=fs.statSync(p);if(st.isDirectory())for(const n of fs.readdirSync(p).sort())walk(path.join(p,n));else files.push({path:p.replaceAll('\\\\','/'),sha256:crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')});}for(const p of ['app','lib','public','package.json','package-lock.json','next.config.ts','tsconfig.json','proxy.ts','postcss.config.mjs'])walk(p);console.log(JSON.stringify(files));`;
+const tested=JSON.parse(command(docker,['exec','-i','playtested-rehearsal-app','node','-'],script));
+const compared=tested.map(f=>({...f,working_tree_sha256:fs.existsSync(f.path)?sha(fs.readFileSync(f.path)):null}));
+const mismatches=compared.filter(f=>f.sha256!==f.working_tree_sha256);
+if(mismatches.some(f=>!['app/layout.tsx','tsconfig.json'].includes(f.path)))throw Error('Tested application differs from current source beyond declared isolated accommodations');
+const head=command('git',['rev-parse','HEAD']).trim();
+const status=command('git',['status','--porcelain=v1','--untracked-files=normal']).trim().split(/\r?\n/);
+const image=JSON.parse(command(docker,['inspect','playtested-rehearsal-app']))[0].Image;
+const migrations=JSON.parse(fs.readFileSync(`${dir}/database-checks.json`)).migrations;
+for(const m of migrations)if(sha(fs.readFileSync(`supabase/migrations/${m.name}`))!==m.sha256)throw Error('Migration hash drift');
+const harnesses=['tests/test-restored-database.mjs','tests/test-restored-browser.mjs','tests/test-fresh-signup.mjs','scripts/recovery/inspect-source-recovery.ps1','scripts/recovery/compare-managed-audit.mjs','supabase/inspection/managed-schema-audit.sql'].map(p=>({path:p,sha256:sha(fs.readFileSync(p))}));
+const record={recorded_at_utc:new Date().toISOString(),git_head:head,dirty_working_tree:true,git_status:status,test_app_image:image,content_manifest_sha256:sha(JSON.stringify(tested)),declared_snapshot_differences:mismatches,migrations,tested_files:compared,test_harnesses:harnesses};
+fs.writeFileSync('docs/rehearsal-source-manifest.json',JSON.stringify(record,null,2)+'\n');
+console.log(`Exact tested source recorded: HEAD ${head}, dirty tree content manifest ${record.content_manifest_sha256}.`);

@@ -1,0 +1,22 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+function load(file,resolve=require){const exports={};new Function('exports','require',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(exports,resolve);return exports;}
+let writes=0,internal=false,checks=0;
+const route=load('app/api/analytics/route.ts',name=>name==='@/lib/admin-server'?{analyticsService:()=>({from:()=>({upsert:async()=>{writes++;return {error:null};}})}),isInternalAnalyticsRequest:async()=>{checks++;return internal;}}:name==='@/lib/request-origin'?{hasTrustedOrigin:request=>request.headers.get('origin')==='https://playtested.co.uk'}:name==='@/lib/acquisition'?load('lib/acquisition.ts'):require(name));
+const event={consent:true,event_id:'26000000-0000-4000-8000-000000000001',visitor_id:'26000000-0000-4000-8000-000000000002',page:'/'};
+const request=(body=event,headers={})=>new Request('https://localhost:10000/api/analytics',{method:'POST',headers:{origin:'https://playtested.co.uk','content-type':'application/json','user-agent':'Mozilla/5.0',...headers},body:JSON.stringify(body)});
+assert.equal((await route.POST(request())).status,204);assert.equal(writes,1);assert.equal(checks,0,'Anonymous traffic does not invoke account queries');
+internal=true;assert.equal((await route.POST(request(event,{cookie:'session=fixture'}))).status,204);assert.equal(writes,1,'Verified admin traffic is omitted');
+internal=false;assert.equal((await route.POST(request(event,{cookie:'session=fixture'}))).status,204);assert.equal(writes,2,'Consenting ordinary accounts remain measurable');
+for(const headers of [{'user-agent':'UptimeRobot/2.0'},{'user-agent':'HeadlessChrome'},{dnt:'1'},{'sec-gpc':'1'}])assert.equal((await route.POST(request(event,headers))).status,204);
+assert.equal(writes,2);
+assert.equal((await route.POST(request({...event,consent:false}))).status,400);
+assert.equal((await route.POST(request(event,{origin:'https://evil.test'}))).status,403);assert.equal(writes,2);
+let message,scroll;
+globalThis.window={matchMedia:()=>({matches:false}),scrollTo:value=>{scroll=value;}};
+const saved=load('lib/developer-save.ts',()=>({showToast:value=>{message=value;}}));saved.developerSaved('Saved');assert.equal(message,'Saved');assert.deepEqual(scroll,{top:0,behavior:'smooth'});
+window.matchMedia=()=>({matches:true});saved.developerSaved('Saved again');assert.equal(scroll.behavior,'auto');delete globalThis.window;
+console.log('PASS Merge 26 analytics: consent, anonymous/ordinary accounts, verified admin omission, monitoring/bot/DNT/GPC exclusions, cross-site rejection; shared save toast and reduced-motion scrolling.');

@@ -1,190 +1,137 @@
 
-const games = [
-  {
-    slug: "echoes-of-elsewhere",
-    title: "Echoes of Elsewhere",
-    type: "AI EXPERIMENT",
-    genre: "Adventure",
-    score: "8.4",
-    reviews: 128,
-    description: "A surreal world that reshapes itself around your decisions.",
-    status: "Early Access",
-    accent: "from-emerald-950 to-zinc-900",
-    mark: "E",
-  },
-  {
-    slug: "hollow-reach",
-    title: "Hollow Reach",
-    type: "INDIE",
-    genre: "Survival",
-    score: "7.8",
-    reviews: 86,
-    description: "Explore an abandoned planet where nothing stays dead.",
-    status: "Playable",
-    accent: "from-sky-950 to-zinc-900",
-    mark: "H",
-  },
-  {
-    slug: "neon-protocol",
-    title: "Neon Protocol",
-    type: "AI-ASSISTED",
-    genre: "Action RPG",
-    score: "7.2",
-    reviews: 54,
-    description: "A cyberpunk RPG with experimental adaptive enemies.",
-    status: "Early Access",
-    accent: "from-purple-950 to-zinc-900",
-    mark: "N",
-  },
-  {
-    slug: "kingdoms-of-ash",
-    title: "Kingdoms of Ash",
-    type: "INDIE",
-    genre: "Strategy",
-    score: "9.1",
-    reviews: 213,
-    description: "Build a fallen kingdom back into an empire.",
-    status: "Released",
-    accent: "from-amber-950 to-zinc-900",
-    mark: "K",
-  },
-];
+import GameCatalogue from "./components/GameCatalogue";
+import SiteHeader from "./components/SiteHeader";
+import Link from "next/link";
+import {SITE_ORIGIN,serializeJsonLd,websiteStructuredData} from "../lib/seo";
+import { connection } from "next/server";
+import { homepageCatalogueSeed } from "@/lib/homepage-catalogue";
+export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
+export const instant = false;
 
-const stats = [
-  { label: "GAMES TRACKED", value: "481", note: "Across all categories" },
-  { label: "PLAYER REVIEWS", value: "12.6k", note: "Community feedback" },
-  { label: "AVERAGE RATING", value: "7.8", note: "Out of 10" },
-  { label: "GAMES TESTED", value: "96", note: "Hands-on reports" },
-];
+export default async function Home() {
+  await connection();
+  const initialCatalogue = await homepageCatalogueSeed();
 
-export default function Home() {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
-      <header className="border-b border-white/[0.08]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-wider">
-            PLAYTESTED<span className="text-[#77f29b]">_</span>
-          </a>
-          <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
-            <a href="#discover" className="hover:text-white">Discover</a>
-            <a href="#stats" className="hover:text-white">Community stats</a>
-            <a href="#about" className="hover:text-white">About</a>
-          </nav>
-          <a href="#discover" className="rounded-md border border-[#77f29b]/40 px-4 py-2 text-sm text-[#77f29b] hover:bg-[#77f29b]/10">
-            Explore games
-          </a>
-        </div>
-      </header>
+      <SiteHeader />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(websiteStructuredData())}}/>
 
-      <section className="mx-auto max-w-7xl px-6 pb-16 pt-20 md:pb-24 md:pt-28">
+      <section className="mx-auto max-w-7xl px-6 pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-w-3xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs tracking-wide text-[#77f29b]">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs tracking-wide text-[#77f29b]">
             <span className="h-2 w-2 rounded-full bg-[#77f29b]" />
             BUILT AROUND PLAYER OPINION
           </div>
-          <h1 className="font-[family-name:var(--font-display)] text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-            LESS HYPE.
+
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+            FIND THE GEMS.
             <br />
-            <span className="text-[#77f29b]">MORE GAME.</span>
+            <span className="text-[#77f29b]">SKIP THE SLOP.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-zinc-400 md:text-lg">
-            Discover what is worth playing. Honest reviews, useful player
-            feedback and a clearer picture of what makes a game good.
-            Whatever the technology behind it.
+
+          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 md:text-base">
+            Discover games through player feedback. Developers gather structured,
+            build-specific feedback, and players find games recruiting testers.
+            Explore the catalogue without an account; sign in to take part in a playtest.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#discover" className="rounded-md bg-[#77f29b] px-5 py-3 text-sm font-semibold text-[#09100b] hover:bg-[#9af8b4]">
-              Discover games <span aria-hidden="true">↗</span>
-            </a>
-            <a href="#stats" className="rounded-md border border-white/15 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">
-              Explore the data
-            </a>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+            <section aria-labelledby="home-developers" className="flex flex-col rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-5">
+              <h2 id="home-developers" className="text-lg font-semibold text-white">Making a game?</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">Submit your game, tell testers what you want them to focus on, and read their feedback for each build. Find out what works and what could be better.</p>
+              <Link href="/submit" className="mt-5 rounded-lg bg-[#77f29b] px-4 py-3 text-center text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Submit a game</Link>
+              <Link href="/login?mode=signup&role=developer&next=/my-submissions" className="mt-3 text-center text-sm text-[#77f29b] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">New here? Join as a developer</Link>
+            </section>
+            <section aria-labelledby="home-testers" className="flex flex-col rounded-xl border border-white/10 bg-white/[0.025] p-5">
+              <h2 id="home-testers" className="text-lg font-semibold text-white">Enjoy trying games?</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">Sign in to find a game you can test, play it and tell the developer about your experience. Useful criticism matters just as much as praise.</p>
+              <Link href="/tester" className="mt-5 rounded-lg border border-[#77f29b]/30 px-4 py-3 text-center text-sm font-semibold text-[#77f29b] transition hover:bg-[#77f29b]/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Find a game to test</Link>
+              <Link href="/login?mode=signup&role=tester&next=/tester" className="mt-3 text-center text-sm text-[#77f29b] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">New here? Join as a tester</Link>
+            </section>
+          </div>
+          <p className="mt-4 text-sm leading-6 text-zinc-400">You can be a developer, a tester, or both. Just looking around? <a href="#discover-games" className="text-[#77f29b] underline underline-offset-4 focus-visible:outline-2">Browse the games below</a>.</p>
+        </div>
+      </section>
+
+      <section id="discover-games">
+        <GameCatalogue initialCatalogue={initialCatalogue} />
+      </section>
+
+      <section aria-labelledby="playtesting-guides" className="mx-auto max-w-7xl px-6 py-10">
+        <h2 id="playtesting-guides" className="font-[family-name:var(--font-display)] text-2xl font-bold">Learn about indie game playtesting</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">Practical guidance for developers looking for player feedback and players interested in testing indie games.</p>
+        <div className="mt-4 max-w-3xl space-y-3 text-sm leading-7 text-zinc-400">
+          <p>Our goal is to help players find the gems and skip the slop through clearer information and real player feedback. Playtested helps you discover indie games and playtest new releases before they reach a wider audience. Browse game listings, learn what each developer is building, and see how community playtesting can reveal strengths, confusing controls, bugs and performance issues.</p>
+          <p>For indie developers, structured playtests turn player opinions into useful feedback tied to a particular game build. For playtesters, trying an unfamiliar game is a chance to share clear observations about the experience. Whether you want to find playtesters for your own game or become a playtester yourself, the guides below explain how to get started.</p>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/playtesting", title: "What is playtesting?", description: "Understand what a playtest reveals." },
+            { href: "/find-playtesters", title: "Find playtesters", description: "Plan a focused test for your game." },
+            { href: "/become-a-playtester", title: "Become a playtester", description: "Learn how to test games and report findings." },
+            { href: "/guides/playtest-feedback", title: "Write useful feedback", description: "Make your observations actionable." },
+          ].map(guide => <Link key={guide.href} href={guide.href} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-[#77f29b]/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]"><h3 className="font-semibold text-[#77f29b]">{guide.title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{guide.description}</p></Link>)}
+        </div>
+        <div className="mt-8 grid gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2 sm:p-6">
+          <div>
+            <h3 className="font-semibold text-white">Read the evidence in context</h3>
+            <p className="mt-2 text-sm leading-7 text-zinc-400">
+              A game profile can bring together the developer&apos;s listing,
+              activity from specific playtest builds and any assessment that
+              has been recorded. Not every game has tester responses or an
+              assessment. Community feedback and independent checks are shown
+              separately so you can see what information is available.
+            </p>
+            <Link href="/playtesting" className="mt-3 inline-block text-sm text-[#77f29b] underline underline-offset-4">
+              How playtesting works
+            </Link>
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Make feedback useful</h3>
+            <p className="mt-2 text-sm leading-7 text-zinc-400">
+              When a playtest is open, testers can focus on the build they
+              played and describe what happened, where it happened and what
+              they expected instead. Clear observations help a developer
+              understand a report without treating one person&apos;s experience
+              as a promise about every device or future update.
+            </p>
+            <Link href="/guides/playtest-feedback" className="mt-3 inline-block text-sm text-[#77f29b] underline underline-offset-4">
+              Tips for writing actionable feedback
+            </Link>
           </div>
         </div>
       </section>
 
-      <section id="stats" className="border-y border-white/[0.08] bg-[#0e110f]">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold tracking-wide">
-              THE COMMUNITY AT A GLANCE
+      <section
+        id="about"
+        className="mt-10 border-t border-white/[0.08] bg-[#0e110f]"
+      >
+        <div className="mx-auto grid max-w-7xl gap-6 px-6 py-10 md:grid-cols-2 md:items-center">
+          <div>
+            <p className="mb-2 text-xs tracking-[0.2em] text-[#77f29b]">
+              THE IDEA
+            </p>
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+              Let machines handle the repetitive work.
+              <br />
+              Keep people at the heart of gaming.
             </h2>
-            <span className="rounded border border-amber-400/20 px-2 py-1 text-[10px] tracking-widest text-amber-300">
-              DEMO DATA
-            </span>
           </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="border-l border-[#77f29b]/40 pl-4">
-                <p className="text-[10px] tracking-[0.18em] text-zinc-500">{stat.label}</p>
-                <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold text-white md:text-4xl">{stat.value}</p>
-                <p className="mt-1 text-xs text-zinc-500">{stat.note}</p>
-              </div>
-            ))}
+
+          <div className="max-w-xl space-y-4 text-sm leading-7 text-zinc-400">
+            <p>Structured playtest questions keep feedback about gameplay,
+              controls and performance tied to the build people played.</p>
+            <p>Developers get structured feedback to help improve their games.
+              Players share honest experiences, discover games through community
+              ratings, and help shape a community they want to be part of.
+              Thoughtful criticism matters just as much as praise.</p>
+            <p>AI-use disclosures explain how developers say a game was made.
+              They are context, not a guarantee of quality or independent proof.</p>
           </div>
         </div>
       </section>
 
-      <section id="discover" className="mx-auto max-w-7xl px-6 py-16 md:py-20">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs tracking-[0.2em] text-[#77f29b]">FIND YOUR NEXT GAME</p>
-            <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold md:text-4xl">Worth your time?</h2>
-            <p className="mt-2 text-sm text-zinc-500">A mix of experimental, AI-assisted and traditional games.</p>
-          </div>
-          <span className="text-sm text-zinc-500">{games.length} featured games</span>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {games.map((game) => (
-            <a
-              key={game.slug}
-              href={`/games/${game.slug}`}
-              className="group overflow-hidden rounded-xl border border-white/[0.09] bg-[#101311] transition hover:-translate-y-1 hover:border-[#77f29b]/40"
-            >
-              <div className={`relative flex h-44 items-center justify-center bg-gradient-to-br ${game.accent}`}>
-                <span className="font-[family-name:var(--font-display)] text-8xl font-bold text-white/[0.12]">{game.mark}</span>
-                <span className="absolute left-3 top-3 rounded border border-white/10 bg-black/40 px-2 py-1 text-[9px] tracking-widest text-zinc-300">
-                  {game.type}
-                </span>
-                <span className="absolute bottom-3 right-3 rounded bg-black/60 px-2 py-1 text-xs text-zinc-300">{game.status}</span>
-              </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-[family-name:var(--font-display)] text-xl font-bold group-hover:text-[#77f29b]">{game.title}</h3>
-                  <span className="shrink-0 rounded bg-[#77f29b]/10 px-2 py-1 text-sm font-semibold text-[#77f29b]">{game.score}</span>
-                </div>
-                <p className="mt-2 min-h-[48px] text-sm leading-6 text-zinc-400">{game.description}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-white/[0.08] pt-3 text-xs text-zinc-500">
-                  <span>{game.genre}</span>
-                  <span>{game.reviews} reviews</span>
-                </div>
-                <p className="mt-4 text-xs font-medium text-[#77f29b]">View game & reviews <span aria-hidden="true">→</span></p>
-              </div>
-            </a>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-zinc-600">All games, ratings and review counts shown here are illustrative demo content.</p>
-      </section>
-
-      <section id="about" className="border-t border-white/[0.08] bg-[#0e110f]">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 py-14 md:grid-cols-2 md:items-center">
-          <div>
-            <p className="mb-2 text-xs tracking-[0.2em] text-[#77f29b]">THE IDEA</p>
-            <h2 className="font-[family-name:var(--font-display)] text-3xl font-bold">Judge the game.<br />Not the hype.</h2>
-          </div>
-          <p className="max-w-xl text-sm leading-7 text-zinc-400">
-            AI-made games are changing the landscape, but players still care
-            about the same things: gameplay, performance, originality and
-            whether a game respects their time. Playtested brings that feedback
-            into one place, with transparent labels and reviews from players.
-          </p>
-        </div>
-      </section>
-
-      <footer className="border-t border-white/[0.08] px-6 py-6 text-center text-xs text-zinc-600">
-        PLAYTESTED_ · A prototype for players, by players.
-      </footer>
     </main>
   );
 }

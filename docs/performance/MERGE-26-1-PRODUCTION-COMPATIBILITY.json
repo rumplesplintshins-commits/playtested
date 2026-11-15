@@ -1,0 +1,301 @@
+{
+  "captured_at": "2026-11-06T00:58:09.890815+00:00",
+  "validated_at": "2026-11-06T00:58:15.911Z",
+  "production_writes": 0,
+  "production_counts": {
+    "active_controls": 0,
+    "approved_submissions": 21,
+    "eligible_imports": 9574,
+    "imports": 195362,
+    "profiles": 55,
+    "reports": 41,
+    "storage_objects": 126,
+    "submissions": 95
+  },
+  "production_hotfix_noop": true,
+  "metadata_rehearsal": "Passed128-131 against actual production function definitions and checked column types in synthetic PGlite; not a full database restore",
+  "production_rls_enabled": true,
+  "pending_versions": [
+    "202611060128",
+    "202611060129",
+    "202611060130",
+    "202611060131"
+  ],
+  "migration_history": [
+    {
+      "name": "merge26_listing_controls",
+      "version": "20261105190452"
+    },
+    {
+      "name": "merge26_catalogue",
+      "version": "20261105190459"
+    },
+    {
+      "name": "merge26_reporting",
+      "version": "20261105190504"
+    },
+    {
+      "name": "merge26_historical_acquisition",
+      "version": "20261105190507"
+    },
+    {
+      "name": "merge26_control_audit_retention",
+      "version": "20261105190509"
+    },
+    {
+      "name": "merge26_private_listing_management",
+      "version": "20261105190511"
+    },
+    {
+      "name": "merge26_public_claim_ranking",
+      "version": "20261105190518"
+    },
+    {
+      "name": "merge26_tester_identity",
+      "version": "20261105190521"
+    },
+    {
+      "name": "merge26_tester_analytics",
+      "version": "20261105190524"
+    },
+    {
+      "name": "merge26_private_rank_helpers",
+      "version": "20261105191802"
+    },
+    {
+      "name": "merge26_explicit_availability_choice",
+      "version": "20261105191805"
+    },
+    {
+      "name": "merge26_pc_specifications",
+      "version": "20261105191806"
+    },
+    {
+      "name": "merge26_48_hour_reservations",
+      "version": "20261105191808"
+    },
+    {
+      "name": "merge26_immediate_feedback_approval",
+      "version": "20261105191812"
+    },
+    {
+      "name": "merge26_testing_activity_steam_referrals",
+      "version": "20261105191814"
+    },
+    {
+      "name": "merge26_closed_campaign_requirements_guard",
+      "version": "20261105191816"
+    },
+    {
+      "name": "merge26_referral_snapshot_pagination",
+      "version": "20261105191818"
+    },
+    {
+      "name": "merge26_expired_activity_referral_scope",
+      "version": "20261105191822"
+    },
+    {
+      "name": "merge26_history_published_artwork",
+      "version": "20261105191823"
+    },
+    {
+      "name": "merge26_new_campaign_capacity",
+      "version": "20261105191826"
+    },
+    {
+      "name": "merge26_pro_launch_contract",
+      "version": "20261105191829"
+    },
+    {
+      "name": "merge26_private_approved_identity",
+      "version": "20261105191833"
+    },
+    {
+      "name": "merge26_attribution_restrictions",
+      "version": "20261105191835"
+    },
+    {
+      "name": "merge26_availability_schedule",
+      "version": "20261105191836"
+    },
+    {
+      "name": "merge26_rank_only_forward_compat",
+      "version": "20261105191838"
+    },
+    {
+      "name": "merge26_catalogue_hidden_fastpath_hotfix",
+      "version": "20261105193857"
+    },
+    {
+      "name": "merge26_catalogue_hidden_fastpath_plpgsql",
+      "version": "20261105194146"
+    },
+    {
+      "name": "merge26_catalogue_fixture_guard_hotfix",
+      "version": "20261105195151"
+    },
+    {
+      "name": "merge26_catalogue_fixture_guard_plpgsql_hotfix",
+      "version": "20261105200930"
+    }
+  ],
+  "migration_sha256_lf": {
+    "202611060128_reconcile_catalogue_fixture_hotfix.sql": "79d9b5ff217b87ffffae92f7b60df587dbcfa8c2b39647051dace1795a40d443",
+    "202611060129_catalogue_custom_plan.sql": "baee1818b042d549422ef8aefc5e058933618afe7e36181a0ed39b20f4d55a90",
+    "202611060130_developer_game_metrics.sql": "6fbd673a073cb1caadae334003d2a1cc5a86594ae8731ecf1587cd55964e01c4",
+    "202611060131_game_title_limits.sql": "5721939bf4bf815e944e16cc599da8dfa2fbd3c9165b90853c8c9cd077004448"
+  },
+  "indexes": [
+    {
+      "definition": "CREATE UNIQUE INDEX game_submissions_pkey ON public.game_submissions USING btree (id)",
+      "name": "game_submissions_pkey",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE INDEX idx_game_submissions_steam_app_id ON public.game_submissions USING btree (steam_app_id)",
+      "name": "idx_game_submissions_steam_app_id",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX imported_games_pkey ON public.imported_games USING btree (id)",
+      "name": "imported_games_pkey",
+      "table": "imported_games"
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX imported_games_steam_app_id_key ON public.imported_games USING btree (steam_app_id)",
+      "name": "imported_games_steam_app_id_key",
+      "table": "imported_games"
+    },
+    {
+      "definition": "CREATE INDEX imported_games_metadata_backfill_idx ON public.imported_games USING btree (metadata_backfill_status, id)",
+      "name": "imported_games_metadata_backfill_idx",
+      "table": "imported_games"
+    },
+    {
+      "definition": "CREATE INDEX imported_games_is_nsfw_idx ON public.imported_games USING btree (is_nsfw)",
+      "name": "imported_games_is_nsfw_idx",
+      "table": "imported_games"
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX listing_controls_pkey ON public.listing_controls USING btree (game_kind, source_id)",
+      "name": "listing_controls_pkey",
+      "table": "listing_controls"
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX listing_revisions_pkey ON public.listing_revisions USING btree (id)",
+      "name": "listing_revisions_pkey",
+      "table": "listing_revisions"
+    }
+  ],
+  "triggers": [
+    {
+      "definition": "CREATE TRIGGER cleanup_deleted_game_pc_requirements AFTER DELETE ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION _cleanup_deleted_game_pc_requirements()",
+      "enabled": "O",
+      "name": "cleanup_deleted_game_pc_requirements",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE TRIGGER m24_evidence_link_validation BEFORE INSERT OR UPDATE OF evidence_link ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION m24_validate_evidence_link()",
+      "enabled": "O",
+      "name": "m24_evidence_link_validation",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE TRIGGER notify_submission_lifecycle AFTER INSERT OR UPDATE OF status ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION notify_submission_lifecycle()",
+      "enabled": "O",
+      "name": "notify_submission_lifecycle",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE TRIGGER submission_approval_recheck BEFORE UPDATE OF status ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION guard_submission_corrections('approval')",
+      "enabled": "O",
+      "name": "submission_approval_recheck",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE TRIGGER submission_completeness_guard BEFORE INSERT OR UPDATE ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION guard_submission_corrections()",
+      "enabled": "O",
+      "name": "submission_completeness_guard",
+      "table": "game_submissions"
+    },
+    {
+      "definition": "CREATE TRIGGER submission_correction_audit AFTER INSERT OR UPDATE ON public.game_submissions FOR EACH ROW EXECUTE FUNCTION audit_submission_corrections()",
+      "enabled": "O",
+      "name": "submission_correction_audit",
+      "table": "game_submissions"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "hash": "69d1c0c7c5669c06461aab2ae69f43ce",
+      "language": "sql",
+      "owner": "postgres",
+      "signature": "_m26_legacy_fixture_hidden(uuid)"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": true,
+      "hash": "cc641f4463832a10cfdbf3068d79140b",
+      "language": "plpgsql",
+      "owner": "postgres",
+      "signature": "beta_fixture_hidden(uuid)"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "config": [
+        "search_path=public"
+      ],
+      "definer": false,
+      "hash": "6370f934d6a97230e0f7628d9a4207db",
+      "language": "sql",
+      "owner": "postgres",
+      "signature": "get_public_catalogue(integer,integer,text,text,text,text,boolean,text)"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": true,
+      "hash": "311f8162b0ecc6fa6d9a380db456b8c3",
+      "language": "plpgsql",
+      "owner": "postgres",
+      "signature": "m26_listing_hidden(uuid,boolean)"
+    }
+  ],
+  "limitations": [
+    "No production data restored",
+    "Provider recoverability and current backup coverage remain separate gates",
+    "Production performance after release not measured"
+  ]
+}
