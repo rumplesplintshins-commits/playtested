@@ -168,6 +168,7 @@ try{
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Create your account',exact:true})).toBeVisible();
  assert.equal(new URL(page.url()).searchParams.get('next'),'/tester');
  await expect(page.getByRole('alert').filter({hasText:'Email confirmation links can only be used once.'})).toHaveCount(0);
  // A direct URL-driven signup page must render consistently at hydration.
