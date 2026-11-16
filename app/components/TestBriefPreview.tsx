@@ -13,7 +13,7 @@ export default function TestBriefPreview({ instructions }: { instructions: strin
 
   return (
     <section aria-label="Test brief" className="mt-3 min-w-0 shrink-0">
-      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Test brief</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Testing task</p>
       <div className="relative mt-2 h-20 overflow-hidden">
         <p className="line-clamp-4 max-h-20 overflow-hidden break-words text-sm leading-5 text-zinc-300 [overflow-wrap:anywhere]">{preview}</p>
         {truncated && <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-[#111512] to-transparent" />}
