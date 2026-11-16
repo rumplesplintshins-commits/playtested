@@ -599,7 +599,15 @@ function FeedbackForm({
                                   </label>
                                 </div>
 
-                                <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
+                                <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">Optional detailed playtest report</p>
+                <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-400">Want to provide timestamped findings and developer recommendations? Download the editable template. The standard feedback form is still required.</p>
+              </div>
+              <a href="/Playtested_Game_Playtest_Report_Template.html" download="Playtested_Game_Playtest_Report_Template.html" className="rounded-lg border border-[#77f29b]/40 px-4 py-2 text-sm font-semibold text-[#77f29b] underline-offset-2 hover:bg-[#77f29b]/10 focus-visible:outline-2 focus-visible:outline-[#77f29b]">Download report template</a>
+            </div>
+
+            <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
                                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:col-span-2">
                                     4 · Final thoughts
                                   </p>
