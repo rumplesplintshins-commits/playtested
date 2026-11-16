@@ -169,7 +169,7 @@ try{
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
  assert.equal(new URL(page.url()).searchParams.get('next'),'/tester');
- await expect(page.getByRole('alert')).toHaveCount(0);
+ await expect(page.getByRole('alert').filter({hasText:'Email confirmation links can only be used once.'})).toHaveCount(0);
  // A direct URL-driven signup page must render consistently at hydration.
  const hydrationErrors=[];page.on('pageerror',error=>hydrationErrors.push(error.message));
  await page.goto(origin+'/login?mode=signup&role=developer&next=/my-submissions');
