@@ -620,7 +620,7 @@ function FeedbackForm({
                   <h5 className="font-semibold text-white">Additional supporting evidence (optional)</h5>
                   <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-300">These links are private to your account, Playtested admins and the owning game developer after approval. They will not appear on public game pages. External file sharing permissions may reveal your name, email, voice or other details to the developer.</p>
                 </div>
-                <a href="/Playtested_Game_Playtest_Report_Template.html" download="Playtested_Game_Playtest_Report_Template.html" className="shrink-0 rounded-lg border border-[#77f29b]/40 px-3 py-2 text-xs font-semibold text-[#77f29b] hover:bg-[#77f29b]/10">Download playtest template</a>
+                <a href="/Playtested_Game_Playtest_Report_Template.docx" download="Playtested_Game_Playtest_Report_Template.docx" className="shrink-0 rounded-lg border border-[#77f29b]/40 px-3 py-2 text-xs font-semibold text-[#77f29b] hover:bg-[#77f29b]/10">Download editable Word report (.docx)</a>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm font-semibold">Additional feedback document <span className="font-normal text-zinc-400">(optional)</span>

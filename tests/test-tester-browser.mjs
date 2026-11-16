@@ -92,7 +92,7 @@ try{
  await expect(page.getByRole('progressbar',{name:'Feedback form completion'})).toHaveAttribute('aria-valuenow','9');
  await expect.poll(()=>page.evaluate(k=>!!localStorage.getItem(k),key)).toBe(true);
  const fakeDoc='https://docs.google.com/document/d/LOCAL_DOC_TEST/edit',fakeVideo='https://drive.google.com/file/d/LOCAL_VIDEO_TEST/view';
- await expect(page.getByRole('link',{name:'Download playtest template'})).toHaveAttribute('href','/Playtested_Game_Playtest_Report_Template.html');
+ await expect(page.getByRole('link',{name:'Download editable Word report (.docx)'})).toHaveAttribute('href','/Playtested_Game_Playtest_Report_Template.docx');
  await page.getByLabel('Additional feedback document',{exact:false}).fill(fakeDoc);
  await page.getByLabel('Gameplay recording',{exact:false}).fill(fakeVideo);
  await page.getByRole('button',{name:'Submit review'}).click();
