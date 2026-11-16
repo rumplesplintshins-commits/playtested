@@ -178,7 +178,7 @@ create or replace function public.get_admin_private_playtest_evidence(p_test_id 
 returns table(document_url text,recording_url text) language plpgsql stable security definer set search_path=''
 as $func$
 begin
-  if not exists(select 1 from public.profiles p where p.id=auth.uid() and 'admin'=any(p.roles)) then
+  if not exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin') then
     raise exception 'Admin access required.';
   end if;
   return query select e.document_url,e.recording_url
@@ -201,7 +201,7 @@ declare
   v_old_document text;
   v_old_recording text;
 begin
-  if not exists(select 1 from public.profiles p where p.id=auth.uid() and 'admin'=any(p.roles)) then
+  if not exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin') then
     raise exception 'Admin access required.';
   end if;
   if length(btrim(coalesce(p_reason,'')))<12 then raise exception 'Document the reason for evidence correction.'; end if;
