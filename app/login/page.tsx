@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
@@ -39,6 +39,8 @@ function LoginPageContent() {
     };
   });
 
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const [mode, setMode] = useState<"login" | "signup">(initialUrlState.mode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -138,19 +140,19 @@ function LoginPageContent() {
           {nextPath.startsWith("/playtest/") && <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4"><p className="text-sm font-semibold text-emerald-300">Community playtest invitation</p><p className="mt-1 text-xs leading-5 text-slate-400">After you sign in or confirm your new account, you&apos;ll return directly to the playtest.</p></div>}
 
           <form onSubmit={handleSubmit} aria-busy={loading} className="mt-8 space-y-5">
-            {mode === "signup" && <fieldset className="space-y-3"><legend className="mb-3 text-sm font-medium">Your Roles</legend>{roleOptions.map((role) => { const checked = signupRoles.includes(role.value); return <label key={role.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${checked ? "border-emerald-400 bg-emerald-400/5" : "border-slate-700 hover:border-slate-500"}`}><input type="checkbox" disabled={loading} checked={checked} onChange={() => toggleRole(role.value)} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="block text-sm font-semibold">{role.label} - {role.description}</span></label>; })}<p className="text-xs text-slate-500">Select one, two or all three roles. You can take part in multiple areas of Playtested.</p></fieldset>}
+            {mode === "signup" && <fieldset className="space-y-3"><legend className="mb-3 text-sm font-medium">Your Roles</legend>{roleOptions.map((role) => { const checked = signupRoles.includes(role.value); return <label key={role.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${checked ? "border-emerald-400 bg-emerald-400/5" : "border-slate-700 hover:border-slate-500"}`}><input type="checkbox" disabled={loading || !hydrated} checked={checked} onChange={() => toggleRole(role.value)} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="block text-sm font-semibold">{role.label} - {role.description}</span></label>; })}<p className="text-xs text-slate-500">Select one, two or all three roles. You can take part in multiple areas of Playtested.</p></fieldset>}
 
-            {mode === "signup" && <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/40 p-4"><input type="checkbox" required disabled={loading} checked={ageConfirmed} onChange={(e) => { setAgeConfirmed(e.target.checked); setMessage(""); }} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="text-sm leading-6 text-slate-300">I confirm that I am <strong className="text-white">18 or over</strong> and agree to the <Link href="/terms" className="text-emerald-300 underline underline-offset-4">Terms</Link> and acknowledge the <Link href="/privacy" className="text-emerald-300 underline underline-offset-4">Privacy Notice</Link>.</span></label>}
+            {mode === "signup" && <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/40 p-4"><input type="checkbox" required disabled={loading || !hydrated} checked={ageConfirmed} onChange={(e) => { setAgeConfirmed(e.target.checked); setMessage(""); }} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="text-sm leading-6 text-slate-300">I confirm that I am <strong className="text-white">18 or over</strong> and agree to the <Link href="/terms" className="text-emerald-300 underline underline-offset-4">Terms</Link> and acknowledge the <Link href="/privacy" className="text-emerald-300 underline underline-offset-4">Privacy Notice</Link>.</span></label>}
 
-            <GoogleSignInButton mode={mode} signupRoles={signupRoles} ageConfirmed={ageConfirmed} nextPath={nextPath} loading={loading} setLoading={setLoading} setMessage={setMessage}/>
+            <GoogleSignInButton mode={mode} signupRoles={signupRoles} ageConfirmed={ageConfirmed} nextPath={nextPath} loading={loading || !hydrated} setLoading={setLoading} setMessage={setMessage}/>
 
-            <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
-            <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
+            <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading || !hydrated} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
+            <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading || !hydrated} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
             {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
             {message && <p role="status" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Please wait..." : mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in" : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}</button>
+            <button type="submit" disabled={loading || !hydrated} className="w-full rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Please wait..." : mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in" : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}</button>
           </form>
-          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}<button type="button" onClick={switchMode} disabled={loading} className="font-semibold text-emerald-400 hover:text-emerald-300">{mode === "login" ? "Create an account" : "Sign in"}</button></p>
+          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}<button type="button" onClick={switchMode} disabled={loading || !hydrated} className="font-semibold text-emerald-400 hover:text-emerald-300">{mode === "login" ? "Create an account" : "Sign in"}</button></p>
         </div>
       </div>
     </main>
