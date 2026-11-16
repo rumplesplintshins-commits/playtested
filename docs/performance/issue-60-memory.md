@@ -1,0 +1,15 @@
+# Issue 60: server memory and request lifetime
+
+Base: v11 `4a511a8`. No Render settings changed. Independent of PR 59.
+
+Issue 60 records 156 → 506 MiB on 14 November before the 12:17:41 UTC OOM at a 512 MiB limit. After restart RSS remained around 380–410 MiB. There is no heap capture or request trace from the incident; a leak and its cause remain unproven. Homepage catalogue errors were after the OOM, so are not evidence of its cause.
+
+Installed Next.js 16.4.1 documentation and implementation confirm `cacheMaxMemorySize` independently sizes the incremental cache and the default `use cache` handler, each defaulting to 50 MiB. Homepage seed has one argument-free key, while public metadata is keyed by game identity (including negative lookups). Sitemap is another fixed key. These are bounded caches, not an established leak. Browser catalogue page caches are tab-local, not Render RSS. Analytics visitor state clears each minute and accepts at most 600 events. Request-local clients disable persistence and auth refresh timers.
+
+Change: budget each built-in cache at 8 MiB, retaining hot anonymous seeds. Upper payload budget across both caches is 100 → 16 MiB; actual savings depend on occupancy and do not equal total process RSS. JSON evidence comes from separate Node processes exercising the installed production handler with 700 distinct 128 KiB entries and repeated homepage access. Retained metadata payload was 49.875 → 7.875 MiB; hot seed remained available. GC/RSS measurements are illustrative, allocator-dependent, and not an application soak test.
+
+Anonymous server reads also had no fetch deadline. A stalled header or body could hold request/cache-fill work and its pending promises indefinitely. Add a 15-second abort deadline, retaining caller cancellation. This is above the issue's observed 7.711-second maximum query time, though network overhead and future slow queries can still reach it. Failure uses existing visible/retry paths. Browser, signed-in and write clients retain their existing behaviour. This bounds lifetime, not concurrent request count or total memory.
+
+Validation: `node tests/test-server-cache-budget.mjs`, `node tests/test-public-server-fetch.mjs`, TypeScript and production build. Header/body stalls, upstream aborts and API headers are tested on a local HTTP server. Detailed integration results will be recorded before the draft is published.
+
+GO: review and development rehearsal of the bounded budget and request deadline. NO-GO: declare the incident resolved or approve production deployment. After owner approval, compare Render RSS, OOM events, catalogue error rate and warm/cold latency across at least 24–48 hours with comparable traffic; retain at least 64 MiB headroom. Stop/roll back if memory approaches 448 MiB, deadline failures increase or database calls rise materially due to eviction. Do not increase the instance size as a substitute for these checks.
