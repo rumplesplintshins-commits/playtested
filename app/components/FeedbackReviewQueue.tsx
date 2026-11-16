@@ -22,10 +22,45 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const t = item.report;
+  const [privateEvidence,setPrivateEvidence] = useState<{document_url:string|null;recording_url:string|null}|null>(null);
+  const [evidenceError,setEvidenceError] = useState("");
+  const [repairDocument,setRepairDocument] = useState("");
+  const [repairRecording,setRepairRecording] = useState("");
+  const [repairPublicFeedback,setRepairPublicFeedback] = useState("Detailed supporting report provided privately.");
+  const [repairReason,setRepairReason] = useState("");
+  const [repairing,setRepairing] = useState(false);
+  const publicTextRisk = [t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement]
+    .some(value=>/https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(value||""));
+  useEffect(()=>{
+    let active=true;
+    void createClient().rpc("get_admin_private_playtest_evidence",{p_test_id:t.id}).then(({data,error})=>{
+      if(!active)return;
+      if(error){setEvidenceError("Private evidence could not be loaded. Retry before approving.");return;}
+      const row=(data??[])[0] as {document_url:string|null;recording_url:string|null}|undefined;
+      setPrivateEvidence(row??null);
+      setEvidenceError("");
+    });
+    return()=>{active=false;};
+  },[t.id]);
+  async function relocate() {
+    if(!repairReason.trim() || repairReason.trim().length<12){setEvidenceError("Provide a reason of at least 12 characters.");return;}
+    setRepairing(true);setEvidenceError("");
+    try{
+      const {error}=await createClient().rpc("admin_relocate_playtest_private_evidence",{
+        p_test_id:t.id,p_document_url:repairDocument.trim()||null,
+        p_recording_url:repairRecording.trim()||null,
+        p_public_feedback:repairPublicFeedback.trim(),p_reason:repairReason.trim()
+      });
+      if(error){setEvidenceError(error.message);return;}
+      await reload();
+    }catch{setEvidenceError("Private evidence correction failed. Please retry.");}
+    finally{setRepairing(false);}
+  }
   const moderationTime=t.reviewed_at||item.events?.filter(e=>["accepted","rejected","replacement","replacement_granted"].includes(e.kind)&&e.created_at).sort((a,b)=>Date.parse(b.created_at!)-Date.parse(a.created_at!))[0]?.created_at;
   const devQa=[t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement].some(value=>typeof value==="string"&&/^\s*\[DEV QA\](?:\s|$)/im.test(value));
 
   async function decide(action: "accepted" | "rejected" | "replacement") {
+    if(action==="accepted" && (publicTextRisk || evidenceError)){setError("Move or redact personal contacts and supporting links before approving.");return;}
     setBusy(true);
     setError("");
     try {
@@ -61,6 +96,31 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     </div>
     <div className="grid grid-cols-3 gap-3 text-sm">{([['Overall', t.overall_score], ['Gameplay', t.gameplay_score], ['Performance', t.performance_score]] as const).map(([label,value]) => <div key={label} className="rounded-lg border border-zinc-800 p-3"><p className="text-xs text-zinc-400">{label}</p><p className="mt-1 font-semibold">{value ?? "Not rated"}{value !== null ? "/10" : ""}</p></div>)}</div>
     <div className="grid gap-4 md:grid-cols-2">{([['What worked', t.enjoyed_most], ['What did not', t.frustrations], ['Biggest improvement', t.biggest_improvement], ['Bugs', t.bugs_found], ['Additional feedback', t.feedback]] as const).map(([label,value]) => <div key={label}><h4 className="text-sm font-semibold">{label}</h4><p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black/30 p-3 text-sm text-zinc-300">{value || "Not provided"}</p></div>)}</div>
+    <section aria-label="Admin-only supplementary evidence" className="space-y-3 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.035] p-4">
+      <h4 className="font-semibold text-emerald-200">Private supporting evidence · admin only</h4>
+      <p className="text-xs text-zinc-400">The developer can access these links only after approval. Public visitors cannot. External hosts may disclose the sharer’s identity.</p>
+      {privateEvidence?.document_url?.startsWith("https://") && <p className="break-words text-sm"><strong>Additional feedback document:</strong> <a href={privateEvidence.document_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">Open document</a></p>}
+      {privateEvidence?.recording_url?.startsWith("https://") && <p className="break-words text-sm"><strong>Gameplay recording:</strong> <a href={privateEvidence.recording_url} target="_blank" rel="noopener noreferrer" className="text-emerald-300 underline">Watch recording</a></p>}
+      {!privateEvidence && !publicTextRisk && <p className="text-sm text-zinc-500">No supplementary evidence attached.</p>}
+      {publicTextRisk && <div className="space-y-3 rounded-lg border border-amber-300/30 bg-amber-300/[0.05] p-3">
+        <p role="alert" className="text-sm font-semibold text-amber-200">Public feedback contains a link or contact detail. Remove it before accepting the report.</p>
+        <p className="text-xs text-zinc-400">The correction is audited. It moves the evidence to private storage and replaces the public comment, without approving the report or changing XP.</p>
+        <label className="block text-xs font-semibold text-zinc-300">Additional feedback document (private)
+          <input type="url" maxLength={2048} value={repairDocument} onChange={event=>setRepairDocument(event.target.value)} placeholder="https://docs.google.com/document/d/..." className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 p-2 text-sm font-normal" />
+        </label>
+        <label className="block text-xs font-semibold text-zinc-300">Gameplay recording (private)
+          <input type="url" maxLength={2048} value={repairRecording} onChange={event=>setRepairRecording(event.target.value)} placeholder="https://drive.google.com/file/d/..." className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 p-2 text-sm font-normal" />
+        </label>
+        <label className="block text-xs font-semibold text-zinc-300">Replacement public feedback
+          <textarea maxLength={10000} rows={2} value={repairPublicFeedback} onChange={event=>setRepairPublicFeedback(event.target.value)} className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 p-2 text-sm font-normal" />
+        </label>
+        <label className="block text-xs font-semibold text-zinc-300">Audit reason
+          <textarea rows={2} value={repairReason} onChange={event=>setRepairReason(event.target.value)} placeholder="Separate supporting document and recording from public feedback" className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 p-2 text-sm font-normal" />
+        </label>
+        <button type="button" disabled={repairing||busy||repairReason.trim().length<12||(!repairDocument.trim()&&!repairRecording.trim())} onClick={()=>void relocate()} className="rounded-lg border border-emerald-300/40 px-3 py-2 text-sm text-emerald-200 disabled:opacity-50">Save private evidence &amp; redact public link (audited)</button>
+      </div>}
+      {evidenceError && <p role="alert" className="text-sm text-red-300">{evidenceError}</p>}
+    </section>
     {item.developer_signals?.map((signal,i) => <p key={i} className="text-sm text-zinc-400">Developer {signal.signal}: {signal.reason}. Advisory only.</p>)}
     <p className="text-sm text-zinc-400">Previous reason: {t.review_reason || "No recorded rubric reason (legacy or pending)."}</p>
     <p className="text-sm text-zinc-400">Saving finalises this admin assessment. Later edits and reversals are audited and adjust only the recorded XP difference. Current award: {t.base_xp_amount??"unknown (legacy)"} XP.</p>
@@ -71,7 +131,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     <label className="block text-sm font-semibold">Reason visible to the tester<textarea disabled={busy} className="mt-2 block w-full rounded-lg border border-zinc-700 bg-black p-3 font-normal" value={reason} onChange={e=>setReason(e.target.value)}/></label>
     <button type="button" disabled={busy} onClick={()=>setReason(feedbackReasonSuggestion(criteria,eligibility))} className="text-sm text-zinc-300 underline">Use editable reason suggestion</button>
     <p className="text-xs text-zinc-400">Praise and criticism are equal. Do not require bugs, polished English or invented negatives. Rejection awards 0 XP and reverses the actual current award. Feedback quality percentage is distinct from acceptance rate.</p>
-    <div className="flex flex-wrap gap-3"><button disabled={busy||!rubric||!eligible||!reason.trim()} onClick={()=>void decide("accepted")} className="rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black disabled:opacity-50">Save accepted assessment / restore XP</button><button disabled={busy||!rubric||!assessed||!reason.trim()} onClick={()=>void decide("rejected")} className="rounded-lg border border-red-400/30 px-4 py-3 text-sm text-red-200 disabled:opacity-50">Save rejection / reverse XP</button><button disabled={busy||!reason.trim()||!!t.replacement_at} onClick={()=>{if(window.confirm("Replace demonstrably fraudulent or unusable feedback? This restores its place, preserves the report and audits your reason. XP requires a separate decision."))void decide("replacement");}} className="rounded-lg border border-zinc-700 px-4 py-3 text-sm disabled:opacity-50">Moderator replacement exception</button></div>
+    <div className="flex flex-wrap gap-3"><button disabled={busy||!rubric||!eligible||!reason.trim()||publicTextRisk||!!evidenceError} onClick={()=>void decide("accepted")} className="rounded-lg bg-emerald-400 px-4 py-3 text-sm font-bold text-black disabled:opacity-50">Save accepted assessment / restore XP</button><button disabled={busy||!rubric||!assessed||!reason.trim()} onClick={()=>void decide("rejected")} className="rounded-lg border border-red-400/30 px-4 py-3 text-sm text-red-200 disabled:opacity-50">Save rejection / reverse XP</button><button disabled={busy||!reason.trim()||!!t.replacement_at} onClick={()=>{if(window.confirm("Replace demonstrably fraudulent or unusable feedback? This restores its place, preserves the report and audits your reason. XP requires a separate decision."))void decide("replacement");}} className="rounded-lg border border-zinc-700 px-4 py-3 text-sm disabled:opacity-50">Moderator replacement exception</button></div>
     {error && <p role="alert" className="text-sm text-red-300">{error}{!rubric&&<button type="button" onClick={()=>setRubricAttempt(n=>n+1)} className="ml-2 underline">Retry rubric</button>}</p>}
     {!!item.events?.length && <details className="text-sm text-zinc-400"><summary>Review history</summary>{item.events.map(event => <p key={event.id} className="mt-2 break-words">{event.created_at?new Date(event.created_at).toLocaleString():"Historical event"} · {event.kind}: {event.reason} · {event.rubric_version==null?"Legacy score not recorded":`Rubric ${event.rubric_version} · Feedback quality ${event.quality_score}% · Award ${event.actual_xp_award} XP`} · XP change {event.xp_delta}{event.actor_id?` · Reviewer ${event.actor_id}`:""}</p>)}</details>}
   </article>;
