@@ -218,6 +218,8 @@ function readFeedbackDraft(raw: string, accountId: string, testId: string): Feed
   const fields = emptyFeedbackDraft();
   for (const field of Object.keys(fields) as (keyof FeedbackDraft)[]) {
     const value = saved.values[field];
+    // Old v1 drafts predate private evidence: preserve every existing answer.
+    if (value === undefined && (field === "additionalDocumentUrl" || field === "gameplayRecordingUrl")) continue;
     const maximum = field === "feedback" ? 10000 : ["additionalDocumentUrl", "gameplayRecordingUrl"].includes(field) ? 2048 : ["enjoyedMost", "frustrations", "bugsFound", "biggestImprovement"].includes(field) ? 5000 : 100;
     if (typeof value !== "string" || value.length > maximum) throw new Error("Invalid draft field");
     fields[field] = value;
