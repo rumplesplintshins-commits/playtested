@@ -14,6 +14,13 @@ const as=async(user,q,p=[],role='authenticated')=>db.transaction(async tx=>{
 });
 try{
  await db.exec(fs.readFileSync('tests/fixtures/merge26-schema.sql','utf8'));
+ // Recreate the broad legacy production SELECT policy, then prove migration closes it.
+ await db.exec(`alter table public.community_game_tests enable row level security;
+ create policy "Authenticated users can view approved game tests" on public.community_game_tests
+ for select to authenticated using(exists(select 1 from public.game_submissions s
+ where s.id=community_game_tests.submission_id and s.status='Approved'));
+ create policy "Testers can view own tests" on public.community_game_tests
+ for select to authenticated using(auth.uid()=tester_id);`);
  await db.exec(fs.readFileSync('supabase/migrations/20261116184500_private_playtest_evidence.sql','utf8'));
  await db.exec('grant usage on schema public to anon,authenticated');
  await sql('insert into auth.users(id) values($1),($2),($3),($4)',[id(1),id(2),id(3),id(4)]);
@@ -21,6 +28,10 @@ try{
  await sql("insert into game_submissions(id,developer_id,title,status) values($1,$2,'Sample Realm local fixture','Approved')",[id(10),id(1)]);
  await sql("insert into community_playtests(id,developer_id,submission_id,title,status,release_label) values($1,$2,$3,'Sample Realm local fixture','open','Local v1')",[id(20),id(1),id(10)]);
  await sql("insert into community_game_tests(id,submission_id,tester_id,playtest_id,status,review_outcome,feedback,overall_score,gameplay_score,performance_score) values($1,$2,$3,$4,'submitted','pending',$5,9,7,10)",[id(30),id(10),id(2),id(20),'Please see my report: '+doc]);
+ // No unrelated authenticated user may read pending raw reports or tester UUIDs.
+ assert.equal((await as(id(3),'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)])).rows.length,0);
+ assert.equal((await as(id(2),'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)])).rows.length,1);
+ assert.equal((await as(null,'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)],'anon')).rows.length,0);
  const table=await sql("select relrowsecurity from pg_class where oid='public.playtest_private_evidence'::regclass");
  assert.equal(table.rows[0].relrowsecurity,true);
  for(const user of [id(1),id(2),id(3)])await assert.rejects(as(user,'select * from public.playtest_private_evidence'),/permission denied/);
