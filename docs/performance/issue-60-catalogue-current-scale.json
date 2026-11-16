@@ -1,0 +1,146 @@
+{
+  "environment": "Isolated PGlite PostgreSQL WASM; synthetic 195362 imports, 9550 eligible, 9 developer links, 19 campaigns, 37 feedback rows; production function definitions read-only 16 Nov",
+  "scale": "Current estimated table counts from read-only pg_class metadata",
+  "before_ms": [
+    138.35699999999997,
+    144.53589999999986,
+    137.60000000000036,
+    140.78419999999915,
+    139.66580000000067,
+    142.60379999999986,
+    139.3661000000002
+  ],
+  "after_ms": [
+    138.61219999999958,
+    136.34259999999995,
+    139.2487000000001,
+    140.6202999999996,
+    137.15150000000085,
+    137.4291000000003,
+    135.7457000000013
+  ],
+  "before_median_ms": 139.66580000000067,
+  "after_median_ms": 137.4291000000003,
+  "beforePlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Function Scan",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Function Name": "get_public_catalogue",
+            "Alias": "get_public_catalogue",
+            "Startup Cost": 0.25,
+            "Total Cost": 10.25,
+            "Plan Rows": 1000,
+            "Plan Width": 418,
+            "Actual Startup Time": 138.46,
+            "Actual Total Time": 138.478,
+            "Actual Rows": 12,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 19304,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning": {
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.113,
+          "Triggers": [],
+          "Execution Time": 138.566
+        }
+      ]
+    }
+  ],
+  "afterPlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Function Scan",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Function Name": "get_public_catalogue_page",
+            "Alias": "get_public_catalogue_page",
+            "Startup Cost": 0.25,
+            "Total Cost": 10.25,
+            "Plan Rows": 1000,
+            "Plan Width": 450,
+            "Actual Startup Time": 136.237,
+            "Actual Total Time": 136.242,
+            "Actual Rows": 12,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 19304,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning": {
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.049,
+          "Triggers": [],
+          "Execution Time": 136.274
+        }
+      ]
+    }
+  ],
+  "roles": [
+    "anon",
+    "authenticated"
+  ],
+  "cases": 12,
+  "security": [
+    {
+      "proname": "get_public_catalogue",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=public"
+      ],
+      "proacl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "proname": "get_public_catalogue_page",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=public"
+      ],
+      "proacl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "production_latency_proven": false
+}

@@ -1,7 +1,6 @@
 begin;
--- Restore per-call planning lost when the platform filter replaced the function.
--- Preserve its invoker security, grants, filters, ranking and legacy row contract.
--- A separate additive endpoint carries reception already computed for ranking.
+-- Add an independently planned endpoint carrying reception computed for ranking.
+-- Keep the legacy endpoint, grants, filters, ranking and policies unchanged.
 do $install$
 declare body text; definition text; args text[] := array['p_page','p_page_size','p_search','p_genre','p_verification','p_ai_type','p_include_nsfw','p_sort','p_platform']; i integer;
 begin
@@ -18,7 +17,6 @@ begin
   'ig.id in (select gdl.imported_game_id from public.game_developer_links gdl where gdl.imported_game_id is not null)');
  definition:=replace(definition,'LANGUAGE sql','LANGUAGE plpgsql');
  definition:=left(definition,strpos(definition,'AS $function$')-1);
- execute definition||'AS $wrapper$ begin return query execute $query$'||body||'$query$ using '||array_to_string(args,',')||'; end $wrapper$';
  definition:=replace(definition,'public.get_public_catalogue(','public.get_public_catalogue_page(');
  definition:=replace(definition,'platform text)','platform text, community_reception jsonb)');
  body:=replace(body,'    c.platform'||chr(10),'    c.platform,'||chr(10)||
