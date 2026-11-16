@@ -70,6 +70,13 @@ as $func$
 $func$;
 revoke all on function public._playtest_public_comment_is_safe(text) from public,anon,authenticated;
 
+-- Previous read policy exposed raw community_game_tests rows for ANY approved game
+-- to every logged-in user, including pending feedback and tester UUIDs.
+-- Keep "Testers can view own tests" for the submitter; all other identities
+-- must use authenticated, scoped developer/admin/public RPC projections.
+drop policy if exists "Authenticated users can view approved game tests"
+  on public.community_game_tests;
+
 -- Prevent old clients and admin interfaces from publishing a document link or email in an accepted report.
 -- Existing accepted reports are not rewritten and must be audited separately before publication.
 create or replace function public._guard_public_test_feedback_privacy()
