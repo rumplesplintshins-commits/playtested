@@ -65,5 +65,8 @@ try{
  await sql("update community_game_tests set review_outcome='pending' where id=$1",[id(30)]);
  await sql('update community_game_tests set feedback=$2 where id=$1',[id(30),'contact user@example.test']);
  await assert.rejects(sql("update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
+ await sql("update community_game_tests set feedback='Public-safe response',review_outcome='accepted' where id=$1",[id(30)]);
+ await assert.rejects(sql("update community_game_tests set focus_responses=$2 where id=$1",[id(30),JSON.stringify({Controls:'https://docs.google.com/document/d/HIDDEN/edit'})]),/Public feedback contains a link/);
+ await assert.rejects(sql("update community_game_tests set feedback=$2 where id=$1",[id(30),'https://docs.google.com/document/d/HIDDEN/edit']),/Public feedback contains a link/);
  console.log('PASS private evidence: RLS/table denial, wrong-developer denial, owning developer after acceptance, admin/own tester, audited correction, publication guard. Local PGlite only.');
 }catch(error){console.error(error.stack);process.exitCode=1;}finally{await db.close();}
