@@ -5,7 +5,7 @@ import os from 'node:os';
 import sharp from 'sharp';
 import ts from 'typescript';
 import {chromium} from 'playwright';
-import {prepareThumbnails} from '../scripts/prepare-catalogue-thumbnails.mjs';
+import {prepareThumbnails,assertPublicSources} from '../scripts/prepare-catalogue-thumbnails.mjs';
 const manifest=JSON.parse(await fs.readFile('lib/catalogue-thumbnails.json','utf8'));
 for(const variants of Object.values(manifest))for(const variant of variants){
  const file=path.join('public',variant.url),bytes=await fs.readFile(file),meta=await sharp(bytes).metadata();
@@ -15,12 +15,18 @@ const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'playtested-thumbnails-')
 try{
  const original=await sharp({create:{width:1400,height:800,channels:3,background:'green'}}).jpeg().withMetadata({orientation:6}).toBuffer();
  const file=path.join(temporary,'source.jpg');await fs.writeFile(file,original);
- const sources=[{url:'https://example.test/original.jpg',file}];
- await prepareThumbnails(sources,temporary);assert.deepEqual(await fs.readFile(file),original,'Original untouched');
+ const sources=[{url:'https://example.test/storage/v1/object/public/game-thumbnails/original.jpg',file}];
+ const publication={schemaVersion:1,scope:'anonymous-public-catalogue',games:[{kind:'approved',visibility:'public',image_url:sources[0].url}]};
+ assert.throws(()=>assertPublicSources(sources),/publication inventory/);
+ for(const visibility of ['hidden','private','unpublished'])assert.throws(()=>assertPublicSources(sources,{...publication,games:[{...publication.games[0],visibility}]}),/not a verified/);
+ assert.throws(()=>assertPublicSources([{...sources[0],url:'https://example.test/storage/v1/object/authenticated/game-thumbnails/private.jpg'}],publication),/not a verified/);
+ await prepareThumbnails(sources,temporary,publication);assert.deepEqual(await fs.readFile(file),original,'Original untouched');
+ const orphan=path.join(temporary,'public/catalogue-thumbnails','0'.repeat(64)+'-640.webp');await fs.writeFile(orphan,'excluded fixture');
  const first=await fs.readFile(path.join(temporary,'lib/catalogue-thumbnails.json'),'utf8');
- await prepareThumbnails(sources,temporary);assert.equal(await fs.readFile(path.join(temporary,'lib/catalogue-thumbnails.json'),'utf8'),first,'Deterministic versioned variants');
+ await prepareThumbnails(sources,temporary,publication);assert.equal(await fs.readFile(path.join(temporary,'lib/catalogue-thumbnails.json'),'utf8'),first,'Deterministic versioned variants');
+ await assert.rejects(fs.access(orphan),'Excluded static files are pruned, not just unlinked from the manifest');
  const fixture=JSON.parse(first)[sources[0].url];assert.equal(fixture[2].width,800,'Orientation precedes resizing; never upscale');
- await fs.writeFile(file,'<svg/>');await assert.rejects(prepareThumbnails(sources,temporary));
+ await fs.writeFile(file,'<svg/>');await assert.rejects(prepareThumbnails(sources,temporary,publication));
 }finally{await fs.rm(temporary,{recursive:true,force:true});}
 const browser=await chromium.launch({headless:true});
 try{
