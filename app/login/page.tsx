@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
@@ -19,12 +20,12 @@ function isSignupRole(value: string | null): value is SignupRole {
   return value === "player" || value === "tester" || value === "developer";
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
+  const urlParams = useSearchParams();
   const [initialUrlState] = useState<{ mode: "login" | "signup"; nextPath: string; confirmationFailed: boolean; ageConfirmationRequired: boolean; signupRoles: SignupRole[] }>(() => {
-    if (typeof window === "undefined") {
-      return { mode: "login", nextPath: "/", confirmationFailed: false, ageConfirmationRequired: false, signupRoles: ["player"] };
-    }
-    const params = new URLSearchParams(window.location.search);
+    // URL state must be identical on server and client; useSearchParams is
+    // rendered behind Suspense so Next.js never hydrates the wrong form.
+    const params = urlParams;
     const urlMode = params.get("mode") === "signup" ? "signup" : "login";
     const urlRole = params.get("role");
     const urlNext = getSafeNextPath(params.get("next"));
@@ -59,6 +60,7 @@ export default function LoginPage() {
     setMessage("");
     setAgeConfirmed(false);
     setAgeConfirmationRequired(false);
+    setConfirmationFailed(false);
 
     const params = new URLSearchParams();
     if (nextMode === "signup") {
@@ -130,7 +132,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-slate-400">{mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in to continue to this community playtest." : "Sign in to your Playtested account." : nextPath.startsWith("/playtest/") ? "Create your account to join this community playtest." : "Choose all the ways you want to use Playtested."}</p>
 
-          {confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">We couldn&apos;t complete sign-in</h2><p className="mt-1">The sign-in link may have expired, already been used, or authentication may be temporarily unavailable.</p><p className="mt-2">Please try signing in again. If you used email confirmation, open the latest confirmation email in the browser where you registered.</p><p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p></div>}
+          {confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">That sign-in or confirmation link couldn&apos;t be used</h2><p className="mt-1">Email confirmation links can only be used once. If you already confirmed your email, your account may be ready. Try signing in below, or use Google if that&apos;s how you registered.</p><p className="mt-2">If you haven&apos;t confirmed your email yet, use the newest confirmation email in the browser where you registered. If that still fails, contact us for help.</p><p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p></div>}
           {ageConfirmationRequired && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">Age confirmation required</h2><p className="mt-1">Playtested accounts are for people aged 18 or over. Confirm your age below before continuing with Google.</p></div>}
           {nextPath !== "/" && !nextPath.startsWith("/playtest/") && <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.</p>}
           {nextPath.startsWith("/playtest/") && <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4"><p className="text-sm font-semibold text-emerald-300">Community playtest invitation</p><p className="mt-1 text-xs leading-5 text-slate-400">After you sign in or confirm your new account, you&apos;ll return directly to the playtest.</p></div>}
@@ -153,4 +155,10 @@ export default function LoginPage() {
       </div>
     </main>
   );
+}
+
+// Reading the URL inside this boundary avoids server/client hydration mismatches
+// on links such as /login?mode=signup&role=developer.
+export default function LoginPage() {
+  return <Suspense fallback={<main className="min-h-screen bg-slate-950 px-4 py-16 text-white"><p role="status" className="mx-auto max-w-md text-slate-300">Loading sign-in...</p></main>}><LoginPageContent /></Suspense>;
 }
