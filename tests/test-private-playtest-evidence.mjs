@@ -29,7 +29,7 @@ try{
  await assert.rejects(as(id(1),"select * from public.get_admin_private_playtest_evidence($1)",[id(30)]),/Admin access required/);
  assert.equal((await as(id(1),"select * from public.get_developer_private_playtest_evidence($1)",[id(20)])).rows.length,0);
  await assert.rejects(as(null,"select * from public.get_my_private_playtest_evidence($1)",[id(30)],'anon'),/permission denied/);
- await assert.rejects(as(id(4),"update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
+ await assert.rejects(sql("update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
  await as(id(4),"select public.admin_relocate_playtest_private_evidence($1,$2,$3,$4,$5)",[id(30),doc,video,'Supporting playtest report provided privately.','Local fixture evidence relocation']);
  const stored=(await sql('select feedback,review_outcome,status from community_game_tests where id=$1',[id(30)])).rows[0];
  assert.equal(stored.feedback,'Supporting playtest report provided privately.');
