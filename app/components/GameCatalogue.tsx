@@ -3,7 +3,7 @@
 import {assessmentLabel} from "../../lib/review-labels";
 
 import { useEffect, useState } from "react";
-import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
+import {publicRequestCache} from "@/lib/public-request-cache";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import {PLATFORM_INFO,PLATFORMS,platformBadge,platformOf,type Platform} from "@/lib/platforms";
@@ -394,7 +394,6 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
   useEffect(() => {
     let cancelled = false;
 
-    let prefetchTimer:number|undefined;
     const argsFor=(number:number)=>({p_page:number,p_page_size:PAGE_SIZE,p_search:search.trim(),p_genre:genre,p_verification:verificationFilter,p_ai_type:aiType,p_include_nsfw:includeNsfw,p_sort:sort,p_platform:platform});
     const keyFor=(number:number)=>JSON.stringify(argsFor(number));
     async function fetchPage(pageNumber:number):Promise<CataloguePage> {
@@ -506,9 +505,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
         const result=hit||await fetchPage(page);
         if(cancelled)return;
         setGames(result.games);setTotalCount(result.total);setLoaded(true);
-        if(page*PAGE_SIZE<result.total&&mayPrefetchPublicPage()){
-          prefetchTimer=window.setTimeout(()=>{void fetchPage(page+1).catch(()=>{});},400);
-        }
+        // Fetch subsequent pages only when the visitor navigates there.
       }catch{if(!cancelled){setLoadError(true);setLoaded(true);}}
     }
 
@@ -522,7 +519,6 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      window.clearTimeout(prefetchTimer);
     };
   }, [
     page,
