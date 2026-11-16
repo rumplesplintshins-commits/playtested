@@ -13,7 +13,7 @@ const token=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:uid,exp:Math.floor
 const session={access_token:token,refresh_token:'fixture-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user};
 let restrictionReason='Requires Strategy interest';
 let claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false};
-let failSubmit=true,failRelease=true,failReclaim=true,reclaims=0;let reviewEvents=[];
+let failSubmit=true,failRelease=true,failReclaim=true,reclaims=0;let reviewEvents=[],submittedPayloads=[];
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext();
@@ -43,7 +43,8 @@ try{
       else if(url.pathname.endsWith('/tester_availability_preferences'))data=[];
       else if(url.pathname.endsWith('/account_pc_specs'))data={specs:null};
       else if(url.pathname.endsWith('/get_my_testing_activity_media'))data=[];
-     else if(url.pathname.endsWith('/submit_community_game_test')){
+     else if(url.pathname.endsWith('/submit_community_game_test_with_evidence')){
+        submittedPayloads.push(req.postDataJSON()||{});
        if(failSubmit){status=400;data={message:'Simulated submission failure',code:'P0001'};failSubmit=false;}
        else claim={...claim,status:'submitted'};
      } else if(url.pathname.endsWith('/release_community_game_test')){
@@ -90,12 +91,22 @@ try{
  const key=`playtested:feedback-draft:v1:${uid}:${test}`;
  await expect(page.getByRole('progressbar',{name:'Feedback form completion'})).toHaveAttribute('aria-valuenow','9');
  await expect.poll(()=>page.evaluate(k=>!!localStorage.getItem(k),key)).toBe(true);
+ const fakeDoc='https://docs.google.com/document/d/LOCAL_DOC_TEST/edit',fakeVideo='https://drive.google.com/file/d/LOCAL_VIDEO_TEST/view';
+ await expect(page.getByRole('link',{name:'Download playtest template'})).toHaveAttribute('href','/Playtested_Game_Playtest_Report_Template.html');
+ await page.getByLabel('Additional feedback document',{exact:false}).fill(fakeDoc);
+ await page.getByLabel('Gameplay recording',{exact:false}).fill(fakeVideo);
  await page.getByRole('button',{name:'Submit review'}).click();
+ assert.equal(submittedPayloads.at(-1)?.p_document_url,fakeDoc);
+ assert.equal(submittedPayloads.at(-1)?.p_recording_url,fakeVideo);
  await expect(page.getByText('Simulated submission failure',{exact:false})).toBeVisible();
  assert.ok(await page.evaluate(k=>localStorage.getItem(k),key),'failed submission preserves draft');
  await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();
  await expect(page.locator('form textarea').nth(0)).toHaveValue('Movement');
+ await expect(page.getByLabel('Additional feedback document',{exact:false})).toHaveValue(fakeDoc);
+ await expect(page.getByLabel('Gameplay recording',{exact:false})).toHaveValue(fakeVideo);
  await page.getByRole('button',{name:'Submit review'}).click();
+ assert.equal(submittedPayloads.at(-1)?.p_document_url,fakeDoc);
+ assert.equal(submittedPayloads.at(-1)?.p_recording_url,fakeVideo);
  await expect.poll(()=>page.evaluate(k=>localStorage.getItem(k),key)).toBe(null);
  claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false};
  await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();
