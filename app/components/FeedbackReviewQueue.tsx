@@ -29,7 +29,7 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
   const [repairPublicFeedback,setRepairPublicFeedback] = useState("Detailed supporting report provided privately.");
   const [repairReason,setRepairReason] = useState("");
   const [repairing,setRepairing] = useState(false);
-  const publicTextRisk = [t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement]
+  const publicTextRisk = [t.feedback,t.enjoyed_most,t.frustrations,t.bugs_found,t.biggest_improvement,JSON.stringify(t.focus_responses??{})]
     .some(value=>/https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(value||""));
   useEffect(()=>{
     let active=true;
@@ -85,8 +85,8 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}
     <div className="grid gap-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300">
-      <section aria-label="Testing task">
-        <h4 className="font-semibold text-white">Testing task</h4>
+      <section aria-label="Testing objectives">
+        <h4 className="font-semibold text-white">Testing objectives</h4>
         <p className="mt-2 whitespace-pre-wrap break-words leading-6">{item.context?.instructions || "Not recorded"}</p>
       </section>
       <section aria-label="Focus areas" className="border-t border-white/10 pt-3">
