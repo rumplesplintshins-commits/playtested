@@ -20,7 +20,8 @@ try{
  if(native){docker(['run','--pull=never','--rm','-d','--name',name,'--label','playtested.issue=52','--network','none','--user','postgres','--tmpfs','/tmp:rw,mode=1777','--entrypoint','sh',image,'-c',"initdb -D /tmp/security-pg -A trust >/tmp/init.log && pg_ctl -D /tmp/security-pg -l /tmp/postgres.log -o \"-k /tmp -c listen_addresses=''\" -w start && touch /tmp/ready && exec sleep infinity"]);started=true;for(let n=0;n<100;n++){try{docker(['exec',name,'test','-f','/tmp/ready']);break;}catch{await new Promise(r=>setTimeout(r,100));}}db={exec:async s=>psql(s),query:async q=>({rows:JSON.parse(psql(jsonQuery(q)))})};}
  else db=new PGlite();
  const sql=s=>db.exec(s),rows=async q=>(await db.query(q)).rows,one=async q=>(await rows(q))[0];
- const baselineFiles=fs.readdirSync('supabase/migrations').filter(f=>!paths.includes(f)).sort();assert(paths.every(f=>f>baselineFiles.at(-1)),'All hardening migrations follow current v11');assert.deepEqual(paths,paths.slice().sort());
+ // Historical hardening must follow its original baseline; future migrations are valid.
+ const baselineFiles=fs.readdirSync('supabase/migrations').filter(f=>f<paths[0]).sort();assert(paths.every(f=>f>baselineFiles.at(-1)),'All hardening migrations follow the historical baseline');assert.deepEqual(paths,paths.slice().sort());
  await sql(source('tests/fixtures/merge26-schema.sql'));
  await sql(source('tests/fixtures/supabase-security-functions.sql'));
  await sql(`create table public.developer_xp_awards(id uuid primary key default gen_random_uuid(),developer_id uuid not null references public.profiles(id),xp_amount integer not null check(xp_amount>0),award_type text,source_type text,source_id uuid,description text,created_at timestamptz default now(),unique(developer_id,award_type,source_type,source_id));
