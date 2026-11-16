@@ -1,13 +1,14 @@
 import "server-only";
 import { cacheLife } from "next/cache";
 import { publicProfileClient } from "./public-profile-links";
+import { publicCataloguePage } from './public-catalogue-page';
 import type { HomepageCatalogueSeed, PublicCatalogueRow } from "./public-catalogue-types";
 
 async function loadHomepageCatalogue(): Promise<Omit<HomepageCatalogueSeed, "error">> {
   "use cache";
   cacheLife("minutes");
 
-  const { data, error } = await publicProfileClient().rpc("get_public_catalogue", {
+  const { data, error } = await publicCataloguePage(publicProfileClient(), {
     p_page: 1,
     p_page_size: 12,
     p_search: "",

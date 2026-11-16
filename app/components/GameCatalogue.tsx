@@ -1,6 +1,7 @@
 "use client";
 
 import {assessmentLabel} from "../../lib/review-labels";
+import {publicCataloguePage} from '../../lib/public-catalogue-page';
 
 import { useEffect, useState } from "react";
 import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
@@ -405,12 +406,11 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
       const seedPage=useInitialCatalogue?initialCatalogue:null;
       if(initialCatalogue?.error&&attempt===0&&pageNumber===1)throw new Error("Server-rendered public catalogue unavailable");
 
-      const [catalogueResult, receptionResult] = await Promise.all([
-        seedPage
+      const catalogueResult = await (seedPage
           ? Promise.resolve({data:seedPage.rows,error:null})
-          : supabase.rpc("get_public_catalogue",argsFor(pageNumber)),
-        receptionCache.get('public',async()=>{const r=await supabase.rpc("get_game_community_reception");if(r.error)throw r.error;return (r.data??[]) as CommunityReceptionRow[];}).then(data=>({data,error:null})).catch(error=>({data:[] as CommunityReceptionRow[],error})),
-      ]);
+          : publicCataloguePage(supabase,argsFor(pageNumber)));
+      const hasPageReception=(catalogueResult.data??[]).every(row=>Object.hasOwn(row,'community_reception'));
+      const receptionResult = hasPageReception ? {data:[] as CommunityReceptionRow[],error:null} : await receptionCache.get('public',async()=>{const r=await supabase.rpc("get_game_community_reception");if(r.error)throw r.error;return (r.data??[]) as CommunityReceptionRow[];}).then(data=>({data,error:null})).catch(error=>({data:[] as CommunityReceptionRow[],error}));
 
       if(catalogueResult.error)throw new Error("Public catalogue unavailable");
 
@@ -460,7 +460,14 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
         const isImportedSteam = row.source_type === "steam";
         const steamAppId = normalizeSteamAppId(row.steam_app_id);
 
-        const communityReception = isImportedSteam
+        const communityReception = hasPageReception ? (row.community_reception ? {
+          acceptedTestCount:Number(row.community_reception.accepted_test_count),
+          ratedTestCount:Number(row.community_reception.rated_test_count),
+          averageOverallScore:row.community_reception.average_overall_score===null?null:Number(row.community_reception.average_overall_score),
+          recommendPositivePercent:row.community_reception.recommend_positive_percent===null?null:Number(row.community_reception.recommend_positive_percent),
+          continuePositivePercent:row.community_reception.continue_positive_percent===null?null:Number(row.community_reception.continue_positive_percent),
+          receptionStatus:row.community_reception.reception_status,
+        }:null) : isImportedSteam
           ? receptionByImportedGame.get(row.game_id) ?? null
           : receptionBySubmission.get(row.game_id) ??
             receptionByApprovedGame.get(row.game_id) ??

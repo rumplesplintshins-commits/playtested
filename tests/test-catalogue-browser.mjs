@@ -57,6 +57,7 @@ const browser=await chromium.launch({headless:true});
 try {
  const page=await browser.newPage({viewport:{width:1920,height:1000}});
  const calls=[];
+ const legacy=process.argv.includes('--legacy');let receptionCalls=0;
  let fail=false, empty=false, recruitmentFailure=false,profileFailure=false;
  const recruitmentCalls=[];
  const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:24}));
@@ -66,8 +67,12 @@ try {
   const url=new URL(route.request().url());
   if(url.hostname==='localhost')return route.continue({headers:{...route.request().headers(),cookie:''}});
   if(url.pathname.endsWith('/rpc/m26_public_imported_profiles'))return route.fulfill({status:profileFailure?403:200,json:profileFailure?{code:'fixture'}:[{imported_game_id:'11'}]});
-  if(url.pathname.endsWith('/rpc/get_public_catalogue')){calls.push(route.request().postDataJSON());return route.fulfill({status:fail?500:200,contentType:'application/json',body:JSON.stringify(fail?{message:'fixture failure'}:empty?[]:rows)});}
-  if(url.pathname.endsWith('/rpc/get_game_community_reception'))return route.fulfill({json:[{submission_id:'0',accepted_test_count:2,rated_test_count:2,average_overall_score:8,recommend_positive_percent:100,reception_status:'Early results'}]});
+  if(url.pathname.endsWith('/rpc/get_public_catalogue_page')){
+   if(legacy)return route.fulfill({status:404,json:{code:'PGRST202',message:'Missing fixture endpoint'}});
+   calls.push(route.request().postDataJSON());return route.fulfill({status:fail?500:200,json:fail?{message:'fixture failure'}:empty?[]:rows.map((row,i)=>({...row,community_reception:i===0?{accepted_test_count:2,rated_test_count:2,average_overall_score:8,recommend_positive_percent:100,continue_positive_percent:null,reception_status:'Early results'}:null}))});
+  }
+  if(url.pathname.endsWith('/rpc/get_public_catalogue')){assert(legacy);calls.push(route.request().postDataJSON());return route.fulfill({status:fail?500:200,contentType:'application/json',body:JSON.stringify(fail?{message:'fixture failure'}:empty?[]:rows)});}
+  if(url.pathname.endsWith('/rpc/get_game_community_reception')){receptionCalls++;return route.fulfill({json:[{submission_id:'0',accepted_test_count:2,rated_test_count:2,average_overall_score:8,recommend_positive_percent:100,reception_status:'Early results'}]});}
   if(url.pathname.endsWith('/rpc/get_public_recruitment')){const body=route.request().postDataJSON();recruitmentCalls.push(body);return route.fulfill({status:recruitmentFailure?503:200,json:recruitmentFailure?{code:'PGRST202'}:body.p_games.map((game,i)=>({...game,recruiting:i===0||i===11}))});}
   if(url.pathname.endsWith('/rpc/get_public_intent_counts'))return route.fulfill({json:[{kind:'approved',id:'0',lifetime:{recommend:{definitely:1,probably:0,answered:1},continue:{definitely:0,probably:0,answered:0}},builds:[]}]});
   if(url.pathname.endsWith('/rpc/get_public_listing_updates'))return route.fulfill({json:[{kind:'approved',id:'0',fields:{},disputed:true,pending:true,reassessment:false}]});
@@ -101,6 +106,7 @@ try {
  await comfortable.focus();await page.keyboard.press('Enter');assert(await columns()<smallColumns);
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);assert.equal(recruitmentCalls.length,1,'Density must not request availability again');
  await expect(page.locator('article').first()).toContainText('Early results');
+ assert.equal(receptionCalls,legacy?1:0,'Page reception avoids the separate full-catalogue RPC; legacy fallback remains available');
  await expect(page.locator('article').first()).toContainText('2 ratings');await expect(page.locator('article').first()).toContainText('1 out of 1 positive');
  for(const label of ['AI Code Only','AI Content Only','No AI disclosed','AI Use Unknown'])assert(await page.locator('article').filter({hasText:label}).count()>0);
  await expect(page.getByText('No description provided.')).toHaveCount(1);
