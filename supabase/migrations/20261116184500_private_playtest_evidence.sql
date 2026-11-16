@@ -84,13 +84,13 @@ returns trigger language plpgsql security definer set search_path=''
 as $func$
 begin
   if new.review_outcome='accepted'
-     and (old.review_outcome is distinct from 'accepted' or old.status is distinct from new.status) and
-     (
+     and (
        not public._playtest_public_comment_is_safe(new.feedback) or
        not public._playtest_public_comment_is_safe(new.enjoyed_most) or
        not public._playtest_public_comment_is_safe(new.frustrations) or
        not public._playtest_public_comment_is_safe(new.bugs_found) or
-       not public._playtest_public_comment_is_safe(new.biggest_improvement)
+       not public._playtest_public_comment_is_safe(new.biggest_improvement) or
+       not public._playtest_public_comment_is_safe(new.focus_responses::text)
      ) then
     raise exception 'Public feedback contains a link or contact detail. Move evidence to private fields and redact before approval.';
   end if;
@@ -99,7 +99,7 @@ end;
 $func$;
 revoke all on function public._guard_public_test_feedback_privacy() from public,anon,authenticated;
 drop trigger if exists guard_public_test_feedback_privacy on public.community_game_tests;
-create trigger guard_public_test_feedback_privacy before update of review_outcome,status on public.community_game_tests
+create trigger guard_public_test_feedback_privacy before insert or update of review_outcome,status,feedback,enjoyed_most,frustrations,bugs_found,biggest_improvement,focus_responses on public.community_game_tests
 for each row execute function public._guard_public_test_feedback_privacy();
 
 -- Atomic single RPC: an error in either the report or the private evidence rolls back both.
@@ -129,7 +129,8 @@ begin
           public._playtest_public_comment_is_safe(p_bugs_found) and
           public._playtest_public_comment_is_safe(p_enjoyed_most) and
           public._playtest_public_comment_is_safe(p_frustrations) and
-          public._playtest_public_comment_is_safe(p_biggest_improvement)) then
+          public._playtest_public_comment_is_safe(p_biggest_improvement) and
+          public._playtest_public_comment_is_safe(p_focus_responses::text)) then
     raise exception 'Remove links and personal contact details from public feedback. Use the private evidence fields.';
   end if;
   v_document := public._playtest_safe_evidence_url(p_document_url,'document');
