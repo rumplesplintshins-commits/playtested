@@ -49,7 +49,16 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}
-    <p className="text-sm text-zinc-400">Task: {item.context?.instructions || "Not recorded"}<br/>Focus: {item.context?.focus_areas?.join(", ") || "Balanced feedback"}</p>
+    <div className="grid gap-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300">
+      <section aria-label="Testing task">
+        <h4 className="font-semibold text-white">Testing task</h4>
+        <p className="mt-2 whitespace-pre-wrap break-words leading-6">{item.context?.instructions || "Not recorded"}</p>
+      </section>
+      <section aria-label="Focus areas" className="border-t border-white/10 pt-3">
+        <h4 className="font-semibold text-white">Focus areas</h4>
+        <div className="mt-2 flex flex-wrap gap-2">{item.context?.focus_areas?.length ? item.context.focus_areas.map(area=><span key={area} className="rounded-full border border-emerald-400/30 px-3 py-1 text-xs text-emerald-200">{area}</span>) : <span className="text-zinc-400">Balanced feedback</span>}</div>
+      </section>
+    </div>
     <div className="grid grid-cols-3 gap-3 text-sm">{([['Overall', t.overall_score], ['Gameplay', t.gameplay_score], ['Performance', t.performance_score]] as const).map(([label,value]) => <div key={label} className="rounded-lg border border-zinc-800 p-3"><p className="text-xs text-zinc-400">{label}</p><p className="mt-1 font-semibold">{value ?? "Not rated"}{value !== null ? "/10" : ""}</p></div>)}</div>
     <div className="grid gap-4 md:grid-cols-2">{([['What worked', t.enjoyed_most], ['What did not', t.frustrations], ['Biggest improvement', t.biggest_improvement], ['Bugs', t.bugs_found], ['Additional feedback', t.feedback]] as const).map(([label,value]) => <div key={label}><h4 className="text-sm font-semibold">{label}</h4><p className="mt-2 whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black/30 p-3 text-sm text-zinc-300">{value || "Not provided"}</p></div>)}</div>
     {item.developer_signals?.map((signal,i) => <p key={i} className="text-sm text-zinc-400">Developer {signal.signal}: {signal.reason}. Advisory only.</p>)}
