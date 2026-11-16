@@ -1,7 +1,8 @@
 import {createClient} from "@supabase/supabase-js";
+import {publicServerFetch} from './public-server-fetch';
 
 // Always anonymous: a signed-in owner's private relationship is not a public profile.
-export function publicProfileClient(){return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});}
+export function publicProfileClient(){return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},...(typeof window==='undefined'?{global:{fetch:publicServerFetch}}:{})});}
 
 // Callers also require catalogue_eligible imported rows (or the approved view).
 // Share the public relationship rule across cards, detail, metadata and sitemap.
