@@ -12,8 +12,8 @@ new Function('exports','require',code+'\nexports.Panel=BuildResultsPanel;exports
 const a={id:'a',status:'open',releaseLabel:'Build A',createdAt:'2026-10-28'},b={...a,id:'b',releaseLabel:'Build B'};
 function render(){cursor=0;const tree=exports.Panel({currentPlaytest:a,playtests:[a,b]});while(effects.length)effects.shift()();return tree;}
 function find(node,type){if(!node||typeof node!=='object')return null;if(node.type===type)return node;for(const child of [node.props?.children].flat(Infinity)){const result=find(child,type);if(result)return result;}return null;}
-render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='a').length,4);slots[1]='individual';
-slots[0]='b';render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='b').length,4);
+render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='a').length,5);slots[1]='individual';
+slots[0]='b';render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='b').length,5);
 for(const request of pending.filter(request=>request.id==='b'))request.resolve({error:null,data:request.name.includes('accepted')?[{test_id:'report-b'}]:[]});
 await new Promise(resolve=>setTimeout(resolve,0));
 let dashboard=find(render(),exports.Dashboard);assert.equal(dashboard.props.playtest.id,'b');assert.equal(dashboard.props.feedbackTab,'individual','Selected feedback tab survives build load/unmount');assert.equal(dashboard.props.acceptedFeedback[0].test_id,'report-b');
@@ -21,7 +21,7 @@ for(const request of pending.filter(request=>request.id==='a'))request.resolve({
 await new Promise(resolve=>setTimeout(resolve,0));
 dashboard=find(render(),exports.Dashboard);assert.equal(dashboard.props.playtest.id,'b');assert.equal(dashboard.props.acceptedFeedback[0].test_id,'report-b','Late Build A must not overwrite selected Build B');
 slots[0]='a';assert.equal(find(render(),exports.Dashboard),null,'Never display old data beneath a new build label');
-await new Promise(resolve=>setTimeout(resolve,0));const requests=pending.filter(request=>request.id==='a').slice(-4);for(const request of requests)request.resolve({error:{message:'Fixture results unavailable'},data:null});
+await new Promise(resolve=>setTimeout(resolve,0));const requests=pending.filter(request=>request.id==='a').slice(-5);for(const request of requests)request.resolve({error:{message:'Fixture results unavailable'},data:null});
 await new Promise(resolve=>setTimeout(resolve,0));assert.equal(find(render(),exports.Dashboard),null,'Failure must not render an empty-success dashboard');
 console.log('PASS: actual build-results request sequencing, correct report/build association, loading guard and failure state. Mocked RPCs; campaign actions unchanged.');
 
@@ -35,11 +35,12 @@ async function feedbackTabBrowser(){
  try{
   const context=await browser.newContext();await context.addCookies([{name:'sb-'+backend.hostname.split('.')[0]+'-auth-token',value:'base64-'+encode(session),url:origin}]);
   await context.route('**/*',async route=>{const req=route.request(),url=new URL(req.url());if(url.origin===origin){const headers={...req.headers()};delete headers.cookie;return route.continue({headers})}if(url.origin!==backend.origin)return route.abort();const name=url.pathname.split('/').at(-1),args=req.postDataJSON()||{},id=args.p_playtest_id||args.p_id;
-   if(delayed===id&&['get_developer_community_playtest_results','get_developer_playtested_test_progress','get_developer_accepted_playtest_feedback','get_developer_feedback_genres'].includes(name))await new Promise(resolve=>waiting.push(resolve));
+   if(delayed===id&&['get_developer_community_playtest_results','get_developer_playtested_test_progress','get_developer_accepted_playtest_feedback','get_developer_feedback_genres','get_developer_private_playtest_evidence'].includes(name))await new Promise(resolve=>waiting.push(resolve));
    if(failed===id&&name==='get_developer_accepted_playtest_feedback')return route.fulfill({status:400,json:{message:'Fixture results unavailable',code:'fixture'}});
    let data;if(name==='user')data=user;else if(name==='get_test_feedback_usefulness_for_developer')data=[];
  else if(name==='get_campaign_testing_details')data={capacity:5,submitted:5,testing:0,available:0};else if(name==='get_developer_quality_reports')data=[{id:'report-'+id,review_outcome:'accepted',quality_rubric_version:2,feedback_quality_score:60,base_xp_amount:60}];
    else if(name==='get_developer_feedback_genres')data=[];
+   else if(name==='get_developer_private_playtest_evidence')data=empty.has(id)?[]:[{test_id:'report-'+id,document_url:'https://docs.google.com/document/d/LOCAL_DOC_'+id+'/edit',recording_url:'https://drive.google.com/file/d/LOCAL_VIDEO_'+id+'/view'}];
    else if(name==='get_feedback_tester_identities')data=(args.p_test_ids||[]).map(test_id=>({test_id,current_rank:0}));
    else if(name==='get_developer_playtested_test_progress')data=[{accepted_count:empty.has(id)?0:1,total_testers:empty.has(id)?0:1,claimed_count:0,in_progress_count:0,submitted_count:0,reviewed_count:1,rejected_count:0}];
    else if(name==='get_developer_accepted_playtest_feedback')data=empty.has(id)?[]:[{test_id:'report-'+id,gameplay_score:8,performance_score:7,overall_score:8,hours_played:1,continue_playing:'probably',recommend_game:'probably',enjoyed_most:id+' enjoyment VERBATIM',frustrations:id+' frustration VERBATIM',biggest_improvement:id+' improvement VERBATIM',bugs_found:id+' technical VERBATIM',feedback:id+' complete additional report',focus_responses:{Controls:'Control notes'},submitted_at:'2026-10-28T10:00:00Z'}];
