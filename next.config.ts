@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
+  // Bound both the incremental and `use cache` stores on the 512 MiB service.
+  // Keep hot anonymous seeds cached without reserving 50 MiB per store.
+  cacheMaxMemorySize: 8 * 1024 * 1024,
   async headers() {
     // Public browser configuration only; URL parsing prevents CSP token injection.
     const connections: string[] = [];
