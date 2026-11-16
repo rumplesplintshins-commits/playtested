@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
       "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'",
     ].join("; ");
     return [
+      {source: "/catalogue-thumbnails/:file", headers: [{key: "Cache-Control", value: "public, max-age=31536000, immutable"}]},
       { source: "/:path*", headers: [
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "X-Frame-Options", value: "DENY" },

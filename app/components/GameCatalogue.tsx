@@ -1,6 +1,7 @@
 "use client";
 
 import {assessmentLabel} from "../../lib/review-labels";
+import {catalogueThumbnail} from "../../lib/catalogue-thumbnail";
 
 import { useEffect, useState } from "react";
 import {publicRequestCache,mayPrefetchPublicPage} from "@/lib/public-request-cache";
@@ -231,10 +232,11 @@ function GameCardContent({
         {game.image && failedImage !== game.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={game.image}
+            {...(failedImage === 'variant:'+game.image ? {src:game.image} : catalogueThumbnail(game.image))}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             alt={game.title}
             loading="lazy"
-            onError={() => setFailedImage(game.image)}
+            onError={() => setFailedImage(failedImage !== 'variant:'+game.image && catalogueThumbnail(game.image).src !== game.image ? 'variant:'+game.image : game.image)}
             className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]"
           />
         ) : (
