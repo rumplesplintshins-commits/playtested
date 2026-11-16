@@ -163,13 +163,18 @@ try{
  });
  await page.goto(origin+'/auth/callback?next=/tester');
  await expect(page.getByRole('alert').filter({hasText:'Your destination is saved:'})).toContainText('Your destination is saved: Tester Hub');
+ await expect(page.getByRole('alert')).toContainText('Email confirmation links can only be used once.');
  await expect(page.getByLabel('Email address')).toBeVisible();
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
  assert.equal(new URL(page.url()).searchParams.get('next'),'/tester');
+ await expect(page.getByRole('alert')).toHaveCount(0);
+ // A direct URL-driven signup page must render consistently at hydration.
+ const hydrationErrors=[];page.on('pageerror',error=>hydrationErrors.push(error.message));
  await page.goto(origin+'/login?mode=signup&role=developer&next=/my-submissions');
  await expect(page.getByRole('checkbox',{name:/Game Developer/})).toBeChecked();
+ assert.equal(hydrationErrors.filter(message=>/hydration|Minified React error #418|Text content does not match/i.test(message)).length,0,'Signup URL hydration errors');
  await expect(page.getByText('After signing in, continue to My Games.',{exact:false})).toBeVisible();
  await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');
  await page.getByRole('checkbox',{name:/18/}).check();
