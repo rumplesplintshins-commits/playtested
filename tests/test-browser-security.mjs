@@ -6,7 +6,9 @@ const require=createRequire(import.meta.url);
 function load(file,env={},imports={}){const module={exports:{}};const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','module','exports','process',js)(name=>imports[name]??require(name),module,module.exports,{env:{...process.env,...env},cwd:()=>process.cwd()});return module.exports;}
 const env={NODE_ENV:'production',NEXT_PUBLIC_SUPABASE_URL:'https://fixture.supabase.co',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'fixture'};
 const config=load('next.config.ts',env).default;
-const rules=await config.headers(),headers=Object.fromEntries(rules[0].headers.map(h=>[h.key.toLowerCase(),h.value]));
+function globalSecurityRule(rules){const matches=rules.filter(r=>r.source==='/:path*'&&!r.has&&!r.missing);assert.equal(matches.length,1,'Exactly one unconditional global security rule');return matches[0];}
+const rules=await config.headers(),headers=Object.fromEntries(globalSecurityRule(rules).headers.map(h=>[h.key.toLowerCase(),h.value]));
+const thumbnail=rules.find(r=>r.source==='/catalogue-thumbnails/:file');assert(thumbnail);assert.deepEqual(thumbnail.headers,[{key:'Cache-Control',value:'public, max-age=31536000, immutable'}]);
 assert.equal(headers['x-frame-options'],'DENY');assert.equal(headers['x-content-type-options'],'nosniff');assert.equal(headers['cross-origin-opener-policy'],'same-origin-allow-popups');
 assert(headers['content-security-policy'].includes("frame-ancestors 'none'"));assert(!headers['content-security-policy'].includes('script-src'),'Do not claim a strict script policy');
 const report=headers['content-security-policy-report-only'];for(const origin of ['https://fixture.supabase.co','wss://fixture.supabase.co','https://www.youtube-nocookie.com','https://player.vimeo.com','https://drive.google.com'])assert(report.includes(origin));
@@ -14,7 +16,7 @@ assert(report.includes("img-src 'self' https: data: blob:"));assert(report.inclu
 for(const h of ['cross-origin-embedder-policy','cross-origin-resource-policy'])assert(!(h in headers),'Do not force cross-origin media isolation');
 assert(!/fullscreen|picture-in-picture|autoplay/.test(headers['permissions-policy']));
 const hsts=rules.find(r=>r.headers.some(h=>h.key==='Strict-Transport-Security'));assert(hsts.has.some(c=>c.key==='x-forwarded-proto'&&c.value==='https'));const host=hsts.has.find(c=>c.type==='host');assert(new RegExp('^'+host.value+'$').test('playtested.co.uk'));assert(!new RegExp('^'+host.value+'$').test('other.playtested.co.uk'));assert.equal(hsts.headers[0].value,'max-age=31536000');
-const dev=Object.fromEntries((await load('next.config.ts',{...env,NODE_ENV:'development'}).default.headers())[0].headers.map(h=>[h.key,h.value]));assert(dev['Content-Security-Policy-Report-Only'].includes("'unsafe-eval'"));
+const dev=Object.fromEntries(globalSecurityRule(await load('next.config.ts',{...env,NODE_ENV:'development'}).default.headers()).headers.map(h=>[h.key,h.value]));assert(dev['Content-Security-Policy-Report-Only'].includes("'unsafe-eval'"));
 const {NextRequest}=require('next/server');const seo=load('lib/seo.ts',env);let refreshed=false;
 const ssr={createServerClient(_url,_key,{cookies}){return {auth:{async getClaims(){
   if(refreshed)cookies.setAll([{name:'sb-fixture-auth-token.0',value:'refreshed-a',options:{httpOnly:true,path:'/'}},{name:'sb-fixture-auth-token.1',value:'refreshed-b',options:{path:'/'}}]);

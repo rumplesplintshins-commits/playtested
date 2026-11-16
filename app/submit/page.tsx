@@ -764,21 +764,8 @@ export default function SubmitGamePage() {
         return;
       }
 
-      const extension = file.name.split(".").pop()?.toLowerCase() ||
-        (file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg");
-      const objectPath = user.id + "/" + crypto.randomUUID() + "." + extension;
-      const { error: uploadError } = await supabase.storage
-        .from("game-thumbnails")
-        .upload(objectPath, file, { cacheControl: "3600", upsert: false, contentType: file.type });
-
-      if (uploadError) {
-        setError("Could not upload thumbnail: " + uploadError.message);
-        setImageStatus("empty");
-        return;
-      }
-
-      const { data } = supabase.storage.from("game-thumbnails").getPublicUrl(objectPath);
-      setImageUrl(data.publicUrl);
+      const {uploadGameThumbnail}=await import('../../lib/thumbnail-upload');
+      setImageUrl(await uploadGameThumbnail(supabase,user.id,file));
       setImageStatus("loading");
     } catch (uploadError) {
       console.error("Unexpected thumbnail upload error:", uploadError);
