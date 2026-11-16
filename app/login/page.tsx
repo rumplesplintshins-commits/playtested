@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
@@ -20,12 +19,12 @@ function isSignupRole(value: string | null): value is SignupRole {
   return value === "player" || value === "tester" || value === "developer";
 }
 
-function LoginPageContent() {
-  const urlParams = useSearchParams();
+export default function LoginPage() {
   const [initialUrlState] = useState<{ mode: "login" | "signup"; nextPath: string; confirmationFailed: boolean; ageConfirmationRequired: boolean; signupRoles: SignupRole[] }>(() => {
-    // URL state must be identical on server and client; useSearchParams is
-    // rendered behind Suspense so Next.js never hydrates the wrong form.
-    const params = urlParams;
+    if (typeof window === "undefined") {
+      return { mode: "login", nextPath: "/", confirmationFailed: false, ageConfirmationRequired: false, signupRoles: ["player"] };
+    }
+    const params = new URLSearchParams(window.location.search);
     const urlMode = params.get("mode") === "signup" ? "signup" : "login";
     const urlRole = params.get("role");
     const urlNext = getSafeNextPath(params.get("next"));
@@ -39,8 +38,6 @@ function LoginPageContent() {
     };
   });
 
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
   const [mode, setMode] = useState<"login" | "signup">(initialUrlState.mode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -134,33 +131,27 @@ function LoginPageContent() {
           <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-slate-400">{mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in to continue to this community playtest." : "Sign in to your Playtested account." : nextPath.startsWith("/playtest/") ? "Create your account to join this community playtest." : "Choose all the ways you want to use Playtested."}</p>
 
-          {mode === "login" && confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">That sign-in or confirmation link couldn&apos;t be used</h2><p className="mt-1">Email confirmation links can only be used once. If you already confirmed your email, your account may be ready. Try signing in below, or use Google if that&apos;s how you registered.</p><p className="mt-2">If you haven&apos;t confirmed your email yet, use the newest confirmation email in the browser where you registered. If that still fails, contact us for help.</p><p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p></div>}
+          {confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">That sign-in or confirmation link couldn&apos;t be used</h2><p className="mt-1">Confirmation links can only be used once. If you have already confirmed your email, your account may be ready. Try signing in below.</p><p className="mt-2">If you haven&apos;t confirmed your email yet, open the latest confirmation email in the browser where you registered. If that still fails, contact us for help.</p><p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p></div>}
           {ageConfirmationRequired && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">Age confirmation required</h2><p className="mt-1">Playtested accounts are for people aged 18 or over. Confirm your age below before continuing with Google.</p></div>}
           {nextPath !== "/" && !nextPath.startsWith("/playtest/") && <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.</p>}
           {nextPath.startsWith("/playtest/") && <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4"><p className="text-sm font-semibold text-emerald-300">Community playtest invitation</p><p className="mt-1 text-xs leading-5 text-slate-400">After you sign in or confirm your new account, you&apos;ll return directly to the playtest.</p></div>}
 
           <form onSubmit={handleSubmit} aria-busy={loading} className="mt-8 space-y-5">
-            {mode === "signup" && <fieldset className="space-y-3"><legend className="mb-3 text-sm font-medium">Your Roles</legend>{roleOptions.map((role) => { const checked = signupRoles.includes(role.value); return <label key={role.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${checked ? "border-emerald-400 bg-emerald-400/5" : "border-slate-700 hover:border-slate-500"}`}><input type="checkbox" disabled={loading || !hydrated} checked={checked} onChange={() => toggleRole(role.value)} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="block text-sm font-semibold">{role.label} - {role.description}</span></label>; })}<p className="text-xs text-slate-500">Select one, two or all three roles. You can take part in multiple areas of Playtested.</p></fieldset>}
+            {mode === "signup" && <fieldset className="space-y-3"><legend className="mb-3 text-sm font-medium">Your Roles</legend>{roleOptions.map((role) => { const checked = signupRoles.includes(role.value); return <label key={role.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${checked ? "border-emerald-400 bg-emerald-400/5" : "border-slate-700 hover:border-slate-500"}`}><input type="checkbox" disabled={loading} checked={checked} onChange={() => toggleRole(role.value)} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="block text-sm font-semibold">{role.label} - {role.description}</span></label>; })}<p className="text-xs text-slate-500">Select one, two or all three roles. You can take part in multiple areas of Playtested.</p></fieldset>}
 
-            {mode === "signup" && <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/40 p-4"><input type="checkbox" required disabled={loading || !hydrated} checked={ageConfirmed} onChange={(e) => { setAgeConfirmed(e.target.checked); setMessage(""); }} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="text-sm leading-6 text-slate-300">I confirm that I am <strong className="text-white">18 or over</strong> and agree to the <Link href="/terms" className="text-emerald-300 underline underline-offset-4">Terms</Link> and acknowledge the <Link href="/privacy" className="text-emerald-300 underline underline-offset-4">Privacy Notice</Link>.</span></label>}
+            {mode === "signup" && <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/40 p-4"><input type="checkbox" required disabled={loading} checked={ageConfirmed} onChange={(e) => { setAgeConfirmed(e.target.checked); setMessage(""); }} className="mt-1 h-4 w-4 accent-emerald-400"/><span className="text-sm leading-6 text-slate-300">I confirm that I am <strong className="text-white">18 or over</strong> and agree to the <Link href="/terms" className="text-emerald-300 underline underline-offset-4">Terms</Link> and acknowledge the <Link href="/privacy" className="text-emerald-300 underline underline-offset-4">Privacy Notice</Link>.</span></label>}
 
-            <GoogleSignInButton mode={mode} signupRoles={signupRoles} ageConfirmed={ageConfirmed} nextPath={nextPath} loading={loading || !hydrated} setLoading={setLoading} setMessage={setMessage}/>
+            <GoogleSignInButton mode={mode} signupRoles={signupRoles} ageConfirmed={ageConfirmed} nextPath={nextPath} loading={loading} setLoading={setLoading} setMessage={setMessage}/>
 
-            <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading || !hydrated} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
-            <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading || !hydrated} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
+            <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
+            <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
             {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
             {message && <p role="status" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
-            <button type="submit" disabled={loading || !hydrated} className="w-full rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Please wait..." : mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in" : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}</button>
+            <button type="submit" disabled={loading} className="w-full rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Please wait..." : mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in" : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}</button>
           </form>
-          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}<button type="button" onClick={switchMode} disabled={loading || !hydrated} className="font-semibold text-emerald-400 hover:text-emerald-300">{mode === "login" ? "Create an account" : "Sign in"}</button></p>
+          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}<button type="button" onClick={switchMode} disabled={loading} className="font-semibold text-emerald-400 hover:text-emerald-300">{mode === "login" ? "Create an account" : "Sign in"}</button></p>
         </div>
       </div>
     </main>
   );
-}
-
-// Reading the URL inside this boundary avoids server/client hydration mismatches
-// on links such as /login?mode=signup&role=developer.
-export default function LoginPage() {
-  return <Suspense fallback={<main className="min-h-screen bg-slate-950 px-4 py-16 text-white"><p role="status" className="mx-auto max-w-md text-slate-300">Loading sign-in...</p></main>}><LoginPageContent /></Suspense>;
 }
