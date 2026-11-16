@@ -23,8 +23,8 @@ try{
  for select to authenticated using(auth.uid()=tester_id);`);
  await db.exec(fs.readFileSync('supabase/migrations/20261116184500_private_playtest_evidence.sql','utf8'));
  await db.exec('grant usage on schema public to anon,authenticated');
- await sql('insert into auth.users(id) values($1),($2),($3),($4)',[id(1),id(2),id(3),id(4)]);
- await sql("insert into profiles(id,role,roles) values($1,'developer',array['developer']),($2,'tester',array['tester']),($3,'developer',array['developer']),($4,'admin',array['admin'])",[id(1),id(2),id(3),id(4)]);
+ await sql('insert into auth.users(id) values($1),($2),($3),($4),($5)',[id(1),id(2),id(3),id(4),id(5)]);
+ await sql("insert into profiles(id,role,roles) values($1,'developer',array['developer']),($2,'tester',array['tester']),($3,'developer',array['developer']),($4,'admin',array['player']),($5,'user',array['admin'])",[id(1),id(2),id(3),id(4),id(5)]);
  await sql("insert into game_submissions(id,developer_id,title,status) values($1,$2,'Sample Realm local fixture','Approved')",[id(10),id(1)]);
  await sql("insert into community_playtests(id,developer_id,submission_id,title,status,release_label) values($1,$2,$3,'Sample Realm local fixture','open','Local v1')",[id(20),id(1),id(10)]);
  await sql("insert into community_game_tests(id,submission_id,tester_id,playtest_id,status,review_outcome,feedback,overall_score,gameplay_score,performance_score) values($1,$2,$3,$4,'submitted','pending',$5,9,7,10)",[id(30),id(10),id(2),id(20),'Please see my report: '+doc]);
@@ -38,6 +38,7 @@ try{
  await assert.rejects(as(null,'select * from public.playtest_private_evidence',[],'anon'),/permission denied/);
  await assert.rejects(as(id(1),'select * from public.playtest_private_evidence_audit'),/permission denied/);
  await assert.rejects(as(id(1),"select * from public.get_admin_private_playtest_evidence($1)",[id(30)]),/Admin access required/);
+ await assert.rejects(as(id(5),"select * from public.get_admin_private_playtest_evidence($1)",[id(30)]),/Admin access required/);
  assert.equal((await as(id(1),"select * from public.get_developer_private_playtest_evidence($1)",[id(20)])).rows.length,0);
  await assert.rejects(as(null,"select * from public.get_my_private_playtest_evidence($1)",[id(30)],'anon'),/permission denied/);
  await assert.rejects(sql("update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
