@@ -152,6 +152,11 @@ console.log('PASS: callback success/failure/outage, safe internal destinations, 
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844}});
+ const authBrowserIssues=[];
+ page.on('pageerror',error=>authBrowserIssues.push('pageerror: '+error.message.slice(0,350)));
+ page.on('console',message=>{if(message.type()==='error')authBrowserIssues.push('console: '+message.text().slice(0,350));});
+ page.on('requestfailed',request=>{const url=new URL(request.url());authBrowserIssues.push('requestfailed: '+url.pathname+' '+(request.failure()?.errorText||''));});
+ page.on('response',response=>{if(response.status()>=400 && new URL(response.url()).origin===new URL(origin).origin)authBrowserIssues.push('http: '+response.status()+' '+new URL(response.url()).pathname);});
  let signup=null;
  await page.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());
@@ -165,7 +170,8 @@ try{
  await expect(page.getByRole('alert').filter({hasText:'Your destination is saved:'})).toContainText('Your destination is saved: Tester Hub');
  await expect(page.getByRole('alert')).toContainText('Email confirmation links can only be used once.');
  await expect(page.getByLabel('Email address')).toBeVisible();
- await expect(page.getByLabel('Password',{exact:true})).toBeEnabled();
+ try{await expect(page.getByLabel('Password',{exact:true})).toBeEnabled({timeout:12000});}
+ catch(error){const state=await page.evaluate(()=>({readyState:document.readyState,jsScripts:[...document.scripts].filter(s=>s.src).slice(-12).map(s=>new URL(s.src).pathname),bodyLoaded:!!document.querySelector('main')}));console.error('Auth hydration browser diagnostic (paths only):',JSON.stringify({path:new URL(page.url()).pathname,state,issues:authBrowserIssues.slice(-20)}));throw error;}
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}
  await page.getByRole('button',{name:'Create an account',exact:true}).click();
