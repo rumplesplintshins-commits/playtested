@@ -190,6 +190,8 @@ type FeedbackDraft = {
   bugsFound: string;
   biggestImprovement: string;
   feedback: string;
+  additionalDocumentUrl: string;
+  gameplayRecordingUrl: string;
   hoursPlayed: string;
 };
 
@@ -200,7 +202,7 @@ function emptyFeedbackDraft(): FeedbackDraft {
     overallScore: "", gameplayScore: "", performanceScore: "",
     continuePlaying: "", recommendGame: "", enjoyedMost: "",
     frustrations: "", bugsFound: "", biggestImprovement: "",
-    feedback: "", hoursPlayed: "",
+    feedback: "", additionalDocumentUrl: "", gameplayRecordingUrl: "", hoursPlayed: "",
   };
 }
 
@@ -216,7 +218,7 @@ function readFeedbackDraft(raw: string, accountId: string, testId: string): Feed
   const fields = emptyFeedbackDraft();
   for (const field of Object.keys(fields) as (keyof FeedbackDraft)[]) {
     const value = saved.values[field];
-    const maximum = field === "feedback" ? 10000 : ["enjoyedMost", "frustrations", "bugsFound", "biggestImprovement"].includes(field) ? 5000 : 100;
+    const maximum = field === "feedback" ? 10000 : ["additionalDocumentUrl", "gameplayRecordingUrl"].includes(field) ? 2048 : ["enjoyedMost", "frustrations", "bugsFound", "biggestImprovement"].includes(field) ? 5000 : 100;
     if (typeof value !== "string" || value.length > maximum) throw new Error("Invalid draft field");
     fields[field] = value;
   }
@@ -268,7 +270,7 @@ function FeedbackForm({
   const readyRef = useRef(false);
   const errorRef = useRef<HTMLDivElement>(null);
   const submittingRef = useRef(false);
-  const { overallScore, gameplayScore, performanceScore, continuePlaying, recommendGame, enjoyedMost, frustrations, bugsFound, biggestImprovement, feedback, hoursPlayed } = draft;
+  const { overallScore, gameplayScore, performanceScore, continuePlaying, recommendGame, enjoyedMost, frustrations, bugsFound, biggestImprovement, feedback, additionalDocumentUrl, gameplayRecordingUrl, hoursPlayed } = draft;
   const inputClass = "mt-2 w-full rounded-lg border border-white/10 bg-[#111412] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b]";
   const answers = feedbackRequiredAnswers(draft);
   const completedAnswers = answers.filter(Boolean).length;
@@ -345,8 +347,19 @@ function FeedbackForm({
       setValidationError("Please choose each rating and answer, enter your actual play time, and complete each required written response.");
       return;
     }
-    if (values.bugsFound.length > 5000 || values.feedback.length > 10000) {
+    if (values.bugsFound.length > 5000 || values.feedback.length > 10000 ||
+        values.additionalDocumentUrl.length > 2048 || values.gameplayRecordingUrl.length > 2048) {
       setValidationError("Please shorten the optional responses to fit the field limits.");
+      return;
+    }
+    const evidenceUrls = [values.additionalDocumentUrl, values.gameplayRecordingUrl].map(value => value.trim()).filter(Boolean);
+    if (evidenceUrls.some(url => !/^https:\/\/[^/?#@\s]+\/.+/i.test(url))) {
+      setValidationError("Supporting documents and recordings must be valid HTTPS links.");
+      return;
+    }
+    const publicAnswers = [values.enjoyedMost, values.frustrations, values.bugsFound, values.biggestImprovement, values.feedback];
+    if (publicAnswers.some(value => /https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(value))) {
+      setValidationError("Written feedback may be shown publicly. Move links and personal contact details to the private supporting-evidence fields.");
       return;
     }
     submittingRef.current = true;
@@ -599,13 +612,26 @@ function FeedbackForm({
                                   </label>
                                 </div>
 
-                                <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">Optional detailed playtest report</p>
-                <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-400">Want to provide timestamped findings and developer recommendations? Download the editable template. The standard feedback form is still required.</p>
+                                <section aria-label="Additional private supporting evidence" className="space-y-4 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.04] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h5 className="font-semibold text-white">Additional supporting evidence (optional)</h5>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-300">These links are private to your account, Playtested admins and the owning game developer after approval. They will not appear on public game pages. External file sharing permissions may reveal your name, email, voice or other details to the developer.</p>
+                </div>
+                <a href="/Playtested_Game_Playtest_Report_Template.html" download="Playtested_Game_Playtest_Report_Template.html" className="shrink-0 rounded-lg border border-[#77f29b]/40 px-3 py-2 text-xs font-semibold text-[#77f29b] hover:bg-[#77f29b]/10">Download playtest template</a>
               </div>
-              <a href="/Playtested_Game_Playtest_Report_Template.html" download="Playtested_Game_Playtest_Report_Template.html" className="rounded-lg border border-[#77f29b]/40 px-4 py-2 text-sm font-semibold text-[#77f29b] underline-offset-2 hover:bg-[#77f29b]/10 focus-visible:outline-2 focus-visible:outline-[#77f29b]">Download report template</a>
-            </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="text-sm font-semibold">Additional feedback document <span className="font-normal text-zinc-400">(optional)</span>
+                  <input type="url" maxLength={2048} value={additionalDocumentUrl} onChange={event=>updateField("additionalDocumentUrl",event.target.value)} placeholder="https://docs.google.com/document/d/..." className={inputClass} />
+                  <span className="mt-1 block text-xs font-normal text-zinc-400">Google Docs, Drive, Dropbox, OneDrive or a direct PDF/Word file link.</span>
+                </label>
+                <label className="text-sm font-semibold">Gameplay recording <span className="font-normal text-zinc-400">(optional)</span>
+                  <input type="url" maxLength={2048} value={gameplayRecordingUrl} onChange={event=>updateField("gameplayRecordingUrl",event.target.value)} placeholder="https://drive.google.com/file/d/..." className={inputClass} />
+                  <span className="mt-1 block text-xs font-normal text-zinc-400">Google Drive, YouTube, Vimeo or direct MP4/WebM/MOV link. No video upload required.</span>
+                </label>
+              </div>
+              <p className="text-xs text-amber-200">Before sharing, check the document owner, filename, access permissions and any personal details visible in the recording. Only link files you have permission to share.</p>
+            </section>
 
             <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
                                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:col-span-2">
@@ -635,7 +661,7 @@ function FeedbackForm({
                                         updateField("feedback", event.target.value)
                                       }
                                       rows={4}
-                                      placeholder="Add anything important that the questions above did not cover."
+                                      placeholder="Add public-safe comments. Use the private fields above for document links or recordings."
                                       className={inputClass}
                                     />
                                   </label>
@@ -1125,7 +1151,7 @@ function TesterPage() {
     setSubmittingId(claim.id);
     try {
       const supabase = createClient();
-      const { error } = await supabase.rpc("submit_community_game_test", {
+      const { error } = await supabase.rpc("submit_community_game_test_with_evidence", {
         p_test_id: claim.id,
         p_gameplay_score: Number(values.gameplayScore),
         p_performance_score: Number(values.performanceScore),
@@ -1139,6 +1165,8 @@ function TesterPage() {
         p_frustrations: values.frustrations,
         p_biggest_improvement: values.biggestImprovement,
         p_focus_responses: {},
+        p_document_url: values.additionalDocumentUrl.trim() || null,
+        p_recording_url: values.gameplayRecordingUrl.trim() || null,
       });
       if (error) {
         setFormErrors((previous) => ({ ...previous, [claim.id]: error.message }));
