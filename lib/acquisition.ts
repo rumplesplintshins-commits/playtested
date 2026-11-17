@@ -32,7 +32,7 @@ export function acquisitionContext(href: string, referrer: string): Acquisition 
 export const analyticsPreferenceKey = "playtested.analytics.preference.v1";
 export const analyticsSessionKey = "playtested.analytics.session.v1";
 export const analyticsNoticeVersion = "merge26-2026-11-05-v2";
-export type AnalyticsPurpose = "pages" | "steam";
+export type AnalyticsPurpose = "pages" | "steam" | "pro";
 const deniedInThisTab = new Set<AnalyticsPurpose>();
 export function purposeAllowed(purpose: AnalyticsPurpose) {
   if (deniedInThisTab.has(purpose)) return false;
@@ -49,8 +49,8 @@ export function saveAnalyticsChoice(purpose: AnalyticsPurpose, allowed: boolean)
   if (purpose === "pages" && !allowed) { try { sessionStorage.removeItem(analyticsSessionKey); } catch { /* Collection remains off. */ } }
   let previous;
   try { previous = JSON.parse(localStorage.getItem(analyticsPreferenceKey) || "null"); } catch { /* Invalid preferences stay off. */ }
-  const value: {version: string; pages?: {allowed: boolean; at: number}; steam?: {allowed: boolean; at: number}} = previous?.version === analyticsNoticeVersion
-    ? {version: analyticsNoticeVersion, pages: previous.pages, steam: previous.steam} : { version: analyticsNoticeVersion };
+  const value: {version: string; pages?: {allowed: boolean; at: number}; steam?: {allowed: boolean; at: number}; pro?: {allowed: boolean; at: number}} = previous?.version === analyticsNoticeVersion
+    ? {version: analyticsNoticeVersion, pages: previous.pages, steam: previous.steam, pro: previous.pro} : { version: analyticsNoticeVersion };
   value[purpose] = { allowed, at: Date.now() };
   localStorage.setItem(analyticsPreferenceKey, JSON.stringify(value));
   if (allowed) deniedInThisTab.delete(purpose);

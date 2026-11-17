@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import SiteHeader from "../components/SiteHeader";
 import GameLinksEngagement from "../components/GameLinksEngagement";
+import LegacyPrivateEvidence from "../components/LegacyPrivateEvidence";
 import StartPlaytest from "../components/StartPlaytest";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
@@ -1220,6 +1221,7 @@ async function DeveloperDashboard() {
                     playtests={game.playtests}
                   />
                   </div>
+                  <LegacyPrivateEvidence submissionId={game.submissionId||game.approvedGameId}/>
                   <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
                 </div>
               </article>

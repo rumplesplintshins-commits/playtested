@@ -1,0 +1,9 @@
+"use client";
+import {useEffect,useState} from "react";
+import {createClient} from "@/lib/supabase";
+type Summary={total_clicks:number;unique_developers:number;clicks_7d:number;clicks_30d:number;developers_7d:number;developers_30d:number;latest_at:string|null};
+export default function AdminProInterest(){
+ const [data,setData]=useState<Summary|null>(null),[error,setError]=useState(""),[retry,setRetry]=useState(0);
+ useEffect(()=>{let active=true;void createClient().rpc("get_admin_pro_interest").then(({data,error})=>{if(active){setData(error?null:data);setError(error?"Pro interest analytics unavailable.":"");}});return()=>{active=false;};},[retry]);
+ return <section aria-label="Developer Pro interest" className="mt-6 rounded-xl border border-white/10 p-5"><h2 className="text-lg font-semibold">Developer Pro interest</h2><p className="mt-2 text-sm text-zinc-400">Recorded CTA clicks with separate analytics permission; rapid repeats are excluded. These are not email enquiries or paid conversions. Non-consenting clicks are not recorded. Totals cover retained records (90 days).</p>{error?<p role="alert">{error} <button className="underline" onClick={()=>setRetry(n=>n+1)}>Retry</button></p>:!data?<p role="status">Loading Pro interest...</p>:<><div className="mt-4 grid gap-4 sm:grid-cols-2"><p>Total clicks: <strong>{data.total_clicks}</strong><br/><span className="text-sm text-zinc-400">7 days: {data.clicks_7d} / 30 days: {data.clicks_30d}</span></p><p>Unique developers interested: <strong>{data.unique_developers}</strong><br/><span className="text-sm text-zinc-400">7 days: {data.developers_7d} / 30 days: {data.developers_30d}</span></p></div><p className="mt-3 text-sm text-zinc-400">Most recent recorded interest: {data.latest_at?new Date(data.latest_at).toLocaleString():"None recorded"}</p></>}</section>;
+}

@@ -43,11 +43,13 @@ try{
  assert.equal((await rows("select count(*) n from test_review_events where kind='developer_feedback_reviewed'")).at(0).n,3,'original history retained');
  assert.equal((await rows("select xp_delta from test_review_events where kind='review_bonus_correction'")).at(0).xp_delta,-5);
  await db.exec(fs.readFileSync(migration,'utf8'));assert.equal((await xp(5)).tester_xp,100,'reconciliation is idempotent');
+ const wording=fs.readFileSync('supabase/migrations/20261117102045_analytics_access_and_useful_notification.sql','utf8');let updated=wording.slice(wording.indexOf('create or replace function public.mark_test_feedback_usefulness('));updated=updated.slice(0,updated.indexOf('$;')+3);await db.exec(updated);
  await rate(20,'not_useful');await rate(20,'not_useful');
  assert.equal((await xp(1)).developer_xp,100);assert.equal((await xp(2)).tester_xp,495);
  assert.equal((await rows('select tester_rank($1) r',[id(2)])).at(0).r,0);
  await rate(20,'useful');await rate(20,'not_useful');await rate(20,'useful');
  assert.equal((await xp(1)).developer_xp,100);assert.equal((await xp(2)).tester_xp,500);
+ const usefulMessage=(await rows("select title,message from notifications where kind='tester_feedback_useful' and recipient_id=$1",[id(2)]))[0];assert.equal(usefulMessage.title,'Your feedback was marked Useful!');assert.equal(usefulMessage.message,"The developer found your feedback helpful. You've earned an additional 5 XP.");
  assert.equal((await rows('select tester_rank($1) r',[id(2)])).at(0).r,1,'bonus enters canonical rank calculation');
  await rate(21,'useful');await rate(21,'not_useful');await rate(21,'useful');
  assert.equal((await xp(1)).developer_xp,110);assert.equal((await xp(2)).tester_xp,505);
@@ -58,7 +60,7 @@ try{
  const history=(await as(id(1),'select * from get_my_developer_xp_history(50)')).rows;assert.equal(history.length,5);assert(history.every(e=>e.xp_amount===10));
  assert.deepEqual(Object.keys(history[0]).sort(),['created_at','description','id','xp_amount']);
  assert.equal((await as(id(3),'select * from get_my_developer_xp_history(50)')).rows.length,0);
- const usefulNotes=(await rows("select * from notifications where dedupe_key like 'feedback:useful-xp:%'"));assert.equal(usefulNotes.length,4);assert(usefulNotes.every(e=>e.message.includes('+5 Tester XP')));
+ const usefulNotes=(await rows("select * from notifications where dedupe_key like 'feedback:useful-xp:%'"));assert.equal(usefulNotes.length,4);assert(usefulNotes.every(e=>/\+5 Tester XP|additional 5 XP/.test(e.message)));
  assert.equal((await rows("select count(*) n from notifications where dedupe_key like 'feedback:developer-review-xp:%'")).at(0).n,5);
  assert.equal((await as(id(2),'select * from notifications')).rows.length,2,'tester sees no developer reward notifications');
  await assert.rejects(rate(22,'useful',id(3)),/Only the developer/);
@@ -67,7 +69,7 @@ try{
  await db.query("update community_game_tests set review_outcome='rejected' where id=$1",[id(22)]);await assert.rejects(rate(22,'useful'),/Accepted tester feedback/);
  await db.query('update community_game_tests set replacement_at=now() where id=$1',[id(23)]);await assert.rejects(rate(23,'useful'),/Accepted tester feedback/);
  // All rating + both award ledgers + balances + notifications roll back together.
- await db.exec("alter table notifications add constraint reject_test_notification check(message not like '%+5 Tester XP%') not valid");
+ await db.exec("alter table notifications add constraint reject_test_notification check(kind <> 'tester_feedback_useful') not valid");
  const before=await xp(1);await assert.rejects(rate(24,'useful'),/reject_test_notification/);assert.deepEqual(await xp(1),before);assert.equal((await xp(2)).tester_xp,505);
  assert.equal((await rows('select feedback_usefulness from community_game_tests where id=$1',[id(24)])).at(0).feedback_usefulness,null);
  assert.equal((await rows('select count(*) n from developer_xp_awards where source_id=$1',[id(24)])).at(0).n,0);

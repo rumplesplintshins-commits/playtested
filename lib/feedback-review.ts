@@ -5,8 +5,11 @@ export const FEEDBACK_QUALITY_CRITERIA = {
  focus:{label:"Addresses the requested testing task or focus areas",guidance:"Engages with the developer task; balanced feedback is valid when no focus is set."},
  takeaway:{label:"Provides a useful takeaway",guidance:"Identifies a priority, improvement or something worth preserving; criticism is not required."},
 };
-export type FeedbackQualityRecord={status?:string;quality_rubric_version?:number|null;feedback_quality_score?:number|null;base_xp_amount?:number|null;quality_reviewed?:boolean;review_outcome?:string;quality_criteria?:Record<string,boolean>|null;quality_eligibility?:Record<string,boolean>|null};
+export type FeedbackAppeal={state:"provisional_rejection"|"disputed"|"accepted"|"final_rejection";rejected_at?:string;rejection_reason?:string;dispute_deadline?:string;disputed_at?:string|null;dispute_text?:string|null;finalized_at?:string|null;cooldown_until?:string|null;decision_reason?:string|null};
+export type FeedbackQualityRecord={appeal?:FeedbackAppeal|null;retry_available?:boolean;status?:string;quality_rubric_version?:number|null;feedback_quality_score?:number|null;base_xp_amount?:number|null;quality_reviewed?:boolean;review_outcome?:string;quality_criteria?:Record<string,boolean>|null;quality_eligibility?:Record<string,boolean>|null};
 export function feedbackQualityLabel(report:FeedbackQualityRecord){
+ if(report.appeal?.state==="provisional_rejection")return "Provisional rejection ? 24-hour dispute window ? place retained";
+ if(report.appeal?.state==="disputed")return "Dispute awaiting admin decision ? place retained";
  if(["claimed","in_progress","expired"].includes(report.status||""))return "Feedback not submitted ? no quality assessment";
  if(report.quality_rubric_version!=null&&report.feedback_quality_score!=null)return `Feedback quality ${report.feedback_quality_score}% · ${report.base_xp_amount??"Unknown"} XP`;
  if(report.review_outcome==="pending")return "Feedback quality awaiting review";
@@ -49,9 +52,7 @@ export type FeedbackReviewItem = {
 };
 
 export function needsFeedbackReview(item: FeedbackReviewItem): boolean {
-  if (item.report.review_outcome === "pending") return true;
-  const events = item.events || [];
-  const request = Math.max(0, ...events.filter(e => e.kind === "reconsideration").map(e => Number(e.id)));
-  const decision = Math.max(0, ...events.filter(e => e.kind === "accepted" || e.kind === "rejected").map(e => Number(e.id)));
-  return request > decision;
+  if(item.report.appeal?.state === "disputed")return true;
+  if(item.report.appeal?.state === "provisional_rejection")return false;
+  return item.report.status === "submitted" && item.report.review_outcome === "pending" && !item.report.replacement_at;
 }

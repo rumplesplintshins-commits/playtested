@@ -34,3 +34,6 @@ assert.equal(context.resolveTestAccess({game_link:'https://example.test/build.zi
 assert.equal(context.resolveTestAccess({game_link:'https://store.steampowered.com/app/1',access_type:'other'}).type,'steam_game');
 assert.equal(context.resolveTestAccess({game_link:'javascript:alert(1)',access_type:'other'}).link,null);
 console.log('PASS: actual page helpers — blank ratings, nine-answer progress, concise honest feedback, account/test draft isolation, cleanup, active/available separation and build/Steam link handling. Live-service integration remains a staging check.');
+
+assert.equal(context.getTesterGameGroups(games,[{id:'old-final',playtest_id:'campaign',status:'reviewed',review_outcome:'rejected',retry_available:true}]).availableGames.length,2,'Elapsed server-confirmed cooldown allows discovery despite preserved rejected history');
+assert.equal(context.getTesterGameGroups(games,[{id:'cooling',playtest_id:'campaign',status:'reviewed',review_outcome:'rejected',retry_available:false}]).availableGames.length,1,'Cooldown history remains blocking until server confirms eligibility');

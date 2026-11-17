@@ -11,6 +11,7 @@ const user={id:uid,aud:'authenticated',role:'authenticated',email:'fixture@examp
 const encode=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
 const token=`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:uid,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})}.fixture-signature`;
 const session={access_token:token,refresh_token:'fixture-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user};
+let evidenceRank=0;
 let restrictionReason='Requires Strategy interest';
 let claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false};
 let failSubmit=true,failRelease=true,failReclaim=true,reclaims=0;let reviewEvents=[],submittedPayloads=[];
@@ -36,13 +37,14 @@ try{
      else if(url.pathname.endsWith('/claim_community_game_test')){reclaims++;if(failReclaim){failReclaim=false;status=400;data={message:'This campaign is full',code:'P0001'};}else{claim={...claim,status:'in_progress',reservation_expires_at:new Date(Date.now()+72*3600000).toISOString()};data=test;}}
      else if(url.pathname.endsWith('/start_community_game_test')){claim={...claim,status:'in_progress'};data=null;}
      else if(url.pathname.endsWith('/test_review_events'))data=reviewEvents;
-     else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
+     else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:evidenceRank,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
      else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:restrictionReason}];
       else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
       else if(url.pathname.endsWith('/get_game_pc_requirements'))data=null;
       else if(url.pathname.endsWith('/tester_availability_preferences'))data=[];
       else if(url.pathname.endsWith('/account_pc_specs'))data={specs:null};
       else if(url.pathname.endsWith('/get_my_testing_activity_media'))data=[];
+      else if(url.pathname.endsWith('/get_my_private_playtest_evidence'))data=[{document_url:'https://docs.google.com/document/d/LOCAL_DOC_TEST/edit',recording_url:'https://drive.google.com/file/d/LOCAL_VIDEO_TEST/view'}];
      else if(url.pathname.endsWith('/submit_community_game_test_with_evidence')){
         submittedPayloads.push(req.postDataJSON()||{});
        if(failSubmit){status=400;data={message:'Simulated submission failure',code:'P0001'};failSubmit=false;}
@@ -92,19 +94,46 @@ try{
  await expect(page.getByRole('progressbar',{name:'Feedback form completion'})).toHaveAttribute('aria-valuenow','9');
  await expect.poll(()=>page.evaluate(k=>!!localStorage.getItem(k),key)).toBe(true);
  const fakeDoc='https://docs.google.com/document/d/LOCAL_DOC_TEST/edit',fakeVideo='https://drive.google.com/file/d/LOCAL_VIDEO_TEST/view';
- await expect(page.getByRole('link',{name:'Download editable Word report (.docx)'})).toHaveAttribute('href','/Playtested_Game_Playtest_Report_Template.docx');
- await page.getByLabel('Additional feedback document',{exact:false}).fill(fakeDoc);
+ await expect(page.getByRole('link',{name:'Download editable Playtested report'})).toHaveAttribute('href','/Playtested_Game_Playtest_Report_Template.docx');
+ await expect(page.getByRole('heading',{name:'Additional supporting evidence',exact:true})).toBeVisible();
+ const documentInput=page.getByLabel('Additional Playtested report',{exact:false}),recordingInput=page.getByLabel('Gameplay recording',{exact:false});
+ const validDraft=await page.evaluate(k=>localStorage.getItem(k),key);
+ for(const rank of [0,1,2,3]) {
+   evidenceRank=rank;failSubmit=false;claim={...claim,status:'in_progress'};
+   await page.evaluate(([k,v])=>localStorage.setItem(k,v),[key,validDraft]);
+   await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();
+   await expect(documentInput.locator('..')).toContainText('(optional)');await expect(recordingInput.locator('..')).toContainText('(optional)');
+   await expect(documentInput).not.toHaveAttribute('required');await expect(recordingInput).not.toHaveAttribute('required');
+   await expect(documentInput).not.toHaveAttribute('aria-required','true');await expect(recordingInput).not.toHaveAttribute('aria-required','true');
+   await expect(documentInput).toHaveValue('');await expect(recordingInput).toHaveValue('');
+   const attempts=submittedPayloads.length;await page.getByRole('button',{name:'Submit review'}).click();
+   await expect.poll(()=>submittedPayloads.length).toBe(attempts+1);
+   assert.equal(submittedPayloads.at(-1).p_document_url,null);assert.equal(submittedPayloads.at(-1).p_recording_url,null);
+   await expect.poll(()=>page.evaluate(k=>localStorage.getItem(k),key)).toBe(null);
+ }
+ evidenceRank=0;failSubmit=true;claim={...claim,status:'in_progress'};
+ await page.evaluate(([k,v])=>localStorage.setItem(k,v),[key,validDraft]);await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();
+ console.log('PASS mocked browser: Bronze, Silver, Gold and Platinum free feedback submits successfully without supporting links; both fields optional.');
+
+ await page.getByLabel('Additional Playtested report',{exact:false}).fill(fakeDoc);
  await page.getByLabel('Gameplay recording',{exact:false}).fill(fakeVideo);
+  const evidenceConsent=page.getByRole('checkbox',{name:/I confirm I have checked/});
+  await expect(evidenceConsent).toHaveAttribute('required','');
+  assert.equal(await evidenceConsent.evaluate(el=>el.checkValidity()),false,'Evidence links require explicit acknowledgement');
+  await evidenceConsent.check();
  await page.getByRole('button',{name:'Submit review'}).click();
+ await expect.poll(()=>submittedPayloads.at(-1)?.p_document_url).toBe(fakeDoc);
  assert.equal(submittedPayloads.at(-1)?.p_document_url,fakeDoc);
  assert.equal(submittedPayloads.at(-1)?.p_recording_url,fakeVideo);
  await expect(page.getByText('Simulated submission failure',{exact:false})).toBeVisible();
  assert.ok(await page.evaluate(k=>localStorage.getItem(k),key),'failed submission preserves draft');
  await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();
  await expect(page.locator('form textarea').nth(0)).toHaveValue('Movement');
- await expect(page.getByLabel('Additional feedback document',{exact:false})).toHaveValue(fakeDoc);
+ await expect(page.getByLabel('Additional Playtested report',{exact:false})).toHaveValue(fakeDoc);
  await expect(page.getByLabel('Gameplay recording',{exact:false})).toHaveValue(fakeVideo);
+  await page.getByRole('checkbox',{name:/I confirm I have checked/}).check();
  await page.getByRole('button',{name:'Submit review'}).click();
+ await expect.poll(()=>submittedPayloads.at(-1)?.p_document_url).toBe(fakeDoc);
  assert.equal(submittedPayloads.at(-1)?.p_document_url,fakeDoc);
  assert.equal(submittedPayloads.at(-1)?.p_recording_url,fakeVideo);
  await expect.poll(()=>page.evaluate(k=>localStorage.getItem(k),key)).toBe(null);
@@ -141,6 +170,8 @@ try{
  await expect(history).toBeVisible();await expect(history.getByText('Overall: 8/10',{exact:true})).toBeVisible();
  await expect(history.getByText(/Not yet rated|Waiting|Not useful|Admin reason:|Quality review reason:/i)).toHaveCount(0);
  await history.locator('h3').click();await expect(history.getByRole('button',{name:'Collapse testing history'})).toHaveAttribute('aria-expanded','true');
+  await expect(history.getByRole('link',{name:'Open your report'})).toHaveAttribute('href',fakeDoc);
+  await expect(history.getByRole('link',{name:'Watch your recording'})).toHaveAttribute('href',fakeVideo);
  await expect(history.getByRole('button',{name:'Send request'})).toHaveCount(0);
  await expect(history.getByText(/Feedback quality 60%/).first()).toBeVisible();
  await history.locator('summary').click();await expect(history.getByText('60 XP change',{exact:false})).toBeVisible();await expect(history.getByRole('button',{name:'Collapse testing history'})).toBeVisible();

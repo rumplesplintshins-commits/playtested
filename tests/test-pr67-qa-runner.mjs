@@ -1,0 +1,7 @@
+import assert from 'node:assert/strict';import {qaEnvironment} from '../scripts/start-pr67-qa.mjs';
+const server='e30.'+Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url')+'.fixture';
+const values={NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:55741',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'fixture-public',SUPABASE_SERVICE_ROLE_KEY:server};
+const env=qaEnvironment(values,{PATH:'fixture-path',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54341',SUPABASE_SERVICE_ROLE_KEY:'wrong',DATABASE_URL:'wrong',OTHER_SECRET:'wrong'});
+assert.equal(env.NEXT_PUBLIC_SUPABASE_URL,values.NEXT_PUBLIC_SUPABASE_URL);assert.equal(env.SUPABASE_SERVICE_ROLE_KEY,server);assert.equal(env.SUPABASE_URL,values.NEXT_PUBLIC_SUPABASE_URL);assert.equal(env.NEXT_PUBLIC_SITE_ORIGIN,'http://localhost:3067');assert.equal(env.PATH,'fixture-path');assert.equal(env.DATABASE_URL,undefined);assert.equal(env.OTHER_SECRET,undefined);
+assert.throws(()=>qaEnvironment({...values,SUPABASE_SERVICE_ROLE_KEY:''}),/Missing QA/);assert.throws(()=>qaEnvironment({...values,NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54341'}),/Expected isolated/);assert.throws(()=>qaEnvironment({...values,NEXT_PUBLIC_LEAK:server}),/cannot be public/);assert.throws(()=>qaEnvironment({...values,SUPABASE_SERVICE_ROLE_KEY:'not-a-service-key'}),/service-role/);
+console.log('PASS QA runner: complete server credential, isolated URL, no public secret, wrong/missing key rejection and inherited environment isolation.');

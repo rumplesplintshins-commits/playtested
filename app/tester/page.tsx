@@ -10,7 +10,7 @@ import MinimisedTestGame from "../components/MinimisedTestGame";
 
 import {currentJourney} from "@/lib/share-links";
 import {TrackedAccessLink,ShareJourneyBanner} from "../components/ShareJourney";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import { GAME_GENRES, matchesGenrePreferences } from "../../lib/genres";
@@ -171,7 +171,7 @@ function getTesterGameGroups(games: TestGame[], claims: TestClaim[]) {
     activeClaims.some((claim) => claimMatchesGame(claim, game))
   );
   const availableGames = games.filter((game) =>
-    !claims.some((claim) => claimMatchesGame(claim, game))
+    !claims.some((claim) => claimMatchesGame(claim, game) && !claim.retry_available)
   );
   const unavailableActiveClaims = activeClaims.filter((claim) =>
     !games.some((game) => claimMatchesGame(claim, game))
@@ -267,6 +267,7 @@ function FeedbackForm({
   const [ready, setReady] = useState(false);
   const [draftStatus, setDraftStatus] = useState<"loading" | "empty" | "saved" | "unavailable" | "invalid">("loading");
   const [validationError, setValidationError] = useState("");
+  const [evidenceAcknowledged, setEvidenceAcknowledged] = useState(false);
   const draftRef = useRef<FeedbackDraft>(emptyFeedbackDraft());
   const unsavedRef = useRef(false);
   const readyRef = useRef(false);
@@ -359,6 +360,10 @@ function FeedbackForm({
       setValidationError("Supporting documents and recordings must be valid HTTPS links.");
       return;
     }
+    if (evidenceUrls.length > 0 && !evidenceAcknowledged) {
+      setValidationError("Please confirm you have checked the personal information and sharing permissions for your supporting evidence.");
+      return;
+    }
     const publicAnswers = [values.enjoyedMost, values.frustrations, values.bugsFound, values.biggestImprovement, values.feedback];
     if (publicAnswers.some(value => /https?:\/\/|www\.|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(value))) {
       setValidationError("Written feedback may be shown publicly. Move links and personal contact details to the private supporting-evidence fields.");
@@ -376,7 +381,7 @@ function FeedbackForm({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="w-full space-y-6 rounded-2xl border border-[#77f29b]/25 bg-[#0d100e] p-6 sm:p-8 lg:p-10">
+    <form data-playtested-feedback-form="true" onSubmit={(event) => void handleSubmit(event)} className="w-full space-y-6 rounded-2xl border border-[#77f29b]/25 bg-[#0d100e] p-6 sm:p-8 lg:p-10">
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
                                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
@@ -617,13 +622,13 @@ function FeedbackForm({
                                 <section aria-label="Additional private supporting evidence" className="space-y-4 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.04] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h5 className="font-semibold text-white">Additional supporting evidence (optional)</h5>
+                  <h5 className="font-semibold text-white">Additional supporting evidence</h5>
                   <p className="mt-1 max-w-xl text-xs leading-5 text-zinc-300">These links are private to your account, Playtested admins and the owning game developer after approval. They will not appear on public game pages. External file sharing permissions may reveal your name, email, voice or other details to the developer.</p>
                 </div>
-                <a href="/Playtested_Game_Playtest_Report_Template.docx" download="Playtested_Game_Playtest_Report_Template.docx" className="shrink-0 rounded-lg border border-[#77f29b]/40 px-3 py-2 text-xs font-semibold text-[#77f29b] hover:bg-[#77f29b]/10">Download editable Word report (.docx)</a>
+                <a href="/Playtested_Game_Playtest_Report_Template.docx" download="Playtested_Game_Playtest_Report_Template.docx" className="shrink-0 rounded-lg border border-[#77f29b]/40 px-3 py-2 text-xs font-semibold text-[#77f29b] hover:bg-[#77f29b]/10">Download editable Playtested report</a>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="text-sm font-semibold">Additional feedback document <span className="font-normal text-zinc-400">(optional)</span>
+                <label className="text-sm font-semibold">Additional Playtested report <span className="font-normal text-zinc-400">(optional)</span>
                   <input type="url" maxLength={2048} value={additionalDocumentUrl} onChange={event=>updateField("additionalDocumentUrl",event.target.value)} placeholder="https://docs.google.com/document/d/..." className={inputClass} />
                   <span className="mt-1 block text-xs font-normal text-zinc-400">Google Docs, Drive, Dropbox, OneDrive or a direct PDF/Word file link.</span>
                 </label>
@@ -633,6 +638,19 @@ function FeedbackForm({
                 </label>
               </div>
               <p className="text-xs text-amber-200">Before sharing, check the document owner, filename, access permissions and any personal details visible in the recording. Only link files you have permission to share.</p>
+                          <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-black/20 p-3 text-xs leading-5 text-zinc-200">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 shrink-0 accent-[#77f29b]"
+                  checked={evidenceAcknowledged}
+                  onChange={(event) => { setEvidenceAcknowledged(event.target.checked); setValidationError(""); }}
+                  required={Boolean(additionalDocumentUrl.trim() || gameplayRecordingUrl.trim())}
+                />
+                <span>
+                  I confirm I have checked the linked documents or recordings for personal information and agree to share them with Playtested admins and, after approval, the game's developer. I understand I am responsible for checking external file contents and sharing settings. Playtested cannot control personal information exposed through third-party files or links.
+                  <span className="mt-1 block text-zinc-400">Required when you add a document or video link; optional otherwise.</span>
+                </span>
+              </label>
             </section>
 
             <div className="grid gap-5 border-t border-white/10 pt-6 md:grid-cols-2">
@@ -706,6 +724,42 @@ function FeedbackForm({
   );
 }
 
+type TesterHistoryEvidence = { document_url: string | null; recording_url: string | null };
+
+function TesterHistoryPrivateEvidence({ testId }: { testId: string }) {
+  const [evidence, setEvidence] = useState<TesterHistoryEvidence | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const { data, error } = await createClient().rpc('get_my_private_playtest_evidence', { p_test_id: testId });
+        if (!mounted) return;
+        if (error) { setLoadError(true); return; }
+        const record = Array.isArray(data) ? (data[0] as TesterHistoryEvidence | undefined) : undefined;
+        setEvidence(record ?? null);
+      } catch {
+        if (mounted) setLoadError(true);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [testId]);
+
+  const documentUrl = evidence?.document_url?.startsWith('https://') ? evidence.document_url : null;
+  const recordingUrl = evidence?.recording_url?.startsWith('https://') ? evidence.recording_url : null;
+  if (!documentUrl && !recordingUrl) {
+    return loadError ? <p role="status" className="mt-3 text-xs text-amber-200">Your private supporting links could not be loaded. Reopen this report to retry.</p> : null;
+  }
+  return (
+    <section aria-label="Your private supporting evidence" className="mt-3 space-y-3 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.035] p-4" onClick={event => event.stopPropagation()}>
+      <h4 className="text-sm font-semibold text-emerald-200">Your private supporting evidence</h4>
+      <p className="text-xs text-zinc-400">Saved with this report for your reference. External document and video hosts may reveal your account identity to viewers.</p>
+      {documentUrl && <div><p className="text-xs font-semibold text-zinc-300">Additional Playtested report</p><a href={documentUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block break-all text-sm text-emerald-300 underline underline-offset-2">Open your report</a></div>}
+      {recordingUrl && <div><p className="text-xs font-semibold text-zinc-300">Gameplay recording</p><a href={recordingUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block break-all text-sm text-emerald-300 underline underline-offset-2">Watch your recording</a></div>}
+    </section>
+  );
+}
+
 function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
   useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
@@ -718,7 +772,7 @@ function TesterPage() {
   // Prerender must be deterministic; live time is read by the effects below.
   const [clockTick,setClockTick]=useState(0);
   const now=clock?clock.server+Math.max(0,clockTick-clock.local):null;
-  const claims=storedClaims.map(claim=>claim.reservation_expires_at&&now!==null&&Date.parse(claim.reservation_expires_at)<=now&&["claimed","in_progress"].includes(claim.status)?{...claim,status:"expired" as const}:claim);
+  const claims=useMemo(()=>storedClaims.map(claim=>claim.reservation_expires_at&&now!==null&&Date.parse(claim.reservation_expires_at)<=now&&["claimed","in_progress"].includes(claim.status)?{...claim,status:"expired" as const}:claim),[storedClaims,now]);
   useEffect(()=>{if(!clock)return;const serverNow=clock.server+Date.now()-clock.local;const deadlines=storedClaims.filter(claim=>["claimed","in_progress"].includes(claim.status)&&claim.reservation_expires_at).flatMap(claim=>[Date.parse(claim.reservation_expires_at!)-86400000,Date.parse(claim.reservation_expires_at!)]).filter(deadline=>deadline>serverNow);if(!deadlines.length)return;const timer=setTimeout(()=>setClockTick(Date.now()),Math.min(2147483647,Math.max(1,Math.min(...deadlines)-serverNow+1)));return()=>clearTimeout(timer);},[clock,storedClaims,clockTick]);
   useEffect(()=>{const tick=()=>setClockTick(Date.now());const timer=setInterval(tick,60000);window.addEventListener("focus",tick);document.addEventListener("visibilitychange",tick);return()=>{clearInterval(timer);window.removeEventListener("focus",tick);document.removeEventListener("visibilitychange",tick);};},[]);
   const [loading, setLoading] = useState(true);
@@ -727,6 +781,29 @@ function TesterPage() {
   const [startingId, setStartingId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [activeTestId, setActiveTestId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!activeTestId) return;
+    let frame = 0;
+    let attempts = 0;
+    const scrollToFeedbackObjectives = () => {
+      const form = document.querySelector<HTMLFormElement>('form[data-playtested-feedback-form="true"]');
+      if (!form) {
+        if (attempts++ < 60) frame = requestAnimationFrame(scrollToFeedbackObjectives);
+        return;
+      }
+      const card = form.closest('article');
+      const heading = card ? Array.from(card.querySelectorAll<HTMLElement>('h2,h3,h4,h5,p,span,div'))
+        .find(node => node.children.length === 0 && /^testing objectives$/i.test(node.textContent?.trim() || '')) : null;
+      const target = heading || form;
+      target.style.scrollMarginTop = '110px';
+      target.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+    };
+    frame = requestAnimationFrame(scrollToFeedbackObjectives);
+    return () => cancelAnimationFrame(frame);
+  }, [activeTestId]);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">(
     "success"
@@ -809,7 +886,31 @@ function TesterPage() {
   }, [games, genreFilter, expandedAvailableGames]);
 
 
-  useEffect(()=>{void createClient().rpc("get_my_testing_progress").then(({data})=>setPreferredGenres(data?.genres||[]));},[]);
+  const [reviewRevision,setReviewRevision] = useState(0);
+  const onTestingProgress = useCallback((data: {genres: string[]}) => setPreferredGenres(data.genres || []), []);
+  useEffect(() => {
+    if (loading) return;
+    let frame = 0;
+    const openReport = () => {
+      const match = /^#testing-activity-([0-9a-f-]{36})$/i.exec(window.location.hash);
+      if (!match || !claims.some(claim => claim.id === match[1])) return;
+      setExpandedHistoryClaims(previous => previous[match[1]] ? previous : {...previous, [match[1]]: true});
+      frame = requestAnimationFrame(() => document.getElementById("testing-activity-" + match[1])?.scrollIntoView({block:"start"}));
+    };
+    openReport();
+    window.addEventListener("hashchange", openReport);
+    return () => {cancelAnimationFrame(frame);window.removeEventListener("hashchange", openReport);};
+  }, [loading, claims]);
+  const refreshFeedbackState=useCallback(async()=>{
+    if(!loadedAccountRef.current)return;
+    const client=createClient();const result=await client.rpc("get_my_test_reservations");
+    if(result.error||!result.data?.claims)return;
+    setClaims(result.data.claims);if(result.data.server_now)setClock(receivedReservationClock(result.data.server_now));
+    setReviewRevision(value=>value+1);
+    const catalogue=await client.rpc("get_discoverable_community_test_games");if(!catalogue.error)setGames(catalogue.data||[]);
+    const ids=result.data.claims.map((claim:TestClaim)=>claim.id);if(ids.length){const history=await client.from("test_review_events").select("*").in("test_id",ids).order("created_at",{ascending:false}).order("id",{ascending:false});if(!history.error)setReviewHistory(history.data||[]);}
+  },[]);
+  useEffect(()=>{const refresh=()=>{void refreshFeedbackState();};window.addEventListener("playtested-notifications-changed",refresh);window.addEventListener("focus",refresh);return()=>{window.removeEventListener("playtested-notifications-changed",refresh);window.removeEventListener("focus",refresh);};},[refreshFeedbackState]);
   const router = useRouter();
   const activeClaimCount = claims.filter(
     (claim) => claim.status === "claimed" || claim.status === "in_progress"
@@ -965,7 +1066,18 @@ function TesterPage() {
     };
   }, [router]);
 
+  function clearStaleTestingActivityDeepLink() {
+    if (/^#testing-activity-[0-9a-f-]{36}$/i.test(window.location.hash)) {
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname + window.location.search
+      );
+    }
+  }
+
   async function claimGame(game: TestGame) {
+    clearStaleTestingActivityDeepLink();
     if (hasActiveTest) {
       showMessage("Finish or release your current test before choosing another.", "error");
       return;
@@ -1106,6 +1218,7 @@ function TesterPage() {
   }
 
   async function startTesting(game: TestGame, claim: TestClaim) {
+    clearStaleTestingActivityDeepLink();
     setMessage("");
     setStartingId(game.submission_id);
 
@@ -1124,6 +1237,7 @@ function TesterPage() {
         "error"
       );
     } else {
+      setJustClaimedId(game.submission_id);
       setClaims((previous) =>
         previous.map((item) =>
           item.id === claim.id
@@ -1214,6 +1328,8 @@ function TesterPage() {
   const testableGamesCount = availableGames.length - unmetRequirementsCount;
   function getStatusLabel(claim: TestClaim) {
     if(claim.status==="expired")return "Reservation expired";
+    if(claim.appeal?.state==="provisional_rejection")return "Provisional rejection ? dispute window open";
+    if(claim.appeal?.state==="disputed")return "Dispute awaiting admin decision";
     if (claim.status === "submitted") {
       return "Awaiting admin review";
     }
@@ -1223,7 +1339,7 @@ function TesterPage() {
     }
 
     if (claim.review_outcome === "rejected") {
-      return "Not accepted";
+      return "Final rejection";
     }
 
     return "Reviewed";
@@ -1509,7 +1625,10 @@ function TesterPage() {
                               disabled={submittingId === claim.id}
                               onClick={() => {
                                 if (activeTestId === claim.id) closeFeedback();
-                                else setActiveTestId(claim.id);
+                                else {
+                                  clearStaleTestingActivityDeepLink();
+                                  setActiveTestId(claim.id);
+                                }
 
                                 setFormErrors((previous) => ({
                                   ...previous,
@@ -1586,7 +1705,7 @@ function TesterPage() {
           Discover a game, share useful feedback, and build your tester experience.
         </p>
 
-        <TesterRankPanel />
+        <TesterRankPanel onProgress={onTestingProgress} revision={reviewRevision} />
         <QualityGuidance collapsible />
 
           {message && (
@@ -1758,7 +1877,7 @@ function TesterPage() {
                   claim.review_outcome === "accepted";
                 const rejected =
                   claim.review_outcome === "rejected";
-                const pending = claim.status === "submitted";
+                const pending = claim.status === "submitted" && !claim.appeal;
 
                 const isExpanded = expandedHistoryClaims[claim.id] ?? false;
                 const toggleCard = () => setExpandedHistoryClaims(prev => ({ ...prev, [claim.id]: !prev[claim.id] }));
@@ -1802,6 +1921,7 @@ function TesterPage() {
                             {claim.biggest_improvement && <div><p className="text-xs font-semibold uppercase tracking-wide text-sky-200">Biggest improvement</p><p className="mt-1 whitespace-pre-wrap">{claim.biggest_improvement}</p></div>}
                             {claim.feedback && <div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}
                           </div>
+                          <TesterHistoryPrivateEvidence testId={claim.id} />
                           {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                           {reviewHistory.some(event=>event.test_id===claim.id) && (
                             <details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm" onClick={(e) => e.stopPropagation()}>
@@ -1819,14 +1939,14 @@ function TesterPage() {
                                     <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">Feedback quality</p><p className="mt-1 text-lg font-semibold text-white">{event.quality_score??"—"}%</p></div>
                                     <div className="rounded-lg bg-black/30 p-3"><p className="text-xs text-zinc-400">XP awarded</p><p className="mt-1 text-lg font-semibold text-emerald-300">{event.actual_xp_award==null?"Not recorded":`${event.actual_xp_award} XP`}</p></div>
                                     <div className="col-span-2 rounded-lg bg-black/30 p-3 sm:col-span-1"><p className="text-xs text-zinc-400">Rubric</p><p className="mt-1 text-lg font-semibold text-white">Version {event.rubric_version}</p></div>
-                                  </div>:<p className="mt-3 text-xs text-zinc-400">{event.kind === "tester_feedback_useful" ? "One-time Useful feedback bonus" : event.kind === "review_bonus_correction" ? "Previous review bonus correction" : event.kind === "developer_feedback_reviewed" ? "Previous review bonus" : "Legacy review · score not recorded"}</p>}
+                                  </div>:<p className="mt-3 text-xs text-zinc-400">{event.kind === "tester_feedback_useful" ? "One-time Useful feedback bonus" : event.kind === "review_bonus_correction" ? "Previous review bonus correction" : event.kind === "developer_feedback_reviewed" ? "Previous review bonus" : event.kind === "reconsideration" ? "Written dispute submitted" : event.kind === "provisional_rejection" ? "Provisional rejection ? place retained" : "Legacy review · score not recorded"}</p>}
                                   {event.reason&&<div className="mt-3 border-t border-white/10 pt-3"><p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Review reason</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">{event.reason}</p></div>}
                                 </li>)}
                               </ol>
                             </details>
                           )}
-                          {rejected && (<div onClick={(e) => e.stopPropagation()}>
-                            <Reconsideration testId={claim.id} reason={claim.review_reason} />
+                          {(rejected||claim.appeal?.state==="provisional_rejection"||claim.appeal?.state==="disputed") && (<div onClick={(e) => e.stopPropagation()}>
+                            <Reconsideration testId={claim.id} reason={claim.review_reason} appeal={claim.appeal} serverNow={now} onRefresh={refreshFeedbackState} />
                           </div>)}
                           <p className="mt-2 text-xs text-zinc-500">
                             {claim.status==="expired" ? "Your draft is kept. Reclaim a place to continue; expiry has no XP penalty." : pending
@@ -1834,8 +1954,12 @@ function TesterPage() {
                               : accepted
                                 ? `Accepted. ${feedbackQualityLabel(claim)}.`
                                 : rejected
-                                  ? "Your test was reviewed but was not accepted for XP."
-                                  : "Your test has been reviewed."}
+                                  ? "Your feedback was finally rejected. A 24-hour same-game cooldown applies; you may test other games immediately."
+                                  : claim.appeal?.state === "provisional_rejection"
+                                    ? "Your place is retained during the 24-hour dispute window."
+                                    : claim.appeal?.state === "disputed"
+                                      ? "Admin review of your clarification is pending. Your place is retained."
+                                      : "Your test has been reviewed."}
                           </p>
                         </>
                       )}

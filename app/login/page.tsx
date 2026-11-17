@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
@@ -19,12 +19,20 @@ function isSignupRole(value: string | null): value is SignupRole {
   return value === "player" || value === "tester" || value === "developer";
 }
 
+const subscribeToHydration = () => () => {};
+const clientHydrationSnapshot = () => true;
+const serverHydrationSnapshot = () => false;
+
 export default function LoginPage() {
+  // Match the server HTML on the first client render, then initialise from the
+  // browser URL exactly once. Mode switches keep their existing form state.
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientHydrationSnapshot, serverHydrationSnapshot);
+  return <LoginForm key={hydrated ? "browser" : "server"} initialSearch={hydrated ? window.location.search : ""} />;
+}
+
+function LoginForm({initialSearch}: {initialSearch: string}) {
   const [initialUrlState] = useState<{ mode: "login" | "signup"; nextPath: string; confirmationFailed: boolean; ageConfirmationRequired: boolean; signupRoles: SignupRole[] }>(() => {
-    if (typeof window === "undefined") {
-      return { mode: "login", nextPath: "/", confirmationFailed: false, ageConfirmationRequired: false, signupRoles: ["player"] };
-    }
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(initialSearch);
     const urlMode = params.get("mode") === "signup" ? "signup" : "login";
     const urlRole = params.get("role");
     const urlNext = getSafeNextPath(params.get("next"));
@@ -43,7 +51,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [signupRoles, setSignupRoles] = useState<SignupRole[]>(initialUrlState.signupRoles);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
-  const [nextPath, setNextPath] = useState(initialUrlState.nextPath);
+  const [nextPath] = useState(initialUrlState.nextPath);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmationFailed, setConfirmationFailed] = useState(initialUrlState.confirmationFailed);

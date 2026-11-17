@@ -146,10 +146,10 @@ export default function SiteHeader() {
           PLAYTESTED<span className="text-[#77f29b]">_</span>
         </Link>
 
-        <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:gap-3">
+        <div className="flex min-w-0 max-w-full w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-3">
           {!checkingSession && (loggedIn ? (
             <>
-              <div className="hidden max-w-[520px] items-center gap-2 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">
+              <div className="hidden min-w-0 max-w-[520px] items-center gap-2 px-2 py-2 text-sm text-zinc-300 sm:inline-flex">
                 <span className="mr-1 truncate">{email}</span>
                 {showTesterLevel && <span className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${rankPresentation.badge}`}>{rankPresentation.label}</span>}
                 {showDeveloperLevel && <span className="shrink-0 rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2 py-1 text-xs font-semibold text-[#77f29b]">Developer Lv. {developerLevel}</span>}
