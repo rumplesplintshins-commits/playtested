@@ -1,0 +1,72 @@
+// Local PGlite regression for issue #66. No hosted database or real identity.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {PGlite} from '@electric-sql/pglite';
+const db=new PGlite();
+const id=n=>'93000000-0000-4000-8000-'+String(n).padStart(12,'0');
+const doc='https://docs.google.com/document/d/LOCAL_FAKE_DOC_ID/edit';
+const video='https://drive.google.com/file/d/LOCAL_FAKE_RECORDING_ID/view';
+const sql=async(q,p=[])=>db.query(q,p);
+const as=async(user,q,p=[],role='authenticated')=>db.transaction(async tx=>{
+ await tx.exec('set local role '+role);
+ await tx.query("select set_config('test.uid',$1,true)",[user??'']);
+ return tx.query(q,p);
+});
+try{
+ await db.exec(fs.readFileSync('tests/fixtures/merge26-schema.sql','utf8'));
+ // Recreate the broad legacy production SELECT policy, then prove migration closes it.
+ await db.exec(`alter table public.community_game_tests enable row level security;
+ create policy "Authenticated users can view approved game tests" on public.community_game_tests
+ for select to authenticated using(exists(select 1 from public.game_submissions s
+ where s.id=community_game_tests.submission_id and s.status='Approved'));
+ create policy "Testers can view own tests" on public.community_game_tests
+ for select to authenticated using(auth.uid()=tester_id);`);
+ await db.exec(fs.readFileSync('supabase/migrations/20261116184500_private_playtest_evidence.sql','utf8'));
+ await db.exec('grant usage on schema public to anon,authenticated');
+ await sql('insert into auth.users(id) values($1),($2),($3),($4),($5)',[id(1),id(2),id(3),id(4),id(5)]);
+ await sql("insert into profiles(id,role,roles) values($1,'developer',array['developer']),($2,'tester',array['tester']),($3,'developer',array['developer']),($4,'admin',array['player']),($5,'user',array['admin'])",[id(1),id(2),id(3),id(4),id(5)]);
+ await sql("insert into game_submissions(id,developer_id,title,status) values($1,$2,'Sample Realm local fixture','Approved')",[id(10),id(1)]);
+ await sql("insert into community_playtests(id,developer_id,submission_id,title,status,release_label) values($1,$2,$3,'Sample Realm local fixture','open','Local v1')",[id(20),id(1),id(10)]);
+ await sql("insert into community_game_tests(id,submission_id,tester_id,playtest_id,status,review_outcome,feedback,overall_score,gameplay_score,performance_score) values($1,$2,$3,$4,'submitted','pending',$5,9,7,10)",[id(30),id(10),id(2),id(20),'Please see my report: '+doc]);
+ // No unrelated authenticated user may read pending raw reports or tester UUIDs.
+ assert.equal((await as(id(3),'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)])).rows.length,0);
+ assert.equal((await as(id(2),'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)])).rows.length,1);
+ assert.equal((await as(null,'select id,tester_id,feedback from public.community_game_tests where id=$1',[id(30)],'anon')).rows.length,0);
+ const table=await sql("select relrowsecurity from pg_class where oid='public.playtest_private_evidence'::regclass");
+ assert.equal(table.rows[0].relrowsecurity,true);
+ for(const user of [id(1),id(2),id(3)])await assert.rejects(as(user,'select * from public.playtest_private_evidence'),/permission denied/);
+ await assert.rejects(as(null,'select * from public.playtest_private_evidence',[],'anon'),/permission denied/);
+ await assert.rejects(as(id(1),'select * from public.playtest_private_evidence_audit'),/permission denied/);
+ await assert.rejects(as(id(1),"select * from public.get_admin_private_playtest_evidence($1)",[id(30)]),/Admin access required/);
+ await assert.rejects(as(id(5),"select * from public.get_admin_private_playtest_evidence($1)",[id(30)]),/Admin access required/);
+ assert.equal((await as(id(1),"select * from public.get_developer_private_playtest_evidence($1)",[id(20)])).rows.length,0);
+ await assert.rejects(as(null,"select * from public.get_my_private_playtest_evidence($1)",[id(30)],'anon'),/permission denied/);
+ await assert.rejects(sql("update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
+ await as(id(4),"select public.admin_relocate_playtest_private_evidence($1,$2,$3,$4,$5)",[id(30),doc,video,'Supporting playtest report provided privately.','Local fixture evidence relocation']);
+ const stored=(await sql('select feedback,review_outcome,status from community_game_tests where id=$1',[id(30)])).rows[0];
+ assert.equal(stored.feedback,'Supporting playtest report provided privately.');
+ assert.equal(stored.review_outcome,'pending');
+ assert.equal(stored.status,'submitted');
+ const audit=(await sql('select previous_public_feedback,reason from public.playtest_private_evidence_audit where test_id=$1',[id(30)])).rows;
+ assert.equal(audit.length,1);assert(audit[0].previous_public_feedback.includes(doc));
+ const admin=(await as(id(4),'select * from public.get_admin_private_playtest_evidence($1)',[id(30)])).rows[0];
+ assert.equal(admin.document_url,doc);assert.equal(admin.recording_url,video);
+ const tester=(await as(id(2),'select * from public.get_my_private_playtest_evidence($1)',[id(30)])).rows[0];
+ assert.equal(tester.document_url,doc);
+ assert.equal((await as(id(3),'select * from public.get_my_private_playtest_evidence($1)',[id(30)])).rows.length,0);
+ assert.equal((await as(id(3),'select * from public.get_developer_private_playtest_evidence($1)',[id(20)])).rows.length,0);
+ assert.equal((await as(id(1),'select * from public.get_developer_private_playtest_evidence($1)',[id(20)])).rows.length,0);
+ await sql("update community_game_tests set status='reviewed',review_outcome='accepted' where id=$1",[id(30)]);
+ const developer=(await as(id(1),'select * from public.get_developer_private_playtest_evidence($1)',[id(20)])).rows[0];
+ assert.equal(developer.document_url,doc);assert.equal(developer.recording_url,video);
+ assert.equal((await as(id(3),'select * from public.get_developer_private_playtest_evidence($1)',[id(20)])).rows.length,0);
+ assert.equal((await as(id(1),'select * from public.get_developer_private_playtest_evidence($1)',[id(999)])).rows.length,0);
+ assert(!(await sql('select feedback from community_game_tests where id=$1',[id(30)])).rows[0].feedback.includes('docs.google.com'));
+ await sql("update community_game_tests set review_outcome='pending' where id=$1",[id(30)]);
+ await sql('update community_game_tests set feedback=$2 where id=$1',[id(30),'contact user@example.test']);
+ await assert.rejects(sql("update community_game_tests set review_outcome='accepted' where id=$1",[id(30)]),/Public feedback contains a link/);
+ await sql("update community_game_tests set feedback='Public-safe response',review_outcome='accepted' where id=$1",[id(30)]);
+ await assert.rejects(sql("update community_game_tests set focus_responses=$2 where id=$1",[id(30),JSON.stringify({Controls:'https://docs.google.com/document/d/HIDDEN/edit'})]),/Public feedback contains a link/);
+ await assert.rejects(sql("update community_game_tests set feedback=$2 where id=$1",[id(30),'https://docs.google.com/document/d/HIDDEN/edit']),/Public feedback contains a link/);
+ console.log('PASS private evidence: RLS/table denial, wrong-developer denial, owning developer after acceptance, admin/own tester, audited correction, publication guard. Local PGlite only.');
+}catch(error){console.error(error.stack);process.exitCode=1;}finally{await db.close();}

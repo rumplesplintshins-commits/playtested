@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import ts from 'typescript';
 const require=createRequire(import.meta.url);
-function load(file,env={},imports={}){const module={exports:{}};const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','module','exports','process',js)(name=>imports[name]??require(name),module,module.exports,{env:{...process.env,...env},cwd:()=>process.cwd()});return module.exports;}
+function load(file,env={},imports={}){const loaded={exports:{}};const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','module','exports','process',js)(name=>imports[name]??require(name),loaded,loaded.exports,{env:{...process.env,...env},cwd:()=>process.cwd()});return loaded.exports;}
 const env={NODE_ENV:'production',NEXT_PUBLIC_SUPABASE_URL:'https://fixture.supabase.co',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'fixture'};
 const config=load('next.config.ts',env).default;
 function globalSecurityRule(rules){const matches=rules.filter(r=>r.source==='/:path*'&&!r.has&&!r.missing);assert.equal(matches.length,1,'Exactly one unconditional global security rule');return matches[0];}

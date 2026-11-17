@@ -6,7 +6,7 @@ import { GAME_GENRES, normalizeGenrePreferences } from "@/lib/genres";
 import { TesterRankSummary } from "./TesterRankSummary";
 import {RANKS} from "@/lib/tester-rank";
 export {RANKS} from "@/lib/tester-rank";
-import {FEEDBACK_QUALITY_CRITERIA,feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
+import {FEEDBACK_QUALITY_CRITERIA,feedbackQualityLabel,type FeedbackQualityRecord,type FeedbackAppeal} from "@/lib/feedback-review";
 export const QUALITY_CRITERIA=Object.fromEntries(Object.entries(FEEDBACK_QUALITY_CRITERIA).map(([key,value])=>[key,value.label]));
 
 export function QualityGuidance({ collapsible = false }: { collapsible?: boolean }) {
@@ -29,7 +29,7 @@ type Progress = {
     passed: number;
     genres: string[];
 };
-export function TesterRankPanel() {
+export function TesterRankPanel({onProgress,revision=0}: {onProgress?: (data: Progress) => void;revision?:number}) {
     const [data, setData] = useState<Progress | null>(null);
     const [error, setError] = useState("");
     useEffect(() => {
@@ -37,11 +37,12 @@ export function TesterRankPanel() {
         void createClient().rpc("get_my_testing_progress").then(({ data, error }) => {
             if (active) {
                 setData(data);
+                if (data) onProgress?.(data);
                 setError(error?.message || "");
             }
         });
         return () => { active = false; };
-    }, []);
+    }, [onProgress,revision]);
     if (error)
         return <p role="alert">Tester progress unavailable: {error}</p>;
     if (!data)
@@ -77,22 +78,23 @@ export function GenrePreferences() {
     <p role="status" className="mt-2 text-sm">{status}</p>
   </section>;
 }
-export function Reconsideration({ testId, reason }: {
-    testId: string;
-    reason: string | null;
-}) {
-    const [text, setText] = useState("");
-    const [status, setStatus] = useState("");
-    const [busy, setBusy] = useState(false);
-    async function send() { setBusy(true); const { error } = await createClient().rpc("request_test_reconsideration", { p_test_id: testId, p_reason: text }); setStatus(error?.message || "Reconsideration requested. An admin will review your explanation."); setBusy(false); }
-    return <div className="mt-3 text-sm"><p>Quality review reason: {reason || "No reason recorded on this legacy review."}</p><label className="block mt-2">Request reconsideration<textarea className="block w-full rounded bg-black p-2" value={text} onChange={e => setText(e.target.value)}/></label><button disabled={busy || !text.trim()} onClick={send} className="mt-2 rounded border px-3 py-2">Send request</button><p role="status">{status}</p></div>;
+export function Reconsideration({testId,reason,appeal,serverNow,onRefresh}: {testId:string;reason:string|null;appeal?:FeedbackAppeal|null;serverNow?:number|null;onRefresh?:()=>Promise<void>}) {
+ const [text,setText]=useState(""),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
+ const open=appeal?.state==="provisional_rejection";
+ const deadline=appeal?.dispute_deadline?Date.parse(appeal.dispute_deadline):null;
+ const windowClosed=deadline!==null&&serverNow!=null&&serverNow>=deadline;
+ async function dispute(){setBusy(true);setNotice("");try{const {error}=await createClient().rpc("request_test_reconsideration",{p_test_id:testId,p_reason:text.trim()});if(error){setNotice(error.message);return;}setNotice("Dispute submitted. Your original report and place are preserved until an admin decides.");await onRefresh?.();}catch{setNotice("Could not confirm the dispute. Refresh review status before retrying.");}finally{setBusy(false);}}
+ return <section id={"feedback-dispute-"+testId} aria-label="Feedback decision and dispute" className="mt-3 space-y-3 rounded-lg border border-amber-200/20 p-3 text-sm"><p>Review reason: {appeal?.decision_reason||appeal?.rejection_reason||reason||"No recorded reason."}</p>
+ {open?<><p>Your feedback was provisionally rejected. Your original report continues to occupy its place. You may send one written dispute within 24 hours of the initial rejection.</p><p>Dispute deadline: {appeal.dispute_deadline?new Date(appeal.dispute_deadline).toLocaleString():"Checking deadline"}</p>{windowClosed?<p>The dispute window has closed. The server will finalise the rejection automatically.</p>:<><label className="block">Additional information or clarification<textarea maxLength={10000} rows={4} value={text} onChange={event=>setText(event.target.value)} disabled={busy} className="mt-2 block w-full rounded border border-white/20 bg-black/30 p-2"/></label><button type="button" disabled={busy||!text.trim()} onClick={()=>void dispute()} className="rounded border border-amber-200/30 px-3 py-2 disabled:opacity-50">Submit one dispute</button></>}</>:
+ appeal?.state==="disputed"?<><p>Your dispute is awaiting an admin decision. Your place remains occupied; it does not expire while the dispute is active.</p><p className="whitespace-pre-wrap break-words">Your clarification: {appeal.dispute_text}</p></>:<p>Final rejection. You can test other games now. {appeal?.cooldown_until?<>The 24-hour same-game cooldown ends {new Date(appeal.cooldown_until).toLocaleString()}. After it ends, you may claim a new place if the campaign is open and space is available.</>:"A 24-hour same-game cooldown applies before a new claim."} Your original report remains in history.</p>}
+ {notice&&<p role="status">{notice}</p>}<button type="button" disabled={busy} className="text-xs text-zinc-400 underline" onClick={()=>void onRefresh?.()}>Refresh review status</button></section>;
 }
 export function useTestingCapacityPolicy(){
  const [data,setData]=useState<{places:number;reservation_hours:number;server_now:string;activated_at:string|null}|null>(null);
  useEffect(()=>{let active=true;void createClient().rpc('get_testing_capacity_policy').then(({data,error})=>{if(active&&!error&&data)setData(data);});return()=>{active=false;};},[]);
  return data;
 }
-export function PlacesRules({inline=false,hours}:{inline?:boolean;hours?:number}){const content=<p className="mt-2">A new confirmed claim reserves one place {hours?`for ${hours} hours`:"until its server-issued deadline"}. Already-issued deadlines are preserved. Starting or refreshing does not extend it. Release or expiry before submission frees the place, with no XP penalty. Expired drafts are kept; reclaim a place before submitting. Submitted feedback uses a place regardless of review outcome, except an audited moderator replacement. Community feedback is separate. Places do not guarantee participation or accepted feedback.</p>;return inline?content:<details className="mt-2 text-sm leading-6 text-zinc-400"><summary className="w-fit cursor-pointer py-2">How places work</summary>{content}</details>;}
+export function PlacesRules({inline=false,hours}:{inline?:boolean;hours?:number}){const content=<p className="mt-2">A new confirmed claim reserves one place {hours?`for ${hours} hours`:"until its server-issued deadline"}. Already-issued deadlines are preserved. Starting or refreshing does not extend it. Release or expiry before submission frees the place, with no XP penalty. Expired drafts are kept; reclaim a place before submitting. Submitted feedback, provisional rejections and active disputes keep their place. You have 24 hours from an initial rejection to submit one written dispute. Only final rejection releases the place; a 24-hour same-game cooldown then applies before a new claim. Original reports remain in history. Accepted feedback counts toward the target. Community feedback is separate. Places do not guarantee participation or accepted feedback.</p>;return inline?content:<details className="mt-2 text-sm leading-6 text-zinc-400"><summary className="w-fit cursor-pointer py-2">How places work</summary>{content}</details>;}
 export function ReservationNotice({expiresAt,now,hours,claimed=false}:{expiresAt?:string|null;now:number|null;hours?:number;claimed?:boolean}){
  if(!expiresAt&&claimed)return <p className="mt-2 text-xs text-zinc-400">{hours?"Historical reservation: its original transition has not been activated yet.":"Reservation deadline unavailable. Your existing claim is unchanged."}</p>;
  if(!expiresAt)return <p className="mt-2 text-xs text-zinc-400">{now&&hours?`If claimed now: submit by ${new Date(now+hours*3600000).toLocaleString()}. ${hours}-hour reservation begins when confirmed.`:'Reservation deadline will be shown when server rules are available.'}</p>;
@@ -101,13 +103,13 @@ export function ReservationNotice({expiresAt,now,hours,claimed=false}:{expiresAt
  return <p role="status" className={`mt-2 text-sm ${remaining<=86400000?'text-amber-200':'text-zinc-400'}`}>{remaining<=0?'Reservation expired. Your draft is kept. Reclaim a place before submitting.':`${remaining<=86400000?'Final 24 hours · ':''}${Math.ceil(remaining/3600000)}h remaining · Submit by ${new Date(expiresAt).toLocaleString()}.`}</p>;
 }
 export function CampaignPlaces({id,refreshKey,compact=false,showRules=true,summaryOnly=false,availabilityOptIn=false,canRequestAvailability=true}:{id:string;refreshKey?:string;compact?:boolean;showRules?:boolean;summaryOnly?:boolean;availabilityOptIn?:boolean;canRequestAvailability?:boolean}){
- const [data,setData]=useState<{submitted:number;testing:number;available:number;capacity?:number;accepted?:number;reservation_hours?:number}|null>(null),[error,setError]=useState(""),[revision,setRevision]=useState(0),[loading,setLoading]=useState(true),[loadedId,setLoadedId]=useState("");
+ const [data,setData]=useState<{submitted:number;testing:number;available:number;capacity?:number;accepted?:number;pending?:number;awaiting_admin?:number;awaiting_tester?:number;disputes?:number;rejected?:number;reservation_hours?:number}|null>(null),[error,setError]=useState(""),[revision,setRevision]=useState(0),[loading,setLoading]=useState(true),[loadedId,setLoadedId]=useState("");
  useEffect(()=>{let active=true;void Promise.resolve().then(()=>{if(active)setLoading(true);return createClient().rpc("get_campaign_testing_details",{p_id:id});}).then(({data,error})=>{if(active){setLoadedId(id);setData(data);setError(error?.message||(!data?"Places data unavailable":""));}}).catch(()=>{if(active){setLoadedId(id);setData(null);setError("Request failed. Retry to check current places.");}}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[id,refreshKey,revision]);
  const current=loadedId===id?data:null,problem=loadedId===id?error:"";
  const capacityLabel=current?(compact?(current.available===0?(current.submitted>=(current.capacity??(current.submitted+current.testing))?'Capacity reached':'All places reserved'):'Places available'):`${current.capacity??(current.submitted+current.testing+current.available)} places`):"";
  const acceptedLabel=current&&typeof current.accepted==="number"&&current.capacity?` | ${current.accepted}/${current.capacity} accepted`:"";
  if(summaryOnly)return <span className="block text-xs leading-4 text-[#77f29b]" role={problem?"alert":"status"}>{problem?"Places currently unavailable":current?`${current.available} ${current.available===1?"place":"places"} available`:"Checking places…"}</span>;
- return <div className="my-2"><div className="flex flex-wrap items-center gap-x-4 gap-y-2"><p className="min-w-0 text-sm text-zinc-300" role={problem?'alert':'status'}>{problem?`Places unavailable: ${problem}`:current?`${capacityLabel}${acceptedLabel} | ${current.submitted} submitted | ${current.testing} reserved | ${current.available} available`:"Loading places..."}</p><button type="button" disabled={loading} onClick={()=>{setLoading(true);setRevision(n=>n+1);}} className="rounded border border-white/20 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50">{loading?'Refreshing places...':'Refresh places'}</button></div>{!compact&&showRules&&<PlacesRules hours={current?.reservation_hours}/>}{availabilityOptIn&&current&&<AvailabilityPreference id={id} available={current.available} canRequest={canRequestAvailability}/>}</div>;
+ return <div className="my-2"><div className="flex flex-wrap items-center gap-x-4 gap-y-2"><p className="min-w-0 text-sm text-zinc-300" role={problem?'alert':'status'}>{problem?`Places unavailable: ${problem}`:current?`${capacityLabel}${acceptedLabel} | ${current.awaiting_admin??current.pending??Math.max(0,current.submitted-(current.accepted??0))} awaiting admin review${current.awaiting_tester?` | ${current.awaiting_tester} provisional rejection`:""}${current.disputes?` | ${current.disputes} active dispute`:""} | ${current.testing} reserved | ${current.available} available`:"Loading places..."}</p><button type="button" disabled={loading} onClick={()=>{setLoading(true);setRevision(n=>n+1);}} className="rounded border border-white/20 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50">{loading?'Refreshing places...':'Refresh places'}</button></div>{!compact&&showRules&&<PlacesRules hours={current?.reservation_hours}/>}{availabilityOptIn&&current&&<AvailabilityPreference id={id} available={current.available} canRequest={canRequestAvailability}/>}</div>;
 }
 export function FeedbackSignal({ testId }: {
     testId: string;
@@ -138,5 +140,5 @@ export function DeveloperQualityReports({ campaignId }: {
         setReports(data || []);
         setError(error?.message || "");
     } }); return () => { active = false; }; }, [campaignId]);
-    return <section className="my-4 rounded-xl border border-white/10 p-4"><h3 className="font-semibold">Independent reports and quality signals</h3><CampaignPlaces id={campaignId}/><p className="my-2 text-sm text-zinc-400">Submitted reports use a tester place regardless of review outcome. Small samples are early feedback, not statistical confidence. Community responses are separate. The platform allowance does not prevent public link sharing or feedback collected elsewhere.</p>{error && <p role="alert">{error}</p>}{reports.map(r => <details key={r.id} className="my-3 rounded border border-white/10 p-3"><summary>Independent report · {r.outcome} · Overall {r.overall ?? "unrated"}</summary><p className="mt-2 text-xs text-zinc-400">{feedbackQualityLabel(r)}</p>{([['What worked', r.enjoyed], ['What did not', r.frustrations], ['Improvement', r.improvement], ['Bugs', r.bugs], ['Additional feedback', r.feedback]] as const).map(([label, text]) => <div className="my-2" key={label}><h4 className="font-semibold">{label}</h4><p className="whitespace-pre-wrap">{text || "Not provided"}</p></div>)}<FeedbackSignal testId={r.id}/></details>)}</section>;
+    return <section className="my-4 rounded-xl border border-white/10 p-4"><h3 className="font-semibold">Independent reports and quality signals</h3><CampaignPlaces id={campaignId}/><p className="my-2 text-sm text-zinc-400">Pending reports, provisional rejections and active disputes occupy a place. Accepted reports count toward the target. Only final rejection releases the place and starts the same-game cooldown. Small samples are early feedback, not statistical confidence. Community responses are separate. The platform allowance does not prevent public link sharing or feedback collected elsewhere.</p>{error && <p role="alert">{error}</p>}{reports.map(r => <details key={r.id} className="my-3 rounded border border-white/10 p-3"><summary>Independent report · {r.outcome} · Overall {r.overall ?? "unrated"}</summary><p className="mt-2 text-xs text-zinc-400">{feedbackQualityLabel(r)}</p>{([['What worked', r.enjoyed], ['What did not', r.frustrations], ['Improvement', r.improvement], ['Bugs', r.bugs], ['Additional feedback', r.feedback]] as const).map(([label, text]) => <div className="my-2" key={label}><h4 className="font-semibold">{label}</h4><p className="whitespace-pre-wrap">{text || "Not provided"}</p></div>)}<FeedbackSignal testId={r.id}/></details>)}</section>;
 }

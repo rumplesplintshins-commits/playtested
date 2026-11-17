@@ -7,7 +7,8 @@ import ts from 'typescript';
 const rankModel={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/tester-rank.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(rankModel);
 const exports={};
 const source=ts.transpileModule(fs.readFileSync('app/components/TesterRankSummary.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
-const require=createRequire(import.meta.url);new Function('exports','require',source)(exports,name=>name==='@/lib/tester-rank'?rankModel:require(name));
+const genres={};new Function('exports',ts.transpileModule(fs.readFileSync('lib/genres.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(genres);
+const require=createRequire(import.meta.url);new Function('exports','require',source)(exports,name=>name==='@/lib/tester-rank'?rankModel:name==='@/lib/genres'?genres:require(name));
 const render=data=>renderToStaticMarkup(createElement(exports.TesterRankSummary,{data,ranks:['Bronze','Silver','Gold','Platinum']}));
 const current=render({rank:0,xp:300,accepted:2,reviewed:2,passed:2});
 assert.ok(current.includes('Bronze'));assert.ok(current.includes('Silver'));assert.ok(current.includes('200 XP and 3 accepted tests to go'));
@@ -32,3 +33,6 @@ if(process.argv.includes('--browser')){
 }
 
 const partial=render({rank:0,xp:60,accepted:1,reviewed:1,passed:1});assert(partial.includes('60 XP'));assert(partial.includes('width:12%'));assert(partial.includes('Partial positive-XP acceptance counts as one'));assert(partial.includes('acceptance rate'));
+
+for(const values of [[],['RPG'],['Strategy','Action','RPG']]){const html=render({rank:0,xp:0,accepted:0,reviewed:0,passed:0,genres:values});assert(html.includes('Your preferred genres'));assert(html.includes('/account#testing-interests'));if(!values.length){assert(html.includes('No preferred genres selected.'));assert(html.includes('Add genres'));}else{assert(html.includes('Edit'));for(const genre of values)assert(html.includes('>'+genre+'</span>'));if(values.length>1)assert(html.indexOf('>Action</span>')<html.indexOf('>RPG</span>'));}}
+console.log('PASS rank genres: empty/single/multiple saved preferences, settings ordering and edit/add destination');

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { acquisitionContext, steamReferralsAllowed, analyticsAllowed, saveAnalyticsChoice, AnalyticsPurpose, analyticsSessionKey } from "@/lib/acquisition";
+import { acquisitionContext, purposeAllowed, steamReferralsAllowed, analyticsAllowed, saveAnalyticsChoice, AnalyticsPurpose, analyticsSessionKey } from "@/lib/acquisition";
 
 function subscribePreference(notify: () => void) {
   window.addEventListener("storage", notify);
@@ -12,6 +12,7 @@ export default function PrivacyAnalytics() {
   const path = usePathname();
   const enabled = useSyncExternalStore(subscribePreference, analyticsAllowed, () => false);
   const referralsEnabled=useSyncExternalStore(subscribePreference,steamReferralsAllowed,()=>false);
+  const proEnabled = useSyncExternalStore(subscribePreference, () => purposeAllowed("pro"), () => false);
   const [notice, setNotice] = useState("");
   useEffect(() => {
     if (!analyticsAllowed() || navigator.doNotTrack === "1" || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl) return;
@@ -31,7 +32,7 @@ export default function PrivacyAnalytics() {
   function choose(purpose: AnalyticsPurpose, allowed: boolean) {
     try {
       saveAnalyticsChoice(purpose, allowed);
-      window.dispatchEvent(new Event("analytics-preference")); setNotice(`${purpose === "pages" ? "Page analytics" : "Steam referral measurement"} ${allowed ? "enabled" : "disabled"}.`);
+      window.dispatchEvent(new Event("analytics-preference")); setNotice(`${purpose === "pages" ? "Page analytics" : purpose === "pro" ? "Pro interest measurement" : "Steam referral measurement"} ${allowed ? "enabled" : "disabled"}.`);
     } catch {
       window.dispatchEvent(new Event("analytics-preference"));
       setNotice(allowed ? "Your browser could not save permission; no new permission was granted." : "Withdrawal applies in this tab, but could not be saved. Check your choice after reopening the site.");
@@ -41,8 +42,10 @@ export default function PrivacyAnalytics() {
     <p className="mt-3">Optional first-party analytics are off until you allow them. With permission, we count page views and approximate visits using a random identifier in this tab for up to 30 minutes of inactivity, plus campaign labels and a broad referral category. No fingerprinting, advertising pixels or analytics cookies. We remember your choice for 180 days in browser storage. You can withdraw here at any time. Privacy signals may suppress collection even when enabled.</p>
     <p className="mt-2">Separately, Steam referral measurement counts intentional View Steam Page clicks from Testing Activity for aggregate game reporting, without account, report or session identifiers. Events are kept for 90 days. Steam opens normally if you decline. Earlier permissions are not carried into these new choices.</p>
     <p className="mt-2">Steam referral measurement: {referralsEnabled?'Allowed':'Off'}.</p>
+    <p className="mt-2">Separately, optional Pro interest measurement records Ask about Pro clicks with your account ID and time for up to 90 days to count unique developers. Only admins see aggregate counts. It does not record email enquiries or payments. Existing permissions do not enable it. Contact opens normally if you decline.</p>
+    <p className="mt-2">Pro interest measurement: {proEnabled ? "Allowed" : "Off"}.</p>
     <p className="mt-2">Current choice: {enabled ? "Allowed" : "Off"}. See the <a href="/privacy" className="underline">Privacy Notice</a>.</p>
-    {([['pages', 'page analytics'], ['steam', 'Steam referrals']] as const).map(([purpose, label]) => <fieldset key={purpose} className="mt-3 rounded border border-zinc-700 p-3"><legend className="px-1 capitalize">{label}</legend><div className="flex flex-wrap gap-3"><button onClick={() => choose(purpose, true)} className="rounded border border-zinc-600 px-4 py-2">Allow {label}</button><button onClick={() => choose(purpose, false)} className="rounded border border-zinc-600 px-4 py-2">Reject {label}</button></div></fieldset>)}
+    {([['pages', 'page analytics'], ['steam', 'Steam referrals'], ['pro', 'Pro interest measurement']] as const).map(([purpose, label]) => <fieldset key={purpose} className="mt-3 rounded border border-zinc-700 p-3"><legend className="px-1 capitalize">{label}</legend><div className="flex flex-wrap gap-3"><button onClick={() => choose(purpose, true)} className="rounded border border-zinc-600 px-4 py-2">Allow {label}</button><button onClick={() => choose(purpose, false)} className="rounded border border-zinc-600 px-4 py-2">Reject {label}</button></div></fieldset>)}
     {notice && <p role="status" className="mt-3">{notice}</p>}
   </details>;
 }

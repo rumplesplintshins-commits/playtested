@@ -1,7 +1,9 @@
+import {normalizeGenrePreferences} from "@/lib/genres";
 import {testerRankPresentation} from "@/lib/tester-rank";
-type TesterProgress = { rank: number; xp: number; accepted: number; reviewed: number; passed: number };
+type TesterProgress = { rank: number; xp: number; accepted: number; reviewed: number; passed: number; genres?: string[] };
 
 export function TesterRankSummary({ data, ranks }: { data: TesterProgress; ranks: readonly string[] }) {
+  const genres = normalizeGenrePreferences(data.genres || []);
   const next = data.rank + 1;
   const nextXp = [0, 500, 2000, 5000][next];
   const nextAccepted = [0, 5, 20, 50][next];
@@ -13,7 +15,7 @@ export function TesterRankSummary({ data, ranks }: { data: TesterProgress; ranks
     <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_1.1fr] lg:items-center">
       <div className="flex items-center gap-4">
         <div aria-hidden="true" className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border ${rank.badge}`}><svg width="34" height="38" viewBox="0 0 34 38" fill="none"><path d="M17 2 31 8v11c0 8-7 13-14 17C10 32 3 27 3 19V8L17 2Z" stroke="currentColor" strokeWidth="1.5"/><path d="m17 10 2.3 4.7 5.2.8-3.8 3.6.9 5.2-4.6-2.5-4.6 2.5.9-5.2-3.8-3.6 5.2-.8L17 10Z" fill="currentColor"/></svg></div>
-        <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Your tester rank</p><h2 className={`mt-1 text-xl font-semibold tracking-tight ${rank.text}`}>{rank.label}</h2><p className="mt-2 text-sm text-zinc-400"><span className="font-medium tabular-nums text-zinc-200">{data.xp.toLocaleString()} XP</span><span className="mx-2 text-zinc-700">/</span><span className="font-medium text-zinc-200">{data.accepted}</span> accepted test{data.accepted === 1 ? "" : "s"}</p></div>
+        <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Your tester rank</p><h2 className={`mt-1 text-xl font-semibold tracking-tight ${rank.text}`}>{rank.label}</h2><p className="mt-2 text-sm text-zinc-400"><span className="font-medium tabular-nums text-zinc-200">{data.xp.toLocaleString()} XP</span><span className="mx-2 text-zinc-700">/</span><span className="font-medium text-zinc-200">{data.accepted}</span> accepted test{data.accepted === 1 ? "" : "s"}</p><div className="mt-4"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Your preferred genres</p><div className="mt-2 flex flex-wrap items-center gap-2">{genres.length ? genres.map(genre=><span key={genre} className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-zinc-300">{genre}</span>) : <span className="text-xs text-zinc-400">No preferred genres selected.</span>}<a href="/account#testing-interests" className="text-xs text-zinc-400 underline underline-offset-2 hover:text-zinc-200">{genres.length ? "Edit" : "Add genres"}</a></div></div></div>
       </div>
       {next < ranks.length ? <div className="space-y-3 lg:border-l lg:border-white/[0.07] lg:pl-6">
         <p className="text-sm text-zinc-400">Next rank <span className={`ml-1 rounded-full border px-2 py-0.5 font-semibold ${nextRank.badge}`}>{nextRank.label}</span></p>

@@ -78,6 +78,18 @@ type AcceptedIndependentFeedback = {
   submitted_at: string | null;
 };
 
+type PrivateEvidenceLink = {test_id: string; document_url: string | null; recording_url: string | null};
+
+export function DeveloperEvidenceLinks({evidence}:{evidence?:PrivateEvidenceLink}) {
+  if(!evidence?.document_url && !evidence?.recording_url)return null;
+  return <section aria-label="Private supporting evidence" className="mt-4 space-y-3 rounded-lg border border-emerald-300/20 bg-emerald-300/[0.035] p-3">
+    <h5 className="font-semibold text-emerald-200">Additional evidence private to you</h5>
+    {evidence.document_url?.startsWith("https://") && <div><p className="mb-1 text-xs text-zinc-400">Additional Playtested feedback form</p><a className="break-all text-sm text-emerald-300 underline underline-offset-2" href={evidence.document_url} target="_blank" rel="noopener noreferrer">Open feedback document</a></div>}
+    {evidence.recording_url?.startsWith("https://") && <div><p className="mb-1 text-xs text-zinc-400">Gameplay recording</p><a className="break-all text-sm text-emerald-300 underline underline-offset-2" href={evidence.recording_url} target="_blank" rel="noopener noreferrer">Watch gameplay recording</a></div>}
+    <p className="text-xs text-zinc-500">External file permissions may reveal the sharer’s identity. Links are not embedded automatically.</p>
+  </section>;
+}
+
 type CommunityFeedbackResponse = {
   feedback_id: string;
   participant_id: string;
@@ -237,6 +249,7 @@ function HistoricalPlaytestCard({
     AcceptedIndependentFeedback[]
   >([]);
   const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
+  const [privateEvidence, setPrivateEvidence] = useState<Record<string, PrivateEvidenceLink>>({});
 
   async function loadResults() {
     if (loading) {
@@ -248,7 +261,7 @@ function HistoricalPlaytestCard({
 
     const supabase = createClient();
 
-    const [communityResult, progressResult, feedbackResult, genresResult] =
+    const [communityResult, progressResult, feedbackResult, genresResult, evidenceResult] =
       await Promise.all([
         supabase.rpc("get_developer_community_playtest_results", {
           p_playtest_id: playtest.id,
@@ -260,17 +273,18 @@ function HistoricalPlaytestCard({
           p_playtest_id: playtest.id,
         }),
         supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtest.id }),
+        supabase.rpc("get_developer_private_playtest_evidence", { p_playtest_id: playtest.id }),
       ]);
 
     if (
       communityResult.error ||
       progressResult.error ||
-      feedbackResult.error || genresResult.error
+      feedbackResult.error || genresResult.error || evidenceResult.error
     ) {
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ?? genresResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ?? evidenceResult.error?.message ??
           "Could not load historical playtest results."
       );
       setLoading(false);
@@ -289,6 +303,7 @@ function HistoricalPlaytestCard({
     setAcceptedFeedback(
       (feedbackResult.data ?? []) as AcceptedIndependentFeedback[]
     );
+    setPrivateEvidence(Object.fromEntries(((evidenceResult.data ?? []) as PrivateEvidenceLink[]).map(row=>[row.test_id,row])));
 
     setTesterGenres(Object.fromEntries(
       ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
@@ -527,6 +542,7 @@ function HistoricalPlaytestCard({
                                     {response.bugs_found ||
                                       "No bugs reported."}
                                   </p>
+                                  <DeveloperEvidenceLinks evidence={privateEvidence[response.test_id]} />
                                 </div>
                               </details>
                             ))
@@ -808,6 +824,7 @@ function ResultsDashboard({
   independentProgress,
   acceptedFeedback,
   testerGenres,
+  privateEvidence,
   feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
   playtest: ExistingPlaytest;
@@ -815,6 +832,7 @@ function ResultsDashboard({
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
   testerGenres?: Record<string, string[]>;
+  privateEvidence?: Record<string, PrivateEvidenceLink>;
   feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
 }) {
   const [snapshotExpanded,setSnapshotExpanded]=useState(true);
@@ -1114,7 +1132,7 @@ function ResultsDashboard({
       {includesPlaytestedTesters(playtest.audience)&&<section aria-label="Tester Hub feedback progress" className="space-y-2 border-y border-white/10 py-3 text-sm">
         <CampaignPlaces id={playtest.id} compact/>
         <div className="flex flex-wrap items-center justify-between gap-3"><p>{acceptedForTarget} quality-accepted reports{independentProgress&&independentProgress.total_testers!==acceptedForTarget?` | ${independentProgress.total_testers} participating testers`:""}</p><button type="button" aria-controls={individualResponsesId} onClick={()=>revealFeedback('individual')} className="rounded-lg border border-white/20 px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300">View individual responses</button></div>
-        <details className="text-sm text-zinc-400"><summary className="w-fit cursor-pointer py-2 font-semibold">How places and review work</summary><PlacesRules inline/><p className="mt-2">Quality review measures feedback usefulness. Submitted reports consume capacity regardless of acceptance; community responses are separate.</p>{independentProgress&&<p className="mt-2">Tester Hub statuses: {independentProgress.submitted_count} submitted | {independentProgress.accepted_count} accepted | {independentProgress.rejected_count} not accepted.</p>}<p className="mt-2">Campaigns do not close automatically. {playtest.status==='closed'?'This round is closed.':'Review the responses before deciding when to close this round.'}</p></details>
+        <details className="text-sm text-zinc-400"><summary className="w-fit cursor-pointer py-2 font-semibold">How places and review work</summary><PlacesRules inline/><p className="mt-2">Quality review measures feedback usefulness. Pending feedback and valid reservations occupy places. Provisional rejection and an active dispute keep the original place. Only final rejection releases it, followed by a 24-hour same-game cooldown. Accepted feedback counts toward the target. Community responses are separate.</p>{independentProgress&&<p className="mt-2">Tester Hub statuses: {independentProgress.submitted_count} awaiting review/dispute | {independentProgress.accepted_count} accepted | {independentProgress.rejected_count} not accepted.</p>}<p className="mt-2">Campaigns complete when their accepted-feedback target is reached. Rejection does not reopen a paused or closed round. {playtest.status==='closed'?'This round is closed.':'You can also pause or close recruitment deliberately.'}</p></details>
       </section>}
 
       <div role="tablist" aria-label="Build feedback" className="grid grid-cols-3 gap-1 border-b border-white/10">{feedbackTabs.map(([tab,label],index)=><button key={tab} ref={node=>{feedbackTabRefs.current[index]=node;}} type="button" role="tab" id={feedbackId+'-tab-'+tab} aria-selected={activeTab===tab} aria-controls={feedbackId+'-panel-'+tab} tabIndex={activeTab===tab?0:-1} onClick={()=>changeTab(tab)} onKeyDown={event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?2:(index+(event.key==='ArrowRight'?1:2))%3;changeTab(feedbackTabs[next][0]);feedbackTabRefs.current[next]?.focus();}} className={`min-w-0 whitespace-normal border-b-2 px-2 py-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300 sm:text-sm ${activeTab===tab?'border-emerald-300 text-emerald-200':'border-transparent text-zinc-400 hover:text-white'}`}>{label}</button>)}</div>
@@ -1371,6 +1389,7 @@ function ResultsDashboard({
                     </p>
                   </div>
                 )}
+                <DeveloperEvidenceLinks evidence={privateEvidence?.[response.test_id]} />
                 {!response.test_id.startsWith("preview-") && (
                   <FeedbackUsefulness testId={response.test_id} />
                 )}
@@ -1498,6 +1517,7 @@ function BuildResultsPanel({
   const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
   const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
   const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
+  const [privateEvidence, setPrivateEvidence] = useState<Record<string, PrivateEvidenceLink>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
@@ -1514,24 +1534,26 @@ function BuildResultsPanel({
 
     const supabase = createClient();
     try {
-    const [communityResult, progressResult, feedbackResult, genresResult] = await Promise.all([
+    const [communityResult, progressResult, feedbackResult, genresResult, evidenceResult] = await Promise.all([
       supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtestId }),
+      supabase.rpc("get_developer_private_playtest_evidence", { p_playtest_id: playtestId }),
     ]);
     if(request!==resultRequest.current)return;
     setLoadedBuildId(playtestId);
 
-    if (communityResult.error || progressResult.error || feedbackResult.error || genresResult.error) {
+    if (communityResult.error || progressResult.error || feedbackResult.error || genresResult.error || evidenceResult.error) {
       setCommunityResults(null);
       setIndependentProgress(null);
       setAcceptedFeedback([]);
       setTesterGenres({});
+      setPrivateEvidence({});
       setError(
         communityResult.error?.message ??
           progressResult.error?.message ??
-          feedbackResult.error?.message ?? genresResult.error?.message ??
+          feedbackResult.error?.message ?? genresResult.error?.message ?? evidenceResult.error?.message ??
           "Could not load results for this build."
       );
       setLoading(false);
@@ -1542,6 +1564,7 @@ function BuildResultsPanel({
     const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+    setPrivateEvidence(Object.fromEntries(((evidenceResult.data ?? []) as PrivateEvidenceLink[]).map(row=>[row.test_id,row])));
 
     setTesterGenres(Object.fromEntries(
       ((genresResult.data ?? []) as {test_id:string;preferred_genres:string[]|null}[])
@@ -1639,6 +1662,7 @@ function BuildResultsPanel({
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
             testerGenres={testerGenres}
+            privateEvidence={privateEvidence}
           />
         ) : null}
       </div>
@@ -2320,10 +2344,9 @@ export default function StartPlaytest({
                   : `Target ${existingPlaytest.targetTesters} accepted tests`}
               </span>
               {playtestedProgress &&
-                Math.max(0, playtestedProgress.submitted_count) >
-                  playtestedProgress.accepted_count + playtestedProgress.rejected_count && (
+                playtestedProgress.submitted_count > 0 && (
                   <span className="rounded-full border border-amber-300/25 bg-amber-300/[0.06] px-3 py-1.5 text-xs font-medium text-amber-200">
-                    Awaiting moderation
+                    Awaiting review or dispute
                   </span>
                 )}
             </div>
