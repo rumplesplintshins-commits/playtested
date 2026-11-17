@@ -615,6 +615,6 @@ do $$declare f regprocedure;begin for f in select oid::regprocedure from pg_proc
  '_feedback_campaign_game_key','_feedback_report_game_key','_feedback_game_cooldown_until','_feedback_report_holds_place','_validate_feedback_assessment','_notify_feedback_final_rejection','_expire_feedback_appeal','_expire_campaign_feedback_appeals','_assert_feedback_game_retry','_feedback_appeal_view','process_feedback_appeal_expiry') loop execute format('revoke all on function %s from public,anon,authenticated',f);end loop;end;$$;
 grant execute on function public.process_feedback_appeal_expiry(integer) to service_role;
 create extension if not exists pg_cron with schema pg_catalog;
-select cron.schedule('playtested-feedback-appeals-expiry','5 seconds','select public.process_feedback_appeal_expiry();');
+select cron.schedule('playtested-feedback-appeals-expiry','* * * * *','select public.process_feedback_appeal_expiry();');
 notify pgrst,'reload schema';
 commit;

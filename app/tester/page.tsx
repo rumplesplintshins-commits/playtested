@@ -647,7 +647,7 @@ function FeedbackForm({
                   required={Boolean(additionalDocumentUrl.trim() || gameplayRecordingUrl.trim())}
                 />
                 <span>
-                  I confirm I have checked the linked documents or recordings for personal information and agree to share them with Playtested admins and, after approval, the game's developer. I understand I am responsible for checking external file contents and sharing settings. Playtested cannot control personal information exposed through third-party files or links.
+                  I confirm I have checked the linked documents or recordings for personal information and agree to share them with Playtested admins and, after approval, the game&apos;s developer. I understand I am responsible for checking external file contents and sharing settings. Playtested cannot control personal information exposed through third-party files or links.
                   <span className="mt-1 block text-zinc-400">Required when you add a document or video link; optional otherwise.</span>
                 </span>
               </label>
