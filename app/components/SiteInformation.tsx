@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "./SiteHeader";
 import SupportEmail from "./SupportEmail";
+import SocialLinks from "./SocialLinks";
 import {LEGAL_REVIEW_DATE,LEGAL_VERSION,privacySections,termsSections} from "@/lib/site-information";
 
 export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"}) {
@@ -9,7 +10,7 @@ export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"
   return <main className="min-h-screen bg-[#090b0a] text-zinc-100">
     <SiteHeader/>
     <article className="mx-auto max-w-3xl px-5 py-10 text-base leading-7 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-bold sm:text-4xl">{title}</h1>
+      <h1 className="wrap-anywhere text-3xl font-bold sm:text-4xl">{title}</h1>
       {!contact&&<><p className="mt-3 text-sm text-zinc-400">Version {LEGAL_VERSION} · Reviewed {LEGAL_REVIEW_DATE}. No effective date has been set.</p><aside className="mt-6 rounded-lg border border-amber-300/30 bg-amber-300/5 p-4 text-sm text-amber-100"><strong>Draft — not final launch terms or a completed privacy notice.</strong> Playtested is operated by an individual using the public name N Quanja. For controller identity verification, correspondence, privacy rights, or a request for an appropriate service address, contact support.playtested@gmail.com. We may ask for proportionate verification of the requester&apos;s identity before disclosing account information. Accounts are 18+ and services are currently free. No public postal address is currently supplied. Whether additional legal identity or postal-address disclosure is required, along with jurisdiction, lawful-basis assessments, provider arrangements, rights procedures and effective date, still requires review. This version does not record your acceptance.</aside></>}
       {contact?<>
         <p className="mt-5 text-zinc-300">Email Playtested for help with your account, a game or a review. This opens your email app; messages are not sent from this page.</p>
@@ -19,6 +20,11 @@ export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"
         <h2 className="mt-8 text-xl font-semibold">What to include</h2>
         <p className="mt-3 text-zinc-300">Include the relevant game or report reference, a description of the problem and any steps that reproduce it. Redact private information from screenshots. Never send passwords, API keys, private access tokens or payment details.</p>
         <p className="mt-4 text-zinc-300">For an appeal, explain which decision you disagree with and why. For privacy requests, describe the information or account involved; we may need to confirm your identity through an appropriate channel.</p>
+        <section aria-labelledby="follow-playtested" className="mt-8 border-t border-white/10 pt-6">
+          <h2 id="follow-playtested" className="text-xl font-semibold">Follow Playtested</h2>
+          <p className="mt-3 text-zinc-300">Developers and testers can follow our progress, discover indie games and hear about new playtesting opportunities.</p>
+          <div className="mt-3"><SocialLinks /></div>
+        </section>
       </>:<>
         {(kind==="terms"?termsSections:privacySections).map(([heading,body])=><section key={heading} className="mt-8"><h2 className="text-xl font-semibold">{heading}</h2><p className="mt-3 whitespace-pre-line text-zinc-300">{body}</p></section>)}
         <section className="mt-8"><h2 className="text-xl font-semibold">Contact Playtested</h2><p className="mt-3 text-zinc-300">Use our <Link className="text-emerald-300 underline underline-offset-4" href="/contact">Contact/Support page</Link> for questions, requests or appeals.</p><SupportEmail/></section>
