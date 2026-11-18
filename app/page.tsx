@@ -39,8 +39,9 @@ export default async function Home() {
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             <section aria-labelledby="home-developers" className="flex flex-col rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.035] p-5">
               <h2 id="home-developers" className="text-lg font-semibold text-white">Making a game?</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">Submit your game, tell testers what you want them to focus on, and read their feedback for each build. Find out what works and what could be better.</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">Need playtesters for your Steam, PC or browser game? Submit a playable build, tell testers what to focus on, and receive structured feedback on gameplay, performance and bugs.</p>
               <Link href="/submit" className="mt-5 rounded-lg bg-[#77f29b] px-4 py-3 text-center text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Submit a game</Link>
+              <Link href="/find-playtesters" className="mt-3 text-center text-sm font-semibold text-[#77f29b] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4">Find playtesters for your indie game</Link>
               <Link href="/login?mode=signup&role=developer&next=/my-submissions" className="mt-3 text-center text-sm text-[#77f29b] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4">New here? Join as a developer</Link>
             </section>
             <section aria-labelledby="home-testers" className="flex flex-col rounded-xl border border-white/10 bg-white/[0.025] p-5">
