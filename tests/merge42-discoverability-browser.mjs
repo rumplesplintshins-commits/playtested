@@ -45,6 +45,7 @@ try {
   assert(initialHtml.includes("An isolated mock listing used only for browser regression tests."), "game description must exist in initial HTML");
   assert(initialHtml.includes("Puzzle"), "game genre must exist in initial HTML");
   assert(initialHtml.includes('href="/games/steam-912345"'), "Steam listing must have a crawlable internal profile link");
+  assert(initialHtml.includes('>Find playtesters for your indie game</a>'), "homepage must render an internal developer SEO link in initial HTML");
   assert.equal(mock.getCatalogueCalls(), 1, "server rendering should fetch one first catalogue page");
 
   browser = await chromium.launch({ headless: true });

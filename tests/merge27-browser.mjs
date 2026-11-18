@@ -86,6 +86,10 @@ try {
     const result = await context.request.get(origin + href);
     assert.equal(result.status(), 200, "broken internal guide link " + href);
   }
+  await page.goto(origin + "/find-playtesters", { waitUntil: "domcontentloaded" });
+  const developerCta = page.getByRole("complementary", { name: "Start a playtest" });
+  assert.equal(await developerCta.count(), 1, "developer guide must show the start-playtest call to action");
+  assert.equal(await developerCta.getByRole("link", { name: "Start a free playtest" }).getAttribute("href"), "/submit", "developer CTA must route to submission");
   assert.equal(appleIcon.headers()["x-powered-by"], undefined, "X-Powered-By header must be disabled");
   const noJs = await browser.newContext({ javaScriptEnabled: false });
   for (const path of paths) {
