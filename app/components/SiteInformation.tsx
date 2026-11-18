@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "./SiteHeader";
 import SupportEmail from "./SupportEmail";
+import SocialLinks from "./SocialLinks";
 import {LEGAL_REVIEW_DATE,LEGAL_VERSION,privacySections,termsSections} from "@/lib/site-information";
 
 export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"}) {
@@ -19,6 +20,11 @@ export default function SiteInformation({kind}:{kind:"terms"|"privacy"|"contact"
         <h2 className="mt-8 text-xl font-semibold">What to include</h2>
         <p className="mt-3 text-zinc-300">Include the relevant game or report reference, a description of the problem and any steps that reproduce it. Redact private information from screenshots. Never send passwords, API keys, private access tokens or payment details.</p>
         <p className="mt-4 text-zinc-300">For an appeal, explain which decision you disagree with and why. For privacy requests, describe the information or account involved; we may need to confirm your identity through an appropriate channel.</p>
+        <section aria-labelledby="follow-playtested" className="mt-8 border-t border-white/10 pt-6">
+          <h2 id="follow-playtested" className="text-xl font-semibold">Follow Playtested</h2>
+          <p className="mt-3 text-zinc-300">Developers and testers can follow our progress, discover indie games and hear about new playtesting opportunities.</p>
+          <div className="mt-3"><SocialLinks /></div>
+        </section>
       </>:<>
         {(kind==="terms"?termsSections:privacySections).map(([heading,body])=><section key={heading} className="mt-8"><h2 className="text-xl font-semibold">{heading}</h2><p className="mt-3 whitespace-pre-line text-zinc-300">{body}</p></section>)}
         <section className="mt-8"><h2 className="text-xl font-semibold">Contact Playtested</h2><p className="mt-3 text-zinc-300">Use our <Link className="text-emerald-300 underline underline-offset-4" href="/contact">Contact/Support page</Link> for questions, requests or appeals.</p><SupportEmail/></section>
