@@ -94,7 +94,7 @@ try {
   const sitemapResponse = await context.request.get(`${origin}/sitemap.xml`);
   assert.equal(sitemapResponse.status(), 200);
   const sitemap = await sitemapResponse.text();
-  assert(sitemap.includes("https://playtested.co.uk/games/steam-912345"), "eligible Steam catalogue entry should be in sitemap");
+  assert(!sitemap.includes("/games/steam-"), "imported Steam catalogue entries must be excluded from sitemap");
   assert(sitemap.includes("https://playtested.co.uk/submissions/f4200000-0000-4000-8000-000000000002"), "approved game should remain in sitemap");
   for (const excludedSteamId of ["912346", "912347", "912348", "999999"]) {
     assert(!sitemap.includes(`steam-${excludedSteamId}`), `duplicate, incomplete, hidden or nonexistent Steam listing ${excludedSteamId} must not appear in sitemap`);
@@ -105,7 +105,7 @@ try {
   assert.equal(missing.status(), 404, "ineligible/nonexistent listing should remain unavailable");
   assert.deepEqual(pageErrors, [], "browser hydration should not produce client errors");
   await context.close();
-  console.log("PASS Merge 42: initial HTML, no-JS discovery, hydration query reuse, interactions, mobile/zoom widths, Steam sitemap and public-only profile content");
+  console.log("PASS Merge 42: initial HTML, no-JS discovery, hydration query reuse, interactions, mobile/zoom widths, focused sitemap and public-only profile content");
 } finally {
   if (browser) await browser.close();
   server.kill();
