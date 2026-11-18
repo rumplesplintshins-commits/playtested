@@ -6,5 +6,5 @@ export default async function sitemap() {
   await connection();
   const existing = await publicSitemap();
   // Preserve public game enumeration and append crawlable content hubs.
-  return [...existing, ...publicContentSitemapEntries()];
+  return [...existing.filter(({ url }) => !new URL(url).pathname.startsWith("/games/steam-")), ...publicContentSitemapEntries()];
 }
