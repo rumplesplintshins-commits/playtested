@@ -76,6 +76,14 @@ for (const [path, source] of Object.entries(sources)) {
 
 // Accessible question-and-answer layout: h3 headings and spacing exist in the guide shell.
 const guide = read("../app/components/OrganicGuide.tsx");
+const homepage = read("../app/page.tsx");
+assert(homepage.includes('>Find playtesters for your indie game</Link>'), "homepage must link directly to the developer recruitment guide");
+const developerCard = homepage.split('aria-labelledby="home-developers"')[1]?.split('aria-labelledby="home-testers"')[0] ?? "";
+assert(developerCard.includes('href="/find-playtesters"'), "developer card must expose the SEO guide near the primary submit action");
+const earlyCta = guide.indexOf('aria-label="Start a playtest"');
+const guideBody = guide.indexOf('<div className="mt-10 space-y-10');
+assert(earlyCta > guide.indexOf('{intro}</p>') && earlyCta < guideBody, "developer submission CTA must appear before long-form guide");
+assert(guide.includes('href="/submit"') && guide.includes("Start a free playtest"), "developer CTA must link to the actual game submission route");
 for (const rule of ["[&_h3]:mt-7", "[&_h3]:font-semibold", "[&_h3+p]:mt-2"]) {
   assert(guide.includes(rule), "OrganicGuide must style FAQ headings: " + rule);
 }
