@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { organicBreadcrumb, organicOrigin, organicPages, safeStructuredData } from "@/lib/organic-search";
+import { organicBreadcrumb, organicPages, safeStructuredData } from "@/lib/organic-search";
 
 export default function OrganicGuide({ path, eyebrow, title, intro, children }: {
   path: string; eyebrow: string; title: string; intro: string; children: React.ReactNode;
@@ -15,8 +15,13 @@ export default function OrganicGuide({ path, eyebrow, title, intro, children }: 
       <p className="text-xs font-bold uppercase tracking-widest text-[#77f29b]">{eyebrow}</p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold leading-tight sm:text-5xl">{title}</h1>
       <p className="mt-6 text-lg leading-8 text-zinc-300">{intro}</p>
+      {path === "/find-playtesters" && <aside aria-label="Start a playtest" className="mt-7 rounded-xl border border-[#77f29b]/30 bg-[#77f29b]/[0.035] p-5">
+        <h2 className="text-xl font-semibold text-white">Get structured feedback on your indie game</h2>
+        <p className="mt-2 text-sm leading-6 text-zinc-300">Have a playable Steam, PC or browser build? Submit it with a focused brief so players can test the game and report gameplay issues, bugs and performance problems. Free campaigns are subject to current eligibility and limits.</p>
+        <Link href="/submit" className="mt-4 inline-block rounded-lg bg-[#77f29b] px-4 py-3 text-sm font-semibold text-[#09100b] transition hover:bg-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#77f29b]">Start a free playtest</Link>
+      </aside>}
       <div className="mt-10 space-y-10 text-base leading-8 text-zinc-300 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h3]:mt-7 [&_h3]:font-semibold [&_h3]:text-white [&_h3+p]:mt-2 [&_a]:text-[#77f29b] [&_a]:underline [&_p+p]:mt-4 [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6">{children}</div>
-      {(path === "/find-playtesters" || path === "/become-a-playtester") && <aside className="mt-10 rounded-xl border border-[#77f29b]/30 p-5"><h2 className="text-xl font-semibold">Take the next step on Playtested</h2><p className="mt-3 text-sm leading-6 text-zinc-300">Open the live service to check current access rules and availability. Participation requires an eligible account; this guide does not reserve a place.</p><a className="mt-4 inline-block rounded border border-[#77f29b]/50 px-4 py-3 text-[#77f29b]" href={organicOrigin+(path === "/find-playtesters" ? "/submit" : "/tester")}>{path === "/find-playtesters" ? "Open Submit a Game" : "Open Tester Hub"}</a></aside>}
+      {path === "/become-a-playtester" && <aside className="mt-10 rounded-xl border border-[#77f29b]/30 p-5"><h2 className="text-xl font-semibold">Take the next step on Playtested</h2><p className="mt-3 text-sm leading-6 text-zinc-300">Open the live service to check current access rules and availability. Participation requires an eligible account; this guide does not reserve a place.</p><a className="mt-4 inline-block rounded border border-[#77f29b]/50 px-4 py-3 text-[#77f29b]" href="/tester">Open Tester Hub</a></aside>}
       <aside aria-label="Related playtesting guides" className="mt-12 rounded-xl border border-white/10 bg-[#101311] p-5"><h2 className="font-semibold">Keep exploring</h2><ul className="mt-3 space-y-3">{organicPages.filter(page => page.path !== path).map(page => <li key={page.path}><Link className="text-[#77f29b] underline" href={page.path}>{page.title}</Link></li>)}</ul><p className="mt-5 text-sm"><Link href="/#discover-games" className="underline">Explore the games catalogue</Link></p></aside>
     </main>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeStructuredData(organicBreadcrumb(path, title)) }} />
