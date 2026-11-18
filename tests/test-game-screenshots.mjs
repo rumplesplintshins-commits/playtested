@@ -13,7 +13,9 @@ const processing=load('lib/screenshot-processing.ts',name=>name==='./game-screen
 const poster=load('app/components/VideoPoster.tsx');
 const posterModel=load('lib/gameplay-poster.ts',name=>name==='./gameplay-video'?load('lib/gameplay-video.ts'):name==='./game-screenshots'?common:require(name));
 const footage=load('app/components/GameplayFootage.tsx',name=>name==='@/lib/gameplay-video'?load('lib/gameplay-video.ts'):name==='./VideoPoster'?poster:require(name));
-const gallery=load('app/components/GameMediaGallery.tsx',name=>name==='@/lib/game-screenshots'?common:name==='./GameplayFootage'?footage:name==='./VideoPoster'?poster:name==='@/lib/gameplay-poster'?posterModel:require(name));
+const thumbnailManifest=JSON.parse(fs.readFileSync('lib/catalogue-thumbnails.json','utf8'));
+const thumbnailModule=load('lib/catalogue-thumbnail.ts',name=>name==='./catalogue-thumbnails.json'?thumbnailManifest:require(name));
+const gallery=load('app/components/GameMediaGallery.tsx',name=>name==='@/lib/game-screenshots'?common:name==='./GameplayFootage'?footage:name==='./VideoPoster'?poster:name==='@/lib/gameplay-poster'?posterModel:name==='@/lib/catalogue-thumbnail'?thumbnailModule:require(name));
 for(const [videoUrl,screenshots] of [[null,[]],['https://youtu.be/abcdefghijk',[]],[null,[{slot:1,revision:'revision'}]],['https://youtu.be/abcdefghijk',[{slot:1,revision:'revision'}]]]){
  const markup=renderToStaticMarkup(createElement(gallery.default,{id:'synthetic',videoUrl,screenshots}));
  assert(markup.includes('Game Media'));assert(!markup.includes('<iframe'));assert(!markup.includes('Gameplay footage (optional)'));
@@ -21,6 +23,13 @@ for(const [videoUrl,screenshots] of [[null,[]],['https://youtu.be/abcdefghijk',[
  else if(screenshots.length)assert(markup.includes('Screenshot 1 of 1'));
  else assert(markup.includes('No gameplay footage or screenshots'));
 }
+const existingCover=Object.keys(thumbnailManifest)[0];
+const expectedOptimizedCover=thumbnailManifest[existingCover][1].url;
+const withOptimizedCover=renderToStaticMarkup(createElement(gallery.default,{id:'synthetic',videoUrl:'https://drive.google.com/file/d/abcdefghijk/view',screenshots:[],catalogueThumbnail:existingCover}));
+assert(withOptimizedCover.includes(expectedOptimizedCover),'Gameplay poster uses locally hosted catalogue variant rather than the full-resolution original');
+assert(!withOptimizedCover.includes(existingCover),'Full-resolution original must not be part of rendered poster');
+const withUnmappedCover=renderToStaticMarkup(createElement(gallery.default,{id:'synthetic',videoUrl:'https://drive.google.com/file/d/abcdefghijk/view',screenshots:[],catalogueThumbnail:'https://example.test/unmapped.webp'}));
+assert(withUnmappedCover.includes('https://example.test/unmapped.webp'),'Unmapped newly uploaded artwork still has a fallback');
 for(const [format,mime] of [['jpeg','image/jpeg'],['png','image/png'],['webp','image/webp']]){
  const bytes=await sharp({create:{width:72,height:120,channels:3,background:'#224466'}})[format]().toBuffer();
  const result=await processing.processScreenshot(new File([bytes],'screenshot.'+format,{type:mime}));

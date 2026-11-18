@@ -1,5 +1,6 @@
 import GamePcRequirements from "@/app/components/GamePcRequirements";
 import GameMediaGallery from "@/app/components/GameMediaGallery";
+import { catalogueThumbnail } from "@/lib/catalogue-thumbnail";
 import GameShareButton from "@/app/components/GameShareButton";
 import {assessmentLabel,disclosureExplanation} from "../../../lib/review-labels";
 import {publicIntentCounts} from "@/lib/intent-counts";
@@ -340,7 +341,8 @@ export default async function SubmissionPage({
           <div className="min-w-0">
             {footage?.video_url || screenshots?.length ? <GameMediaGallery id={id} videoUrl={footage?.video_url} screenshots={screenshots || []} catalogueThumbnail={game.image_url}/> : game.image_url ? (
               <img
-                src={game.image_url}
+                {...catalogueThumbnail(game.image_url)}
+                sizes="(max-width: 1024px) 100vw, 65vw"
                 alt={`${game.title} artwork`}
                 className="aspect-video w-full rounded-lg object-cover"
               />
