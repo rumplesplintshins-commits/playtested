@@ -25,6 +25,12 @@ export async function uploadGameThumbnail(client:SupabaseClient,userId:string,fi
  if(original.error)throw original.error;
  const path=`${base}-card-v1.webp`;
  const variant=await bucket.upload(path,webp,{contentType:'image/webp',cacheControl:'31536000',upsert:false});
- // Keep the successful original usable if the second upload fails.
- return bucket.getPublicUrl(variant.error?`${base}.${extension}`:path).data.publicUrl;
+ // Never publish the full-resolution original as a fallback: it can multiply
+ // cached egress when a developer upload only partially succeeds.
+ if(variant.error){
+  const cleanup=await bucket.remove([`${base}.${extension}`]);
+  if(cleanup.error)console.error('Failed to clean up incomplete thumbnail upload:',cleanup.error);
+  throw new Error('Could not optimise the thumbnail. Please retry the upload.');
+ }
+ return bucket.getPublicUrl(path).data.publicUrl;
 }

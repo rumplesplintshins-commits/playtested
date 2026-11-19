@@ -38,17 +38,17 @@ try{
   const ext={};new Function('exports',extensionCode)(ext);const exports={};new Function('exports','require',code)(exports,()=>ext);
   const file=new File([Uint8Array.from(input)],'source.png',{type:'image/png'});
   const webp=await exports.thumbnailWebp(file),bitmap=await createImageBitmap(webp);const dimensions=[bitmap.width,bitmap.height];bitmap.close();
-  let failVariant=false,failOriginal=false;const writes=[];
-  const bucket={upload:async(path,body,options)=>{writes.push({path,original:body===file,options});return {error:failOriginal||failVariant&&path.endsWith('-card-v1.webp')?new Error('fixture'):null};},getPublicUrl:path=>({data:{publicUrl:path}})};
+  let failVariant=false,failOriginal=false;const writes=[],removed=[];
+  const bucket={upload:async(path,body,options)=>{writes.push({path,original:body===file,options});return {error:failOriginal||failVariant&&path.endsWith('-card-v1.webp')?new Error('fixture'):null};},remove:async(paths)=>{removed.push(...paths);return {error:null}},getPublicUrl:path=>({data:{publicUrl:path}})};
   // Browser sandbox may not expose randomUUID on about:blank.
   if(!crypto.randomUUID)Object.defineProperty(crypto,'randomUUID',{value:()=>Math.random().toString().slice(2)});
   const client={storage:{from:()=>bucket}};
   const success=await exports.uploadGameThumbnail(client,'owner',file);
-  failVariant=true;const fallback=await exports.uploadGameThumbnail(client,'owner',file);
+  failVariant=true;let variantRejected=false;try{await exports.uploadGameThumbnail(client,'owner',file);}catch(error){variantRejected=/Could not optimise/.test(String(error));}
   failOriginal=true;let rejected=false;try{await exports.uploadGameThumbnail(client,'owner',file);}catch{rejected=true;}
-  return {dimensions,type:webp.type,writes,success,fallback,rejected};
+  return {dimensions,type:webp.type,writes,success,variantRejected,removed,rejected};
  },{code,extensionCode,input:[...input]});
- assert.deepEqual(result.dimensions,[960,540]);assert.equal(result.type,'image/webp');assert(result.success.endsWith('-card-v1.webp'));assert(result.fallback.endsWith('.png'));assert(result.rejected);assert.equal(result.writes.length,5);
+ assert.deepEqual(result.dimensions,[960,540]);assert.equal(result.type,'image/webp');assert(result.success.endsWith('-card-v1.webp'));assert(result.variantRejected,'Failed WebP variant must reject rather than publish the full-size original');assert.equal(result.removed.length,1);assert(result.removed[0].endsWith('.png'));assert(result.rejected);assert.equal(result.writes.length,5);
  assert(result.writes.every(w=>w.options.upsert===false&&w.options.cacheControl==='31536000'));assert(result.writes[0].original);assert(!result.writes[1].original);
 }finally{await browser.close();}
-console.log(`PASS ${Object.keys(manifest).length} source mappings and all decoded variants; deterministic versions, orientation, metadata stripping, invalid input, real browser WebP upload, original preservation and failed-variant fallback`);
+console.log(`PASS ${Object.keys(manifest).length} source mappings and all decoded variants; deterministic versions, orientation, metadata stripping, invalid input, real browser WebP upload, original preservation and fail-closed variant upload`);
