@@ -182,7 +182,7 @@ function ReceptionBadge({ status }: { status: ReceptionStatus }) {
 
 function GenreBadge({ genre }: { genre: string }) {
   return (
-    <span className="inline-flex w-fit rounded-md border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300 sm:text-sm">
+    <span className="inline-flex w-fit rounded-md border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
       {genre}
     </span>
   );
@@ -224,7 +224,7 @@ function GameCardContent({
   const disclosureLabel = publicAiLabel(disclosure);
   const disclosureStyle = disclosure === "AI-assisted: Content only" || disclosure === "AI-assisted: Code and content" ? "border-violet-300/30 bg-violet-300/10 text-violet-200" : disclosure === "AI-assisted: Code only" ? "border-sky-300/30 bg-sky-300/10 text-sky-200" : "border-white/25 bg-white/5 text-slate-200";
   return (
-    <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/30 [overflow-wrap:anywhere]">
+    <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#151815] break-words transition hover:border-emerald-400/40 hover:bg-[#191d19] [overflow-wrap:anywhere]">
       <a
         href={href}
         className="block aspect-video w-full overflow-hidden bg-[#202520] text-left"
@@ -248,20 +248,27 @@ function GameCardContent({
         )}
       </a>
 
-      <div className={`flex flex-1 flex-col ${compact ? "gap-3 p-4" : "gap-4 p-5"}`}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <GenreBadge genre={game.genre} />
-        </div>
-
+      <div className={`flex flex-1 flex-col ${compact ? "gap-2.5 p-3.5" : "gap-3 p-5"}`}>
         <a href={href} className="text-left">
-          <h3 className="text-lg font-semibold text-white hover:text-emerald-300">
+          <h3 className="line-clamp-2 text-base font-bold leading-snug text-white hover:text-emerald-300 sm:text-lg">
             {game.title}
           </h3>
         </a>
 
-        <p className="text-sm text-white/70">By {game.developer || "Developer not listed"}</p>
+        <p className="text-xs text-white/60">By {game.developer || "Developer not listed"}</p>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {game.description ? <details className="group text-sm leading-6 text-white/75">
+          <summary className="cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-emerald-300">
+            <span className={`${compact ? "line-clamp-4" : "line-clamp-5"} group-open:hidden`}>{game.description}</span>
+            <span className="mt-1 inline-block text-xs text-emerald-300 group-open:hidden">Read full description</span>
+            <span className="hidden text-xs text-emerald-300 group-open:inline">Hide full description</span>
+          </summary>
+          <p className="mt-2">{game.description}</p>
+        </details> : <p className="text-sm text-white/65">No description provided.</p>}
+
+
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <GenreBadge genre={game.genre} />
           {game.listingNotice ? (
             <span className="rounded border border-amber-200/30 px-3 py-1 text-xs text-amber-100">
               {game.listingNotice}
@@ -276,16 +283,7 @@ function GameCardContent({
           {game.recruiting && <span tabIndex={0} aria-label="Recruiting testers. An active playtest has places available. Eligibility requirements apply." title="An active playtest has places available. Eligibility requirements apply." className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"><span aria-hidden="true">◎</span>Recruiting testers</span>}
         </div>
 
-        {game.description ? <details className="group text-sm leading-6 text-white/75">
-          <summary className="cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-emerald-300">
-            <span className="line-clamp-3 group-open:hidden">{game.description}</span>
-            <span className="text-xs text-emerald-300 group-open:hidden">Read full description</span>
-            <span className="hidden text-xs text-emerald-300 group-open:inline">Hide full description</span>
-          </summary>
-          <p className="mt-2">{game.description}</p>
-        </details> : <p className="text-sm text-white/65">No description provided.</p>}
-
-        <div className="rounded-lg border border-white/10 bg-black/15 p-3">
+        <div className="rounded-lg border border-white/10 bg-black/15 p-2.5">
           {game.communityReception &&
           game.communityReception.ratedTestCount > 0 &&
           game.communityReception.averageOverallScore !== null ? (
@@ -323,7 +321,7 @@ function GameCardContent({
           )}
         </div>
 
-        <div className="mt-auto space-y-3 pt-2">
+        <div className="mt-auto pt-1">
 
           <a
             href={game.isImportedSteam&&!game.hasPlaytestedProfile?game.gameLink:href}
