@@ -30,14 +30,14 @@ try{
  };
  const good=makeClient(false);
  const url=await exports.uploadGameThumbnail(good.client,'developer',image);
- assert.match(url,/-card-v1\\.webp$/);
+ assert.match(url,/-card-v1\.webp$/);
  assert.equal(good.uploaded.length,2);
  assert.deepEqual(good.removed,[]);
  const bad=makeClient(true);
  await assert.rejects(exports.uploadGameThumbnail(bad.client,'developer',image),/Could not optimise/);
  assert.equal(bad.uploaded.length,2);
  assert.equal(bad.removed.length,1,'Failed variant cleans up original instead of publishing full-size fallback');
- assert.match(bad.removed[0],/\\.png$/);
+ assert.match(bad.removed[0],/\.png$/);
  console.log('PASS thumbnail upload uses WebP; failed variant never returns an oversized original');
 } finally {
  globalThis.createImageBitmap=originalCreateImageBitmap;
