@@ -2,10 +2,11 @@
 import {useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 import {createClient} from "@/lib/supabase";
+import DisclosureControl from "./DisclosureControl";
 import {showToast} from "./ToastHost";
 
 type Controls={archived:boolean;is_admin_test:boolean;deleted?:boolean};
-export default function ListingControls({id,kind="submission",title,approved=false,admin=false}:{id:string;kind?:"submission"|"imported";title:string;approved?:boolean;admin?:boolean}){
+export default function ListingControls({id,kind="submission",title,approved=false,admin=false,collapsed=false}:{id:string;kind?:"submission"|"imported";title:string;approved?:boolean;admin?:boolean;collapsed?:boolean}){
  const router=useRouter(),lock=useRef(false);
  const [value,setValue]=useState<Controls|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[action,setAction]=useState(""),[confirmation,setConfirmation]=useState("");
  useEffect(()=>{let active=true;void createClient().rpc("get_listing_controls",{p_kind:kind,p_id:id}).then(({data,error})=>{if(!active)return;setValue(error?null:data);setError(error?"Listing controls could not be loaded. Refresh to retry.":"");});return()=>{active=false;};},[kind,id]);
@@ -20,8 +21,8 @@ export default function ListingControls({id,kind="submission",title,approved=fal
   }catch(e){const message=e instanceof Error?e.message:"Listing change failed. Please retry.";setError(message);showToast(message,"error");}finally{lock.current=false;setBusy(false);}
  }
  if(value?.deleted)return <p role="status" className="my-4 rounded border border-white/10 p-4">Submission deleted.</p>;
- return <section aria-label="Publication & test controls" className="my-4 rounded-xl border border-white/10 p-4 text-sm">
-  <h3 className="font-semibold">Publication &amp; test controls</h3><p className="mt-2 leading-6 text-zinc-400">Archive / unpublish hides a listing and stops new public testing while preserving history. Delete unapproved submission permanently removes only an eligible record without dependent history, after confirmation. Admin Test / Demo excludes a listing from public discovery and genuine analytics; it does not delete it.</p>
+ const content = <>
+  <p className="mt-2 leading-6 text-zinc-400">Archive / unpublish hides a listing and stops new public testing while preserving history. Delete unapproved submission permanently removes only an eligible record without dependent history, after confirmation. Admin Test / Demo excludes a listing from public discovery and genuine analytics; it does not delete it.</p>
   {!value&&!error&&<p role="status" className="mt-2">Loading listing controls…</p>}
   {error&&<p role="alert" className="mt-2 text-amber-200">{error}</p>}
   {value&&<><p className="mt-2 text-zinc-400">{value.archived?"Archived: hidden from the public catalogue and new public testing. Your private feedback and history remain available.":"Existing review and publication rules apply."}{value.is_admin_test&&" Admin Test / Demo: excluded from public listings, ratings and genuine acquisition totals."}</p>
@@ -32,5 +33,20 @@ export default function ListingControls({id,kind="submission",title,approved=fal
    </div>
    {action&&<div className="mt-4 space-y-3 rounded border border-amber-300/30 p-3"><p>{action==="delete"?"Permanent deletion is allowed only without dependent records or review history. Otherwise archive the game.":"This hides the game from public listings and new testing, preserving accounts, campaigns, reports and review history."}</p><label className="block">Type the exact game title to confirm: <strong>{title}</strong><input value={confirmation} onChange={e=>setConfirmation(e.target.value)} className="mt-2 block w-full rounded border border-white/20 bg-black p-3" autoComplete="off"/></label><div className="flex flex-wrap gap-3"><button disabled={busy||confirmation!==title} onClick={()=>void change(action)} className="rounded border border-amber-300/40 px-3 py-2 disabled:opacity-40">{busy?"Saving…":`Confirm ${action}`}</button><button disabled={busy} onClick={()=>setAction("")} className="rounded border border-white/20 px-3 py-2">Cancel</button></div></div>}
   </>}
- </section>;
+ </>;
+ return collapsed ? (
+  <details className="group mt-5 min-w-0 border-t border-white/10 pt-4">
+   <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 rounded-lg py-3 font-semibold focus-visible:outline-2 focus-visible:outline-emerald-300 [&::-webkit-details-marker]:hidden">
+    Listing &amp; publication settings
+    <span className="group-open:hidden"><DisclosureControl /></span>
+    <span className="hidden group-open:inline-flex"><DisclosureControl expanded /></span>
+   </summary>
+   <div className="pb-3 text-sm">{content}</div>
+  </details>
+ ) : (
+  <section aria-label="Publication & test controls" className="my-4 rounded-xl border border-white/10 p-4 text-sm">
+   <h3 className="font-semibold">Publication &amp; test controls</h3>
+   {content}
+  </section>
+ );
 }
