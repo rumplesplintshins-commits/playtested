@@ -8,7 +8,7 @@ const react={...require('react'),useState(initial){const index=cursor++;if(!(ind
 const client={from(){const query={select(){return query;},in(){return query;},then(resolve){return Promise.resolve({data:[],error:null}).then(resolve);}};return query;},rpc(name,args){return new Promise(resolve=>pending.push({name,id:args.p_playtest_id,resolve}));}};
 const exports={};
 const code=ts.transpileModule(fs.readFileSync('app/components/StartPlaytest.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-new Function('exports','require',code+'\nexports.Panel=BuildResultsPanel;exports.Dashboard=ResultsDashboard;')(exports,name=>['./DisclosureControl','./DisclosureHeading','./DurationPicker','./FeedbackUsefulness','./AnonymousTesterLabel','./PrintFeedback'].includes(name)?{default:()=>null}:name==='react'?react:name==='next/navigation'?{useRouter:()=>({})}:name.endsWith('/supabase')?{createClient:()=>client}:name.includes('DeveloperPlan')?{}:name.includes('TestingPolicy')||name.includes('CampaignAudienceFields')||name.includes('FeedbackActions')?{}:(name.startsWith('@/lib/')||name.includes('GameLinksEngagement'))?{}:require(name));
+new Function('exports','require',code+'\nexports.Panel=BuildResultsPanel;exports.Dashboard=ResultsDashboard;')(exports,name=>['./DisclosureControl','./DisclosureHeading','./DurationPicker','./FeedbackUsefulness','./AnonymousTesterLabel','./PrintFeedback'].includes(name)?{default:()=>null,PrintFeedbackButton:()=>null}:name==='react'?react:name==='next/navigation'?{useRouter:()=>({})}:name.endsWith('/supabase')?{createClient:()=>client}:name.includes('DeveloperPlan')?{}:name.includes('TestingPolicy')||name.includes('CampaignAudienceFields')||name.includes('FeedbackActions')?{}:(name.startsWith('@/lib/')||name.includes('GameLinksEngagement'))?{}:require(name));
 const a={id:'a',status:'open',releaseLabel:'Build A',createdAt:'2026-10-28'},b={...a,id:'b',releaseLabel:'Build B'};
 function render(){cursor=0;const tree=exports.Panel({currentPlaytest:a,playtests:[a,b]});while(effects.length)effects.shift()();return tree;}
 function find(node,type){if(!node||typeof node!=='object')return null;if(node.type===type)return node;for(const child of [node.props?.children].flat(Infinity)){const result=find(child,type);if(result)return result;}return null;}
@@ -68,15 +68,16 @@ async function feedbackTabBrowser(){
   await page.getByRole('button',{name:'Read issue responses',exact:false}).click();await expect(tab('What testers said')).toHaveAttribute('aria-selected','true');const issueId=await page.getByRole('button',{name:'Read issue responses',exact:false}).getAttribute('aria-controls');await expect(page.locator('#'+issueId)).toBeFocused();await expect(page.locator('#'+issueId).getByText('a technical VERBATIM',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'View individual responses',exact:true}).click();await expect(tab('Individual responses')).toHaveAttribute('aria-selected','true');await expect(page.locator('#'+individualId)).toBeFocused();assert.equal(await page.locator('#'+individualId).locator('details[open]').count(),0,'Shortcut does not expand every report');
   await tab('Feedback to follow up').click();await expect(action()).toHaveValue('Planned');await expect(actions.getByRole('button',{name:'Planned 1',exact:true})).toHaveAttribute('aria-pressed','true');
-  delayed='b';await page.getByRole('button',{name:'Build B',exact:true}).click();await expect(page.getByText('Loading results for this build...')).toBeVisible();await expect(page.getByText('a enjoyment VERBATIM',{exact:true})).toHaveCount(0);await expect.poll(()=>waiting.length).toBe(5);delayed=null;waiting.splice(0).forEach(resolve=>resolve());await expect(tab('Feedback to follow up')).toHaveAttribute('aria-selected','true');await expect(action()).toHaveValue('To investigate');await expect(page.getByLabel('Testing focus',{exact:true}).filter({visible:true})).toContainText('Historical performance');await expect(page.getByLabel('Testing focus',{exact:true}).filter({visible:true})).not.toContainText('Controls');await action().selectOption('Fixed');
+  const print=page.getByRole('button',{name:'Print feedback',exact:true});
+  delayed='b';await page.getByRole('button',{name:'Build B',exact:true}).click();await expect(page.getByText('Loading results for this build...')).toBeVisible();await expect(print).toBeVisible();await expect(print).toBeDisabled();await expect(page.getByText('a enjoyment VERBATIM',{exact:true})).toHaveCount(0);await expect.poll(()=>waiting.length).toBe(5);delayed=null;waiting.splice(0).forEach(resolve=>resolve());await expect(tab('Feedback to follow up')).toHaveAttribute('aria-selected','true');await expect(action()).toHaveValue('To investigate');await expect(page.getByLabel('Testing focus',{exact:true}).filter({visible:true})).toContainText('Historical performance');await expect(page.getByLabel('Testing focus',{exact:true}).filter({visible:true})).not.toContainText('Controls');await action().selectOption('Fixed');
   await page.getByRole('button',{name:/Build A/}).click();await expect(action()).toHaveValue('Planned');await expect(actions.getByRole('button',{name:'Planned 1',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:/Beta Open/}).click();await expect(tab('What testers said')).toHaveAttribute('aria-selected','true');await expect(panel().getByText('c enjoyment VERBATIM',{exact:true})).toBeVisible();await page.getByRole('button',{name:/Alpha Open/}).click();await expect(tab('What testers said')).toHaveAttribute('aria-selected','true');await expect(panel().getByText('a enjoyment VERBATIM',{exact:true})).toBeVisible();
-  failed='b';await page.getByRole('button',{name:'Build B',exact:true}).click();await expect(page.getByText('Fixture results unavailable')).toBeVisible();await expect(page.getByText('a enjoyment VERBATIM',{exact:true})).toHaveCount(0);failed=null;await page.getByRole('button',{name:'Refresh results',exact:true}).click();await expect(tab('What testers said')).toHaveAttribute('aria-selected','true');
+  failed='b';await page.getByRole('button',{name:'Build B',exact:true}).click();await expect(page.getByText('Fixture results unavailable')).toBeVisible();await expect(print).toBeDisabled();await expect(page.getByText('a enjoyment VERBATIM',{exact:true})).toHaveCount(0);failed=null;await page.getByRole('button',{name:'Refresh results',exact:true}).click();await expect(tab('What testers said')).toHaveAttribute('aria-selected','true');
   for(const width of[1280,390]){await page.setViewportSize({width,height:900});for(const label of['What testers said','Feedback to follow up','Individual responses'])await expect(tab(label)).toBeVisible();await tab('Feedback to follow up').click();await expect(action()).toHaveValue('Fixed');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await tab('Feedback to follow up').focus();await page.keyboard.press('Home');await expect(tab('What testers said')).toBeFocused();}
   await page.evaluate(()=>{window.print=()=>{window.printCalls=(window.printCalls||0)+1;};});
-  const print=page.getByRole('button',{name:'Print feedback',exact:true});
   const report=page.locator('body > .feedback-print');
-  async function checkPrint(build, count) {
+  let printCalls=0;
+  async function checkPrint(build, count, activeTab) {
    const dashboard=page.getByRole('region',{name:'Results snapshot',exact:true});
    const expand=dashboard.getByRole('button',{name:'Expand Results snapshot'});
    const collapse=dashboard.getByRole('button',{name:'Collapse Results snapshot'});
@@ -98,11 +99,15 @@ async function feedbackTabBrowser(){
    }
    await collapse.click();
    await expect(dashboard.getByText('Overall experience',{exact:true})).toBeHidden();
-   await tab('Individual responses').click();
+   await tab(activeTab).click();
    await expect(print).toBeEnabled();
-   assert.equal(await page.getByRole('tabpanel').locator('details[open]').count(),0);
+   const panelId=await tab(activeTab).getAttribute('aria-controls');
+   await expect(page.locator('#'+panelId).getByRole('button',{name:'Print feedback',exact:true})).toHaveCount(0);
+   await expect(page.locator('[data-build-selection-row]').getByRole('button',{name:'Print feedback',exact:true})).toBeVisible();
+   await expect(page.locator('[data-build-feedback]:visible [data-print-tester-rank]').first()).toHaveText('Bronze Tester (current)');
    await print.click();
    await expect(report.locator('article')).toHaveCount(count);
+   await expect(report.locator('article').first()).toContainText('Bronze Tester (current)');
    const printedSnapshot=report.locator('.feedback-print-snapshot');
    await expect(printedSnapshot).toContainText('Early feedback: results are directional while the sample is small.');
    await expect(report.locator('header')).toContainText('Quality-accepted independent tester reports: '+count);
@@ -110,7 +115,7 @@ async function feedbackTabBrowser(){
     await expect(printedSnapshot.getByText(label,{exact:true}).locator('..').locator('dd')).toHaveText(value);
    }
    assert(await printedSnapshot.evaluate(section=>Boolean(section.parentElement.nextElementSibling?.matches('article'))));
-   assert.equal(await page.evaluate(()=>window.printCalls),build==='Build B'?1:2);
+   assert.equal(await page.evaluate(()=>window.printCalls),++printCalls);
    await expect(report).toContainText('Build: '+build);
    await expect(report).toContainText('Developer: Fixture Studio');
    await expect(report).toContainText('Report date:');
@@ -133,10 +138,18 @@ async function feedbackTabBrowser(){
    await expect(report).toHaveCount(0);
    await page.emulateMedia({media:'screen'});
   }
-  await checkPrint('Build B',1);
+  await page.setViewportSize({width:1280,height:900});
+  const row=page.locator('[data-build-selection-row]').filter({visible:true});
+  const [rowBox,printBox,buildBox]=await Promise.all([row.boundingBox(),print.boundingBox(),row.getByRole('button',{name:'Build B',exact:true}).boundingBox()]);
+  assert(Math.abs(rowBox.x+rowBox.width-printBox.x-printBox.width)<2,'Print is right-aligned');
+  assert(Math.abs(buildBox.y+buildBox.height/2-printBox.y-printBox.height/2)<2,'Print shares the build button row');
+  await checkPrint('Build B',1,'What testers said');
   printThree=true;
   await page.getByRole('button',{name:/Build A/}).click();
-  await checkPrint('Build A',3);
+  await checkPrint('Build A',3,'Feedback to follow up');
+  await page.setViewportSize({width:390,height:900});
+  await checkPrint('Build A',3,'Individual responses');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   const settings=page.locator('summary').filter({hasText:'Listing & publication settings'});
   const archive=page.getByRole('button',{name:'Archive / unpublish',exact:true});
   await expect(settings).toBeVisible();

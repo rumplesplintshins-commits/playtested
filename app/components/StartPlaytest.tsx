@@ -11,7 +11,8 @@ import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules }
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
 import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
 import DurationPicker from "./DurationPicker";
-import PrintFeedback from "./PrintFeedback";
+import { createPortal } from "react-dom";
+import PrintFeedback, { PrintFeedbackButton } from "./PrintFeedback";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import FeedbackUsefulness from "./FeedbackUsefulness";
@@ -821,6 +822,7 @@ type FeedbackTab="said"|"follow-up"|"individual";
 const feedbackTabs=[["said","What testers said"],["follow-up","Feedback to follow up"],["individual","Individual responses"]] as const;
 
 function ResultsDashboard({
+  printTarget,
   gameTitle, developerName,
   playtest,
   communityResults,
@@ -836,6 +838,7 @@ function ResultsDashboard({
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  printTarget: HTMLDivElement | null;
   testerGenres?: Record<string, string[]>;
   privateEvidence?: Record<string, PrivateEvidenceLink>;
   feedbackTab?:FeedbackTab;onFeedbackTabChange?:(tab:FeedbackTab)=>void;actionFilter?:string;onActionFilterChange?:(filter:string)=>void;
@@ -847,6 +850,7 @@ function ResultsDashboard({
   const changeTab=onFeedbackTabChange??setLocalTab;
   const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
   const feedbackPanelRef=useRef<HTMLElement>(null);
+  const printRanksRef = useRef<HTMLDivElement>(null);
   const issueResponsesRef=useRef<HTMLDivElement>(null);
   const feedbackId=useId();
   const issueResponsesId=useId();
@@ -1004,6 +1008,25 @@ function ResultsDashboard({
 
   return (
     <div className="space-y-5">
+      {printTarget && createPortal(
+        <PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} rankRef={activeTab === 'individual' ? feedbackPanelRef : printRanksRef}
+          snapshot={{
+            averageOverall, averageGameplay, averagePerformance,
+            continuation: continuation.answered ? continuationText : null,
+            recommendation: recommendation.answered ? recommendationText : null,
+            averageHours: playtime.averageHours, totalHours: playtime.totalHours,
+            issueResponses: totalResponses ? bugReportCount : null, sampleNote,
+          }}
+        />,
+        printTarget
+      )}
+      {activeTab !== 'individual' && acceptedFeedback.length > 0 && (
+        <div ref={printRanksRef} hidden>
+          {acceptedFeedback.map(response => (
+            <span key={response.test_id} data-print-tester-rank><AnonymousTesterLabel testId={response.test_id} /></span>
+          ))}
+        </div>
+      )}
       {playtest.focusAreas.length>0&&<div aria-label="Testing focus" className="flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold text-zinc-300">Testing focus</span>{playtest.focusAreas.map(focus=><span key={focus} className="rounded bg-white/5 px-2 py-1 text-zinc-300">{focus}</span>)}</div>}
       <section aria-label="Results snapshot" className="overflow-hidden rounded-xl border border-[#77f29b]/20 bg-[#0c100e]">
         <div className="border-b border-white/10 p-4">
@@ -1262,15 +1285,7 @@ function ResultsDashboard({
         ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
-       {activeTab==='individual'&&<><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} panelRef={feedbackPanelRef}
-          snapshot={{
-            averageOverall, averageGameplay, averagePerformance,
-            continuation: continuation.answered ? continuationText : null,
-            recommendation: recommendation.answered ? recommendationText : null,
-            averageHours: playtime.averageHours, totalHours: playtime.totalHours,
-            issueResponses: totalResponses ? bugReportCount : null, sampleNote,
-          }}
-        /></div><div className="mt-4 space-y-3">
+       {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
           {displayedAcceptedFeedback.map((response, index) => (
             <details
               key={response.test_id}
@@ -1529,10 +1544,12 @@ function BuildResultsPanel({
   const [error, setError] = useState("");
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
   const resultRequest = useRef(0);
+  const [printTarget, setPrintTarget] = useState<HTMLDivElement | null>(null);
   useEffect(()=>{if(typeof window==="undefined")return;let active=true;const sync=()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign&&[currentPlaytest.id,...playtests.map(p=>p.id)].includes(campaign))queueMicrotask(()=>{if(active){setSelectedId(campaign);setFeedbackTab("individual");}});};sync();window.addEventListener("popstate",sync);return()=>{active=false;window.removeEventListener("popstate",sync);};},[currentPlaytest.id,playtests]);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
   const isCurrent = selectedPlaytest.id === currentPlaytest.id;
+  const resultsReady = !loading && loadedBuildId === selectedPlaytest.id && !error;
 
   async function loadResults(playtestId: string) {
     const request=++resultRequest.current;
@@ -1615,32 +1632,37 @@ function BuildResultsPanel({
           </button>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {allBuilds.map((playtest) => {
-            const selected = playtest.id === selectedPlaytest.id;
-            const current = playtest.id === currentPlaytest.id;
-            return (
-              <button
-                key={playtest.id}
-                type="button"
-                onClick={() => setSelectedId(playtest.id)}
-                className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
-                  selected
-                    ? "border-[#77f29b]/45 bg-[#77f29b]/10 text-[#b9f9ca]"
-                    : "border-white/10 bg-black/20 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
-                }`}
-              >
-                <span className="font-semibold">
-                  {playtest.releaseLabel?.trim() || "Unlabelled build"}
-                </span>
-                {current && (
-                  <span className="ml-2 rounded-full border border-[#77f29b]/25 bg-[#77f29b]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#77f29b]">
-                    CURRENT
+        <div className="mt-4 flex flex-wrap items-center gap-2" data-build-selection-row>
+          <div className="flex min-w-0 flex-wrap gap-2">
+            {allBuilds.map((playtest) => {
+              const selected = playtest.id === selectedPlaytest.id;
+              const current = playtest.id === currentPlaytest.id;
+              return (
+                <button
+                  key={playtest.id}
+                  type="button"
+                  onClick={() => setSelectedId(playtest.id)}
+                  className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                    selected
+                      ? "border-[#77f29b]/45 bg-[#77f29b]/10 text-[#b9f9ca]"
+                      : "border-white/10 bg-black/20 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                  }`}
+                >
+                  <span className="font-semibold">
+                    {playtest.releaseLabel?.trim() || "Unlabelled build"}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  {current && (
+                    <span className="ml-2 rounded-full border border-[#77f29b]/25 bg-[#77f29b]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#77f29b]">
+                      CURRENT
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div ref={setPrintTarget} className="ml-auto max-w-full">
+            {(!resultsReady || !printTarget) && <PrintFeedbackButton disabled />}
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
@@ -1666,6 +1688,7 @@ function BuildResultsPanel({
             gameTitle={gameTitle} developerName={developerName}
             feedbackTab={feedbackTab} onFeedbackTabChange={setFeedbackTab} actionFilter={actionFilters[selectedPlaytest.id]??"All reports"} onActionFilterChange={filter=>setActionFilters(previous=>({...previous,[selectedPlaytest.id]:filter}))}
             playtest={selectedPlaytest}
+            printTarget={printTarget}
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}

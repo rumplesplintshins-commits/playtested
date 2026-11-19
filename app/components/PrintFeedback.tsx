@@ -9,7 +9,7 @@ type Props = {
   developerName: string;
   releaseLabel: string;
   responses: AcceptedIndependentFeedback[];
-  panelRef: RefObject<HTMLElement | null>;
+  rankRef: RefObject<HTMLElement | null>;
   snapshot: {
     averageOverall: number | null;
     averageGameplay: number | null;
@@ -43,13 +43,22 @@ function intent(value: string | null) {
   return value?.replaceAll("_", " ") || "Not answered";
 }
 
-export default function PrintFeedback({ gameTitle, developerName, releaseLabel, responses, panelRef, snapshot }: Props) {
+export function PrintFeedbackButton({ disabled, onClick }: { disabled: boolean; onClick?: () => void }) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick}
+      className="rounded-lg border border-emerald-300/30 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-300/10 focus-visible:outline-2 focus-visible:outline-emerald-300 disabled:opacity-50">
+      <span aria-hidden="true">🖨 </span>Print feedback
+    </button>
+  );
+}
+
+export default function PrintFeedback({ gameTitle, developerName, releaseLabel, responses, rankRef, snapshot }: Props) {
   const [printReport, setPrintReport] = useState<{ date: string; ranks: string[] } | null>(null);
   const [error, setError] = useState(false);
 
   function print() {
     if (!responses.length || printReport) return;
-    const ranks = Array.from(panelRef.current?.querySelectorAll("[data-print-tester-rank]") ?? [],
+    const ranks = Array.from(rankRef.current?.querySelectorAll("[data-print-tester-rank]") ?? [],
       label => label.textContent ?? "");
     setError(false);
     const clearReport = () => setPrintReport(null);
@@ -66,10 +75,7 @@ export default function PrintFeedback({ gameTitle, developerName, releaseLabel, 
 
   return (
     <>
-      <button type="button" disabled={!responses.length || Boolean(printReport)} onClick={print}
-        className="rounded-lg border border-emerald-300/30 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-300/10 focus-visible:outline-2 focus-visible:outline-emerald-300 disabled:opacity-50">
-        <span aria-hidden="true">🖨 </span>Print feedback
-      </button>
+      <PrintFeedbackButton disabled={!responses.length || Boolean(printReport)} onClick={print} />
       {error && <p role="alert" className="text-sm text-amber-200">Could not open the print dialogue. Please try again.</p>}
       {printReport && createPortal(
         <main className="feedback-print">
