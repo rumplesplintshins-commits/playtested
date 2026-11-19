@@ -59,7 +59,7 @@ try {
  const calls=[];
  let fail=false, empty=false, recruitmentFailure=false,profileFailure=false;
  const recruitmentCalls=[];
- const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:60}));
+ const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:120}));
  rows[9]={...rows[9],source_type:'steam',steam_app_id:'789',has_playtested_profile:false,game_link:'https://store.steampowered.com/app/789/'};
  rows[10]={...rows[10],source_type:'steam',title:'Rail Estate',steam_app_id:'3762240',has_playtested_profile:true,game_link:'https://wrong.test/'};rows[11]={...rows[11],source_type:'steam',steam_app_id:'456',has_playtested_profile:true};
  await page.route('**/*',async route=>{
