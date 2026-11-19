@@ -45,3 +45,44 @@ body {
     word-break: normal;
   }
 }
+
+.feedback-print {
+  display: none;
+}
+
+@page feedback-report {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  body:has(> .feedback-print) {
+    background: white;
+    color: black;
+    color-scheme: light;
+  }
+
+  body:has(> .feedback-print) > :not(.feedback-print) {
+    display: none !important;
+  }
+
+  body > .feedback-print {
+    display: block;
+    page: feedback-report;
+    font: 11pt/1.4 Arial, sans-serif;
+    overflow-wrap: anywhere;
+  }
+
+  .feedback-print header {
+    border-bottom: 1pt solid #333;
+    padding-bottom: 3mm;
+  }
+
+  .feedback-print h1 { font-size: 22pt; font-weight: bold; }
+  .feedback-print h2 { font-size: 15pt; font-weight: bold; }
+  .feedback-print h3 { font-size: 13pt; font-weight: bold; break-after: avoid; }
+  .feedback-print article { border-top: 0.5pt solid #aaa; margin-top: 5mm; padding-top: 3mm; break-inside: avoid; }
+  .feedback-print dl > div { margin-top: 2mm; }
+  .feedback-print dt { font-weight: bold; break-after: avoid; }
+  .feedback-print dd { white-space: pre-wrap; }
+}

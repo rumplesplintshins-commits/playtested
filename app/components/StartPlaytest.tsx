@@ -11,6 +11,7 @@ import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules }
 import { CampaignAudienceFields, audienceSelectionKey, type AudienceAvailability } from "./CampaignAudienceFields";
 import {useDeveloperPlan,allowanceError} from "./DeveloperPlan";
 import DurationPicker from "./DurationPicker";
+import PrintFeedback from "./PrintFeedback";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import FeedbackUsefulness from "./FeedbackUsefulness";
@@ -61,7 +62,7 @@ type PlaytestedTestProgress = {
   rejected_count: number;
 };
 
-type AcceptedIndependentFeedback = {
+export type AcceptedIndependentFeedback = {
   test_id: string;
   overall_score: number | null;
   gameplay_score: number | null;
@@ -127,6 +128,7 @@ type CommunityPlaytestResults = {
 };
 
 type StartPlaytestProps = {
+  developerName: string;
   gameTitle: string;
   gameSource: GameSource;
   existingPlaytest: ExistingPlaytest | null;
@@ -819,6 +821,7 @@ type FeedbackTab="said"|"follow-up"|"individual";
 const feedbackTabs=[["said","What testers said"],["follow-up","Feedback to follow up"],["individual","Individual responses"]] as const;
 
 function ResultsDashboard({
+  gameTitle, developerName,
   playtest,
   communityResults,
   independentProgress,
@@ -827,6 +830,8 @@ function ResultsDashboard({
   privateEvidence,
   feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
+  gameTitle: string;
+  developerName: string;
   playtest: ExistingPlaytest;
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
@@ -1266,7 +1271,7 @@ function ResultsDashboard({
         ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
-       {activeTab==='individual'&&<><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><div className="mt-4 space-y-3">
+       {activeTab==='individual'&&<><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} panelRef={feedbackPanelRef} /></div><div className="mt-4 space-y-3">
           {displayedAcceptedFeedback.map((response, index) => (
             <details
               key={response.test_id}
@@ -1276,7 +1281,7 @@ function ResultsDashboard({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 basis-48">
                     <p className="text-sm font-semibold text-zinc-100">
-                      <AnonymousTesterLabel testId={response.test_id} />
+                      <span data-print-tester-rank><AnonymousTesterLabel testId={response.test_id} /></span>
                     </p>
                     {Boolean(testerGenres?.[response.test_id]?.length) && (
                       <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
@@ -1498,9 +1503,12 @@ function ResultsDashboard({
 
 
 function BuildResultsPanel({
+  gameTitle, developerName,
   currentPlaytest,
   playtests,
 }: {
+  gameTitle: string;
+  developerName: string;
   currentPlaytest: ExistingPlaytest;
   playtests: ExistingPlaytest[];
 }) {
@@ -1647,7 +1655,7 @@ function BuildResultsPanel({
 
       <div className="py-4">
         {error && loadedBuildId===selectedPlaytest.id && (
-          <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
+          <div role="alert" className="mb-4 rounded-lg border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">
             {error}
           </div>
         )}
@@ -1656,6 +1664,7 @@ function BuildResultsPanel({
           <p className="text-sm text-zinc-400">Loading results for this build...</p>
         ) : !error ? (
           <ResultsDashboard
+            gameTitle={gameTitle} developerName={developerName}
             feedbackTab={feedbackTab} onFeedbackTabChange={setFeedbackTab} actionFilter={actionFilters[selectedPlaytest.id]??"All reports"} onActionFilterChange={filter=>setActionFilters(previous=>({...previous,[selectedPlaytest.id]:filter}))}
             playtest={selectedPlaytest}
             communityResults={communityResults}
@@ -1671,6 +1680,7 @@ function BuildResultsPanel({
 }
 
 export default function StartPlaytest({
+  developerName,
   gameTitle,
   gameSource,
   existingPlaytest,
@@ -2759,6 +2769,7 @@ export default function StartPlaytest({
 
               <div id={resultsPanelId} hidden={!resultsExpanded} className="border-t border-white/10 p-5">
                 <BuildResultsPanel
+                  gameTitle={gameTitle} developerName={developerName}
                   currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
                 />
@@ -2894,7 +2905,8 @@ export default function StartPlaytest({
 
         <div className="mt-6 border-t border-white/10 pt-6">
           <BuildResultsPanel
-            currentPlaytest={existingPlaytest}
+            gameTitle={gameTitle} developerName={developerName}
+                  currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
           />
         </div>

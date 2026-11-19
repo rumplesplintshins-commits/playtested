@@ -1207,11 +1207,11 @@ async function DeveloperDashboard() {
                   </p>
                 </div>}
 
-                  <ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved/>
                   <a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>
                   <div data-start-playtest>
                   <StartPlaytest
                     gameTitle={game.gameTitle}
+                    developerName={game.developerName}
                     gameSource={{
                       importedGameId: game.importedGameId,
                       approvedGameId: game.approvedGameId,
@@ -1223,11 +1223,12 @@ async function DeveloperDashboard() {
                   </div>
                   <LegacyPrivateEvidence submissionId={game.submissionId||game.approvedGameId}/>
                   <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
+                  <ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved collapsed/>
                 </div>
               </article>
               );
             })(game)}))}
- submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>,game.title).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><ListingControls id={game.id} title={game.title} approved={game.status==="Approved"}/><SubmissionContact id={game.id}/><GameplayEditor id={game.id}/>{((game) => (
+ submissions={games.map(game=>({id:game.id,title:game.title,status:game.status,missingCount:submissionIssues(game as unknown as Record<string,unknown>,game.title).length,correctionHref:submissionReviewPresentation(game.status).action?`/submit?edit=${encodeURIComponent(game.id)}`:undefined,context:formatDate(game.submitted_at),content:<><SubmissionContact id={game.id}/><GameplayEditor id={game.id}/>{((game) => (
               <article
                 key={game.id}
                 className="rounded-lg border border-white/[0.08] bg-black/20 p-4 transition hover:border-white/15 hover:bg-white/[0.025]"
@@ -1257,7 +1258,7 @@ async function DeveloperDashboard() {
                   </span>
                 </div>
               </article>
-            ))(game)}<section className={game.status==="Rejected"?"mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-4 text-sm text-zinc-300":"mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"}><h3 className="font-semibold">{game.status==="Rejected"?"Rejection reason":game.status==="Needs More Information"?"Information requested":"Reviewer Notes"}</h3><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p><p className="mt-2">{submissionReviewPresentation(game.status).summary}</p>{submissionReviewPresentation(game.status).action&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>{submissionReviewPresentation(game.status).action}</a>}</section><aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{submissionReviewPresentation(game.status,submissionIssues(game as unknown as Record<string,unknown>,game.title)).completeness}</p></aside></>}))}
+            ))(game)}<section className={game.status==="Rejected"?"mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-4 text-sm text-zinc-300":"mt-3 rounded-xl border border-white/10 p-4 text-sm text-zinc-300"}><h3 className="font-semibold">{game.status==="Rejected"?"Rejection reason":game.status==="Needs More Information"?"Information requested":"Reviewer Notes"}</h3><p className="mt-2 whitespace-pre-wrap">{game.review_reason||"No review reason recorded."}</p><p className="mt-2">{submissionReviewPresentation(game.status).summary}</p>{submissionReviewPresentation(game.status).action&&<a className="mt-4 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-black" href={`/submit?edit=${encodeURIComponent(game.id)}`}>{submissionReviewPresentation(game.status).action}</a>}</section><aside className="mt-3 rounded-xl border border-amber-300/20 p-4 text-sm text-zinc-300"><h3 className="font-semibold">Automatic completeness check</h3><p className="mt-2 whitespace-pre-wrap">{submissionReviewPresentation(game.status,submissionIssues(game as unknown as Record<string,unknown>,game.title)).completeness}</p></aside><ListingControls id={game.id} title={game.title} approved={game.status==="Approved"} collapsed/></>}))}
  claims={claims.map(claim=>({id:claim.id,title:claim.gameTitle,status:claim.status,context:claim.relationship,content:((claim) => (
               <article
                 key={claim.id}
