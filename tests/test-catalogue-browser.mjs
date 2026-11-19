@@ -92,12 +92,13 @@ try {
  await expect(profile.getByRole('link',{name:'View game details'})).toHaveAttribute('href','/games/steam-456');
 
  await expect(page.locator('article').first().getByRole('link',{name:'View game details',exact:true})).toHaveAttribute('href','/submissions/0');await expect(page.locator('article').nth(10).getByRole('link',{name:/View Steam page/})).toHaveAttribute('href','https://store.steampowered.com/app/3762240/');await expect(page.locator('article').nth(11).getByRole('link',{name:'View game details',exact:true})).toHaveAttribute('href','/games/steam-456');
- await expect(compact).toHaveAttribute('aria-pressed','true');
+ await expect(comfortable).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('article').first()).toContainText('Disclosure update pending review');await expect(page.locator('article').first()).not.toContainText('Independent assessment: not completed');
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);
  assert.equal(recruitmentCalls.length,1);assert.equal(recruitmentCalls[0].p_games.length,12);
  await page.locator('[aria-label^="Recruiting testers."]').first().focus();await expect(page.locator('[aria-label^="Recruiting testers."]').first()).toBeFocused();await expect(page.locator('[aria-label^="Recruiting testers."]').first()).toHaveAttribute('aria-label',/Eligibility requirements apply/);
  const columns=()=>page.locator('[data-catalogue-density]').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+ await compact.click();
  const smallColumns=await columns();
  await comfortable.focus();await page.keyboard.press('Enter');assert(await columns()<smallColumns);
  await expect(page.locator('[aria-label^="Recruiting testers."]')).toHaveCount(2);assert.equal(recruitmentCalls.length,1,'Density must not request availability again');
@@ -105,7 +106,7 @@ try {
  await expect(page.locator('article').first()).toContainText('2 ratings');await expect(page.locator('article').first()).toContainText('1 out of 1 positive');
  for(const label of ['AI Code Only','AI Content Only','No AI disclosed','AI Use Unknown'])assert(await page.locator('article').filter({hasText:label}).count()>0);
  await expect(page.getByText('No description provided.')).toHaveCount(1);
- await page.locator('article').first().locator('summary').click();await expect(page.locator('article').first().locator('details')).toHaveAttribute('open','');
+ await expect(page.locator('article').first().locator('p.line-clamp-4')).toContainText('Full description');
  const pagination=page.getByRole('navigation',{name:'Game catalogue pages'});
  const results=page.getByRole('group',{name:'Browse games and feedback'});
  const firstCard=page.locator('[data-catalogue-density] > article').first();
