@@ -74,6 +74,25 @@ try {
       assert.equal(response.status(), 200, `homepage response at ${width}px`);
       await page.waitForTimeout(5000);
 
+      if ((width === 390 || width === 1280) && run === 0) {
+        const testimonial = page.getByRole("complementary", { name: "Developer testimonial" });
+        assert.equal(await testimonial.count(), 1, "homepage must show one developer testimonial");
+        assert.equal(await testimonial.locator("blockquote").innerText(), "Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.", "Power Spike testimonial wording must match the approved quote");
+        const postLink = testimonial.getByRole("link", { name: "Read the original Bluesky post" });
+        assert.equal(await postLink.getAttribute("href"), "https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x", "testimonial must link to Power Spike's original post");
+        assert.equal(await postLink.getAttribute("rel"), "noopener noreferrer", "external testimonial link must be safe");
+        const testimonialBox = await testimonial.boundingBox();
+        const developerBox = await page.locator('[aria-labelledby="home-developers"]').boundingBox();
+        const catalogueBox = await page.locator("#discover-games").boundingBox();
+        assert(testimonialBox && developerBox && catalogueBox, "hero, testimonial and catalogue must have visible layouts");
+        if (width === 390) {
+          assert(testimonialBox.y >= developerBox.y + developerBox.height - 2, "mobile testimonial must follow the developer/tester content");
+          assert(testimonialBox.y + testimonialBox.height <= catalogueBox.y + 2, "mobile testimonial must remain before the catalogue");
+        } else {
+          assert(testimonialBox.x > developerBox.x + developerBox.width + 8, "desktop testimonial must sit to the right of the hero cards");
+        }
+      }
+
       const sample = await page.evaluate(() => ({
         cls: window.__merge28LayoutShifts.reduce((sum, value) => sum + value, 0),
         headerHeightRange: window.__merge28HeaderHeights.length
