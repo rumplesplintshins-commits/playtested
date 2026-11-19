@@ -52,21 +52,21 @@ if(process.argv.includes('--information')){
 const dir='app/catalogue-fixture';
 if(fs.existsSync(dir))throw Error('Refusing to overwrite existing fixture');
 fs.mkdirSync(dir);
-fs.writeFileSync(dir+'/page.tsx',`import GameCatalogue from '../components/GameCatalogue';export default function Fixture(){return <main><GameCatalogue/></main>}`);
+fs.writeFileSync(dir+'/page.tsx',`import GameCatalogue from '../components/GameCatalogue';import SiteHeader from '../components/SiteHeader';export default function Fixture(){return <><SiteHeader/><main><GameCatalogue/></main></>}`);
 const browser=await chromium.launch({headless:true});
 try {
  const page=await browser.newPage({viewport:{width:1920,height:1000}});
  const calls=[];
  let fail=false, empty=false, recruitmentFailure=false,profileFailure=false;
  const recruitmentCalls=[];
- const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:24}));
+ const rows=Array.from({length:12},(_,i)=>({source_type:'approved',game_id:String(i),title:i===0?'Long title '.repeat(12):'Game '+i,developer_name:'Long studio '.repeat(8),genre:'Action',description:i===1?'':'Full description '.repeat(35),image_url:'',ai_type:['AI-assisted: Code only','AI-assisted: Content only','No AI used',null,'Unexpected'][i%5],verification_status:'Not yet verified',total_count:60}));
  rows[9]={...rows[9],source_type:'steam',steam_app_id:'789',has_playtested_profile:false,game_link:'https://store.steampowered.com/app/789/'};
  rows[10]={...rows[10],source_type:'steam',title:'Rail Estate',steam_app_id:'3762240',has_playtested_profile:true,game_link:'https://wrong.test/'};rows[11]={...rows[11],source_type:'steam',steam_app_id:'456',has_playtested_profile:true};
  await page.route('**/*',async route=>{
   const url=new URL(route.request().url());
   if(url.hostname==='localhost')return route.continue({headers:{...route.request().headers(),cookie:''}});
   if(url.pathname.endsWith('/rpc/m26_public_imported_profiles'))return route.fulfill({status:profileFailure?403:200,json:profileFailure?{code:'fixture'}:[{imported_game_id:'11'}]});
-  if(url.pathname.endsWith('/rpc/get_public_catalogue')){calls.push(route.request().postDataJSON());return route.fulfill({status:fail?500:200,contentType:'application/json',body:JSON.stringify(fail?{message:'fixture failure'}:empty?[]:rows)});}
+  if(url.pathname.endsWith('/rpc/get_public_catalogue')){const query=route.request().postDataJSON();calls.push(query);const pageRows=query.p_page===1?rows:rows.map((row,i)=>({...row,game_id:String((query.p_page-1)*12+i),title:`Page ${query.p_page} game ${i+1}`}));return route.fulfill({status:fail?500:200,contentType:'application/json',body:JSON.stringify(fail?{message:'fixture failure'}:empty?[]:pageRows)});}
   if(url.pathname.endsWith('/rpc/get_game_community_reception'))return route.fulfill({json:[{submission_id:'0',accepted_test_count:2,rated_test_count:2,average_overall_score:8,recommend_positive_percent:100,reception_status:'Early results'}]});
   if(url.pathname.endsWith('/rpc/get_public_recruitment')){const body=route.request().postDataJSON();recruitmentCalls.push(body);return route.fulfill({status:recruitmentFailure?503:200,json:recruitmentFailure?{code:'PGRST202'}:body.p_games.map((game,i)=>({...game,recruiting:i===0||i===11}))});}
   if(url.pathname.endsWith('/rpc/get_public_intent_counts'))return route.fulfill({json:[{kind:'approved',id:'0',lifetime:{recommend:{definitely:1,probably:0,answered:1},continue:{definitely:0,probably:0,answered:0}},builds:[]}]});
@@ -76,6 +76,7 @@ try {
  await page.goto(origin+'/catalogue-fixture');
  const compact=page.getByRole('button',{name:'Compact',exact:true}),comfortable=page.getByRole('button',{name:'Comfortable',exact:true});
  await expect(page.locator('article')).toHaveCount(12);
+ assert.equal(await page.evaluate(()=>scrollY),0,'Initial catalogue load must not scroll');
  assert.equal(calls[0].p_platform,'all','Initial catalogue query includes the all-platforms filter');
  const rail=page.locator('article').filter({hasText:'Rail Estate'}),profile=page.locator('article').filter({has:page.locator('a[href="/games/steam-456"]')});
  await expect(rail.locator('a')).toHaveCount(3);
@@ -105,9 +106,41 @@ try {
  for(const label of ['AI Code Only','AI Content Only','No AI disclosed','AI Use Unknown'])assert(await page.locator('article').filter({hasText:label}).count()>0);
  await expect(page.getByText('No description provided.')).toHaveCount(1);
  await page.locator('article').first().locator('summary').click();await expect(page.locator('article').first().locator('details')).toHaveAttribute('open','');
- await page.getByRole('button',{name:'Next',exact:true}).click();await expect.poll(()=>calls.at(-1)?.p_page).toBe(2);await expect(comfortable).toHaveAttribute('aria-pressed','true');
- const requests=calls.length;await compact.click();await expect(page.getByRole('button',{name:'2',exact:true})).toHaveAttribute('aria-current','page');assert.equal(calls.length,requests,'Density must not refetch or reset page');
- await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Content only');await expect.poll(()=>calls.at(-1)?.p_ai_type).toBe('AI-assisted: Content only');await expect(compact).toHaveAttribute('aria-pressed','true');
+ const pagination=page.getByRole('navigation',{name:'Game catalogue pages'});
+ const results=page.getByRole('group',{name:'Browse games and feedback'});
+ const firstCard=page.locator('[data-catalogue-density] > article').first();
+ async function selectPage(label, number) {
+  const button=pagination.getByRole('button',{name:label,exact:true});
+  await button.scrollIntoViewIfNeeded();
+  await expect(results).not.toBeInViewport();
+  await button.click();
+  await expect(firstCard).toContainText(number===1?'Long title':`Page ${number} game 1`);
+  await expect(results).toBeFocused();
+  await expect(firstCard).toBeInViewport();
+  await expect(pagination.locator('[aria-current="page"]')).toHaveText(String(number));
+  const distances=await results.evaluate(el=>({
+   results:el.getBoundingClientRect().top,
+   header:document.querySelector('body > header')?.getBoundingClientRect().bottom??0,
+  }));
+  assert(distances.results>=Math.max(distances.header,0)+16,'Results heading clears the site header');
+ }
+ for(const width of [1920,1280,390]){
+  await page.setViewportSize({width,height:width===1280?667:900});
+  await selectPage('2',2);
+  await selectPage('Next',3);
+  await selectPage('4',4);
+  await selectPage('5',5);
+  await selectPage('Previous',4);
+  await selectPage('5',5);
+  await selectPage('1',1);
+ }
+ await page.setViewportSize({width:1920,height:1000});
+ await selectPage('2',2);
+ await expect(comfortable).toHaveAttribute('aria-pressed','true');
+ await pagination.getByRole('button',{name:'2',exact:true}).click();
+ await expect(results).not.toBeInViewport();
+ const requests=calls.length;await compact.click();await expect(page.getByRole('button',{name:'2',exact:true})).toHaveAttribute('aria-current','page');assert.equal(calls.length,requests,'Density must not refetch or reset page');await expect(compact).toBeFocused();
+ await page.getByRole('combobox',{name:'Filter by AI use'}).selectOption('AI-assisted: Content only');await expect.poll(()=>calls.at(-1)?.p_ai_type).toBe('AI-assisted: Content only');await expect(firstCard).toContainText('Long title');await expect(results).not.toBeFocused();await expect(compact).toHaveAttribute('aria-pressed','true');
  const platformFilter=page.getByRole('combobox',{name:'Filter by platform'});
  assert.deepEqual(await platformFilter.locator('option').allTextContents(),['All platforms','Steam','PC / Other','Browser','Roblox','Android','iPhone / iPad']);
  await page.getByRole('button',{name:'Next',exact:true}).click();await expect.poll(()=>calls.at(-1)?.p_page).toBe(2);

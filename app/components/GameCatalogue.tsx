@@ -3,7 +3,7 @@
 import {assessmentLabel} from "../../lib/review-labels";
 import {catalogueThumbnail} from "../../lib/catalogue-thumbnail";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {publicRequestCache} from "@/lib/public-request-cache";
 import { AI_CLASSIFICATIONS } from "@/lib/submission-completeness";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
@@ -381,6 +381,16 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
   const [includeNsfw, setIncludeNsfw] = useState(defaultView.includeNsfw);
   const [sort, setSort] = useState(defaultView.sort);
   const [page, setPage] = useState(defaultView.page);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const pendingScrollPage = useRef<number | null>(null);
+  const [scrollRevision, setScrollRevision] = useState(0);
+
+  useLayoutEffect(() => {
+    if (scrollRevision === 0) return;
+    const results = resultsRef.current;
+    results?.focus({ preventScroll: true });
+    results?.scrollIntoView({ behavior: "instant", block: "start" });
+  }, [scrollRevision]);
 
   const [games, setGames] = useState<CatalogueGame[]>(()=>initialCatalogue&&!initialCatalogue.error?initialCatalogue.rows.map(initialGame):[]);
   const [totalCount, setTotalCount] = useState(initialCatalogue&&!initialCatalogue.error?initialCatalogue.total:0);
@@ -502,6 +512,10 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
         const result=hit||await fetchPage(page);
         if(cancelled)return;
         setGames(result.games);setTotalCount(result.total);setLoaded(true);
+        if (pendingScrollPage.current === page) {
+          pendingScrollPage.current = null;
+          setScrollRevision((revision) => revision + 1);
+        }
         // Fetch subsequent pages only when the visitor navigates there.
       }catch{if(!cancelled){setLoadError(true);setLoaded(true);}}
     }
@@ -533,6 +547,17 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
 
+  function selectPage(nextPage: number) {
+    if (nextPage === currentPage) return;
+    pendingScrollPage.current = nextPage;
+    setPage(nextPage);
+  }
+
+  function resetPage() {
+    pendingScrollPage.current = null;
+    setPage(1);
+  }
+
   function resetFilters() {
     setSearch("");
     setGenre("All genres");
@@ -541,7 +566,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
     setAiType("All AI types");
     setIncludeNsfw(false);
     setSort("Featured");
-    setPage(1);
+    resetPage();
   }
 
   const fieldClass =
@@ -573,7 +598,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           />
@@ -583,7 +608,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={genre}
             onChange={(event) => {
               setGenre(event.target.value);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           >
@@ -599,7 +624,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={platform}
             onChange={(event) => {
               setPlatform(event.target.value as "all" | Platform);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           >
@@ -615,7 +640,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={verificationFilter}
             onChange={(event) => {
               setVerificationFilter(event.target.value);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           >
@@ -631,7 +656,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={aiType}
             onChange={(event) => {
               setAiType(event.target.value);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           >
@@ -647,7 +672,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             value={sort}
             onChange={(event) => {
               setSort(event.target.value);
-              setPage(1);
+              resetPage();
             }}
             className={fieldClass}
           >
@@ -674,7 +699,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
                 checked={includeNsfw}
                 onChange={(event) => {
                   setIncludeNsfw(event.target.checked);
-                  setPage(1);
+                  resetPage();
                 }}
                 className="peer sr-only"
               />
@@ -694,12 +719,18 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
       </section>
 
       <section className="space-y-5 border-t border-white/10 pt-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div
+          ref={resultsRef}
+          tabIndex={-1}
+          role="group"
+          aria-labelledby="catalogue-results-heading"
+          className="flex scroll-mt-6 flex-wrap items-end justify-between gap-3"
+        >
           <div>
             <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
               Explore the catalogue
             </p>
-            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+            <h2 id="catalogue-results-heading" className="text-2xl font-extrabold tracking-tight sm:text-3xl">
               Browse games and feedback
             </h2>
             <p className="mt-2 text-base text-white/60">
@@ -761,7 +792,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             <button
               type="button"
               disabled={currentPage === 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              onClick={() => selectPage(currentPage - 1)}
               className="rounded-md border border-white/25 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
             >
               Previous
@@ -779,7 +810,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
                 key={pageNumber}
                 type="button"
                 aria-current={currentPage === pageNumber ? "page" : undefined}
-                onClick={() => setPage(pageNumber)}
+                onClick={() => selectPage(pageNumber)}
                 className={`rounded-md border px-3 py-2 text-sm ${
                   currentPage === pageNumber
                     ? "border-emerald-400 bg-emerald-400 font-bold text-black"
@@ -793,9 +824,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             <button
               type="button"
               disabled={currentPage === pageCount}
-              onClick={() =>
-                setPage((current) => Math.min(pageCount, current + 1))
-              }
+              onClick={() => selectPage(currentPage + 1)}
               className="rounded-md border border-white/25 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-30"
             >
               Next
