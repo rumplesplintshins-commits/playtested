@@ -257,14 +257,9 @@ function GameCardContent({
 
         <p className="text-xs text-white/60">By {game.developer || "Developer not listed"}</p>
 
-        {game.description ? <details className="group text-sm leading-6 text-white/75">
-          <summary className="cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-emerald-300">
-            <span className={`${compact ? "line-clamp-4" : "line-clamp-5"} group-open:hidden`}>{game.description}</span>
-            <span className="mt-1 inline-block text-xs text-emerald-300 group-open:hidden">Read full description</span>
-            <span className="hidden text-xs text-emerald-300 group-open:inline">Hide full description</span>
-          </summary>
-          <p className="mt-2">{game.description}</p>
-        </details> : <p className="text-sm text-white/65">No description provided.</p>}
+        {game.description
+          ? <p className={`text-sm leading-6 text-white/75 ${compact ? "line-clamp-3" : "line-clamp-4"}`}>{game.description}</p>
+          : <p className="text-sm text-white/65">No description provided.</p>}
 
 
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -294,7 +289,7 @@ function GameCardContent({
                     Community reception
                   </p>
                   <p className="mt-1 text-lg font-extrabold text-white">
-                    {game.communityReception.averageOverallScore.toFixed(1)}
+                    {Number(game.communityReception.averageOverallScore.toFixed(1)).toString()}
                     <span className="text-sm font-semibold text-white/45">/10</span>
                   </p>
                 </div>
@@ -376,7 +371,7 @@ function initialGame(row:PublicCatalogueRow):CatalogueGame {
   };
 }
 export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:HomepageCatalogueSeed}) {
-  const [density, setDensity] = useState<"compact" | "comfortable">("compact");
+  const [density, setDensity] = useState<"compact" | "comfortable">("comfortable");
 
   const [search, setSearch] = useState(defaultView.search);
   const [genre, setGenre] = useState(defaultView.genre);
