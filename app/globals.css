@@ -78,6 +78,26 @@ body {
     padding-bottom: 3mm;
   }
 
+  .feedback-print-opening {
+    break-inside: avoid;
+  }
+
+  .feedback-print-snapshot {
+    margin-top: 4mm;
+  }
+
+  .feedback-print-snapshot dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2mm 4mm;
+  }
+
+  .feedback-print-snapshot dl > div {
+    break-inside: avoid;
+    border-bottom: 0.5pt solid #aaa;
+    padding-bottom: 1mm;
+  }
+
   .feedback-print h1 { font-size: 22pt; font-weight: bold; }
   .feedback-print h2 { font-size: 15pt; font-weight: bold; }
   .feedback-print h3 { font-size: 13pt; font-weight: bold; break-after: avoid; }

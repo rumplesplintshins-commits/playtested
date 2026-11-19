@@ -46,8 +46,15 @@ async function feedbackTabBrowser(){
    else if(name==='get_developer_accepted_playtest_feedback')data=empty.has(id)?[]:[{test_id:'report-'+id,gameplay_score:8,performance_score:7,overall_score:8,hours_played:1,continue_playing:'probably',recommend_game:'probably',enjoyed_most:id+' enjoyment VERBATIM',frustrations:id+' frustration VERBATIM',biggest_improvement:id+' improvement VERBATIM',bugs_found:id+' technical VERBATIM',feedback:id+' complete additional report',focus_responses:{Controls:'Control notes'},submitted_at:'2026-10-28T10:00:00Z'}];
    else if(name==='get_developer_community_playtest_results')data={responses:empty.has(id)?[]:[{feedback_id:'community-'+id,overall_score:8,gameplay_score:8,controls_score:8,performance_score:7,enjoyed:id+' community enjoyment',struggled:id+' community frustration',improvements:id+' community improvement',bugs:id+' community technical',recommendation:'yes',additional_comments:id+' community complete',submitted_at:'2026-10-28T11:00:00Z'}]};else throw Error('Unexpected backend request: '+name);
    if(name==='get_developer_accepted_playtest_feedback'&&id==='a'&&printThree&&!empty.has(id)){
-    data.push(...[2,3].map(index=>({...data[0],test_id:'report-a-'+index,feedback:'Additional accepted report '+index+'\nVerbatim second line.'})));
+    data.push(
+     {...data[0],test_id:'report-a-2',overall_score:4,gameplay_score:2,performance_score:null,continue_playing:'probably_not',recommend_game:null,hours_played:2,bugs_found:null,feedback:'Additional accepted report 2\nVerbatim second line.'},
+     {...data[0],test_id:'report-a-3',overall_score:null,gameplay_score:6,performance_score:9,continue_playing:null,recommend_game:'definitely',hours_played:null,bugs_found:null,feedback:'Additional accepted report 3\nVerbatim second line.'},
+    );
    }
+   if(name==='get_developer_accepted_playtest_feedback'&&id==='b'&&data.length){
+    Object.assign(data[0],{continue_playing:null,recommend_game:null,hours_played:null,bugs_found:null});
+   }
+   if(name==='get_developer_community_playtest_results'&&id==='b'&&data.responses.length)data.responses[0].bugs=null;
    return route.fulfill({json:data});
   });
   const page=await context.newPage({viewport:{width:1280,height:900}});await page.goto(origin+'/build-feedback-fixture?game=alpha');const tabs=()=>page.getByRole('tablist',{name:'Build feedback'}),tab=label=>tabs().getByRole('tab',{name:label,exact:true}),panel=()=>page.getByRole('tabpanel').filter({has:page.getByText('Verbatim feedback for this build, grouped without rewriting tester responses.',{exact:true})});
@@ -70,11 +77,39 @@ async function feedbackTabBrowser(){
   const print=page.getByRole('button',{name:'Print feedback',exact:true});
   const report=page.locator('body > .feedback-print');
   async function checkPrint(build, count) {
+   const dashboard=page.getByRole('region',{name:'Results snapshot',exact:true});
+   const expand=dashboard.getByRole('button',{name:'Expand Results snapshot'});
+   const collapse=dashboard.getByRole('button',{name:'Collapse Results snapshot'});
+   if(await expand.count())await expand.click();
+   const metrics=count===3 ? [
+    ['Overall experience','6.7/10'],['Gameplay','6/10'],['Performance','7.7/10'],
+    ['Would continue playing','1 out of 2 positive'],['Would recommend','2 out of 2 positive'],
+    ['Average playtime','1.5 h','Average play time','1.5h'],
+    ['Total reported playtime','3 h','Total reported playtime','3h'],['Issue responses','2'],
+   ] : [
+    ['Overall experience','8/10'],['Gameplay','8/10'],['Performance','7/10'],
+    ['Would continue playing','N/A','Would continue playing','No answers yet'],
+    ['Would recommend','N/A','Would recommend','No answers yet'],
+    ['Average playtime','N/A','Average play time','Not reported'],
+    ['Total reported playtime','N/A','Total reported playtime','Not reported'],['Issue responses','0'],
+   ];
+   for(const [label,value,dashboardLabel=label,dashboardValue=value] of metrics){
+    await expect(dashboard.getByText(dashboardLabel,{exact:true}).locator('..').locator('p').nth(1)).toHaveText(dashboardValue);
+   }
+   await collapse.click();
+   await expect(dashboard.getByText('Overall experience',{exact:true})).toBeHidden();
    await tab('Individual responses').click();
    await expect(print).toBeEnabled();
    assert.equal(await page.getByRole('tabpanel').locator('details[open]').count(),0);
    await print.click();
    await expect(report.locator('article')).toHaveCount(count);
+   const printedSnapshot=report.locator('.feedback-print-snapshot');
+   await expect(printedSnapshot).toContainText('Early feedback: results are directional while the sample is small.');
+   await expect(report.locator('header')).toContainText('Quality-accepted independent tester reports: '+count);
+   for(const [label,value] of metrics){
+    await expect(printedSnapshot.getByText(label,{exact:true}).locator('..').locator('dd')).toHaveText(value);
+   }
+   assert(await printedSnapshot.evaluate(section=>Boolean(section.parentElement.nextElementSibling?.matches('article'))));
    assert.equal(await page.evaluate(()=>window.printCalls),build==='Build B'?1:2);
    await expect(report).toContainText('Build: '+build);
    await expect(report).toContainText('Developer: Fixture Studio');
@@ -90,6 +125,7 @@ async function feedbackTabBrowser(){
    }
    await page.emulateMedia({media:'print'});
    await expect(report).toBeVisible();
+   await expect(printedSnapshot).toBeVisible();
    await expect(tabs()).toBeHidden();
    const pdf=await page.pdf({preferCSSPageSize:true});
    assert(pdf.subarray(0,5).equals(Buffer.from('%PDF-'))&&pdf.length>5000);
