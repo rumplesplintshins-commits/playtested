@@ -1,3 +1,4 @@
+import { blueskyLogoPath } from "./components/SocialLinks";
 
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
@@ -63,8 +64,11 @@ export default async function Home() {
               <figcaption className="mt-7 border-t border-white/10 pt-5">
                 <p className="font-semibold text-white">Power Spike</p>
                 <p className="mt-1 text-sm text-zinc-400">Makers of Beyond Realm</p>
-                <a href="https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#77f29b] underline underline-offset-4 hover:text-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4">
-                  Read the original Bluesky post <span aria-hidden="true">↗</span>
+                <a href="https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#77f29b]/25 bg-[#77f29b]/5 px-3 py-1.5 text-sm font-medium text-[#77f29b] no-underline transition-colors hover:border-[#77f29b]/50 hover:bg-[#77f29b]/10 focus-visible:outline-2 focus-visible:outline-offset-2">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" className="size-3.5 shrink-0 fill-current">
+                    <path d={blueskyLogoPath} />
+                  </svg>
+                  View original post on Bluesky
                 </a>
               </figcaption>
             </figure>
