@@ -546,6 +546,12 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
+  const firstVisiblePage = Math.max(1, Math.min(currentPage - 3, pageCount - 6));
+  const pageNumbers = Array.from(
+    { length: Math.min(pageCount, 7) },
+    (_, index) => firstVisiblePage + index
+  );
+  if (firstVisiblePage > 1) pageNumbers.unshift(1);
 
   function selectPage(nextPage: number) {
     if (nextPage === currentPage) return;
@@ -798,14 +804,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
               Previous
             </button>
 
-            {Array.from({ length: Math.min(pageCount, 7) }, (_, index) => {
-              const startPage = Math.max(
-                1,
-                Math.min(currentPage - 3, pageCount - 6)
-              );
-
-              return startPage + index;
-            }).map((pageNumber) => (
+            {pageNumbers.map((pageNumber) => (
               <button
                 key={pageNumber}
                 type="button"
