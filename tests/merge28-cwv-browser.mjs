@@ -78,7 +78,7 @@ try {
         const testimonial = page.getByRole("complementary", { name: "Developer testimonial" });
         assert.equal(await testimonial.count(), 1, "homepage must show one developer testimonial");
         assert.equal(await testimonial.locator("blockquote").innerText(), "Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.", "Power Spike testimonial wording must match the approved quote");
-        const postLink = testimonial.getByRole("link", { name: "Read the original Bluesky post" });
+        const postLink = testimonial.getByRole("link", { name: "View original post on Bluesky", exact: true });
         assert.equal(await postLink.getAttribute("href"), "https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x", "testimonial must link to Power Spike's original post");
         assert.equal(await postLink.getAttribute("rel"), "noopener noreferrer", "external testimonial link must be safe");
         const testimonialBox = await testimonial.boundingBox();
