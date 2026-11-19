@@ -46,6 +46,8 @@ try {
   assert(initialHtml.includes("Puzzle"), "game genre must exist in initial HTML");
   assert(initialHtml.includes('href="/games/steam-912345"'), "Steam listing must have a crawlable internal profile link");
   assert(initialHtml.includes('>Find playtesters for your indie game</a>'), "homepage must render an internal developer SEO link in initial HTML");
+  assert(initialHtml.includes("Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed."), "Power Spike's approved testimonial must be server-rendered verbatim");
+  assert(initialHtml.includes("https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x"), "testimonial must link to Power Spike's published Bluesky post");
   assert.equal(mock.getCatalogueCalls(), 1, "server rendering should fetch one first catalogue page");
 
   browser = await chromium.launch({ headless: true });
