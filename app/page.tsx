@@ -18,7 +18,8 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(websiteStructuredData())}}/>
 
       <section className="mx-auto max-w-7xl px-6 pb-8 pt-8 md:pb-10 md:pt-10">
-        <div className="max-w-3xl">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start xl:gap-10">
+          <div className="min-w-0 max-w-3xl">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs tracking-wide text-[#77f29b]">
             <span className="h-2 w-2 rounded-full bg-[#77f29b]" />
             BUILT AROUND PLAYER OPINION
@@ -52,6 +53,22 @@ export default async function Home() {
             </section>
           </div>
           <p className="mt-4 text-sm leading-6 text-zinc-400">You can be a developer, a tester, or both. Just looking around? <a href="#discover-games" className="text-[#77f29b] underline underline-offset-4 focus-visible:outline-2">Browse the games below</a>.</p>
+          </div>
+          <aside aria-label="Developer testimonial" className="min-w-0 max-w-3xl xl:mt-10 xl:max-w-none">
+            <figure className="rounded-2xl border border-[#77f29b]/25 bg-[#0e1510] p-6 sm:p-8">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#77f29b]">What developers are saying</p>
+              <blockquote className="mt-6 border-l-2 border-[#77f29b]/70 pl-4 text-base leading-8 text-zinc-100 sm:text-lg">
+                Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.
+              </blockquote>
+              <figcaption className="mt-7 border-t border-white/10 pt-5">
+                <p className="font-semibold text-white">Power Spike</p>
+                <p className="mt-1 text-sm text-zinc-400">Makers of Beyond Realm</p>
+                <a href="https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#77f29b] underline underline-offset-4 hover:text-[#9af8b4] focus-visible:outline-2 focus-visible:outline-offset-4">
+                  Read the original Bluesky post <span aria-hidden="true">↗</span>
+                </a>
+              </figcaption>
+            </figure>
+          </aside>
         </div>
       </section>
 
