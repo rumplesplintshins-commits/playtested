@@ -10,6 +10,17 @@ type Props = {
   releaseLabel: string;
   responses: AcceptedIndependentFeedback[];
   panelRef: RefObject<HTMLElement | null>;
+  snapshot: {
+    averageOverall: number | null;
+    averageGameplay: number | null;
+    averagePerformance: number | null;
+    continuation: string | null;
+    recommendation: string | null;
+    averageHours: number | null;
+    totalHours: number | null;
+    issueResponses: number | null;
+    sampleNote: string;
+  };
 };
 
 function reportDate(date: Date) {
@@ -22,11 +33,17 @@ function rating(value: number | null) {
   return value === null ? "Not provided" : `${value}/10`;
 }
 
+const hoursFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
+
+function printHours(hours: number | null) {
+  return hours === null ? null : `${hoursFormat.format(hours)} h`;
+}
+
 function intent(value: string | null) {
   return value?.replaceAll("_", " ") || "Not answered";
 }
 
-export default function PrintFeedback({ gameTitle, developerName, releaseLabel, responses, panelRef }: Props) {
+export default function PrintFeedback({ gameTitle, developerName, releaseLabel, responses, panelRef, snapshot }: Props) {
   const [printReport, setPrintReport] = useState<{ date: string; ranks: string[] } | null>(null);
   const [error, setError] = useState(false);
 
@@ -56,14 +73,38 @@ export default function PrintFeedback({ gameTitle, developerName, releaseLabel, 
       {error && <p role="alert" className="text-sm text-amber-200">Could not open the print dialogue. Please try again.</p>}
       {printReport && createPortal(
         <main className="feedback-print">
-          <header>
-            <p><strong>Playtested</strong> · playtested.co.uk</p>
-            <h1>Tester feedback</h1>
-            <h2>{gameTitle}</h2>
-            <p>Developer: {developerName}</p>
-            <p>Build: {releaseLabel}</p>
-            <p>Report date: {printReport.date}</p>
-          </header>
+          <div className="feedback-print-opening">
+            <header>
+              <p><strong>Playtested</strong> · playtested.co.uk</p>
+              <h1>Tester feedback</h1>
+              <h2>{gameTitle}</h2>
+              <p>Developer: {developerName}</p>
+              <p>Build: {releaseLabel}</p>
+              <p>Report date: {printReport.date}</p>
+              <p>Quality-accepted independent tester reports: {responses.length}</p>
+            </header>
+            <section className="feedback-print-snapshot" aria-label="Results snapshot">
+              <h3>Results snapshot</h3>
+              <p>{snapshot.sampleNote}</p>
+              <dl>
+                {[
+                  ["Overall experience", snapshot.averageOverall === null ? null : rating(snapshot.averageOverall)],
+                  ["Gameplay", snapshot.averageGameplay === null ? null : rating(snapshot.averageGameplay)],
+                  ["Performance", snapshot.averagePerformance === null ? null : rating(snapshot.averagePerformance)],
+                  ["Would continue playing", snapshot.continuation],
+                  ["Would recommend", snapshot.recommendation],
+                  ["Issue responses", snapshot.issueResponses],
+                  ["Average playtime", printHours(snapshot.averageHours)],
+                  ["Total reported playtime", printHours(snapshot.totalHours)],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value ?? "N/A"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          </div>
           {responses.map((response, index) => {
             const rank = printReport.ranks[index];
             const answers = [

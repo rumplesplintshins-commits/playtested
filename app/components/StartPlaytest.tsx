@@ -897,29 +897,20 @@ function ResultsDashboard({
   );
   const bugReportCount = independentBugs.length + communityBugs.length;
 
-  const continueAnswers = displayedAcceptedFeedback
-    .map((response) => response.continue_playing?.trim().toLowerCase())
-    .filter((value): value is string => ["definitely","probably","maybe","probably_not","definitely_not"].includes(value||""));
+  const continuation = intentCounts(displayedAcceptedFeedback.map(response => response.continue_playing?.trim().toLowerCase()));
+  const recommendation = intentCounts(displayedAcceptedFeedback.map(response => response.recommend_game?.trim().toLowerCase()));
+  const continuationText = intentText(continuation);
+  const recommendationText = intentText(recommendation);
 
-  const recommendAnswers = displayedAcceptedFeedback
-    .map((response) => response.recommend_game?.trim().toLowerCase())
-    .filter((value): value is string => ["definitely","probably","maybe","probably_not","definitely_not"].includes(value||""));
-
-  function positiveIntentPercent(values: string[]) {
-    if (values.length === 0) {
-      return null;
-    }
-
-    const positive = values.filter(
-      (value) => value === "definitely" || value === "probably"
-    ).length;
-
-    return Math.round((positive / values.length) * 100);
+  function positiveIntentPercent(counts: typeof continuation) {
+    return counts.answered ? Math.round(((counts.definitely + counts.probably) / counts.answered) * 100) : null;
   }
 
-  const continuePercent = positiveIntentPercent(continueAnswers);
-  const recommendPercent = positiveIntentPercent(recommendAnswers);
-
+  const continuePercent = positiveIntentPercent(continuation);
+  const recommendPercent = positiveIntentPercent(recommendation);
+  const sampleNote = totalResponses < 10
+    ? "Early feedback: results are directional while the sample is small."
+    : "Feedback sample for this build.";
   const ratedOverallCount = displayedAcceptedFeedback.filter(
     (response) => response.overall_score !== null
   ).length;
@@ -1038,7 +1029,7 @@ function ResultsDashboard({
             </div>
           )}
 
-          <p className="mt-2 text-sm text-zinc-500">{totalResponses<10?"Early feedback: results are directional while the sample is small.":"Feedback sample for this build."}</p>
+          <p className="mt-2 text-sm text-zinc-500">{sampleNote}</p>
 
           <div className="mt-3 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))]">
             <div className="rounded-xl border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4">
@@ -1054,12 +1045,12 @@ function ResultsDashboard({
             <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.035] p-4">
               <p className="text-xs text-zinc-500">Would continue playing</p>
               <p className="mt-2 text-xl font-semibold text-cyan-200">
-                {intentText(intentCounts(continueAnswers))}
+                {continuationText}
               </p>
               <p className="mt-1 text-[11px] text-zinc-500">
-                {continueAnswers.length === 0
+                {continuation.answered === 0
                   ? "No answers yet"
-                  : `${continueAnswers.filter((value) => value === "definitely").length} definitely · ${continueAnswers.filter((value) => value === "probably").length} probably`}
+                  : `${continuation.definitely} definitely · ${continuation.probably} probably`}
               </p>
               <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
             </div>
@@ -1067,12 +1058,12 @@ function ResultsDashboard({
             <div className="rounded-xl border border-violet-300/20 bg-violet-300/[0.035] p-4">
               <p className="text-xs text-zinc-500">Would recommend</p>
               <p className="mt-2 text-xl font-semibold text-violet-200">
-                {intentText(intentCounts(recommendAnswers))}
+                {recommendationText}
               </p>
               <p className="mt-1 text-[11px] text-zinc-500">
-                {recommendAnswers.length === 0
+                {recommendation.answered === 0
                   ? "No answers yet"
-                  : `${recommendAnswers.filter((value) => value === "definitely").length} definitely · ${recommendAnswers.filter((value) => value === "probably").length} probably`}
+                  : `${recommendation.definitely} definitely · ${recommendation.probably} probably`}
               </p>
               <p className="mt-1 text-[11px] text-zinc-600">Independent testers who answered</p>
             </div>
@@ -1271,7 +1262,15 @@ function ResultsDashboard({
         ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
-       {activeTab==='individual'&&<><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} panelRef={feedbackPanelRef} /></div><div className="mt-4 space-y-3">
+       {activeTab==='individual'&&<><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs leading-5 text-zinc-400">Open a report to read the complete response as submitted.</p><PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} panelRef={feedbackPanelRef}
+          snapshot={{
+            averageOverall, averageGameplay, averagePerformance,
+            continuation: continuation.answered ? continuationText : null,
+            recommendation: recommendation.answered ? recommendationText : null,
+            averageHours: playtime.averageHours, totalHours: playtime.totalHours,
+            issueResponses: totalResponses ? bugReportCount : null, sampleNote,
+          }}
+        /></div><div className="mt-4 space-y-3">
           {displayedAcceptedFeedback.map((response, index) => (
             <details
               key={response.test_id}
