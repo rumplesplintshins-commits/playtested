@@ -288,7 +288,7 @@ function GameCardContent({
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
                     Community reception
                   </p>
-                  <p className="mt-1 text-lg font-extrabold text-white">
+                  <p className="mt-1 text-xl font-extrabold leading-tight text-white">
                     {Number(game.communityReception.averageOverallScore.toFixed(1)).toString()}
                     <span className="text-sm font-semibold text-white/45">/10</span>
                   </p>
@@ -714,7 +714,7 @@ export default function GameCatalogue({initialCatalogue}:{initialCatalogue?:Home
             </p>
           )}
           <div role="group" aria-label="Catalogue view" className="flex flex-wrap gap-2">
-            {(["compact", "comfortable"] as const).map((view) => <button key={view} type="button" aria-pressed={density === view} onClick={() => setDensity(view)} className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${density === view ? "border-emerald-300 bg-emerald-300/15 text-emerald-200" : "border-white/25 text-white/75 hover:border-white/50"}`}>{view === "compact" ? "Compact" : "Comfortable"}</button>)}
+            {(["comfortable", "compact"] as const).map((view) => <button key={view} type="button" aria-pressed={density === view} onClick={() => setDensity(view)} className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 ${density === view ? "border-emerald-300 bg-emerald-300/15 text-emerald-200" : "border-white/25 text-white/75 hover:border-white/50"}`}>{view === "compact" ? "Compact" : "Comfortable"}</button>)}
           </div>
         </div>
 
