@@ -173,13 +173,13 @@ export default function SiteHeader() {
       </div>
 
       <nav aria-label="Main navigation" className="mx-auto hidden max-w-7xl flex-wrap gap-x-6 gap-y-2 px-6 pb-4 text-sm text-zinc-400 sm:flex">
-        {allNavLinks.map((link) => <a key={link.href} href={link.href} className="shrink-0 transition hover:text-white">{link.label}</a>)}
+        {allNavLinks.map((link) => <Link key={link.href} href={link.href} prefetch={false} className="shrink-0 transition hover:text-white">{link.label}</Link>)}
       </nav>
 
       {mobileMenuOpen && (
         <nav id="mobile-navigation" aria-label="Mobile navigation" className="border-t border-white/[0.08] bg-[#0e110f] px-4 py-3 sm:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-1">
-            {allNavLinks.map((link) => <a key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className={navLinkClass}>{link.label}</a>)}
+            {allNavLinks.map((link) => <Link key={link.href} href={link.href} prefetch={false} onClick={() => setMobileMenuOpen(false)} className={navLinkClass}>{link.label}</Link>)}
             {loggedIn && (
               <div className="mt-2 border-t border-white/10 px-3 pt-3">
                 <p className="truncate text-xs text-zinc-400">{email}</p>
