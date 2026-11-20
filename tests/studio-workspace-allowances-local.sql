@@ -7,7 +7,10 @@ select id as viewer from auth.users where email='devtest3@playtested.local' and 
 select id as admin from public.profiles where role='admin' order by id limit 1 \gset
 select id as primary_studio from playtested_studios.studios where owner_id=:'owner' and name='Power Spike Local QA' \gset
 select id as legacy from playtested_studios.studios where owner_id=:'owner' and name='Playtested 123' \gset
-select link_id as original_shared_link from playtested_studios.games where studio_id=:'primary_studio' limit 1 \gset
+select g.link_id as original_shared_link
+from playtested_studios.games g
+join public.game_developer_links l on l.id=g.link_id
+where g.studio_id=:'primary_studio' and l.submission_id='6f001900-0000-4000-8000-000000000001' \gset
 insert into public.game_submissions(id,developer_id,title,developer_name,genre,description,game_link,image_url,release_status,ai_type,status)
 values
  ('6f001900-0000-4000-8000-000000000081',:'owner','Allowance S Fixture','Fixture','Action','Disposable local studio game.','https://fixture.invalid/allowance-s','https://fixture.invalid/s.png','Not announced','No AI used','Pending Review'),
@@ -37,7 +40,10 @@ create function pg_temp.change_status(campaign uuid,status text) returns void la
  select public.update_community_playtest(campaign,'http://127.0.0.1:3118/demo-games/neon-courier','browser_game',
   'Play the fixture and report controls and performance.',array['Controls'],'playtested_testers',1,15,'Allowance test',status)
 $$;
-update playtested_studios.members set role='viewer' where studio_id=:'primary_studio' and user_id=:'viewer';
+-- Set only the roles exercised by this transaction. Local manual role changes survive rollback.
+update playtested_studios.members
+set role=case when user_id=:'viewer' then 'viewer' else 'editor' end
+where studio_id=:'primary_studio' and user_id in (:'viewer',:'editor',:'editor2');
 set local role authenticated;
 select set_config('request.jwt.claim.sub',:'owner',true);
 select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Free studio')$q$,'ownership limit');
