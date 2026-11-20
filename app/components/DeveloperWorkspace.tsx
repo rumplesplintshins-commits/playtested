@@ -69,8 +69,8 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  return <DeveloperPlanProvider enabled={showPlan} studioId={studioId||undefined}><div className="mt-7 min-w-0">
   {showPlan&&<DeveloperPlanSummary/>}
   <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-zinc-400">Choose a game to manage its campaigns and build feedback.</p><div className="flex flex-wrap gap-2"><a href={studioId?"/my-team?studio="+studioId:"/my-team"} className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald-300"><svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current" strokeWidth="1.7"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6m1 2a5 5 0 0 1 4 5v3"/></svg>Manage Team</a>{(!studioId||studioRole==="owner")&&<a href="/submit" className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-black focus-visible:outline-2 focus-visible:outline-offset-4">Add or claim a game</a>}</div></div>
-  {studios.length>0&&<label className="block max-w-sm text-sm font-semibold text-zinc-200">Workspace
-    <select className="mt-1 block w-full rounded-lg border border-white/20 bg-[#111512] px-3 py-2" value={studioId} onChange={event=>router.push(event.target.value?"/my-submissions?studio="+event.target.value:"/my-submissions")}>
+  {studios.length>0&&<label className="flex w-full max-w-sm flex-col gap-2 text-sm font-semibold text-zinc-200">Workspace
+    <select className="block h-11 w-full min-w-0 rounded-lg border border-white/20 bg-[#111512] px-3 py-2" value={studioId} onChange={event=>router.push(event.target.value?"/my-submissions?studio="+event.target.value:"/my-submissions")}>
       <option value="">Personal games</option>{studios.map(studio=><option key={studio.id} value={studio.id}>{studio.name}</option>)}
     </select>
   </label>}
