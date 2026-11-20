@@ -19,7 +19,7 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{__html:serializeJsonLd(websiteStructuredData())}}/>
 
       <section className="mx-auto max-w-7xl px-6 pb-8 pt-8 md:pb-10 md:pt-10">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start xl:gap-10">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] xl:items-start xl:gap-10">
           <div className="min-w-0 max-w-3xl">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs tracking-wide text-[#77f29b]">
             <span className="h-2 w-2 rounded-full bg-[#77f29b]" />
