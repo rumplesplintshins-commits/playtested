@@ -75,12 +75,19 @@ try {
       await page.waitForTimeout(5000);
 
       if ((width === 390 || width === 1280) && run === 0) {
-        const testimonial = page.getByRole("complementary", { name: "Developer testimonial" });
-        assert.equal(await testimonial.count(), 1, "homepage must show one developer testimonial");
-        assert.equal(await testimonial.locator("blockquote").innerText(), "Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.", "Power Spike testimonial wording must match the approved quote");
+        const testimonial = page.getByRole("complementary", { name: "What developers are saying" });
+        assert.equal(await testimonial.count(), 1, "homepage must show one developer testimonial panel");
+        const quotes = testimonial.locator("blockquote");
+        assert.equal(await quotes.count(), 2, "the panel must contain two testimonials");
+        assert.equal(await quotes.nth(0).innerText(), "Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.", "Power Spike testimonial wording must match the approved quote");
+        assert.equal(await quotes.nth(1).innerText(), "…thanks to my friends and the folks over at playtested.co.uk I managed to make a lot of quality of life updates!");
         const postLink = testimonial.getByRole("link", { name: "View original post on Bluesky", exact: true });
         assert.equal(await postLink.getAttribute("href"), "https://bsky.app/profile/powerspikestudio.bsky.social/post/3n2mbegyedt2x", "testimonial must link to Power Spike's original post");
         assert.equal(await postLink.getAttribute("rel"), "noopener noreferrer", "external testimonial link must be safe");
+        const xPostLink = testimonial.getByRole("link", { name: "View original post on X", exact: true });
+        assert.equal(await xPostLink.getAttribute("href"), "https://x.com/LightSourceX/status/2123799126852665792");
+        assert.equal(await xPostLink.getAttribute("target"), "_blank");
+        assert.equal(await xPostLink.getAttribute("rel"), "noopener noreferrer");
         const testimonialBox = await testimonial.boundingBox();
         const developerBox = await page.locator('[aria-labelledby="home-developers"]').boundingBox();
         const catalogueBox = await page.locator("#discover-games").boundingBox();
