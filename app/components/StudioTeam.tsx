@@ -42,7 +42,7 @@ function StudioNameForm({ label, initialName="", submitLabel, busy, onSave, clea
   }
 
   return <form className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1" noValidate onSubmit={submit}>
-    <label htmlFor={id} className="col-span-2 text-sm">{label}</label>
+    <label htmlFor={id} className="col-span-2 text-base font-medium">{label}</label>
     <input id={id} className={input+" h-11"} name="name" maxLength={50} required value={name}
       aria-invalid={Boolean(error)} aria-describedby={error?`${id}-count ${id}-error`:`${id}-count`}
       onChange={event=>{setName(event.target.value);setError("");}} />
@@ -120,6 +120,7 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
   const studio=team?.studios.find(item=>item.id===selected);
   const owner=studio?.role==="owner";
   const places=team ? Math.max(0,team.limit-Math.max(0,team.members.length-1)-team.pending.length) : 0;
+  const sharedGameCount=team?.games.filter(game=>game.shared).length ?? 0;
   return <>
     {notice&&<p role="status" className="text-sm text-emerald-200">{notice}</p>}
     {error&&<p role="alert" className="text-sm text-amber-200">{error} {retryable&&<button className={button} onClick={()=>void load(selected)}>Retry</button>}</p>}
@@ -133,13 +134,13 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
         </div>)}
       </section>}
       <section className={panel}>
-        {team.studios.length>0&&<label className="block max-w-sm text-sm">Studio workspace
-          <select className={input+" truncate"} value={selected} disabled={busy||loading} onChange={event=>void load(event.target.value)}>
+        {team.studios.length>0&&<label className="block w-full text-sm font-medium">Studio workspace
+          <select className={input+" mt-2 h-11 truncate"} value={selected} disabled={busy||loading} onChange={event=>void load(event.target.value)}>
             {team.studios.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>}
         {studio&&<><h2 className="text-xl font-bold [overflow-wrap:anywhere]">{studio.name}</h2>
-          <p className="text-sm text-zinc-300">{team.members.length} of {team.limit+1} members · {team.games.filter(game=>game.shared).length} studio games · {titles[studio.role]}</p>
+          <p className="text-sm text-zinc-300">{team.members.length} of {team.limit+1} members · {sharedGameCount} studio {sharedGameCount===1?"game":"games"} · {titles[studio.role]}</p>
           <p className="text-sm text-zinc-400">Accepted colleagues can access this studio’s shared games and build feedback.</p>
           <a className={button+" inline-block"} href={"/my-submissions?studio="+studio.id}>Open studio My Games</a>
           {!owner&&<button type="button" disabled={busy} className={button+" ml-2"} onClick={()=>{if(confirm("Leave this studio and give up access to its shared games?"))void change({p_action:"leave"});}}>Leave studio</button>}
@@ -167,10 +168,10 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
         {owner&&<section className={panel}><h2 className="text-lg font-semibold">Invite colleagues</h2>
           <p className="text-sm text-zinc-300">{places} of {team.limit} colleague places available. {places===0?"Pending invitations reserve places.":""}</p>
           <p className="text-sm text-zinc-400">Your colleague must already have a Playtested account.</p>
-          <form onSubmit={invite} className="flex flex-wrap items-end gap-2">
-            <label className="min-w-0 grow text-sm">Registered Playtested email<input className={input} type="email" name="email" maxLength={254} required /></label>
-            <label className="text-sm">Access level<select className={input} name="role"><option value="editor">Editor</option><option value="viewer">Viewer</option></select></label>
-            <button className={button} disabled={busy||!places}>{busy?"Working…":"Invite member"}</button>
+          <form onSubmit={invite} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_auto]">
+            <label className="flex min-w-0 flex-col gap-2 text-sm">Registered Playtested email<input className={input+" h-11"} type="email" name="email" maxLength={254} required /></label>
+            <label className="flex min-w-0 flex-col gap-2 text-sm">Access level<select className={input+" h-11"} name="role"><option value="editor">Editor</option><option value="viewer">Viewer</option></select></label>
+            <button className={button+" h-11 whitespace-nowrap"} disabled={busy||!places}>{busy?"Working…":"Invite member"}</button>
           </form>
           {team.pending.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
             <p className="min-w-0 break-all text-sm">{item.email} · {titles[item.role]} · Pending until {date(item.expires_at)}</p>
