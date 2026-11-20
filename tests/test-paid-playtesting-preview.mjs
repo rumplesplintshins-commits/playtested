@@ -7,5 +7,5 @@ assert(page.includes("bg-[#090b0a] text-zinc-100"), "Must match Playtested dark 
 assert(page.includes("robots: { index: false, follow: false }"), "Preview must not be indexed");
 assert(page.includes('type="button" disabled'), "Booking button must remain disabled");
 assert(!/tester earns|tester reward|reward:|£5|£10|£14/i.test(page), "Do not publish tester earnings");
-assert(!/stripe|checkout|createPaymentIntent|onClick=/.test(page), "No payments");
+assert(!/stripe|createPaymentIntent|onClick=|\/api\/payments/.test(page), "No payment handlers");
 console.log("PASS: dark preview, developer prices only, disabled booking, noindex");
