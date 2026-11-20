@@ -75,6 +75,7 @@ try{
   }
   const createInput=page.getByLabel("New studio name",{exact:true});
   await expect(createInput).toHaveAttribute("maxlength","50");
+  await expect(page.getByRole("combobox",{name:"Studio workspace"})).toHaveCount(0);
   const createButton=page.getByRole("button",{name:"Create studio",exact:true});
   await createButton.click();
   await expect(page.getByText("Enter a studio name.",{exact:true})).toBeVisible();
@@ -108,8 +109,29 @@ try{
   await renameButton.click();
   await expect(page.getByRole("heading",{name:"UI4",exact:true})).toBeVisible();
 
-  const studioToCheck={id:newStudio.id,name:"UI4"};
-  await page.goto(app+"/my-team?studio="+studioToCheck.id);
+  async function checkTeam(path){
+    await page.goto(app+path);
+    await expect(page.getByRole("heading",{name:"UI4",exact:true})).toBeVisible();
+    const selector=page.getByRole("combobox",{name:"Studio workspace"});
+    await expect(selector).toHaveValue(newStudio.id);
+    await expect(selector.getByRole("option",{name:"Choose a studio"})).toHaveCount(0);
+    const counter=renameInput.locator("..").getByText("3/50",{exact:true});
+    const [field,save,count]=await Promise.all([renameInput.boundingBox(),renameButton.boundingBox(),counter.boundingBox()]);
+    assert(field&&save&&count);
+    assert.equal(field.y,save.y,"Input and button start at the same height");
+    assert.equal(field.height,save.height,"Input and button have the same height");
+    assert(count.y>=field.y+field.height && count.x+count.width<=field.x+field.width,"Counter sits beneath the input");
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Manage Team fits the viewport");
+    await page.getByRole("link",{name:"Open studio My Games"}).click();
+    const workspace=page.getByRole("combobox",{name:"Workspace"});
+    await expect(workspace).toHaveValue(newStudio.id);
+    await workspace.selectOption({label:"Personal games"});
+    await expect(page.getByRole("region",{name:"Developer plan"})).toContainText("Personal developer plan");
+    await expect(workspace).toHaveValue("");
+  }
+
+  await checkTeam("/my-team");
+  await checkTeam("/my-team?studio=invalid");
   const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");
   async function zoom(value){
     const actual=await worker.evaluate(async factor=>{const [tab]=await chrome.tabs.query({active:true,currentWindow:true});await chrome.tabs.setZoom(tab.id,factor);return chrome.tabs.getZoom(tab.id);},value);
@@ -117,13 +139,11 @@ try{
     await expect.poll(()=>page.evaluate(()=>devicePixelRatio)).toBe(value);
   }
   await zoom(1.5);
-  await expect(page.getByRole("heading",{name:studioToCheck.name,exact:true})).toBeVisible();
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Layout overflow at 150% zoom");
+  await checkTeam("/my-team?studio=ffffffff-ffff-ffff-ffff-ffffffffffff");
   await zoom(1);
   await page.setViewportSize({width:320,height:800});
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Layout overflow at mobile width");
-  await expect(page.getByRole("button",{name:"Save name",exact:true})).toBeVisible();
-  console.log("PASS localhost studio names: UI create/rename, counters, 2/3/50/51 boundaries, direct RPC rejection, trimming, mobile and actual 150% Chromium zoom.");
+  await checkTeam("/my-team?studio="+newStudio.id);
+  console.log("PASS localhost studio name validation, aligned controls and counter, studio selection and Personal Games at desktop, 320px and actual 150% Chromium zoom.");
 }finally{
   await context?.close();
   await Promise.all([manifest,workerFile].map(file=>unlink(file).catch(error=>{if(error.code!=="ENOENT")throw error;})));
