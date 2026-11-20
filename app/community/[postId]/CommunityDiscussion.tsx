@@ -14,6 +14,7 @@ type DiscussionPost = {
   user_id: string | null;
   created_at: string;
   author: string;
+  isOwner: boolean;
 };
 
 type DiscussionComment = {
@@ -23,6 +24,7 @@ type DiscussionComment = {
   body: string;
   created_at: string;
   author: string;
+  isOwner: boolean;
 };
 
 function formatTime(dateString: string) {
@@ -91,15 +93,19 @@ export default function CommunityDiscussion({
     }
 
     let postAuthor = "Community member";
+    let postIsOwner = false;
 
     if (postData.user_id) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name")
+        .select("display_name, role")
         .eq("id", postData.user_id)
         .maybeSingle();
 
-      if (profile?.display_name) {
+      postIsOwner = profile?.role === "admin";
+      if (postIsOwner) {
+        postAuthor = "Owner";
+      } else if (profile?.display_name) {
         postAuthor = profile.display_name;
       }
     }
@@ -107,6 +113,7 @@ export default function CommunityDiscussion({
     setPost({
       ...postData,
       author: postAuthor,
+      isOwner: postIsOwner,
     });
 
     const { data: commentData, error: commentError } = await supabase
@@ -126,6 +133,7 @@ export default function CommunityDiscussion({
       (comment) => ({
         ...comment,
         author: "Community member",
+        isOwner: false,
       })
     );
 
@@ -140,20 +148,16 @@ export default function CommunityDiscussion({
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, role")
         .in("id", userIds);
 
-      const profileNames = new Map(
-        (profiles ?? []).map((profile) => [
-          profile.id,
-          profile.display_name,
-        ])
-      );
+      const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 
       for (const comment of loadedComments) {
         if (comment.user_id) {
-          comment.author =
-            profileNames.get(comment.user_id) || "Community member";
+          const profile = profileById.get(comment.user_id);
+          comment.isOwner = profile?.role === "admin";
+          comment.author = comment.isOwner ? "Owner" : profile?.display_name || "Community member";
         }
       }
     }
@@ -247,7 +251,7 @@ export default function CommunityDiscussion({
                   p/{post.community.toLowerCase().replaceAll(" ", "-")}
                 </span>
                 <span>·</span>
-                <span>Posted by {post.author}</span>
+                <span>Posted by <span className={post.isOwner ? "font-semibold text-orange-400" : undefined}>{post.author}</span></span>
                 <span>·</span>
                 <span>{formatTime(post.created_at)}</span>
               </div>
@@ -325,7 +329,7 @@ export default function CommunityDiscussion({
                     className="rounded-xl border border-white/[0.08] bg-[#0e110f] p-5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-[#77f29b]">
+                      <p className={`text-sm font-semibold ${comment.isOwner ? "text-orange-400" : "text-[#77f29b]"}`}>
                         {comment.author}
                       </p>
                       <span className="text-xs text-zinc-600">

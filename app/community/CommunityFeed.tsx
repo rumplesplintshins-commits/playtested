@@ -12,6 +12,7 @@ type Post = {
   community: string;
   category: string;
   author: string;
+  isOwner: boolean;
   time: string;
   title: string;
   body: string;
@@ -120,7 +121,7 @@ export default function CommunityPage() {
         user && authorIds.length > 0
           ? supabase
               .from("profiles")
-              .select("id, display_name")
+              .select("id, display_name, role")
               .in("id", authorIds)
           : Promise.resolve({ data: [], error: null }),
 
@@ -149,10 +150,14 @@ export default function CommunityPage() {
           (commentCounts[comment.post_id] ?? 0) + 1;
       }
 
-      const authorNames: Record<string, string> = {};
+      const authors: Record<string, {name: string; isOwner: boolean}> = {};
 
       for (const profile of profilesResult.data ?? []) {
-        authorNames[profile.id] = profile.display_name || "Community member";
+        const isOwner = profile.role === "admin";
+        authors[profile.id] = {
+          name: isOwner ? "Owner" : profile.display_name || "Community member",
+          isOwner,
+        };
       }
 
       const scores: Record<number, number> = {};
@@ -181,9 +186,8 @@ export default function CommunityPage() {
                 : community === "reviews"
                   ? "Reviews"
                   : "Discussion",
-          author: post.user_id
-            ? authorNames[post.user_id] || "Community member"
-            : "Community member",
+          author: post.user_id ? authors[post.user_id]?.name || "Community member" : "Community member",
+          isOwner: !!(post.user_id && authors[post.user_id]?.isOwner),
           time: formatTime(post.created_at),
           title: post.title,
           body: post.body,
@@ -632,7 +636,7 @@ export default function CommunityPage() {
                               {post.community.replace(/-/g, " ")}
                             </span>
                             <span>·</span>
-                            <span>{post.author}</span>
+                            <span className={post.isOwner ? "font-semibold text-orange-400" : undefined}>{post.author}</span>
                             <span>·</span>
                             <span>{post.time}</span>
                             {userId&&<span className={myVote===1?"text-[#77f29b]":myVote===-1?"text-orange-400":"text-zinc-400"}>{votesReady?`Your vote: ${myVote===1?"Up":myVote===-1?"Down":"none"}`:"Your vote: not confirmed"}</span>}
