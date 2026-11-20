@@ -30,6 +30,7 @@ try{
    if(name==='get_developer_playtested_test_progress'){repeatedResults++;return route.fulfill({json:[progress]});}
    if(name==='get_developer_community_playtest_results'){repeatedResults++;return route.fulfill({json:community});}
    if(name==='get_developer_accepted_playtest_feedback'){repeatedResults++;return route.fulfill({json:accepted});}
+   if(name==='get_developer_private_playtest_evidence')return route.fulfill({json:[]});
    if(name==='get_developer_feedback_genres'){
     const args=req.postDataJSON();assert.equal(args.p_playtest_id,'d2000000-0000-4000-8000-000000000020');
     const token=req.headers().authorization?.replace(/^Bearer /,'');
@@ -61,7 +62,7 @@ try{
  await page.getByRole('button',{name:'Manage playtest'}).click();
  const manageHeading=page.locator('h4',{hasText:'Alpha'});await expect(manageHeading).toBeVisible();
  await expect(page.getByText('1 of 3 accepted, target 3')).toBeVisible();
- await expect(page.getByText('Awaiting moderation')).toBeVisible();
+ await expect(page.getByText('Awaiting review or dispute')).toBeVisible();
  await expect(page.getByRole('button',{name:'Close',exact:true})).toBeEnabled();
  await expect(page.getByRole('button',{name:'Refresh results',exact:true})).toBeEnabled();
  const initialManageProgressLoads=repeatedResults-summaryResultLoads-3*(genreRequests.length-summaryGenreLoads);

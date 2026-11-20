@@ -129,6 +129,9 @@ type CommunityPlaytestResults = {
 };
 
 type StartPlaytestProps = {
+  studioId?:string;
+  readOnly?:boolean;
+  sharedMember?:boolean;
   developerName: string;
   gameTitle: string;
   gameSource: GameSource;
@@ -822,6 +825,7 @@ type FeedbackTab="said"|"follow-up"|"individual";
 const feedbackTabs=[["said","What testers said"],["follow-up","Feedback to follow up"],["individual","Individual responses"]] as const;
 
 function ResultsDashboard({
+  readOnly=false, sharedMember=false,
   printTarget,
   gameTitle, developerName,
   playtest,
@@ -838,6 +842,8 @@ function ResultsDashboard({
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  readOnly?:boolean;
+  sharedMember?:boolean;
   printTarget: HTMLDivElement | null;
   testerGenres?: Record<string, string[]>;
   privateEvidence?: Record<string, PrivateEvidenceLink>;
@@ -851,6 +857,7 @@ function ResultsDashboard({
   const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
   const feedbackPanelRef=useRef<HTMLElement>(null);
   const printRanksRef = useRef<HTMLDivElement>(null);
+  const {studioId}=useDeveloperPlan();
   const issueResponsesRef=useRef<HTMLDivElement>(null);
   const feedbackId=useId();
   const issueResponsesId=useId();
@@ -1009,7 +1016,7 @@ function ResultsDashboard({
   return (
     <div className="space-y-5">
       {printTarget && createPortal(
-        <PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} rankRef={activeTab === 'individual' ? feedbackPanelRef : printRanksRef}
+        <PrintFeedback playtestId={playtest.id} studioId={studioId} gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} rankRef={activeTab === 'individual' ? feedbackPanelRef : printRanksRef}
           snapshot={{
             averageOverall, averageGameplay, averagePerformance,
             continuation: continuation.answered ? continuationText : null,
@@ -1020,7 +1027,7 @@ function ResultsDashboard({
         />,
         printTarget
       )}
-      {activeTab !== 'individual' && acceptedFeedback.length > 0 && (
+      {printTarget && activeTab !== 'individual' && acceptedFeedback.length > 0 && (
         <div ref={printRanksRef} hidden>
           {acceptedFeedback.map(response => (
             <span key={response.test_id} data-print-tester-rank><AnonymousTesterLabel testId={response.test_id} /></span>
@@ -1281,7 +1288,7 @@ function ResultsDashboard({
             </div>
           </div>
         </div></>}
-       {activeTab==='follow-up'&&<FeedbackActions campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
+       {activeTab==='follow-up'&&<FeedbackActions readOnly={readOnly} campaignId={playtest.id} filter={actionFilter??localActionFilter} onFilterChange={onActionFilterChange??setLocalActionFilter} compactHeading reports={[
         ...displayedAcceptedFeedback.map((response,index)=>({id:`independent:${response.test_id}`,source:`Playtested tester${isFeedbackStressTest ? " · includes preview data" : ""}`,testId:response.test_id,testerNumber:index+1,date:response.submitted_at,enjoyed:response.enjoyed_most || response.feedback,frustration:response.frustrations,improvement:response.biggest_improvement,bugs:response.bugs_found})),
         ...communityResponses.map((response,index)=>({id:`community:${response.feedback_id}`,source:`Community tester ${index+1}`,date:response.submitted_at,enjoyed:response.enjoyed,frustration:response.struggled,improvement:response.improvements,bugs:response.bugs})),
       ]}/>}
@@ -1409,7 +1416,7 @@ function ResultsDashboard({
                   </div>
                 )}
                 <DeveloperEvidenceLinks evidence={privateEvidence?.[response.test_id]} />
-                {!response.test_id.startsWith("preview-") && (
+                {!sharedMember && !response.test_id.startsWith("preview-") && (
                   <FeedbackUsefulness testId={response.test_id} />
                 )}
               </div>
@@ -1517,12 +1524,15 @@ function ResultsDashboard({
 
 
 function BuildResultsPanel({
+  readOnly=false, sharedMember=false,
   gameTitle, developerName,
   currentPlaytest,
   playtests,
 }: {
   gameTitle: string;
   developerName: string;
+  readOnly?:boolean;
+  sharedMember?:boolean;
   currentPlaytest: ExistingPlaytest;
   playtests: ExistingPlaytest[];
 }) {
@@ -1545,6 +1555,8 @@ function BuildResultsPanel({
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
   const resultRequest = useRef(0);
   const [printTarget, setPrintTarget] = useState<HTMLDivElement | null>(null);
+  const plan=useDeveloperPlan();
+  const canPrint=!plan.loading&&plan.data?.plan==="pro";
   useEffect(()=>{if(typeof window==="undefined")return;let active=true;const sync=()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign&&[currentPlaytest.id,...playtests.map(p=>p.id)].includes(campaign))queueMicrotask(()=>{if(active){setSelectedId(campaign);setFeedbackTab("individual");}});};sync();window.addEventListener("popstate",sync);return()=>{active=false;window.removeEventListener("popstate",sync);};},[currentPlaytest.id,playtests]);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
@@ -1563,7 +1575,7 @@ function BuildResultsPanel({
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtestId }),
-      supabase.rpc("get_developer_private_playtest_evidence", { p_playtest_id: playtestId }),
+      sharedMember ? Promise.resolve({data:[],error:null}) : supabase.rpc("get_developer_private_playtest_evidence", { p_playtest_id: playtestId }),
     ]);
     if(request!==resultRequest.current)return;
     setLoadedBuildId(playtestId);
@@ -1660,9 +1672,9 @@ function BuildResultsPanel({
               );
             })}
           </div>
-          <div ref={setPrintTarget} className="ml-auto max-w-full">
+          {canPrint&&<div ref={setPrintTarget} className="ml-auto max-w-full">
             {(!resultsReady || !printTarget) && <PrintFeedbackButton disabled />}
-          </div>
+          </div>}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
@@ -1688,7 +1700,7 @@ function BuildResultsPanel({
             gameTitle={gameTitle} developerName={developerName}
             feedbackTab={feedbackTab} onFeedbackTabChange={setFeedbackTab} actionFilter={actionFilters[selectedPlaytest.id]??"All reports"} onActionFilterChange={filter=>setActionFilters(previous=>({...previous,[selectedPlaytest.id]:filter}))}
             playtest={selectedPlaytest}
-            printTarget={printTarget}
+            printTarget={canPrint?printTarget:null} readOnly={readOnly} sharedMember={sharedMember}
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
@@ -1701,7 +1713,17 @@ function BuildResultsPanel({
   );
 }
 
-export default function StartPlaytest({
+export default function StartPlaytest(props: StartPlaytestProps) {
+  if (props.readOnly) {
+    return props.existingPlaytest ? <BuildResultsPanel
+      gameTitle={props.gameTitle} developerName={props.developerName} currentPlaytest={props.existingPlaytest}
+      playtests={props.playtests} readOnly sharedMember /> : <p className="mt-4 text-sm text-zinc-400">No playtests yet.</p>;
+  }
+  return <PlaytestManager {...props} />;
+}
+
+function PlaytestManager({
+  sharedMember, studioId,
   developerName,
   gameTitle,
   gameSource,
@@ -1847,6 +1869,7 @@ export default function StartPlaytest({
     let active = true;
 
     async function loadHistoricalPlaytests() {
+      if(studioId)return;
       const supabase = createClient();
 
       let query = supabase
@@ -1950,6 +1973,7 @@ export default function StartPlaytest({
     gameSource.importedGameId,
     gameSource.approvedGameId,
     gameSource.submissionId,
+    studioId,
     existingPlaytest?.id,
   ]);
 
@@ -2791,7 +2815,7 @@ export default function StartPlaytest({
 
               <div id={resultsPanelId} hidden={!resultsExpanded} className="border-t border-white/10 p-5">
                 <BuildResultsPanel
-                  gameTitle={gameTitle} developerName={developerName}
+                  sharedMember={sharedMember} gameTitle={gameTitle} developerName={developerName}
                   currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
                 />
@@ -2927,7 +2951,7 @@ export default function StartPlaytest({
 
         <div className="mt-6 border-t border-white/10 pt-6">
           <BuildResultsPanel
-            gameTitle={gameTitle} developerName={developerName}
+            sharedMember={sharedMember} gameTitle={gameTitle} developerName={developerName}
                   currentPlaytest={existingPlaytest}
           playtests={[existingPlaytest, ...historicalPlaytests]}
           />
