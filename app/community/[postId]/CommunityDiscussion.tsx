@@ -93,16 +93,16 @@ export default function CommunityDiscussion({
     }
 
     let postAuthor = "Community member";
-    let postIsOwner = false;
+    let postIsOwner = postData.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
 
     if (postData.user_id) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, role")
+        .select("display_name")
         .eq("id", postData.user_id)
         .maybeSingle();
 
-      postIsOwner = profile?.role === "admin";
+      // Owner attribution is tied to the verified account ID, not public role access.
       if (postIsOwner) {
         postAuthor = "Owner";
       } else if (profile?.display_name) {
@@ -148,7 +148,7 @@ export default function CommunityDiscussion({
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, role")
+        .select("id, display_name")
         .in("id", userIds);
 
       const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
@@ -156,7 +156,7 @@ export default function CommunityDiscussion({
       for (const comment of loadedComments) {
         if (comment.user_id) {
           const profile = profileById.get(comment.user_id);
-          comment.isOwner = profile?.role === "admin";
+          comment.isOwner = comment.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
           comment.author = comment.isOwner ? "Owner" : profile?.display_name || "Community member";
         }
       }

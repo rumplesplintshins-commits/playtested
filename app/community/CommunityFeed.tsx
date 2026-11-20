@@ -121,7 +121,7 @@ export default function CommunityPage() {
         user && authorIds.length > 0
           ? supabase
               .from("profiles")
-              .select("id, display_name, role")
+              .select("id, display_name")
               .in("id", authorIds)
           : Promise.resolve({ data: [], error: null }),
 
@@ -153,7 +153,7 @@ export default function CommunityPage() {
       const authors: Record<string, {name: string; isOwner: boolean}> = {};
 
       for (const profile of profilesResult.data ?? []) {
-        const isOwner = profile.role === "admin";
+        const isOwner = profile.id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
         authors[profile.id] = {
           name: isOwner ? "Owner" : profile.display_name || "Community member",
           isOwner,
@@ -186,8 +186,8 @@ export default function CommunityPage() {
                 : community === "reviews"
                   ? "Reviews"
                   : "Discussion",
-          author: post.user_id ? authors[post.user_id]?.name || "Community member" : "Community member",
-          isOwner: !!(post.user_id && authors[post.user_id]?.isOwner),
+          author: post.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883" ? "Owner" : post.user_id ? authors[post.user_id]?.name || "Community member" : "Community member",
+          isOwner: post.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883",
           time: formatTime(post.created_at),
           title: post.title,
           body: post.body,
