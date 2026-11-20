@@ -767,13 +767,10 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
   }
 
   const ownedSubmissions = (studioId ? [] : submissions ?? []) as SubmissionRow[];
-  const {data: activityRows, error: activityError} = ownedSubmissions.length
-    ? await supabase.from("submission_review_events").select("submission_id,created_at").in("submission_id", ownedSubmissions.map(row => row.id))
-    : {data: [], error: null};
-  if (activityError) return <WorkspaceRetry message="Could not load submission activity. Please retry."/>;
-  const latestActivity = new Map<string, string>();
-  for (const event of activityRows ?? []) if (Date.parse(event.created_at) > Date.parse(latestActivity.get(event.submission_id) || "1970-01-01")) latestActivity.set(event.submission_id, event.created_at);
-  const games = ownedSubmissions.map(row => ({...row, updated_at: latestActivity.get(row.id) || row.submitted_at})).sort(compareSubmissions);
+  // Submission activity and game metadata are independent: run both queries together.
+  const activityPromise = ownedSubmissions.length
+    ? supabase.from("submission_review_events").select("submission_id,created_at").in("submission_id", ownedSubmissions.map(row => row.id))
+    : Promise.resolve({data: [] as {submission_id:string;created_at:string}[], error: null});
   const rawClaims = (studioId ? [] : claimRows ?? []) as GameClaimRow[];
   const rawLinks =
     studioId ? studio!.links : ((linkRows ?? []) as GameDeveloperLinkRow[]).filter(link => !studio?.personal_exclusions?.includes(link.id));
@@ -808,11 +805,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     )
   );
 
-  const [
-    importedResult,
-    approvedResult,
-    submissionResult,
-  ] = await Promise.all([
+  const gameDetailsPromise = Promise.all([
     importedIds.length > 0
       ? supabase
           .from("imported_games")
@@ -859,6 +852,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
           error: null,
         }),
   ]);
+  const [{data:activityRows,error:activityError}, [importedResult,approvedResult,submissionResult]] =
+    await Promise.all([activityPromise, gameDetailsPromise]);
+  if (activityError) return <WorkspaceRetry message="Could not load submission activity. Please retry."/>;
+  const latestActivity = new Map<string, string>();
+  for (const event of activityRows ?? []) if (Date.parse(event.created_at) > Date.parse(latestActivity.get(event.submission_id) || "1970-01-01")) latestActivity.set(event.submission_id, event.created_at);
+  const games = ownedSubmissions.map(row => ({...row, updated_at: latestActivity.get(row.id) || row.submitted_at})).sort(compareSubmissions);
 
   if (importedResult.error) {
     console.error(
