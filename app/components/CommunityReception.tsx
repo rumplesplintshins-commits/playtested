@@ -182,7 +182,7 @@ export default function CommunityReception({
 
         <div className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4">
           <p className="text-sm font-medium text-zinc-300">
-            No accepted community reception available yet
+            Not yet rated
           </p>
 
           <p className="mt-1 text-xs leading-5 text-zinc-500">

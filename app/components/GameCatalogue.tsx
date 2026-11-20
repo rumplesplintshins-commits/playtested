@@ -310,7 +310,7 @@ function GameCardContent({
                 Community reception
               </p>
               <p className="mt-1 text-sm font-semibold text-white/60">
-                Not community tested yet
+                Not yet rated
               </p>
             </div>
           )}
