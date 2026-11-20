@@ -168,6 +168,7 @@ type GameDeveloperLinkRow = {
 };
 
 type CommunityPlaytestRow = {
+  studio_link_id?: string;
   id: string;
   developer_id: string;
   imported_game_id: string | null;
@@ -360,6 +361,7 @@ function toLinkedPlaytest(playtest: CommunityPlaytestRow): LinkedPlaytest {
 
 function findPlaytestsForGame(
   game: {
+    linkId: string;
     importedGameId: string | null;
     approvedGameId: string | null;
     submissionId: string | null;
@@ -368,6 +370,8 @@ function findPlaytestsForGame(
 ): LinkedPlaytest[] {
   return playtests
     .filter((playtest) => {
+      if (playtest.studio_link_id) return playtest.studio_link_id === game.linkId;
+
       if (
         game.importedGameId &&
         playtest.imported_game_id === game.importedGameId
@@ -1101,7 +1105,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     (job) => job.status === "COMPLETE"
   );
 
-  return <DeveloperWorkspace key={studioId} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan={canEdit} feedbackCountsReady={!receptionError}
+  return <DeveloperWorkspace key={studioId} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
  games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;

@@ -857,6 +857,7 @@ function ResultsDashboard({
   const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
   const feedbackPanelRef=useRef<HTMLElement>(null);
   const printRanksRef = useRef<HTMLDivElement>(null);
+  const {studioId}=useDeveloperPlan();
   const issueResponsesRef=useRef<HTMLDivElement>(null);
   const feedbackId=useId();
   const issueResponsesId=useId();
@@ -1015,7 +1016,7 @@ function ResultsDashboard({
   return (
     <div className="space-y-5">
       {printTarget && createPortal(
-        <PrintFeedback gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} rankRef={activeTab === 'individual' ? feedbackPanelRef : printRanksRef}
+        <PrintFeedback playtestId={playtest.id} studioId={studioId} gameTitle={gameTitle} developerName={developerName} releaseLabel={playtest.releaseLabel || "Unlabelled build"} responses={acceptedFeedback} rankRef={activeTab === 'individual' ? feedbackPanelRef : printRanksRef}
           snapshot={{
             averageOverall, averageGameplay, averagePerformance,
             continuation: continuation.answered ? continuationText : null,
@@ -1026,7 +1027,7 @@ function ResultsDashboard({
         />,
         printTarget
       )}
-      {activeTab !== 'individual' && acceptedFeedback.length > 0 && (
+      {printTarget && activeTab !== 'individual' && acceptedFeedback.length > 0 && (
         <div ref={printRanksRef} hidden>
           {acceptedFeedback.map(response => (
             <span key={response.test_id} data-print-tester-rank><AnonymousTesterLabel testId={response.test_id} /></span>
@@ -1554,6 +1555,8 @@ function BuildResultsPanel({
   const [loadedBuildId,setLoadedBuildId] = useState<string|null>(null);
   const resultRequest = useRef(0);
   const [printTarget, setPrintTarget] = useState<HTMLDivElement | null>(null);
+  const plan=useDeveloperPlan();
+  const canPrint=!plan.loading&&plan.data?.plan==="pro";
   useEffect(()=>{if(typeof window==="undefined")return;let active=true;const sync=()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign&&[currentPlaytest.id,...playtests.map(p=>p.id)].includes(campaign))queueMicrotask(()=>{if(active){setSelectedId(campaign);setFeedbackTab("individual");}});};sync();window.addEventListener("popstate",sync);return()=>{active=false;window.removeEventListener("popstate",sync);};},[currentPlaytest.id,playtests]);
 
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
@@ -1669,9 +1672,9 @@ function BuildResultsPanel({
               );
             })}
           </div>
-          <div ref={setPrintTarget} className="ml-auto max-w-full">
+          {canPrint&&<div ref={setPrintTarget} className="ml-auto max-w-full">
             {(!resultsReady || !printTarget) && <PrintFeedbackButton disabled />}
-          </div>
+          </div>}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
@@ -1697,7 +1700,7 @@ function BuildResultsPanel({
             gameTitle={gameTitle} developerName={developerName}
             feedbackTab={feedbackTab} onFeedbackTabChange={setFeedbackTab} actionFilter={actionFilters[selectedPlaytest.id]??"All reports"} onActionFilterChange={filter=>setActionFilters(previous=>({...previous,[selectedPlaytest.id]:filter}))}
             playtest={selectedPlaytest}
-            printTarget={printTarget} readOnly={readOnly} sharedMember={sharedMember}
+            printTarget={canPrint?printTarget:null} readOnly={readOnly} sharedMember={sharedMember}
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}

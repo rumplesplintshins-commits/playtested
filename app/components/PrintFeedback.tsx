@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal, flushSync } from "react-dom";
+import { createClient } from "@/lib/supabase";
 import type { AcceptedIndependentFeedback } from "./StartPlaytest";
 
 type Props = {
+  playtestId:string;
+  studioId?:string;
   gameTitle: string;
   developerName: string;
   releaseLabel: string;
@@ -52,31 +55,50 @@ export function PrintFeedbackButton({ disabled, onClick }: { disabled: boolean; 
   );
 }
 
-export default function PrintFeedback({ gameTitle, developerName, releaseLabel, responses, rankRef, snapshot }: Props) {
-  const [printReport, setPrintReport] = useState<{ date: string; ranks: string[] } | null>(null);
+export default function PrintFeedback({ playtestId, studioId, gameTitle, developerName, releaseLabel, responses, rankRef, snapshot }: Props) {
+  const [printReport, setPrintReport] = useState<{ date: string; ranks: string[]; responses: AcceptedIndependentFeedback[] } | null>(null);
   const [error, setError] = useState(false);
 
-  function print() {
-    if (!responses.length || printReport) return;
+  const [checking,setChecking]=useState(false);
+  const active=useRef(false);
+  const pending=useRef(false);
+  useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
+
+  async function print() {
+    if (!responses.length || printReport || pending.current) return;
+    pending.current=true;
+    setChecking(true);
     const ranks = Array.from(rankRef.current?.querySelectorAll("[data-print-tester-rank]") ?? [],
       label => label.textContent ?? "");
     setError(false);
     const clearReport = () => setPrintReport(null);
-    window.addEventListener("afterprint", clearReport, { once: true });
+
     try {
-      flushSync(() => setPrintReport({ date: reportDate(new Date()), ranks }));
+      const {data,error:failure}=await createClient().rpc("get_pro_feedback_export",{p_playtest_id:playtestId,p_studio:studioId||null});
+      if(!active.current)return;
+      if(failure||!Array.isArray(data)||!data.length)throw new Error("Report unavailable");
+      const ranksById=new Map(responses.map((response,index)=>[response.test_id,ranks[index]||""]));
+      window.addEventListener("afterprint", clearReport, { once: true });
+      flushSync(() => setPrintReport({
+        date:reportDate(new Date()), responses:data,
+        ranks:data.map((response:AcceptedIndependentFeedback)=>ranksById.get(response.test_id)||""),
+      }));
       window.print();
     } catch {
       window.removeEventListener("afterprint", clearReport);
+      if(!active.current)return;
       clearReport();
       setError(true);
+    } finally {
+      pending.current=false;
+      if(active.current)setChecking(false);
     }
   }
 
   return (
     <>
-      <PrintFeedbackButton disabled={!responses.length || Boolean(printReport)} onClick={print} />
-      {error && <p role="alert" className="text-sm text-amber-200">Could not open the print dialogue. Please try again.</p>}
+      <PrintFeedbackButton disabled={!responses.length || checking || Boolean(printReport)} onClick={print} />
+      {error && <p role="alert" className="text-sm text-amber-200">This workspace cannot export the report right now. Refresh and try again.</p>}
       {printReport && createPortal(
         <main className="feedback-print">
           <div className="feedback-print-opening">
@@ -87,7 +109,7 @@ export default function PrintFeedback({ gameTitle, developerName, releaseLabel, 
               <p>Developer: {developerName}</p>
               <p>Build: {releaseLabel}</p>
               <p>Report date: {printReport.date}</p>
-              <p>Quality-accepted independent tester reports: {responses.length}</p>
+              <p>Quality-accepted independent tester reports: {printReport.responses.length}</p>
             </header>
             <section className="feedback-print-snapshot" aria-label="Results snapshot">
               <h3>Results snapshot</h3>
@@ -111,7 +133,7 @@ export default function PrintFeedback({ gameTitle, developerName, releaseLabel, 
               </dl>
             </section>
           </div>
-          {responses.map((response, index) => {
+          {printReport.responses.map((response, index) => {
             const rank = printReport.ranks[index];
             const answers = [
               ["Enjoyed most", response.enjoyed_most],
