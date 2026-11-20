@@ -95,6 +95,10 @@ begin
    -- Some baselines use the compact auth.uid() predicate.
    revised:=replace(definition,'cp.developer_id=auth.uid()',case when f.proname='update_community_playtest' then 'playtested_studios.can_campaign(cp.id,true)' else 'playtested_studios.can_campaign(cp.id)' end);
   end if;
+  if revised=definition and f.proname='get_developer_playtested_test_progress' then
+   revised:=replace(definition,'id=p_playtest_id and developer_id=auth.uid()',
+    'id=p_playtest_id and playtested_studios.can_campaign(p_playtest_id)');
+  end if;
   if revised=definition then raise exception 'Review authorization predicate for % before applying studio support.',f.proname; end if;
   if f.proname='update_community_playtest' then
    if position('and developer_id = v_user_id' in revised)=0 then raise exception 'Review campaign update owner predicate.';end if;

@@ -10,6 +10,10 @@ create table playtested_studios.identity_reviews (
 alter table playtested_studios.identity_reviews enable row level security;
 revoke all on playtested_studios.identity_reviews from public,anon,authenticated;
 
+-- Check imported identities without resolving every catalogue row on submission.
+create index imported_games_allowance_identity
+ on public.imported_games ((coalesce(playtested_studios.raw_identity(steam_app_id,steam_url),'imported:'||id)));
+
 create function playtested_studios.personal_owner(k text) returns uuid
 language sql volatile security definer set search_path='' as $$
  select l.developer_id from public.game_developer_links l
@@ -34,7 +38,12 @@ begin
  if k is null then return new;end if;
  perform pg_advisory_xact_lock(hashtextextended('playtested:canonical:'||k,0));
  if exists(select 1 from public.game_submissions s where s.id<>new.id and playtested_studios.identity(null,null,s.id)=k)
-   or (k like 'steam:%' and exists(select 1 from public.imported_games g where playtested_studios.identity(g.id,null,null)=k)) then
+   or (k like 'steam:%' and exists(
+    select 1 from public.imported_games g
+    where coalesce(playtested_studios.raw_identity(g.steam_app_id,g.steam_url),'imported:'||g.id)=any(array(
+     select k union all select a.alias_key from playtested_studios.game_aliases a where a.canonical_key=k
+    ))
+   )) then
   raise exception 'This game already has a listing. Use the existing listing or request an ownership review.' using errcode='23505';
  end if;
  return new;
@@ -178,4 +187,5 @@ end $$;
 revoke all on function public.get_game_identity_reviews(),public.admin_link_game_allowance_identity(text,text,text) from public,anon,authenticated;
 grant execute on function public.get_game_identity_reviews(),public.admin_link_game_allowance_identity(text,text,text) to authenticated;
 revoke all on all functions in schema playtested_studios from public,anon,authenticated;
+grant execute on function playtested_studios.raw_identity(text,text) to authenticated,service_role;
 commit;

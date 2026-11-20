@@ -111,4 +111,7 @@ begin
 end $$;
 
 revoke all on all functions in schema playtested_studios from public,anon,authenticated;
+-- Imported catalogue writes evaluate this pure expression for the identity index.
+-- The schema remains private and the other Studio helpers remain restricted.
+grant execute on function playtested_studios.raw_identity(text,text) to authenticated,service_role;
 commit;

@@ -136,6 +136,10 @@ language sql volatile security definer set search_path='' as $$
  select studio_id from playtested_studios.games where allowance_key=k
 $$;
 
+-- Keep the historical snapshot and the launch-trigger cutover in one write window.
+set local lock_timeout = '5s';
+lock table public.community_playtests in share row exclusive mode;
+
 insert into playtested_studios.launches(campaign_id,scope,game_key,plan,launched_at)
 select c.id,'personal:'||c.developer_id,playtested_studios.identity(c.imported_game_id,c.approved_game_id,c.submission_id),
  coalesce((select e.new_plan from public.developer_entitlement_events e where e.developer_id=c.developer_id and e.created_at<=c.tester_hub_started_at order by e.created_at desc limit 1),'free'),

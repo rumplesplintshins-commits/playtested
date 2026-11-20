@@ -10,6 +10,7 @@ const backend=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
 for(const url of [origin,backend])assert(["127.0.0.1","localhost"].includes(url.hostname),"Only local fixture servers are allowed");
 const identities=JSON.parse(await readFile(".backup-tools/developer-teams/credentials.json","utf8"));
 const [owner,...colleagues]=identities;
+const studioName=process.env.STUDIO_FIXTURE_NAME||"Power Spike Local QA";
 const proStudio=process.argv.includes("--pro-studio");
 const browser=await chromium.launch({headless:true});
 
@@ -17,10 +18,10 @@ async function checkTeam(page,index){
   await page.goto(origin+"/my-team");
   const selector=page.getByRole("combobox",{name:"Studio workspace"});
   await expect(selector).toBeEnabled();
-  if(await selector.inputValue()!==await selector.locator("option").filter({hasText:"Power Spike Local QA"}).getAttribute("value")){
-    await selector.selectOption({label:"Power Spike Local QA"});
+  if(await selector.inputValue()!==await selector.locator("option").filter({hasText:studioName}).getAttribute("value")){
+    await selector.selectOption({label:studioName});
   }
-  await expect(page.getByRole("heading",{name:"Power Spike Local QA"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:studioName})).toBeVisible();
   await expect(page.getByText(/Free accounts can belong to one studio/)).toBeVisible();
   await expect(page.getByLabel("New studio name")).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Create studio",exact:true})).toHaveCount(0);
@@ -34,10 +35,10 @@ async function checkTeam(page,index){
   }else{
     await expect(page.getByRole("heading",{name:"Invite colleagues"})).toHaveCount(0);
     await expect(page.getByRole("button",{name:"Leave studio",exact:true})).toBeVisible();
+    await expect(page.getByText(/members .* (Editor|Viewer)$/)).toBeVisible();
   }
   if(index===3){
     await expect(selector.getByRole("option",{name:"Test 1"})).toHaveCount(1);
-    await expect(page.getByText(/members .* Viewer$/)).toBeVisible();
   }
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 }
@@ -74,7 +75,9 @@ async function verifyZoom(sourcePage,index){
     context=await chromium.launchPersistentContext("",{channel:"chromium",headless:true,viewport:null,args:["--window-size=1500,1000","--disable-extensions-except="+directory,"--load-extension="+directory]});
     await context.addCookies(await sourcePage.context().cookies());
     const page=context.pages()[0];
-    await page.goto(sourcePage.url());
+    const workspace=new URL(sourcePage.url());
+    workspace.searchParams.delete("game");
+    await page.goto(workspace.href);
     const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");
     const factor=await worker.evaluate(async()=>{
       const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
@@ -96,12 +99,12 @@ async function verifyZoom(sourcePage,index){
 }
 const plan=page=>page.getByRole("region",{name:"Developer plan"});
 async function checkStudio(page){
-  await expect(plan(page)).toContainText("Power Spike Local QA");
+  await expect(plan(page)).toContainText(studioName);
   await expect(plan(page)).toContainText(proStudio?"Studio Pro":"Studio Free");
   await expect(plan(page)).toContainText("Shared across all authorised studio members.");
   const game=page.getByRole("button",{name:/Ashen Hollow \(local fixture\)/});
   const viewFeedback=game.locator("..").getByRole("button",{name:"View feedback"});
-  if(!await page.getByRole("region",{name:"Results snapshot"}).isVisible()) await viewFeedback.click({timeout:10000});
+  await viewFeedback.click({timeout:10000});
   await expect(page.getByRole("region",{name:"Results snapshot"})).toBeVisible();
   const print=page.getByRole("button",{name:"Print feedback",exact:true});
   if(proStudio){
@@ -128,9 +131,9 @@ try{
     await expect(plan(page)).toContainText("Personal developer plan");
     await expect(plan(page)).toContainText("Free");
     await expect(page.getByRole("button",{name:"Print feedback",exact:true})).toHaveCount(0);
-    await page.getByRole("combobox",{name:"Workspace"}).selectOption({label:"Power Spike Local QA"});
+    await page.getByRole("combobox",{name:"Workspace"}).selectOption({label:studioName});
     await checkStudio(page);
-    if(index===0||(!proStudio&&index===3))await verifyZoom(page,index);
+    if(index===0||(!proStudio&&[2,3].includes(index)))await verifyZoom(page,index);
     await page.getByRole("combobox",{name:"Workspace"}).selectOption({label:"Personal games"});
     await expect(plan(page)).toContainText("Your allowance applies across your personal games.");
     await expect(page.getByRole("button",{name:/Ashen Hollow \(local fixture\)/})).toHaveCount(0);

@@ -86,16 +86,20 @@ try{
   assert.match(results.find(r=>r.error).error.message,/colleague places/);
   assert.equal((await pending()).length,5);
   const original=(await pending()).find(a=>a.email===members[0].email);
+  assert((await users[1].rpc("change_studio",{p_action:"accept",p_target:original.id})).error);
   const createAsMember=()=>users[0].rpc("change_studio",{p_action:"create",p_name:"Reserved studio fixture"});
   const [acceptance,creation]=await Promise.all([users[0].rpc("change_studio",{p_action:"accept",p_target:original.id}),createAsMember()]);
   assert(!acceptance.error);
   assert.equal(creation.error?.code,"PST01");
   assert.equal((await createAsMember()).error?.code,"PST01");
   assert((await users[0].rpc("change_studio",{p_action:"accept",p_target:original.id})).error);
+  assert((await users[0].rpc("change_studio",{p_action:"rename",p_studio:studio,p_name:"Viewer rename"})).error);
   assert.equal((await pending()).length,4);
   assert((await ownerClient.rpc("change_studio",{p_action:"invite",p_studio:studio,p_email:"nobody@playtested.local",p_role:"viewer"})).error);
   await ok(ownerClient.rpc("change_studio",{p_action:"role",p_studio:studio,p_target:members[0].id,p_role:"editor"}));
   assert.equal((await createAsMember()).error?.code,"PST01");
+  assert((await users[0].rpc("change_studio",{p_action:"invite",p_studio:studio,p_email:overflow.email,p_role:"viewer"})).error);
+  assert((await users[0].rpc("change_studio",{p_action:"remove",p_studio:studio,p_target:id})).error);
   await ok(foreignInvite());
   assert.equal((await ok(foreignClient.rpc("get_studio_team",{p_studio:foreign}))).pending.length,0);
   // An invitation issued before the policy must still be checked at acceptance.

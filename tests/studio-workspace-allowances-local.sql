@@ -5,7 +5,11 @@ select id as editor from auth.users where email='devtest1@playtested.local' and 
 select id as editor2 from auth.users where email='devtest2@playtested.local' and raw_app_meta_data->>'local_studio_fixture'='true' \gset
 select id as viewer from auth.users where email='devtest3@playtested.local' and raw_app_meta_data->>'local_studio_fixture'='true' \gset
 select id as admin from public.profiles where role='admin' order by id limit 1 \gset
-select id as primary_studio from playtested_studios.studios where owner_id=:'owner' and name='Power Spike Local QA' \gset
+select s.id as primary_studio
+from playtested_studios.studios s
+join playtested_studios.games g on g.studio_id=s.id
+join public.game_developer_links l on l.id=g.link_id
+where s.owner_id=:'owner' and l.submission_id='6f001900-0000-4000-8000-000000000001' \gset
 select id as legacy from playtested_studios.studios where owner_id=:'owner' and name='Playtested 123' \gset
 select id as viewer_legacy from playtested_studios.studios where owner_id=:'viewer' and name='Test 1' \gset
 -- Real manual launches can occupy these fixture windows. Age them only inside this test.
@@ -28,6 +32,10 @@ insert into public.game_developer_links(developer_id,submission_id,relationship)
  and not exists(select 1 from public.game_developer_links where submission_id=game_submissions.id and developer_id=game_submissions.developer_id);
 select id as s_link from public.game_developer_links where submission_id='6f001900-0000-4000-8000-000000000081' and developer_id=:'owner' limit 1 \gset
 select id as next_link from public.game_developer_links where submission_id='6f001900-0000-4000-8000-000000000084' and developer_id=:'owner' limit 1 \gset
+select steam_app_id as imported_app from public.imported_games
+where steam_app_id ~ '^[1-9][0-9]*$'
+  and playtested_studios.raw_identity(steam_app_id,steam_url)='steam:'||steam_app_id
+order by steam_app_id limit 1 \gset
 create function pg_temp.expect_denial(command text, message_pattern text) returns void language plpgsql as $$
 begin
  begin
@@ -78,6 +86,10 @@ select set_config('request.jwt.claim.sub',:'editor',true);
 select pg_temp.create_draft('6f001900-0000-4000-8000-000000000081') as studio_campaign \gset
 select pg_temp.change_status(:'studio_campaign','open');
 select set_config('request.jwt.claim.sub',:'editor2',true);
+select pg_temp.expect_denial(format($q$select public.create_game_with_pc_requirements(
+ jsonb_build_object('title','Cloned Steam import','developer_name','Other studio','genre','Action','description','Disposable clone',
+ 'game_link',%L,'image_url','https://fixture.invalid/s.png','release_status','Not announced','ai_type','No AI used','platform','steam'))$q$,
+ 'https://steamcommunity.com/app/'||:'imported_app'),'already has a listing');
 select pg_temp.expect_denial($q$select public.create_game_with_pc_requirements(
  jsonb_build_object('title','Renamed clone','developer_name','Other studio','genre','Action','description','Disposable clone',
  'game_link','http://FIXTURE.invalid/allowance-s?utm_source=duplicate#details','image_url','https://fixture.invalid/s.png',

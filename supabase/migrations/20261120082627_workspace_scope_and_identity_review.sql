@@ -65,4 +65,5 @@ begin
  execute revised;
 end $$;
 revoke all on all functions in schema playtested_studios from public,anon,authenticated;
+grant execute on function playtested_studios.raw_identity(text,text) to authenticated,service_role;
 commit;
