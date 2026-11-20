@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
 
 type Role = "owner" | "editor" | "viewer";
@@ -19,6 +19,37 @@ const input = "w-full min-w-0 rounded-lg border border-white/20 bg-black/35 px-3
 const button = "rounded-lg border border-emerald-300/30 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-300/10 focus-visible:outline-2 focus-visible:outline-emerald-300 disabled:opacity-50";
 const titles: Record<Role,string> = {owner:"Owner",editor:"Editor",viewer:"Viewer"};
 const date = (value:string) => new Date(value).toLocaleDateString("en-GB",{timeZone:"UTC"});
+
+function StudioNameForm({ label, initialName="", submitLabel, busy, onSave, clearOnSave=false }: {
+  label:string; initialName?:string; submitLabel:string; busy:boolean;
+  onSave:(name:string)=>Promise<boolean>; clearOnSave?:boolean;
+}) {
+  const id=useId();
+  const [name,setName]=useState(initialName);
+  const [error,setError]=useState("");
+
+  async function submit(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleaned=name.trim();
+    if(!cleaned){setError("Enter a studio name.");return;}
+    if(cleaned.length<3||cleaned.length>50){setError("Use 3 to 50 characters.");return;}
+    if(/[\u0000-\u001f\u007f-\u009f]/u.test(cleaned)){setError("Remove control characters from the studio name.");return;}
+    setError("");
+    if(await onSave(cleaned))setName(clearOnSave?"":cleaned);
+  }
+
+  return <form className="flex flex-wrap items-start gap-2" noValidate onSubmit={submit}>
+    <div className="min-w-0 flex-1 basis-48">
+      <label htmlFor={id} className="text-sm">{label}</label>
+      <input id={id} className={input} name="name" maxLength={50} required value={name}
+        aria-invalid={Boolean(error)} aria-describedby={error?`${id}-count ${id}-error`:`${id}-count`}
+        onChange={event=>{setName(event.target.value);setError("");}} />
+      <p id={`${id}-count`} className="mt-1 text-right text-xs tabular-nums text-zinc-400">{name.length}/50</p>
+      {error&&<p id={`${id}-error`} role="alert" className="mt-1 text-xs text-amber-200">{error}</p>}
+    </div>
+    <button className={button+" mt-5"} disabled={busy}>{submitLabel}</button>
+  </form>;
+}
 
 export default function StudioTeam({canCreate}:{canCreate:boolean}) {
   const [team,setTeam] = useState<Team|null>(null);
@@ -69,12 +100,6 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
     } finally {locked.current=false;setBusy(false);}
   }
 
-  function saveName(event:FormEvent<HTMLFormElement>, action:"create"|"rename") {
-    event.preventDefault();
-    const form=event.currentTarget;
-    void change({p_action:action,p_name:String(new FormData(form).get("name"))}).then(ok=>{if(ok&&action==="create")form.reset();});
-  }
-
   function invite(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form=event.currentTarget;
@@ -93,29 +118,23 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
       {team.inbox.length>0&&<section className={panel} aria-label="Studio invitations">
         <h2 className="text-lg font-semibold">Studio invitations</h2>
         {team.inbox.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
-          <div><p className="font-medium">{item.name}</p><p className="text-sm text-zinc-400">{titles[item.role]} · Expires {date(item.expires_at)}</p></div>
+          <div className="min-w-0"><p className="font-medium [overflow-wrap:anywhere]">{item.name}</p><p className="text-sm text-zinc-400">{titles[item.role]} · Expires {date(item.expires_at)}</p></div>
           <div className="flex gap-2"><button className={button} disabled={busy} onClick={()=>void change({p_action:"accept",p_target:item.id})}>Accept</button><button className={button} disabled={busy} onClick={()=>void change({p_action:"decline",p_target:item.id})}>Decline</button></div>
         </div>)}
       </section>}
       <section className={panel}>
         {team.studios.length>0&&<label className="block max-w-sm text-sm">Studio workspace
-          <select className={input} value={selected} disabled={busy||loading} onChange={event=>void load(event.target.value)}>
+          <select className={input+" truncate"} value={selected} disabled={busy||loading} onChange={event=>void load(event.target.value)}>
             <option value="">Choose a studio</option>{team.studios.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>}
-        {studio&&<><h2 className="break-words text-xl font-bold">{studio.name}</h2>
+        {studio&&<><h2 className="text-xl font-bold [overflow-wrap:anywhere]">{studio.name}</h2>
           <p className="text-sm text-zinc-300">{team.members.length} of {team.limit+1} members · {team.games.filter(game=>game.shared).length} studio games · {titles[studio.role]}</p>
           <p className="text-sm text-zinc-400">Accepted colleagues can access this studio’s shared games and build feedback.</p>
           <a className={button+" inline-block"} href={"/my-submissions?studio="+studio.id}>Open studio My Games</a>
-          {owner&&<form key={studio.id+studio.name} className="flex flex-wrap items-end gap-2" onSubmit={event=>saveName(event,"rename")}>
-            <label className="min-w-0 grow text-sm">Studio name<input className={input} name="name" maxLength={80} defaultValue={studio.name} required /></label>
-            <button className={button} disabled={busy}>Save name</button>
-          </form>}
+          {owner&&<StudioNameForm key={studio.id+studio.name} label="Studio name" initialName={studio.name} submitLabel="Save name" busy={busy} onSave={name=>change({p_action:"rename",p_name:name})} />}
         </>}
-        {canCreate&&<form className="flex flex-wrap items-end gap-2" onSubmit={event=>saveName(event,"create")}>
-          <label className="min-w-0 grow text-sm">New studio name<input className={input} name="name" maxLength={80} required /></label>
-          <button className={button} disabled={busy}>Create studio</button>
-        </form>}
+        {canCreate&&<StudioNameForm label="New studio name" submitLabel="Create studio" busy={busy} clearOnSave onSave={name=>change({p_action:"create",p_name:name})} />}
       </section>
       {studio&&<>
         <section className={panel}><h2 className="text-lg font-semibold">Team members</h2>
