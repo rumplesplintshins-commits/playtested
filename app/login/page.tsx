@@ -154,7 +154,7 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
   async function resendRecoveryConfirmation() {
     if (recoveryInFlight.current) return;
     const address = email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
       setRecoveryNotice("Enter the email address you registered with above first.");
       return;
     }
@@ -231,7 +231,13 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
         window.location.replace(nextPath);
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
+      const emailUnconfirmed = error instanceof Error && /email not confirmed/i.test(error.message);
+      if (emailUnconfirmed) {
+        setConfirmationFailed(true);
+        setMessage("Your email isn't confirmed yet. Use the resend confirmation option above.");
+      } else {
+        setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
+      }
     } finally {
       submitting.current = false;
       setLoading(false);
