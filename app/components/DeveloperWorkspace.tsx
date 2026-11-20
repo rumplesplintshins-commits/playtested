@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState,type ReactNode} from "react";
-import {DeveloperPlanProvider,DeveloperPlanSummary} from "./DeveloperPlan";
+import {DeveloperPlanProvider,DeveloperPlanSummary,type DeveloperPlan} from "./DeveloperPlan";
 import {submissionReviewPresentation} from "@/lib/submission-completeness";
 import {useRouter} from "next/navigation";
 
@@ -14,7 +14,7 @@ function readSelection():Selection{
  return {tab,filter:(tab==="diagnostics"||filters[tab].includes(query.get("filter")||""))?(query.get("filter")||"All"):"All",search:query.get("q")||"",item:query.get("game")||"",campaign:query.get("campaign")||undefined,launch:query.get("launch")==="1"};
 }
 export function WorkspaceRetry({message}:{message:string}){const router=useRouter();const [busy,setBusy]=useState(false);return <div role="alert" className="my-5 rounded-xl border border-amber-300/30 p-5 text-sm text-amber-100"><p>{message}</p><button type="button" disabled={busy} onClick={()=>{setBusy(true);router.refresh();setTimeout(()=>setBusy(false),1200);}} className="mt-3 rounded-lg border border-white/20 px-4 py-2 focus-visible:outline-2">{busy?"Refreshing…":"Refresh workspace"}</button></div>;}
-export default function DeveloperWorkspace({games,submissions,claims,diagnostics=[],diagnosticsReady=true,diagnosticsNotice,warnings=[],extras,feedbackCountsReady=true,showPlan=false,studioId="",studios=[],studioRole}:{studioId?:string;studios?:{id:string;name:string;role:string}[];studioRole?:string;games:WorkspaceItem[];submissions:WorkspaceItem[];claims:WorkspaceItem[];diagnostics?:WorkspaceItem[];diagnosticsReady?:boolean;diagnosticsNotice?:ReactNode;warnings?:string[];extras?:ReactNode;feedbackCountsReady?:boolean;showPlan?:boolean}){
+export default function DeveloperWorkspace({games,submissions,claims,diagnostics=[],diagnosticsReady=true,diagnosticsNotice,warnings=[],extras,feedbackCountsReady=true,showPlan=false,studioId="",studios=[],studioRole,initialPlan}:{initialPlan?:DeveloperPlan;studioId?:string;studios?:{id:string;name:string;role:string}[];studioRole?:string;games:WorkspaceItem[];submissions:WorkspaceItem[];claims:WorkspaceItem[];diagnostics?:WorkspaceItem[];diagnosticsReady?:boolean;diagnosticsNotice?:ReactNode;warnings?:string[];extras?:ReactNode;feedbackCountsReady?:boolean;showPlan?:boolean}){
  const router=useRouter();const [selection,setSelection]=useState<Selection>({tab:"games",filter:"All",search:"",item:""});const [mobileDetail,setMobileDetail]=useState(false);const panel=useRef<HTMLDivElement>(null);const tabs=useRef<Array<HTMLButtonElement|null>>([]);
  function choose(next:Selection,replace=false){setSelection(next);const url=new URL(window.location.href);for(const key of ["tab","filter","q","game"])url.searchParams.delete(key);url.searchParams.set("tab",next.tab);if(next.filter!=="All")url.searchParams.set("filter",next.filter);if(next.search)url.searchParams.set("q",next.search);if(next.item)url.searchParams.set("game",next.item);window.history[replace?"replaceState":"pushState"](null,"",url);}
  const groups={games,submissions,claims,diagnostics};const items=groups[selection.tab];
@@ -66,7 +66,7 @@ export default function DeveloperWorkspace({games,submissions,claims,diagnostics
  },[scrollRequest,selected?.id,selection.tab,selection.campaign,mobileDetail]);
  function selectTab(tab:Tab){choose({tab,filter:"All",search:"",item:""});setMobileDetail(false);}
  function selectItem(id:string,feedback=false){if(id!==selected?.id||(!mobileDetail&&window.matchMedia("(max-width: 1023px)").matches)||feedback)setScrollRequest({id,tab:selection.tab,feedback});choose({...selection,item:id});setMobileDetail(true);}
- return <DeveloperPlanProvider enabled={showPlan} studioId={studioId||undefined}><div className="mt-7 min-w-0">
+ return <DeveloperPlanProvider enabled={showPlan} studioId={studioId||undefined} initialPlan={initialPlan}><div className="mt-7 min-w-0">
   {showPlan&&<DeveloperPlanSummary/>}
   <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-zinc-400">Choose a game to manage its campaigns and build feedback.</p><div className="flex flex-wrap gap-2"><a href={studioId?"/my-team?studio="+studioId:"/my-team"} className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald-300"><svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current" strokeWidth="1.7"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6m1 2a5 5 0 0 1 4 5v3"/></svg>Manage Team</a>{(!studioId||studioRole==="owner")&&<a href="/submit" className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-black focus-visible:outline-2 focus-visible:outline-offset-4">Add or claim a game</a>}</div></div>
   {studios.length>0&&<label className="flex w-full max-w-sm flex-col gap-2 text-sm font-semibold text-zinc-200">Workspace
