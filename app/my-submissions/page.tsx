@@ -569,20 +569,21 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
   if (studioId && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(studioId)) {
     return <WorkspaceRetry message="Studio unavailable." />;
   }
-  const studioResult = await supabase.rpc("get_studio_workspace",{p_studio:studioId||null});
+  // These checks are independent; avoid waiting for two sequential network round trips.
+  const [studioResult, { data: profile, error: profileError }] = await Promise.all([
+    supabase.rpc("get_studio_workspace",{p_studio:studioId||null}),
+    supabase
+      .from("profiles")
+      .select("role, roles, developer_xp")
+      .eq("id", user.id)
+      .single(),
+  ]);
   const studio = studioResult.data as StudioWorkspace | null;
   const studioRole = studioId ? studio?.role : null;
   if (studioId && (studioResult.error || !studioRole)) return <WorkspaceRetry message="Studio unavailable." />;
   const canEdit = studioRole !== "viewer";
   const canPublish = !studioId || studioRole === "owner";
   const ownerView = !studioId || studioRole === "owner";
-
-  const { data: profile, error: profileError } =
-    await supabase
-      .from("profiles")
-      .select("role, roles, developer_xp")
-      .eq("id", user.id)
-      .single();
 
   if(profileError) return <WorkspaceRetry message="Could not verify your developer access. Please retry."/>;
   if (
@@ -607,7 +608,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .eq("developer_id", user.id)
       .order("submitted_at", { ascending: false }),
 
-    supabase
+    // Studio workspaces already supply their own games, campaigns and feedback.
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase
       .from("game_claims")
       .select(
         `
@@ -626,7 +628,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .eq("claimant_id", user.id)
       .order("created_at", { ascending: false }),
 
-    supabase
+    // Studio workspaces already supply their own games, campaigns and feedback.
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase
       .from("game_developer_links")
       .select(
         `
@@ -643,7 +646,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .eq("developer_id", user.id)
       .order("created_at", { ascending: false }),
 
-    supabase
+    // Studio workspaces already supply their own games, campaigns and feedback.
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase
       .from("community_playtests")
       .select(
         `
@@ -671,7 +675,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .eq("developer_id", user.id)
       .order("created_at", { ascending: false }),
 
-    supabase
+    // Studio workspaces already supply their own games, campaigns and feedback.
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase
       .from("pulse_jobs")
       .select(
         `
@@ -695,7 +700,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .order("created_at", { ascending: false })
       .limit(50),
 
-    supabase.rpc("get_developer_current_reception"),
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase.rpc("get_developer_current_reception"),
   ]);
 
   if (submissionsError) {
