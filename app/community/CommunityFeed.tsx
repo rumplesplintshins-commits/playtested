@@ -155,7 +155,7 @@ export default function CommunityPage() {
       for (const profile of profilesResult.data ?? []) {
         const isOwner = profile.id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
         authors[profile.id] = {
-          name: isOwner ? "Owner" : profile.display_name || "Community member",
+          name: isOwner ? "N" : profile.display_name || "Community member",
           isOwner,
         };
       }
@@ -186,7 +186,7 @@ export default function CommunityPage() {
                 : community === "reviews"
                   ? "Reviews"
                   : "Discussion",
-          author: post.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883" ? "Owner" : post.user_id ? authors[post.user_id]?.name || "Community member" : "Community member",
+          author: post.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883" ? "N" : post.user_id ? authors[post.user_id]?.name || "Community member" : "Community member",
           isOwner: post.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883",
           time: formatTime(post.created_at),
           title: post.title,

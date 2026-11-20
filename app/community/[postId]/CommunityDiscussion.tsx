@@ -104,7 +104,7 @@ export default function CommunityDiscussion({
 
       // Owner attribution is tied to the verified account ID, not public role access.
       if (postIsOwner) {
-        postAuthor = "Owner";
+        postAuthor = "N";
       } else if (profile?.display_name) {
         postAuthor = profile.display_name;
       }
@@ -157,7 +157,7 @@ export default function CommunityDiscussion({
         if (comment.user_id) {
           const profile = profileById.get(comment.user_id);
           comment.isOwner = comment.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
-          comment.author = comment.isOwner ? "Owner" : profile?.display_name || "Community member";
+          comment.author = comment.isOwner ? "N" : profile?.display_name || "Community member";
         }
       }
     }
