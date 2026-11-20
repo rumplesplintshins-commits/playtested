@@ -4,134 +4,121 @@ import SiteHeader from "../components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "Paid Playtesting Preview | Playtested",
-  description: "Proposed paid playtesting sessions for indie games. Not live yet.",
+  description: "Preview paid indie game playtesting sessions. Coming soon.",
   robots: { index: false, follow: false },
 };
 
 const steps = [
-  { number: "01", title: "Share your build", description: "Add your playable game and tell testers what you want feedback on." },
-  { number: "02", title: "Choose your sessions", description: "Pick a session length and the number of testers you need." },
-  { number: "03", title: "Learn from players", description: "Get honest, structured feedback to help improve your game." },
+  { number: "01", title: "Bring your game", detail: "Submit a playable build and highlight the parts that need feedback." },
+  { number: "02", title: "Set the focus", detail: "Choose a session length and tell testers what matters most." },
+  { number: "03", title: "Learn what works", detail: "Get structured observations about gameplay, bugs and usability." },
 ] as const;
 
 const sessions = [
-  { minutes: "15 min", price: "£7", reward: "£5" },
-  { minutes: "30 min", price: "£13", reward: "£10" },
-  { minutes: "60 min", price: "£17", reward: "£14" },
+  { minutes: "15 min", price: "£7", label: "First impressions", detail: "A quick look at the opening experience or one specific feature." },
+  { minutes: "30 min", price: "£13", label: "Core gameplay", detail: "A closer look at controls, progression and early friction points." },
+  { minutes: "60 min", price: "£17", label: "Extended playtest", detail: "More time to uncover issues that don't appear immediately." },
 ] as const;
 
 const questions = [
-  {
-    question: "Does my game need to be finished?",
-    answer: "No. Playable prototypes, demos and games in development are welcome. Specific requirements for paid sessions will be confirmed before launch.",
-  },
-  {
-    question: "Who will play my game?",
-    answer: "The plan is to recruit from our Playtested community. Tester eligibility and selection rules will be confirmed before paid bookings open.",
-  },
-  {
-    question: "What feedback will I receive?",
-    answer: "Structured notes on gameplay, usability, issues and overall experience. Session recordings are not included or promised at these proposed prices.",
-  },
-  {
-    question: "Will free playtesting still be available?",
-    answer: "Yes. Free community playtesting is staying. Paid sessions will be an optional addition for developers who want more focused testing.",
-  },
-  {
-    question: "Are the prices and tester rewards final?",
-    answer: "Not yet. These are proposed introductory amounts per tester. Payment fees, any applicable taxes, refund rules and payouts still need to be finalised.",
-  },
+  { title: "Will free playtesting still be available?", answer: "Yes. The existing free community playtests stay available. Paid sessions would be an optional addition." },
+  { title: "Does my game need to be finished?", answer: "No. Playable demos and prototypes are welcome. Any additional conditions will be confirmed before bookings open." },
+  { title: "Who will test my game?", answer: "The plan is to recruit relevant testers from the Playtested community. Selection rules are still being finalised." },
+  { title: "What do I receive?", answer: "Structured feedback tied to your build and testing brief. Recordings are not included or guaranteed at these proposed prices." },
+  { title: "Can I pay for a session now?", answer: "Not yet. The prices are provisional and paid bookings are disabled until the service is ready." },
 ] as const;
 
 export default function PaidPlaytestingPage() {
   return (
-    <main className="min-h-screen bg-[#f9faf8] text-[#112923]">
-      <div className="bg-[#090b0a] text-zinc-100"><SiteHeader /></div>
-      <div className="border-b border-[#dce5de]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#456b58]">Playtested / Paid playtesting</p>
-          <span className="rounded-full border border-[#bedac9] bg-[#ecf5ef] px-3 py-1 text-xs font-semibold text-[#2b6946]">Coming soon · preview only</span>
-        </div>
-      </div>
+    <main className="min-h-screen bg-[#090b0a] text-zinc-100">
+      <SiteHeader />
 
-      <section aria-labelledby="steps-heading" className="mx-auto max-w-6xl px-6 pb-16 pt-12 sm:pb-20 sm:pt-16">
-        <h1 id="steps-heading" className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">
-          Three steps to fresh feedback<span className="text-[#2ca273]">.</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-[#537067]">
-          A straightforward way to get your game in front of real players. Paid sessions are still in development.
-        </p>
-        <ol className="mt-10 grid gap-8 md:grid-cols-3">
+      <section className="border-b border-white/[0.08]">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-16">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">Playtested / For developers</p>
+            <span className="rounded-full border border-[#77f29b]/30 bg-[#77f29b]/[0.06] px-3 py-1.5 text-xs font-medium text-[#77f29b]">Paid playtesting · Coming soon</span>
+          </div>
+          <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,.6fr)] lg:items-end">
+            <div>
+              <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+                More eyes on your build.
+                <span className="block text-[#77f29b]">More useful feedback.</span>
+              </h1>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">Focused sessions to help you understand what players actually experience, from confusing controls to frustrating bugs.</p>
+            </div>
+            <div className="border-l-2 border-[#77f29b]/60 pl-5">
+              <p className="text-sm font-semibold text-white">Free testing is already here.</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">You can submit your game today while paid sessions are in development.</p>
+              <Link href="/submit" className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#77f29b] underline underline-offset-4 hover:text-[#a2fac0]">Submit a game</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="process-heading" className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-16">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 id="process-heading" className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight sm:text-3xl">From build to insight.</h2>
+          <p className="text-sm text-zinc-500">Designed around real indie game testing.</p>
+        </div>
+        <ol className="mt-7 grid gap-3 md:grid-cols-3">
           {steps.map((step) => (
-            <li key={step.number} className="border-t border-[#d6e1d9] pt-5">
-              <span className="text-xs font-semibold tracking-wide text-[#53846a]">{step.number}</span>
-              <h2 className="mt-4 text-base font-semibold">{step.title}</h2>
-              <p className="mt-3 max-w-xs text-sm leading-7 text-[#617b70]">{step.description}</p>
+            <li key={step.number} className="min-w-0 rounded-xl border border-white/10 bg-[#101511] p-5 sm:p-6">
+              <div className="flex items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/[0.05] text-xs font-bold text-[#77f29b]">{step.number}</span>
+                <h3 className="text-base font-semibold text-white">{step.title}</h3>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">{step.detail}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section id="pricing" aria-labelledby="prices-heading" className="border-y border-[#dce5de] bg-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-20 lg:grid-cols-[minmax(240px,1fr)_minmax(0,1.45fr)] lg:gap-16">
-          <div>
-            <h2 id="prices-heading" className="font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-              Small sessions.<span className="block">Clear pricing.</span>
-            </h2>
-            <p className="mt-5 max-w-sm text-sm leading-7 text-[#617b70]">Proposed introductory prices, per tester. The majority goes to the person doing the playtest.</p>
-          </div>
-          <div className="min-w-0">
-            <div className="grid grid-cols-3 gap-3 sm:gap-6">
-              {sessions.map((session) => (
-                <div key={session.minutes} className="min-w-0 border-t border-[#d6e1d9] pt-5">
-                  <p className="text-xs font-medium text-[#6e867a]">{session.minutes}</p>
-                  <p className="mt-5 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">{session.price}</p>
-                  <p className="mt-1 text-xs text-[#6e867a]">per tester</p>
-                  <div className="mt-6 border-t border-[#edf0ec] pt-3">
-                    <p className="text-[11px] leading-5 text-[#6e867a]">Tester earns</p>
-                    <p className="text-base font-semibold text-[#268455]">{session.reward}</p>
-                  </div>
+      <section id="pricing" aria-labelledby="pricing-heading" className="border-y border-white/[0.08] bg-[#0e1510]">
+        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-16">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">Proposed introductory pricing</p>
+          <h2 id="pricing-heading" className="mt-3 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight sm:text-3xl">Pick the depth of your playtest.</h2>
+          <p className="mt-2 text-sm leading-7 text-zinc-400">Simple developer prices per tester. No checkout is available yet.</p>
+
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
+            {sessions.map((session, index) => (
+              <article key={session.minutes} className={index === 1 ? "flex min-w-0 flex-col rounded-xl border border-[#77f29b]/40 bg-[#77f29b]/[0.055] p-5 sm:p-6" : "flex min-w-0 flex-col rounded-xl border border-white/10 bg-[#090b0a]/50 p-5 sm:p-6"}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">{session.minutes}</p>
+                  {index === 1 && <span className="rounded-full bg-[#77f29b]/10 px-2 py-1 text-[11px] font-semibold text-[#77f29b]">Popular choice</span>}
                 </div>
-              ))}
-            </div>
-            <div className="mt-9 flex flex-wrap items-center justify-between gap-4 border-t border-[#dce5de] pt-5">
-              <p className="max-w-sm text-xs leading-6 text-[#6e867a]">Pricing and rewards are provisional. Paid bookings and payouts are not enabled.</p>
-              <button type="button" disabled className="min-h-10 cursor-not-allowed rounded-md border border-[#d3dfd5] bg-[#eff3ef] px-4 py-2 text-sm font-semibold text-[#728a7e]">Not live yet</button>
-            </div>
+                <p className="mt-5 text-4xl font-bold tracking-tight text-white">{session.price}</p>
+                <p className="mt-1 text-xs text-zinc-500">per tester</p>
+                <h3 className="mt-6 text-base font-semibold">{session.label}</h3>
+                <p className="mt-2 flex-1 text-sm leading-6 text-zinc-400">{session.detail}</p>
+              </article>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-white/[0.08] bg-[#090b0a]/60 px-5 py-4">
+            <p className="max-w-2xl text-sm leading-6 text-zinc-400">These prices are provisional. Paid bookings have not launched.</p>
+            <button type="button" disabled className="min-h-10 cursor-not-allowed rounded-lg border border-white/15 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-zinc-400">Not live yet</button>
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="faq-heading" className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-20 lg:grid-cols-[minmax(240px,1fr)_minmax(0,1.45fr)] lg:gap-16">
-        <div>
-          <h2 id="faq-heading" className="font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-            Before you<span className="block">share your build.</span>
-          </h2>
-          <p className="mt-5 max-w-sm text-sm leading-7 text-[#617b70]">A few useful answers about how paid playtesting would work.</p>
-        </div>
-        <div className="min-w-0 border-t border-[#d6e1d9]">
-          {questions.map((item, index) => (
-            <details key={item.question} open={index < 2} className="group border-b border-[#d6e1d9]">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-sm font-semibold text-[#17372d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2ca273] [&::-webkit-details-marker]:hidden">
-                <span>{item.question}</span>
-                <span aria-hidden="true" className="shrink-0 text-base font-normal text-[#57856b] group-open:hidden">+</span>
-                <span aria-hidden="true" className="hidden shrink-0 text-base font-normal text-[#57856b] group-open:inline">−</span>
-              </summary>
-              <p className="max-w-xl pb-5 pr-6 text-sm leading-7 text-[#617b70]">{item.answer}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-t border-[#dce5de] bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-6 py-9">
+      <section aria-labelledby="faq-heading" className="mx-auto max-w-7xl px-5 py-12 sm:px-6 sm:py-16">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.28fr)] lg:gap-14">
           <div>
-            <p className="text-base font-semibold">Free playtesting is already available.</p>
-            <p className="mt-1 text-sm text-[#617b70]">Submit a game today or join the community as a tester.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">Good to know</p>
+            <h2 id="faq-heading" className="mt-3 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight sm:text-3xl">Questions before launch?</h2>
+            <p className="mt-3 max-w-sm text-sm leading-7 text-zinc-400">What we've planned so far, and what is still being worked out.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/tester" className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#b9d4c1] px-4 py-2 text-sm font-semibold text-[#206442] hover:bg-[#eff7f0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2ca273]">Find games to test</Link>
-            <Link href="/submit" className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#153c2e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#235540] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2ca273]">Submit a game</Link>
+          <div className="min-w-0 divide-y divide-white/10 border-y border-white/10">
+            {questions.map((item) => (
+              <details key={item.title} className="group">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-left text-sm font-semibold text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#77f29b] [&::-webkit-details-marker]:hidden">
+                  <span>{item.title}</span>
+                  <span aria-hidden="true" className="shrink-0 text-xl font-normal text-[#77f29b] group-open:hidden">+</span>
+                  <span aria-hidden="true" className="hidden shrink-0 text-xl font-normal text-[#77f29b] group-open:inline">−</span>
+                </summary>
+                <p className="max-w-2xl pb-5 pr-5 text-sm leading-7 text-zinc-400">{item.answer}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const page = readFileSync(new URL("../app/paid-playtesting/page.tsx", import.meta.url), "utf8");
-for(const price of ['price: "£7"','price: "£13"','price: "£17"','reward: "£5"','reward: "£10"','reward: "£14"']) assert(page.includes(price), "Missing pricing: "+price);
-for(const phrase of ["Three steps to fresh feedback", "Small sessions.", "Clear pricing.", "Before you", "Not live yet"]) assert(page.includes(phrase), "Missing section: "+phrase);
+for (const price of ['price: "£7"', 'price: "£13"', 'price: "£17"']) assert(page.includes(price), "Missing developer price: " + price);
+for (const heading of ["From build to insight.", "Pick the depth of your playtest.", "Questions before launch?", "Not live yet"]) assert(page.includes(heading));
+assert(page.includes("bg-[#090b0a] text-zinc-100"), "Must match Playtested dark branding");
 assert(page.includes("robots: { index: false, follow: false }"), "Preview must not be indexed");
-assert(page.includes('type="button" disabled'), "Paid controls must remain disabled");
-assert(!/stripe|checkout|createPaymentIntent|onClick=/.test(page), "Preview must not process paid bookings");
-console.log("PASS paid-playtesting preview: pricing, text, noindex and disabled payments");
+assert(page.includes('type="button" disabled'), "Booking button must remain disabled");
+assert(!/tester earns|tester reward|reward:|£5|£10|£14/i.test(page), "Do not publish tester earnings");
+assert(!/stripe|checkout|createPaymentIntent|onClick=/.test(page), "No payments");
+console.log("PASS: dark preview, developer prices only, disabled booking, noindex");
