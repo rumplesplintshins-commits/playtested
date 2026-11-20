@@ -13,6 +13,7 @@ import LegacyPrivateEvidence from "../components/LegacyPrivateEvidence";
 import StartPlaytest from "../components/StartPlaytest";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
+import type {DeveloperPlan} from "../components/DeveloperPlan";
 import {submissionIssues,submissionReviewPresentation} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
 
@@ -585,6 +586,17 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
   const canPublish = !studioId || studioRole === "owner";
   const ownerView = !studioId || studioRole === "owner";
 
+  // Fetch the plan alongside game data rather than after browser hydration.
+  const planPromise = (async () => {
+    try {
+      return studioId
+        ? await supabase.rpc("get_studio_developer_plan", {p_studio:studioId})
+        : await supabase.rpc("get_my_developer_plan");
+    } catch {
+      return null;
+    }
+  })();
+
   if(profileError) return <WorkspaceRetry message="Could not verify your developer access. Please retry."/>;
   if (
     !profile ||
@@ -1110,7 +1122,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     (job) => job.status === "COMPLETE"
   );
 
-  return <DeveloperWorkspace key={studioId} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
+  const planResult = await planPromise;
+  const initialPlan = planResult && !planResult.error
+    ? ((planResult.data as DeveloperPlan | null) ?? undefined)
+    : undefined;
+
+  return <DeveloperWorkspace key={studioId} initialPlan={initialPlan} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
  games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
