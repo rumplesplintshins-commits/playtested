@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "../../lib/supabase";
 import { isDisposableEmail } from "../../lib/disposable-email";
 import { authDestination, getSafeNextPath } from "../../lib/auth-navigation";
@@ -22,6 +22,72 @@ function isSignupRole(value: string | null): value is SignupRole {
 const subscribeToHydration = () => () => {};
 const clientHydrationSnapshot = () => true;
 const serverHydrationSnapshot = () => false;
+const resendCooldownSeconds = 60;
+
+function confirmationCallback(nextPath: string) {
+  const url = new URL("/auth/callback", window.location.origin);
+  if (nextPath !== "/") url.searchParams.set("next", nextPath);
+  return url.toString();
+}
+
+function SignupConfirmation({ email, nextPath }: { email: string; nextPath: string }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  const sending = useRef(false);
+  const [deadline, setDeadline] = useState(() => Date.now() + resendCooldownSeconds * 1000);
+  const [remaining, setRemaining] = useState(resendCooldownSeconds);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => { heading.current?.focus(); }, []);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(seconds);
+      if (seconds === 0) window.clearInterval(timer);
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [deadline]);
+
+  async function resend() {
+    if (sending.current || Date.now() < deadline) return;
+    sending.current = true;
+    setBusy(true);
+    setNotice("");
+    setError("");
+    try {
+      const { error } = await createClient().auth.resend({
+        type: "signup", email, options: { emailRedirectTo: confirmationCallback(nextPath) },
+      });
+      if (error?.status === 429) {
+        setError("Too many requests. Wait before trying again.");
+      } else if (error) {
+        throw error;
+      } else {
+        setNotice("Confirmation requested. Check your inbox for the latest email.");
+      }
+    } catch {
+      setError("Could not resend the confirmation email. Please try again shortly.");
+    } finally {
+      setDeadline(Date.now() + resendCooldownSeconds * 1000);
+      setRemaining(resendCooldownSeconds);
+      sending.current = false;
+      setBusy(false);
+    }
+  }
+
+  const signIn = nextPath === "/" ? "/login" : `/login?${new URLSearchParams({ next: nextPath })}`;
+  return <section className="space-y-4 text-center">
+    <span aria-hidden="true" className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-400/15 text-4xl text-emerald-300">✓</span>
+    <h1 ref={heading} tabIndex={-1} className="text-3xl font-bold">Check your email</h1>
+    <p className="text-sm leading-6 text-slate-300">Look for a confirmation email at <strong className="[overflow-wrap:anywhere] text-white">{email}</strong>. Verify your email before signing in.</p>
+    <p className="text-sm text-slate-300">Check your spam or junk folder if you can’t find it.</p>
+    <button type="button" onClick={() => void resend()} disabled={busy || remaining > 0} className="w-full rounded-lg border border-emerald-400/40 px-3 py-3 text-sm font-semibold text-emerald-300 disabled:opacity-60">{busy ? "Sending…" : remaining > 0 ? `Resend confirmation in ${remaining}s` : "Resend confirmation email"}</button>
+    {notice && <p role="status" className="text-sm text-emerald-300">{notice}</p>}
+    {error && <p role="alert" className="text-sm text-amber-200">{error}</p>}
+    <a href={signIn} className="inline-block text-sm font-semibold text-emerald-300 underline underline-offset-4">Back to sign in</a>
+  </section>;
+}
 
 export default function LoginPage() {
   // Match the server HTML on the first client render, then initialise from the
@@ -54,6 +120,8 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
   const [nextPath] = useState(initialUrlState.nextPath);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
+  const submitting = useRef(false);
   const [confirmationFailed, setConfirmationFailed] = useState(initialUrlState.confirmationFailed);
   const [ageConfirmationRequired, setAgeConfirmationRequired] = useState(initialUrlState.ageConfirmationRequired);
 
@@ -81,7 +149,7 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (loading) return;
+    if (loading || submitting.current) return;
     setMessage("");
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -98,18 +166,17 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
       return;
     }
 
+    submitting.current = true;
     setLoading(true);
     try {
       const supabase = createClient();
       if (mode === "signup") {
-        const callbackUrl = new URL("/auth/callback", window.location.origin);
-        if (nextPath !== "/") callbackUrl.searchParams.set("next", nextPath);
         const confirmedAt = new Date().toISOString();
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: callbackUrl.toString(),
+            emailRedirectTo: confirmationCallback(nextPath),
             data: { signup_roles: signupRoles, age_18_confirmed: true, age_18_confirmed_at: confirmedAt },
           },
         });
@@ -118,7 +185,8 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
           window.location.replace(nextPath);
           return;
         }
-        setMessage(nextPath !== "/" ? `Registration received. Check your email to confirm your account. After confirmation, continue to ${authDestination(nextPath)}.` : "Registration received. Check your email to confirm your account.");
+        setPassword("");
+        setConfirmationEmail(normalizedEmail);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
@@ -127,6 +195,7 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -136,6 +205,7 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
       <div className="mx-auto max-w-md">
         <Link href="/" className="text-2xl font-bold tracking-tight">Playtested<span className="text-emerald-400">.</span></Link>
         <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900 p-8">
+          {confirmationEmail ? <SignupConfirmation email={confirmationEmail} nextPath={nextPath} /> : <>
           <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-slate-400">{mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in to continue to this community playtest." : "Sign in to your Playtested account." : nextPath.startsWith("/playtest/") ? "Create your account to join this community playtest." : "Choose all the ways you want to use Playtested."}</p>
 
@@ -154,10 +224,11 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
             <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
             <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
             {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
-            {message && <p role="status" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
+            {message && <p role="alert" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
             <button type="submit" disabled={loading} className="w-full rounded-lg bg-emerald-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60">{loading ? "Please wait..." : mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in and continue" : "Sign in" : nextPath.startsWith("/playtest/") ? "Create account and join" : "Create account"}</button>
           </form>
           <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to Playtested?" : "Already have an account?"}{" "}<button type="button" onClick={switchMode} disabled={loading} className="font-semibold text-emerald-400 hover:text-emerald-300">{mode === "login" ? "Create an account" : "Sign in"}</button></p>
+          </>}
         </div>
       </div>
     </main>

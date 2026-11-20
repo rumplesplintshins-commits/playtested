@@ -174,7 +174,9 @@ try{
  await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');
  await page.getByRole('checkbox',{name:/18/}).check();
  await page.getByRole('button',{name:'Create account',exact:true}).click();
- await expect(page.getByRole('status')).toContainText('After confirmation, continue to My Games.');
+ await expect(page.getByRole('heading',{name:'Check your email'})).toBeVisible();
+ await expect(page.getByText('fixture@example.test',{exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Back to sign in'})).toHaveAttribute('href','/login?next=%2Fmy-submissions');
  assert.equal(signup.body.data.signup_roles[0],'developer');assert.equal(signup.body.data.age_18_confirmed,true);
  assert.equal(new URL(signup.body.email_redirect_to||new URL(signup.url).searchParams.get('redirect_to')).searchParams.get('next'),'/my-submissions');
  await page.screenshot({path:'.backup-tools/auth-handoff-mobile.png',fullPage:true});
