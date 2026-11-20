@@ -115,7 +115,7 @@ const origin=process.env.TEST_APP_URL||'http://localhost:3000';
   const invitation='/playtest/10000000-0000-4000-8000-000000000001?pt_visit='+'a'.repeat(64);
   if(flow==='submit'){await page.getByRole('link',{name:'Submit a game',exact:true}).first().click();await expect(page).toHaveURL(/\/login\?next=/);}
   else await page.goto(origin+(flow==='invitation'?'/login?mode=signup&next='+encodeURIComponent(invitation):flow==='signup'?'/login?mode=signup':'/login'));
-  if(flow==='submit')await expect(page.getByText('After signing in, continue to adding your game.',{exact:false})).toBeVisible();
+  if(flow==='submit')await expect(page.getByText('After signing in, continue to submit your game.',{exact:false})).toBeVisible();
   if(flow==='signup'||flow==='invitation')await expect(page.getByRole('heading',{name:'Create your account',exact:true})).toBeVisible();
   await page.getByLabel('Email address').fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-not-a-real-password');
   await page.getByRole('button',{name:flow==='signup'||flow==='invitation'?/Create account|Join/:/Log in|Sign in/}).click();
@@ -162,7 +162,8 @@ try{
   return route.fulfill({status:200,headers,contentType:'application/json',body:'[]'});
  });
  await page.goto(origin+'/auth/callback?next=/tester');
- await expect(page.getByRole('alert').filter({hasText:'Your destination is saved:'})).toContainText('Your destination is saved: Tester Hub');
+ await expect(page.getByRole('alert').filter({hasText:'Your saved destination:'})).toContainText('Your saved destination: Tester Hub');
+ await expect(page.getByRole('button',{name:'Resend confirmation email'})).toBeVisible();
  await expect(page.getByLabel('Email address')).toBeVisible();
  await page.getByLabel('Email address').focus();await page.keyboard.press('Tab');await expect(page.getByLabel('Password',{exact:true})).toBeFocused();
  for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}`);}

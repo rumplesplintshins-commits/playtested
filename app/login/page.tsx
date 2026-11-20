@@ -123,6 +123,10 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
   const [confirmationEmail, setConfirmationEmail] = useState("");
   const submitting = useRef(false);
   const [confirmationFailed, setConfirmationFailed] = useState(initialUrlState.confirmationFailed);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryNotice, setRecoveryNotice] = useState("");
+  const recoveryInFlight = useRef(false);
+  const lastRecoveryRequest = useRef(0);
   const [ageConfirmationRequired, setAgeConfirmationRequired] = useState(initialUrlState.ageConfirmationRequired);
 
   function toggleRole(role: SignupRole) {
@@ -145,6 +149,40 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
     if (nextPath !== "/") params.set("next", nextPath);
     const query = params.toString();
     window.history.replaceState(null, "", query ? `/login?${query}` : "/login");
+  }
+
+  async function resendRecoveryConfirmation() {
+    if (recoveryInFlight.current) return;
+    const address = email.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address)) {
+      setRecoveryNotice("Enter the email address you registered with above first.");
+      return;
+    }
+    if (Date.now() - lastRecoveryRequest.current < resendCooldownSeconds * 1000) {
+      setRecoveryNotice("Please wait a minute before requesting another email.");
+      return;
+    }
+    recoveryInFlight.current = true;
+    setRecoveryBusy(true);
+    setRecoveryNotice("");
+    try {
+      const { error } = await createClient().auth.resend({
+        type: "signup", email: address, options: { emailRedirectTo: confirmationCallback(nextPath) },
+      });
+      if (error?.status === 429) {
+        setRecoveryNotice("Too many requests. Please wait before trying again.");
+      } else if (error) {
+        setRecoveryNotice("Could not request a confirmation email. Please try again shortly.");
+      } else {
+        setRecoveryNotice("If your email still needs confirmation, check your inbox for the latest link.");
+      }
+    } catch {
+      setRecoveryNotice("Could not request a confirmation email. Please try again shortly.");
+    } finally {
+      lastRecoveryRequest.current = Date.now();
+      recoveryInFlight.current = false;
+      setRecoveryBusy(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -209,7 +247,7 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
           <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-2 text-sm text-slate-400">{mode === "login" ? nextPath.startsWith("/playtest/") ? "Sign in to continue to this community playtest." : "Sign in to your Playtested account." : nextPath.startsWith("/playtest/") ? "Create your account to join this community playtest." : "Choose all the ways you want to use Playtested."}</p>
 
-          {confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">That sign-in or confirmation link couldn&apos;t be used</h2><p className="mt-1">Confirmation links can only be used once. If you have already confirmed your email, your account may be ready. Try signing in below.</p><p className="mt-2">If you haven&apos;t confirmed your email yet, open the latest confirmation email in the browser where you registered. If that still fails, contact us for help.</p><p className="mt-2 text-xs text-amber-100/80">Your destination is saved: {authDestination(nextPath)}.</p></div>}
+          {confirmationFailed && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">That sign-in or confirmation link couldn&apos;t be used</h2><p className="mt-1">The link may have expired, been used already, or opened in a different browser. If you have confirmed your email, try signing in below.</p><p className="mt-2">If your email is still unconfirmed, enter your email address below and request a new confirmation link.</p><p className="mt-2 text-xs text-amber-100/80">Your saved destination: {nextPath === "/submit" || nextPath.startsWith("/submit?") ? "the game submission page" : authDestination(nextPath)}.</p></div>}
           {ageConfirmationRequired && <div role="alert" className="mt-5 rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm leading-6 text-amber-100"><h2 className="font-semibold">Age confirmation required</h2><p className="mt-1">Playtested accounts are for people aged 18 or over. Confirm your age below before continuing with Google.</p></div>}
           {nextPath !== "/" && !nextPath.startsWith("/playtest/") && <p className="mt-4 rounded-lg border border-slate-700 p-3 text-sm text-slate-300">After signing in, continue to {authDestination(nextPath)}. You can manage your roles in Account.</p>}
           {nextPath.startsWith("/playtest/") && <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 p-4"><p className="text-sm font-semibold text-emerald-300">Community playtest invitation</p><p className="mt-1 text-xs leading-5 text-slate-400">After you sign in or confirm your new account, you&apos;ll return directly to the playtest.</p></div>}
@@ -222,6 +260,10 @@ function LoginForm({initialSearch}: {initialSearch: string}) {
             <GoogleSignInButton mode={mode} signupRoles={signupRoles} ageConfirmed={ageConfirmed} nextPath={nextPath} loading={loading} setLoading={setLoading} setMessage={setMessage}/>
 
             <div><label htmlFor="email" className="mb-2 block text-sm font-medium">Email address</label><input id="email" disabled={loading} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="you@example.com"/></div>
+            {mode === "login" && confirmationFailed && <div className="space-y-2">
+              <button type="button" disabled={recoveryBusy || loading} onClick={() => void resendRecoveryConfirmation()} className="rounded-lg border border-emerald-400/35 px-3 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/10 disabled:opacity-60">{recoveryBusy ? "Requesting…" : "Resend confirmation email"}</button>
+              {recoveryNotice && <p role="status" className="text-sm text-slate-300">{recoveryNotice}</p>}
+            </div>}
             <div><label htmlFor="password" className="mb-2 block text-sm font-medium">Password</label><input id="password" disabled={loading} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required value={password} onChange={(e) => { setPassword(e.target.value); setMessage(""); }} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400" placeholder="At least 8 characters"/></div>
             {mode === "login" && <Link href="/forgot-password" className="block text-sm text-emerald-300 underline underline-offset-4">Forgot password?</Link>}
             {message && <p role="alert" className="rounded-lg bg-slate-800 p-3 text-sm text-slate-200">{message}</p>}
