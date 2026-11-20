@@ -13,6 +13,7 @@ export function getSafeNextPath(value: string | null): string {
 export function authDestination(path: string): string {
   if (path === "/tester" || path.startsWith("/tester?")) return "Tester Hub";
   if (path === "/my-submissions" || path.startsWith("/my-submissions?")) return "My Games";
+  if (path === "/my-team" || path.startsWith("/my-team?")) return "Manage Team";
   if (path === "/submit" || path.startsWith("/submit?")) return "adding your game";
   if (path.startsWith("/playtest/")) return "your community playtest";
   if (path === "/") return "the game catalogue";

@@ -538,7 +538,17 @@ function getDeveloperTitle(level: number) {
 }
 
 
-async function DeveloperDashboard() {
+type StudioWorkspace = {
+  role: "owner" | "editor" | "viewer" | null;
+  studios: {id:string;name:string;role:"owner"|"editor"|"viewer"}[];
+  personal_exclusions: string[];
+  links: GameDeveloperLinkRow[];
+  campaigns: CommunityPlaytestRow[];
+  receptions: DeveloperReceptionRow[];
+  listings: {kind:string;id:string;title:string|null;developer_name:string|null;genre:string|null;image_url:string|null;steam_app_id:string|null}[];
+};
+
+async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{studio?:string}> } = {}) {
   await connection();
 
   const supabase = await createClient();
@@ -551,6 +561,18 @@ async function DeveloperDashboard() {
     redirect("/login?next=/my-submissions");
   }
 
+  const studioId = (await searchParams)?.studio || "";
+  if (studioId && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(studioId)) {
+    return <WorkspaceRetry message="Studio unavailable." />;
+  }
+  const studioResult = await supabase.rpc("get_studio_workspace",{p_studio:studioId||null});
+  const studio = studioResult.data as StudioWorkspace | null;
+  const studioRole = studioId ? studio?.role : null;
+  if (studioId && (studioResult.error || !studioRole)) return <WorkspaceRetry message="Studio unavailable." />;
+  const canEdit = studioRole !== "viewer";
+  const canPublish = !studioId || studioRole === "owner";
+  const ownerView = !studioId || studioRole === "owner";
+
   const { data: profile, error: profileError } =
     await supabase
       .from("profiles")
@@ -561,8 +583,9 @@ async function DeveloperDashboard() {
   if(profileError) return <WorkspaceRetry message="Could not verify your developer access. Please retry."/>;
   if (
     !profile ||
-    (profile.role !== "admin" && (!Array.isArray(profile.roles) || !profile.roles.includes("developer")))
+    (!studioRole && profile.role !== "admin" && (!Array.isArray(profile.roles) || !profile.roles.includes("developer")))
   ) {
+    if (studio?.studios?.[0]) redirect("/my-submissions?studio="+studio.studios[0].id);
     redirect("/account");
   }
 
@@ -722,7 +745,7 @@ async function DeveloperDashboard() {
     );
   }
 
-  const ownedSubmissions = (submissions ?? []) as SubmissionRow[];
+  const ownedSubmissions = (studioId ? [] : submissions ?? []) as SubmissionRow[];
   const {data: activityRows, error: activityError} = ownedSubmissions.length
     ? await supabase.from("submission_review_events").select("submission_id,created_at").in("submission_id", ownedSubmissions.map(row => row.id))
     : {data: [], error: null};
@@ -730,15 +753,15 @@ async function DeveloperDashboard() {
   const latestActivity = new Map<string, string>();
   for (const event of activityRows ?? []) if (Date.parse(event.created_at) > Date.parse(latestActivity.get(event.submission_id) || "1970-01-01")) latestActivity.set(event.submission_id, event.created_at);
   const games = ownedSubmissions.map(row => ({...row, updated_at: latestActivity.get(row.id) || row.submitted_at})).sort(compareSubmissions);
-  const rawClaims = (claimRows ?? []) as GameClaimRow[];
+  const rawClaims = (studioId ? [] : claimRows ?? []) as GameClaimRow[];
   const rawLinks =
-    (linkRows ?? []) as GameDeveloperLinkRow[];
+    studioId ? studio!.links : ((linkRows ?? []) as GameDeveloperLinkRow[]).filter(link => !studio?.personal_exclusions?.includes(link.id));
   const rawPlaytests =
-    (playtestRows ?? []) as CommunityPlaytestRow[];
+    studioId ? studio!.campaigns : (playtestRows ?? []) as CommunityPlaytestRow[];
   const pulseJobs =
-    (pulseJobRows ?? []) as PulseJobRow[];
+    (studioId ? [] : pulseJobRows ?? []) as PulseJobRow[];
   const rawReceptions =
-    (receptionRows ?? []) as DeveloperReceptionRow[];
+    studioId ? studio!.receptions : (receptionRows ?? []) as DeveloperReceptionRow[];
 
   const importedIds = Array.from(
     new Set(
@@ -878,6 +901,11 @@ async function DeveloperDashboard() {
       },
     ])
   );
+
+  for(const row of studioId ? studio?.listings ?? [] : []) {
+    const map = row.kind === "imported" ? importedMap : row.kind === "approved" ? approvedMap : submissionMap;
+    map.set(row.id,{title:row.title||"Unknown game",developerName:row.developer_name||"Unknown developer",genre:row.genre||"Genre not listed",imageUrl:row.image_url,steamAppId:row.steam_app_id});
+  }
 
   const claims: DeveloperClaim[] = rawClaims.map(
     (claim) => {
@@ -1073,7 +1101,7 @@ async function DeveloperDashboard() {
     (job) => job.status === "COMPLETE"
   );
 
-  return <DeveloperWorkspace diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
+  return <DeveloperWorkspace key={studioId} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan={canEdit} feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
  games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
@@ -1207,7 +1235,7 @@ async function DeveloperDashboard() {
                   </p>
                 </div>}
 
-                  <a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>
+                  {canEdit&&<a href={`/submit?edit=${encodeURIComponent(game.importedGameId||game.approvedGameId||game.submissionId||"")}&listing=${game.importedGameId?"imported":game.approvedGameId?"approved":"submission"}`} className="my-4 inline-block rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-semibold text-emerald-200">Edit listing</a>}
                   <div data-start-playtest>
                   <StartPlaytest
                     gameTitle={game.gameTitle}
@@ -1219,11 +1247,14 @@ async function DeveloperDashboard() {
                     }}
                     existingPlaytest={game.latestPlaytest}
                     playtests={game.playtests}
+                    studioId={studioId||undefined}
+                    readOnly={!canEdit}
+                    sharedMember={Boolean(studioId&&!ownerView)}
                   />
                   </div>
-                  <LegacyPrivateEvidence submissionId={game.submissionId||game.approvedGameId}/>
-                  <GameLinksEngagement playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
-                  <ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved collapsed/>
+                  {ownerView&&<LegacyPrivateEvidence submissionId={game.submissionId||game.approvedGameId}/>}
+                  <GameLinksEngagement readOnly={!ownerView} playtest={game.latestPlaytest||undefined} source={{kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!}} />
+                  {canPublish&&<ListingControls id={(game.importedGameId||game.approvedGameId||game.submissionId)!} kind={game.importedGameId?"imported":"submission"} title={game.gameTitle} approved collapsed/>}
                 </div>
               </article>
               );
@@ -1686,7 +1717,7 @@ async function DeveloperDashboard() {
  />;
 }
 
-export default function MySubmissionsPage() {
+export default function MySubmissionsPage({searchParams}:{searchParams:Promise<{studio?:string}>}) {
   return (
     <main className="min-h-screen bg-[#090b0a] text-zinc-100">
       <SiteHeader />
@@ -1706,7 +1737,7 @@ export default function MySubmissionsPage() {
         </p>
 
         <Suspense fallback={<LoadingDashboard />}>
-          <DeveloperDashboard />
+          <DeveloperDashboard searchParams={searchParams} />
         </Suspense>
       </section>
     </main>

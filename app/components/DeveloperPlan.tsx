@@ -17,9 +17,9 @@ export function parseDeveloperPlan(value:unknown):DeveloperPlan{
 }
 const Context=createContext<{data:DeveloperPlan|null;loading:boolean;error:string;refresh:()=>Promise<void>}>({data:null,loading:false,error:"Plan unavailable",refresh:async()=>{}});
 export function useDeveloperPlan(){return useContext(Context);}
-export function DeveloperPlanProvider({children,enabled=true}:{children:ReactNode;enabled?:boolean}){
+export function DeveloperPlanProvider({children,enabled=true,studioId}:{children:ReactNode;enabled?:boolean;studioId?:string}){
  const [data,setData]=useState<DeveloperPlan|null>(null),[loading,setLoading]=useState(enabled),[error,setError]=useState("");const request=useRef(0);
- const load=useCallback(()=>{const sequence=++request.current;return Promise.resolve().then(()=>createClient().rpc("get_my_developer_plan")).then(result=>{if(sequence!==request.current)return;if(result.error)throw new Error(allowanceError("get_my_developer_plan",result.error));setData(parseDeveloperPlan(result.data));setError("");}).catch(e=>{if(sequence===request.current){setData(null);setError(e instanceof Error?e.message:"Plan unavailable.");}}).finally(()=>{if(sequence===request.current)setLoading(false);});},[]);
+ const load=useCallback(()=>{const sequence=++request.current;return Promise.resolve().then(()=>studioId?createClient().rpc("get_studio_developer_plan",{p_studio:studioId}):createClient().rpc("get_my_developer_plan")).then(result=>{if(sequence!==request.current)return;if(result.error)throw new Error(allowanceError("get_my_developer_plan",result.error));setData(parseDeveloperPlan(result.data));setError("");}).catch(e=>{if(sequence===request.current){setData(null);setError(e instanceof Error?e.message:"Plan unavailable.");}}).finally(()=>{if(sequence===request.current)setLoading(false);});},[studioId]);
  useEffect(()=>{const pending=request;if(enabled)void load();return()=>{pending.current++;};},[enabled,load]);
  const refresh=useCallback(async()=>{setLoading(true);await load();},[load]);
  return <Context.Provider value={{data,loading,error,refresh}}>{children}</Context.Provider>;

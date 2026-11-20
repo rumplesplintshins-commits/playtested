@@ -6,6 +6,7 @@ import { createClient } from "../../lib/supabase";
 
 type NotificationItem = {
   id: number;
+  kind?:string;
   title: string;
   message: string;
   href: string | null;
@@ -217,6 +218,20 @@ export default function NotificationBell() {
     setItems((current) => current.filter((item) => !item.read_at));
   }
 
+  const [responding,setResponding] = useState(false);
+  const [invitationError,setInvitationError] = useState("");
+  async function respond(invitation:string, action:"accept"|"decline") {
+    if(responding)return;
+    setResponding(true);setInvitationError("");
+    try{
+      const {error:failure}=await createClient().rpc("change_studio",{p_action:action,p_target:invitation});
+      if(failure){setInvitationError(failure.message);return;}
+      notifyChanged();
+      router.refresh();
+    }catch{setInvitationError("Could not respond to this invitation. Please try again.");}
+    finally{setResponding(false);}
+  }
+
   const hasRead = items.some((item) => item.read_at);
 
   return <div ref={ref} onKeyDown={onKeyDown} className="relative">
@@ -235,13 +250,19 @@ export default function NotificationBell() {
       <div style={{ maxHeight: placement ? Math.max(120, placement.maxHeight) : undefined }} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         {loading && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-400">Loading notifications...</div> : error && items.length === 0 ? <div className="px-5 py-10 text-center text-sm text-zinc-300">{error}</div> : items.length === 0 ? <div className="px-5 py-10 text-center"><p className="text-sm text-zinc-300">No recent notifications</p><p className="mt-1 text-xs text-zinc-500">Older notifications remain in your notification history.</p></div> : items.map((item) => {
           const unread = !item.read_at;
+          const invitation = item.kind === "studio_invitation" ? item.href?.match(/^\/my-team\?invite=([0-9a-f-]{36})$/i)?.[1] : undefined;
           return <div key={item.id} className={`group flex gap-3 border-b border-white/[0.06] px-4 py-3.5 last:border-b-0 ${unread ? "bg-[#77f29b]/[0.035]" : ""}`}>
             {unread ? <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#77f29b]"/> : <span className="w-2 shrink-0"/>}
-            <button type="button" onClick={() => void openItem(item)} className="min-w-0 flex-1 text-left"><div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3"><p className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${unread ? "font-semibold text-white" : "font-medium text-zinc-300"}`}>{item.title}</p><span className="shrink-0 text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span></div><p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 text-zinc-400">{item.message}</p></button>
+            <div className="min-w-0 flex-1"><button type="button" onClick={() => void openItem(item)} className="w-full text-left"><div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3"><p className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm ${unread ? "font-semibold text-white" : "font-medium text-zinc-300"}`}>{item.title}</p><span className="shrink-0 text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span></div><p className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 text-zinc-400">{item.message}</p></button>
+            {invitation&&<div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" disabled={responding} className="rounded border border-emerald-300/30 px-2 py-1 text-xs text-emerald-200 focus-visible:outline-2 disabled:opacity-50" onClick={()=>void respond(invitation,"accept")}>Accept</button>
+              <button type="button" disabled={responding} className="rounded border border-white/20 px-2 py-1 text-xs focus-visible:outline-2 disabled:opacity-50" onClick={()=>void respond(invitation,"decline")}>Decline</button>
+            </div>}</div>
             <button type="button" aria-label={`Dismiss ${item.title}`} title="Delete notification" onClick={() => void dismiss(item)} className="shrink-0 self-start rounded px-2 py-2 text-lg leading-none text-zinc-600 hover:bg-white/[0.06] hover:text-white">×</button>
           </div>;
         })}
       </div>
+      {invitationError&&<p role="alert" className="px-4 py-2 text-xs text-amber-200">{invitationError}</p>}
       <a href="/notifications" className="block border-t border-white/[0.08] px-4 py-3 text-center text-xs font-semibold text-[#77f29b] transition hover:bg-white/[0.03] hover:text-[#9af8b4]">View all notifications</a>
     </div>}
   </div>;
