@@ -55,9 +55,9 @@ export default async function Home() {
           </div>
           <p className="mt-4 text-sm leading-6 text-zinc-400">You can be a developer, a tester, or both. Just looking around? <a href="#discover-games" className="text-[#77f29b] underline underline-offset-4 focus-visible:outline-2">Browse the games below</a>.</p>
           </div>
-          <aside aria-label="Developer testimonial" className="min-w-0 max-w-3xl xl:mt-10 xl:max-w-none">
-            <figure className="rounded-2xl border border-[#77f29b]/25 bg-[#0e1510] p-6 sm:p-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-[#77f29b]">What developers are saying</p>
+          <aside aria-labelledby="home-testimonials" className="min-w-0 max-w-3xl rounded-2xl border border-[#77f29b]/25 bg-[#0e1510] p-6 sm:p-8 xl:mt-10 xl:max-w-none">
+            <h2 id="home-testimonials" className="text-xs font-bold uppercase tracking-widest text-[#77f29b]">What developers are saying</h2>
+            <figure>
               <blockquote className="mt-6 border-l-2 border-[#77f29b]/70 pl-4 text-base leading-8 text-zinc-100 sm:text-lg">
                 Playtested gave us three full recorded playthroughs of our demo, each with a written report. Watching strangers play showed us problems we had stopped seeing, starting with how fast players ran out of gold. For a two-person team, that was exactly the kind of feedback we needed.
               </blockquote>
@@ -69,6 +69,21 @@ export default async function Home() {
                     <path d={blueskyLogoPath} />
                   </svg>
                   View original post on Bluesky
+                </a>
+              </figcaption>
+            </figure>
+            <figure className="mt-5 border-t border-white/10 pt-5">
+              <blockquote className="border-l-2 border-orange-300/70 pl-4 text-base leading-8 text-zinc-100 sm:text-lg">
+                …thanks to my friends and the folks over at playtested.co.uk I managed to make a lot of quality of life updates!
+              </blockquote>
+              <figcaption className="mt-4">
+                <p className="font-semibold text-white">Left Marino</p>
+                <p className="mt-1 text-sm text-zinc-400">Maker of Light Source</p>
+                <a href="https://x.com/LightSourceX/status/2123799126852665792" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-orange-300/25 bg-orange-300/5 px-3 py-1.5 text-sm font-medium text-orange-300 no-underline transition-colors hover:border-orange-300/50 hover:bg-orange-300/10 focus-visible:outline-2 focus-visible:outline-offset-2">
+                  <svg aria-hidden="true" focusable="false" viewBox="0 0 1200 1227" className="size-3.5 shrink-0 fill-white">
+                    <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" />
+                  </svg>
+                  View original post on X
                 </a>
               </figcaption>
             </figure>
