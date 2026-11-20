@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase";
 
 type Role = "owner" | "editor" | "viewer";
@@ -8,6 +8,9 @@ type Studio = { id: string; name: string; role: Role };
 type Team = {
   studios: Studio[];
   limit: number;
+  membership_limit: number;
+  active_memberships: number;
+  reserved_memberships: number;
   inbox: { id:string; name:string; role:Role; expires_at:string }[];
   members: { id:string; name:string|null; role:Role; email:string|null; joined_at:string }[];
   pending: { id:string; email:string; role:Role; expires_at:string }[];
@@ -57,45 +60,50 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
   const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState("");
   const [error,setError] = useState("");
+  const [retryable,setRetryable] = useState(false);
   const [loading,setLoading] = useState(true);
   const request = useRef(0);
   const locked = useRef(false);
 
-  async function load(id:string, autoSelect=false) {
+  const load=useCallback(async function loadTeam(id:string, autoSelect=false) {
     const run=++request.current;
     setLoading(true);
     setError("");
+    setRetryable(false);
     const client=createClient();
     const result=await client.rpc("get_studio_team",{p_studio:id||null});
     if(run!==request.current)return;
-    if(result.error){setError(result.error.message);setTeam(null);setLoading(false);return;}
+    if(result.error){setError(result.error.message);setRetryable(!result.status||result.status>=500||result.error.code==="40001");setTeam(null);setLoading(false);return;}
     const data=result.data as Team;
     const first=autoSelect && !id && data.studios[0]?.id;
-    if(first){await load(first);return;}
+    if(first){await loadTeam(first);return;}
     setTeam(data);
     setSelected(id);
     setLoading(false);
-  }
+  },[]);
 
   useEffect(()=>{
+    const sequence=request;
     const timer=window.setTimeout(()=>void load(new URLSearchParams(location.search).get("studio")||"",true),0);
-    return ()=>{window.clearTimeout(timer);request.current++;};
-  },[]);
+    return ()=>{window.clearTimeout(timer);sequence.current++;};
+  },[load]);
 
   async function change(args:Change) {
     if(locked.current)return false;
     locked.current=true;
-    setBusy(true);setError("");setNotice("");
+    setBusy(true);setError("");setRetryable(false);setNotice("");
     try {
       const {data,error:failure}=await createClient().rpc("change_studio",{p_studio:selected||null,...args});
       if(failure)throw failure;
-      const id=args.p_action==="create"||args.p_action==="accept"?data.id:selected;
-      await load(id);
+      const id=args.p_action==="leave"?"":args.p_action==="create"||args.p_action==="accept"?data.id:selected;
+      await load(id,args.p_action==="leave");
       if(args.p_action==="accept"||args.p_action==="decline")window.dispatchEvent(new Event("playtested-notifications-changed"));
       setNotice(data.message||(args.p_action==="accept"?"You joined the studio.":"Studio updated."));
       return true;
     } catch (failure) {
-      setError(typeof failure==="object"&&failure&&"message" in failure?String(failure.message):"Could not update the studio.");
+      const limitReached=typeof failure==="object"&&failure&&"code" in failure&&failure.code==="PST01";
+      if(limitReached)await load(selected,true);
+      setError(limitReached?"Your studio limit is reached. Leave a joined studio or decline a pending invitation to free a place.":typeof failure==="object"&&failure&&"message" in failure?String(failure.message):"Could not update the studio.");
       return false;
     } finally {locked.current=false;setBusy(false);}
   }
@@ -112,14 +120,14 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
   const places=team ? Math.max(0,team.limit-Math.max(0,team.members.length-1)-team.pending.length) : 0;
   return <>
     {notice&&<p role="status" className="text-sm text-emerald-200">{notice}</p>}
-    {error&&<p role="alert" className="text-sm text-amber-200">{error} <button className={button} onClick={()=>void load(selected,true)}>Retry</button></p>}
+    {error&&<p role="alert" className="text-sm text-amber-200">{error} {retryable&&<button className={button} onClick={()=>void load(selected,true)}>Retry</button>}</p>}
     {loading&&!team&&<p role="status">Loading studio workspaces…</p>}
     {team&&<>
       {team.inbox.length>0&&<section className={panel} aria-label="Studio invitations">
         <h2 className="text-lg font-semibold">Studio invitations</h2>
         {team.inbox.map(item=><div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
           <div className="min-w-0"><p className="font-medium [overflow-wrap:anywhere]">{item.name}</p><p className="text-sm text-zinc-400">{titles[item.role]} · Expires {date(item.expires_at)}</p></div>
-          <div className="flex gap-2"><button className={button} disabled={busy} onClick={()=>void change({p_action:"accept",p_target:item.id})}>Accept</button><button className={button} disabled={busy} onClick={()=>void change({p_action:"decline",p_target:item.id})}>Decline</button></div>
+          <div className="flex gap-2"><button className={button} disabled={busy||team.active_memberships>=team.membership_limit} onClick={()=>void change({p_action:"accept",p_target:item.id})}>Accept</button><button className={button} disabled={busy} onClick={()=>void change({p_action:"decline",p_target:item.id})}>Decline</button></div>
         </div>)}
       </section>}
       <section className={panel}>
@@ -132,14 +140,22 @@ export default function StudioTeam({canCreate}:{canCreate:boolean}) {
           <p className="text-sm text-zinc-300">{team.members.length} of {team.limit+1} members · {team.games.filter(game=>game.shared).length} studio games · {titles[studio.role]}</p>
           <p className="text-sm text-zinc-400">Accepted colleagues can access this studio’s shared games and build feedback.</p>
           <a className={button+" inline-block"} href={"/my-submissions?studio="+studio.id}>Open studio My Games</a>
+          {!owner&&<button type="button" disabled={busy} className={button+" ml-2"} onClick={()=>{if(confirm("Leave this studio and give up access to its shared games?"))void change({p_action:"leave"});}}>Leave studio</button>}
           {owner&&<StudioNameForm key={studio.id+studio.name} label="Studio name" initialName={studio.name} submitLabel="Save name" busy={busy} onSave={name=>change({p_action:"rename",p_name:name})} />}
         </>}
-        {canCreate&&<StudioNameForm label="New studio name" submitLabel="Create studio" busy={busy} clearOnSave onSave={name=>change({p_action:"create",p_name:name})} />}
+        {team.active_memberships>=team.membership_limit
+          ? <p className="text-sm text-zinc-400">{team.membership_limit===1?"Free accounts can belong to one studio.":"Your account can belong to two studios."} {team.active_memberships>team.membership_limit&&"Your existing studios remain accessible. Leave a joined studio to bring your account within the limit."}</p>
+          : team.reserved_memberships>=team.membership_limit
+            ? <p className="text-sm text-zinc-400">A pending invitation reserves your remaining studio place. Accept or decline it in Studio invitations.</p>
+            : canCreate&&<StudioNameForm label="New studio name" submitLabel="Create studio" busy={busy} clearOnSave onSave={name=>change({p_action:"create",p_name:name})} />}
       </section>
       {studio&&<>
         <section className={panel}><h2 className="text-lg font-semibold">Team members</h2>
-          {team.members.map(member=><div key={member.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
-            <div className="min-w-0 break-words"><p className="font-medium">{member.name||"Playtested member"} <span className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-emerald-200">{titles[member.role]}</span></p><p className="text-xs text-zinc-400">{member.email&&member.email+" · "}Joined {date(member.joined_at)}</p></div>
+          {team.members.map(member=><div key={member.id} className="flex min-h-20 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-white/10 py-3">
+            <div className="min-w-0 flex-1 basis-48">
+              <p className="flex flex-wrap items-center gap-2 font-medium"><span className="min-w-0 [overflow-wrap:anywhere]">{member.name||"Playtested member"}</span><span className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-emerald-200">{titles[member.role]}</span></p>
+              <p className="mt-1 text-sm text-zinc-400 [overflow-wrap:anywhere]">{member.email&&member.email+" · "}Joined {date(member.joined_at)}</p>
+            </div>
             {owner&&member.role!=="owner"&&<div className="flex flex-wrap gap-2">
               <select aria-label={"Role for "+(member.name||member.email)} className={input+" w-auto"} disabled={busy} value={member.role} onChange={event=>void change({p_action:"role",p_target:member.id,p_role:event.target.value as Role})}><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
               <button className={button} disabled={busy} onClick={()=>{if(confirm("Remove this member’s studio access?"))void change({p_action:"remove",p_target:member.id});}}>Remove</button>

@@ -7,6 +7,11 @@ select id as viewer from auth.users where email='devtest3@playtested.local' and 
 select id as admin from public.profiles where role='admin' order by id limit 1 \gset
 select id as primary_studio from playtested_studios.studios where owner_id=:'owner' and name='Power Spike Local QA' \gset
 select id as legacy from playtested_studios.studios where owner_id=:'owner' and name='Playtested 123' \gset
+select id as viewer_legacy from playtested_studios.studios where owner_id=:'viewer' and name='Test 1' \gset
+-- Real manual launches can occupy these fixture windows. Age them only inside this test.
+update playtested_studios.launches set launched_at=launched_at-interval '30 days'
+where scope in ('studio:'||:'primary_studio','personal:'||:'owner','personal:'||:'editor2')
+  and launched_at>now()-interval '30 days';
 select g.link_id as original_shared_link
 from playtested_studios.games g
 join public.game_developer_links l on l.id=g.link_id
@@ -46,7 +51,7 @@ set role=case when user_id=:'viewer' then 'viewer' else 'editor' end
 where studio_id=:'primary_studio' and user_id in (:'viewer',:'editor',:'editor2');
 set local role authenticated;
 select set_config('request.jwt.claim.sub',:'owner',true);
-select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Free studio')$q$,'ownership limit');
+select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Free studio')$q$,'membership limit');
 select (public.get_my_developer_plan()->>'free_campaigns_used')::integer as personal_before \gset
 select (public.get_studio_developer_plan(:'primary_studio')->>'studio_enabled')::boolean as primary_enabled \gset
 select (public.get_studio_developer_plan(:'legacy')->>'studio_enabled')::boolean as legacy_enabled \gset
@@ -62,6 +67,12 @@ select public.change_studio('assign',p_studio=>:'primary_studio',p_target=>:'s_l
 select public.change_studio('assign',p_studio=>:'primary_studio',p_target=>:'next_link');
 select pg_temp.expect_denial(format('select public.change_studio(''assign'',p_studio=>%L,p_target=>%L)',:'legacy',:'s_link'),'duplicate');
 select set_config('request.jwt.claim.sub',:'viewer',true);
+select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Viewer studio')$q$,'membership limit');
+select ((public.get_studio_developer_plan(:'viewer_legacy')->>'available_launches')::int=0) as viewer_legacy_frozen \gset
+\if :viewer_legacy_frozen
+\else
+select 1/0;
+\endif
 select pg_temp.expect_denial($q$select pg_temp.create_draft('6f001900-0000-4000-8000-000000000081')$q$,'relationship|access|permission');
 select set_config('request.jwt.claim.sub',:'editor',true);
 select pg_temp.create_draft('6f001900-0000-4000-8000-000000000081') as studio_campaign \gset
@@ -102,7 +113,7 @@ select public.admin_assign_developer_plan(:'owner','pro','Rollback-only allowanc
 select public.admin_assign_studio_plan(:'primary_studio','pro','Rollback-only Pro report verification');
 select set_config('request.jwt.claim.sub',:'owner',true);
 select pg_temp.expect_denial(format('select pg_temp.change_status(%L,''open'')',:'moved'),'game has a free launch cooldown');
-select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Pro studio')$q$,'ownership limit');
+select pg_temp.expect_denial($q$select public.change_studio('create',p_name=>'Excess Pro studio')$q$,'membership limit');
 select (public.get_pro_feedback_export('6f001900-0000-4000-8000-000000000011',:'primary_studio')->0->>'feedback')='Historical build fixture report.' as studio_report \gset
 \if :studio_report
 \else

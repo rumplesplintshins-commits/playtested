@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
+import { mkdtemp, rmdir, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
@@ -10,19 +10,21 @@ import { chromium, expect } from "playwright/test";
 const backend = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
 assert.equal(backend.origin, "http://127.0.0.1:54341");
 const app = "http://127.0.0.1:3118";
-const [owner] = JSON.parse(await readFile(".backup-tools/developer-teams/credentials.json", "utf8"));
+assert(process.env.LOCAL_STUDIO_SERVICE_KEY,"Use the local service key for the disposable test account");
+const admin = createClient(backend.origin, process.env.LOCAL_STUDIO_SERVICE_KEY, {auth:{persistSession:false}});
+const owner = {email:`studio-name-${randomBytes(8).toString("hex")}@playtested.local`,password:randomBytes(24).toString("base64url")};
 const client = createClient(backend.origin, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {auth:{persistSession:false}});
-const signedIn = await client.auth.signInWithPassword({email:owner.email,password:owner.password});
-assert(!signedIn.error,"Local owner authentication failed");
-
-const created = [];
+let ownerId;
+function removeStudio(id){
+  assert.match(id,/^[0-9a-f-]{36}$/);
+  assert.match(ownerId,/^[0-9a-f-]{36}$/);
+  execFileSync("docker",["exec","-i","supabase_db_supabase","psql","-U","postgres","-d","postgres","-X","-v","ON_ERROR_STOP=1"],{input:`delete from playtested_studios.studios where id='${id}' and owner_id='${ownerId}';`,stdio:["pipe","ignore","inherit"]});
+}
 const suffix = randomBytes(2).toString("hex");
 const name50 = "Studio name validation " + suffix.padEnd(27,"X");
 assert.equal(name50.length,50);
 async function studioChange(action,name,studio) {
-  const result=await client.rpc("change_studio",{p_action:action,p_name:name,...(studio?{p_studio:studio}:{})});
-  if(action==="create"&&result.data?.id)created.push(result.data.id);
-  return result;
+  return client.rpc("change_studio",{p_action:action,p_name:name,...(studio?{p_studio:studio}:{})});
 }
 
 const extension = await mkdtemp(join(tmpdir(),"studio-name-zoom-"));
@@ -30,6 +32,13 @@ const manifest = join(extension,"manifest.json");
 const workerFile = join(extension,"worker.js");
 let context;
 try{
+  const {data,error}=await admin.auth.admin.createUser({...owner,email_confirm:true,app_metadata:{local_studio_fixture:true}});
+  assert(!error,error?.message);
+  ownerId=data.user.id;
+  const profile=await admin.from("profiles").upsert({id:ownerId,display_name:"Studio name fixture",role:"developer",roles:["developer"]});
+  assert(!profile.error,profile.error?.message);
+  const signedIn=await client.auth.signInWithPassword(owner);
+  assert(!signedIn.error,"Local owner authentication failed");
   for(const invalid of ["","   ","ab","x".repeat(51),"one\ttwo",null,"🙂".repeat(26)]){
     const result=await studioChange("create",invalid);
     assert.equal(result.error?.code,"22023");
@@ -37,16 +46,17 @@ try{
   }
   const minimum=await studioChange("create","\u00a0abc \t");
   assert(!minimum.error,minimum.error?.message);
-  const max=await studioChange("create",name50);
-  assert(!max.error,max.error?.message);
   for(const invalid of ["","   ","ab","x".repeat(51),"one\ttwo",null]){
     assert.equal((await studioChange("rename",invalid,minimum.data.id)).error?.code,"22023");
   }
   assert(!(await studioChange("rename","   "+name50+"  ",minimum.data.id)).error);
   assert(!(await studioChange("rename","  XYZ  ",minimum.data.id)).error);
-  const {data:studios}=await client.rpc("get_my_studios");
-  assert.equal(studios.find(s=>s.id===minimum.data.id).name,"XYZ");
-  assert.equal(studios.find(s=>s.id===max.data.id).name,name50);
+  assert.equal((await client.rpc("get_my_studios")).data[0].name,"XYZ");
+  removeStudio(minimum.data.id);
+  const max=await studioChange("create",name50);
+  assert(!max.error,max.error?.message);
+  assert.equal((await client.rpc("get_my_studios")).data[0].name,name50);
+  removeStudio(max.data.id);
 
   await writeFile(manifest,JSON.stringify({manifest_version:3,name:"Studio name zoom test",version:"1.0",permissions:["tabs"],background:{service_worker:"worker.js"}}));
   await writeFile(workerFile,"chrome.runtime.onInstalled.addListener(() => {});");
@@ -81,7 +91,6 @@ try{
   const response=await createdResponse;
   assert(response.ok());
   const newStudio=await response.json();
-  created.push(newStudio.id);
   await expect(page.getByRole("heading",{name:"UI3",exact:true})).toBeVisible();
 
   const renameInput=page.getByLabel("Studio name",{exact:true});
@@ -99,8 +108,7 @@ try{
   await renameButton.click();
   await expect(page.getByRole("heading",{name:"UI4",exact:true})).toBeVisible();
 
-  const legacy=studios.find(item=>item.id==="6f001900-0000-4000-8000-000000000051");
-  const studioToCheck=legacy??{id:newStudio.id,name:"UI4"};
+  const studioToCheck={id:newStudio.id,name:"UI4"};
   await page.goto(app+"/my-team?studio="+studioToCheck.id);
   const worker=context.serviceWorkers()[0]??await context.waitForEvent("serviceworker");
   async function zoom(value){
@@ -120,8 +128,8 @@ try{
   await context?.close();
   await Promise.all([manifest,workerFile].map(file=>unlink(file).catch(error=>{if(error.code!=="ENOENT")throw error;})));
   await rmdir(extension);
-  for(const id of created){
-    assert.match(id,/^[0-9a-f-]{36}$/);
-    execFileSync("docker",["exec","-i","supabase_db_supabase","psql","-U","postgres","-d","postgres","-X","-v","ON_ERROR_STOP=1"],{input:`delete from playtested_studios.studios where id='${id}' and owner_id in (select id from auth.users where email='studio-owner@playtested.local' and raw_app_meta_data->>'local_studio_fixture'='true');`,stdio:["pipe","ignore","inherit"]});
+  if(ownerId){
+    const {error}=await admin.auth.admin.deleteUser(ownerId);
+    assert(!error,error?.message);
   }
 }

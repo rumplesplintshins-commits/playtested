@@ -17,4 +17,8 @@ The seed uses the local Auth admin API to confirm six test accounts without emai
 4. Sign into each account and accept through the notification bell or [Manage Team](http://127.0.0.1:3118/my-team). Open the studio in My Games. The fixture has two builds, Alpha 0.4 and Alpha 0.5, with different accepted feedback.
 5. Remove a colleague from Manage Team, then reload the colleague’s workspace to verify access is gone.
 
+Free accounts have one studio place across Owner, Editor and Viewer roles. Pro entitlements currently allow two places across these roles, pending broader Pro feature design. An active invitation reserves a place until accepted, declined, cancelled or expired. Personal games and campaign allowances are separate.
+
+Existing memberships over the limit remain accessible. Only the earliest associations within the account limit are eligible for new Tester Hub launches. To resolve a local legacy case such as Developer Test 3, the user can leave a studio they joined, or that studio’s owner can remove their membership with agreement. Both actions preserve games and feedback. Studio owners cannot leave their own studio. If an account owns multiple legacy studios, retain them for local testing until a supported archive workflow is available.
+
 The browser test signs into all six accounts and removes its memberships when finished. Use it in the fixture workspace before starting a manual invitation session. This fixture must stay local.

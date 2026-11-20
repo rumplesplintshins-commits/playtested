@@ -12,6 +12,35 @@ const identities=JSON.parse(await readFile(".backup-tools/developer-teams/creden
 const [owner,...colleagues]=identities;
 const proStudio=process.argv.includes("--pro-studio");
 const browser=await chromium.launch({headless:true});
+
+async function checkTeam(page,index){
+  await page.goto(origin+"/my-team");
+  const selector=page.getByRole("combobox",{name:"Studio workspace"});
+  await expect(selector).toBeEnabled();
+  if(await selector.inputValue()!==await selector.locator("option").filter({hasText:"Power Spike Local QA"}).getAttribute("value")){
+    await selector.selectOption({label:"Power Spike Local QA"});
+  }
+  await expect(page.getByRole("heading",{name:"Power Spike Local QA"})).toBeVisible();
+  await expect(page.getByText(/Free accounts can belong to one studio/)).toBeVisible();
+  await expect(page.getByLabel("New studio name")).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Create studio",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Retry",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("heading",{name:"Team members"})).toBeVisible();
+  await expect(page.getByText(/Joined /).first()).toBeVisible();
+  await expect(page.getByRole("link",{name:"Open studio My Games"})).toBeVisible();
+  if(index===0){
+    await expect(page.getByRole("heading",{name:"Invite colleagues"})).toBeVisible();
+    await expect(page.getByRole("button",{name:"Leave studio",exact:true})).toHaveCount(0);
+  }else{
+    await expect(page.getByRole("heading",{name:"Invite colleagues"})).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Leave studio",exact:true})).toBeVisible();
+  }
+  if(index===3){
+    await expect(selector.getByRole("option",{name:"Test 1"})).toHaveCount(1);
+    await expect(page.getByText(/members .* Viewer$/)).toBeVisible();
+  }
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+}
 async function signIn(account,width=1280){
   const context=await browser.newContext({viewport:{width,height:900},reducedMotion:"reduce"});
   const page=await context.newPage();
@@ -34,7 +63,7 @@ async function signIn(account,width=1280){
   return page;
 }
 
-async function verifyZoom(sourcePage){
+async function verifyZoom(sourcePage,index){
   const directory=await mkdtemp(join(tmpdir(),"studio-zoom-"));
   const manifest=join(directory,"manifest.json");
   const workerFile=join(directory,"worker.js");
@@ -57,6 +86,7 @@ async function verifyZoom(sourcePage){
 
     await checkStudio(page);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    if(!proStudio)await checkTeam(page,index);
   }finally{
     await context?.close();
     await unlink(workerFile);
@@ -69,7 +99,8 @@ async function checkStudio(page){
   await expect(plan(page)).toContainText("Power Spike Local QA");
   await expect(plan(page)).toContainText(proStudio?"Studio Pro":"Studio Free");
   await expect(plan(page)).toContainText("Shared across all authorised studio members.");
-  const viewFeedback=page.getByRole("button",{name:"View feedback"});
+  const game=page.getByRole("button",{name:/Ashen Hollow \(local fixture\)/});
+  const viewFeedback=game.locator("..").getByRole("button",{name:"View feedback"});
   if(!await page.getByRole("region",{name:"Results snapshot"}).isVisible()) await viewFeedback.click({timeout:10000});
   await expect(page.getByRole("region",{name:"Results snapshot"})).toBeVisible();
   const print=page.getByRole("button",{name:"Print feedback",exact:true});
@@ -99,10 +130,11 @@ try{
     await expect(page.getByRole("button",{name:"Print feedback",exact:true})).toHaveCount(0);
     await page.getByRole("combobox",{name:"Workspace"}).selectOption({label:"Power Spike Local QA"});
     await checkStudio(page);
-    if(index===0)await verifyZoom(page);
+    if(index===0||(!proStudio&&index===3))await verifyZoom(page,index);
     await page.getByRole("combobox",{name:"Workspace"}).selectOption({label:"Personal games"});
     await expect(plan(page)).toContainText("Your allowance applies across your personal games.");
     await expect(page.getByRole("button",{name:/Ashen Hollow \(local fixture\)/})).toHaveCount(0);
+    if(!proStudio)await checkTeam(page,index);
     await page.context().close();
   }
   console.log(proStudio
