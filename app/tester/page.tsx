@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import { GAME_GENRES, matchesGenrePreferences } from "../../lib/genres";
 import { platformDisplayName, platformOf } from "../../lib/platforms";
+import { preserveTesterGamePlatforms, testerGamePlatformKey } from "../../lib/tester-game-platforms";
 import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
 
@@ -756,6 +757,10 @@ function TesterHistoryPrivateEvidence({ testId }: { testId: string }) {
 
 function TesterPage() {
   const [games, setGames] = useState<TestGame[]>([]);
+  const platformCacheRef = useRef<Map<string,string>>(new Map());
+  const setGamesWithPlatforms = useCallback((incoming: TestGame[]) => {
+    setGames(previous => preserveTesterGamePlatforms(incoming, previous, platformCacheRef.current));
+  }, []);
   useEffect(()=>{const campaign=new URLSearchParams(window.location.search).get("campaign");if(campaign)document.getElementById("tester-campaign-"+campaign)?.scrollIntoView({block:"center"});},[games]);
   const [reviewHistory,setReviewHistory]=useState<{id:number;test_id:string;kind:string;reason:string;xp_delta:number;rubric_version?:number|null;quality_score?:number|null;actual_xp_award?:number|null;created_at?:string}[]>([]);
   const [reviewHistoryError,setReviewHistoryError]=useState("");
@@ -901,9 +906,9 @@ function TesterPage() {
     if(result.error||!result.data?.claims)return;
     setClaims(result.data.claims);if(result.data.server_now)setClock(receivedReservationClock(result.data.server_now));
     setReviewRevision(value=>value+1);
-    const catalogue=await client.rpc("get_discoverable_community_test_games");if(!catalogue.error)setGames(catalogue.data||[]);
+    const catalogue=await client.rpc("get_discoverable_community_test_games");if(!catalogue.error)setGamesWithPlatforms((catalogue.data || []) as TestGame[]);
     const ids=result.data.claims.map((claim:TestClaim)=>claim.id);if(ids.length){const history=await client.from("test_review_events").select("*").in("test_id",ids).order("created_at",{ascending:false}).order("id",{ascending:false});if(!history.error)setReviewHistory(history.data||[]);}
-  },[]);
+  },[setGamesWithPlatforms]);
   useEffect(()=>{const refresh=()=>{void refreshFeedbackState();};window.addEventListener("playtested-notifications-changed",refresh);window.addEventListener("focus",refresh);return()=>{window.removeEventListener("playtested-notifications-changed",refresh);window.removeEventListener("focus",refresh);};},[refreshFeedbackState]);
   const router = useRouter();
   const activeClaimCount = claims.filter(
@@ -942,6 +947,7 @@ function TesterPage() {
         loadedAccountRef.current = null;
         setActiveTestId(null);
         setDraftOwnerId(null);
+        platformCacheRef.current.clear();
         setGames([]);
         setClaims([]);
         setReviewHistory([]);
@@ -1031,15 +1037,13 @@ function TesterPage() {
 
       // Match the same title + developer pair used for public detail navigation.
       // If different approved records disagree on platform, leave it unknown.
-      const nameKey = (title: string, developer: string) =>
-        JSON.stringify([title.trim().toLowerCase(), developer.trim().toLowerCase()]);
       const knownPlatforms = new Map<string, string>();
       const ambiguousPlatforms = new Set<string>();
       if (!approvedPlatformsError) {
         for (const row of approvedPlatformRows ?? []) {
           const validPlatform = platformOf(row.platform);
           if (!validPlatform || !row.title || !row.developer_name) continue;
-          const key = nameKey(row.title, row.developer_name);
+          const key = testerGamePlatformKey(row.title, row.developer_name);
           if (knownPlatforms.has(key) && knownPlatforms.get(key) !== validPlatform) {
             ambiguousPlatforms.add(key);
           } else if (!ambiguousPlatforms.has(key)) {
@@ -1048,12 +1052,8 @@ function TesterPage() {
         }
       }
       for (const key of ambiguousPlatforms) knownPlatforms.delete(key);
-      const platformReadyGames = ((gamesData ?? []) as TestGame[]).map(game => ({
-        ...game,
-        platform: platformOf(game.platform) ??
-          knownPlatforms.get(nameKey(game.title, game.developer_name)) ?? null,
-      }));
-      setGames(platformReadyGames);
+      if (!approvedPlatformsError) platformCacheRef.current = knownPlatforms;
+      setGamesWithPlatforms((gamesData ?? []) as TestGame[]);
       if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
       const mediaResult=await supabase.rpc("get_my_testing_activity_media");
       if(!active)return;
@@ -1088,7 +1088,7 @@ function TesterPage() {
       active = false;
       authListener.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, setGamesWithPlatforms]);
 
   function clearStaleTestingActivityDeepLink() {
     if (/^#testing-activity-[0-9a-f-]{36}$/i.test(window.location.hash)) {
@@ -1180,7 +1180,7 @@ function TesterPage() {
     const confirmed=await supabase.rpc("get_my_test_reservations");
     if(!confirmed.error&&confirmed.data?.server_now)setClock(receivedReservationClock(confirmed.data.server_now));
     const catalogue=await supabase.rpc("get_discoverable_community_test_games");
-    if(!catalogue.error&&Array.isArray(catalogue.data))setGames(catalogue.data);
+    if(!catalogue.error&&Array.isArray(catalogue.data))setGamesWithPlatforms(catalogue.data as TestGame[]);
     setClaims((previous) => [
       ...previous.filter((item) => item.id !== createdClaim.id),
       createdClaim as TestClaim,
