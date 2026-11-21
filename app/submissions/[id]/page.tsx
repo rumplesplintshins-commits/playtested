@@ -391,7 +391,7 @@ export default async function SubmissionPage({
           </div>
         </section>
 
-        <GamePcRequirements id={id}/>
+        <GamePcRequirements id={id} platform={game.platform}/>
         {/* INTERACTIVE BUILD-SPECIFIC RECEPTION */}
         <CommunityReception
           builds={receptionBuilds}
