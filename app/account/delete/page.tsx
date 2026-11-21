@@ -5,142 +5,199 @@ import Link from "next/link";
 import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase";
 
-type RequestState = "checking" | "ready" | "submitting" | "requested";
+type DeleteState = "checking" | "ready" | "deleting" | "error";
 
 export default function DeleteAccountPage() {
-  const [state, setState] = useState<RequestState>("checking");
+  const [state, setState] = useState<DeleteState>("checking");
   const [confirmation, setConfirmation] = useState("");
-  const [requestedAt, setRequestedAt] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
 
     async function load() {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) {
+      const { data, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !data.user) {
         window.location.href = "/login?next=/account/delete";
         return;
       }
 
-      const { data } = await supabase
-        .from("account_deletion_requests")
-        .select("requested_at,status")
-        .in("status", ["pending", "processing"])
-        .order("requested_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setRequestedAt(data.requested_at);
-        setState("requested");
-      } else {
-        setState("ready");
-      }
+      setState("ready");
     }
 
     void load();
   }, []);
 
-  async function requestDeletion() {
-    if (confirmation !== "DELETE") return;
-
-    setState("submitting");
-    setError("");
-
-    const supabase = createClient();
-    const { data, error: requestError } = await supabase.rpc(
-      "request_account_deletion"
-    );
-
-    if (requestError) {
-      setError(requestError.message || "Unable to submit the deletion request.");
-      setState("ready");
+  async function deleteAccount() {
+    if (confirmation !== "DELETE" || state === "deleting") {
       return;
     }
 
-    const result = Array.isArray(data) ? data[0] : data;
-    setRequestedAt(result?.requested_at ?? new Date().toISOString());
-    setState("requested");
+    const confirmed = window.confirm(
+      "Permanently delete your Playtested account? This cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setState("deleting");
+    setError("");
+
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          confirmation: "DELETE",
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { deleted?: boolean; error?: string }
+        | null;
+
+      if (!response.ok || !result?.deleted) {
+        setError(
+          result?.error ??
+            "Your account could not be deleted. No further action was taken."
+        );
+        setState("error");
+        return;
+      }
+
+      // The Auth identity has already been removed server-side.
+      // Clear any remaining browser-side Supabase session state.
+      const supabase = createClient();
+
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // The server has already deleted the account.
+        // Failure to clear an already-invalid local session must not
+        // turn a successful deletion into an apparent failure.
+      }
+
+      window.location.replace("/?accountDeleted=1");
+    } catch {
+      setError(
+        "We could not complete your account deletion. Please try again."
+      );
+      setState("error");
+    }
   }
+
+  const busy = state === "deleting";
 
   return (
     <main className="min-h-screen bg-[#090b0a] text-white">
       <SiteHeader />
+
       <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">
           Account settings
         </p>
+
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
           Delete your account
         </h1>
 
         <div className="mt-8 rounded-2xl border border-red-400/25 bg-[#0d110f] p-6 sm:p-8">
-          {state === "checking" && (
-            <p className="text-sm text-zinc-400">Checking your account...</p>
-          )}
-
-          {state === "requested" && (
-            <>
-              <h2 className="text-xl font-semibold">Deletion request received</h2>
-              <p className="mt-3 leading-7 text-zinc-300">
-                Your authenticated account-deletion request is recorded
-                {requestedAt ? ` from ${new Date(requestedAt).toLocaleString()}` : ""}.
-                Playtested will process the account and associated personal data in
-                line with the Privacy Notice. Records that need to remain for service
-                integrity, security or legal reasons will be removed from your account
-                or de-identified where appropriate rather than kept unnecessarily linked
-                to you.
-              </p>
-              <p className="mt-4 text-sm text-zinc-400">
-                This request does not immediately sign you out or erase the account.
-                That is deliberate while the deletion is processed safely.
-              </p>
-            </>
-          )}
-
-          {(state === "ready" || state === "submitting") && (
+          {state === "checking" ? (
+            <p className="text-sm text-zinc-400">
+              Checking your account...
+            </p>
+          ) : (
             <>
               <h2 className="text-xl font-semibold text-red-300">
-                This is a serious request
+                Permanently delete your Playtested account
               </h2>
+
               <p className="mt-3 leading-7 text-zinc-300">
-                Requesting deletion starts the process of closing your Playtested
-                account and removing or de-identifying personal data associated with it.
-                Completed playtest and game records may need to remain in a de-identified
-                form so existing results are not corrupted.
+                Deleting your account removes your sign-in identity and
+                account-specific personal data from Playtested.
               </p>
 
+              <p className="mt-3 leading-7 text-zinc-300">
+                Unfinished testing activity will be released. Completed
+                playtest, game and verification records may be retained in a
+                de-identified form where they are needed to preserve existing
+                testing results and service integrity.
+              </p>
+
+              <div className="mt-5 rounded-xl border border-red-400/20 bg-red-500/5 p-4">
+                <p className="text-sm font-semibold text-red-200">
+                  This action cannot be undone.
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                  You will lose access to this account after deletion. If you
+                  later return to Playtested, you will need to create a new
+                  account.
+                </p>
+              </div>
+
               <label className="mt-6 block text-sm font-semibold text-zinc-200">
-                Type <span className="font-mono text-red-300">DELETE</span> to confirm
+                Type{" "}
+                <span className="font-mono text-red-300">DELETE</span>{" "}
+                to confirm
+
                 <input
                   value={confirmation}
-                  onChange={(event) => setConfirmation(event.target.value)}
+                  onChange={(event) => {
+                    setConfirmation(event.target.value);
+
+                    if (state === "error") {
+                      setState("ready");
+                      setError("");
+                    }
+                  }}
+                  disabled={busy}
                   autoComplete="off"
-                  className="mt-2 w-full rounded-lg border border-white/15 bg-[#090b0a] px-4 py-3 text-white outline-none focus:border-red-400/60"
+                  spellCheck={false}
+                  className="mt-2 w-full rounded-lg border border-white/15 bg-[#090b0a] px-4 py-3 text-white outline-none focus:border-red-400/60 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </label>
 
-              {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+              {error && (
+                <div
+                  role="alert"
+                  className="mt-4 rounded-lg border border-red-400/20 bg-red-500/5 px-4 py-3 text-sm text-red-300"
+                >
+                  {error}
+                </div>
+              )}
 
               <button
                 type="button"
-                onClick={requestDeletion}
-                disabled={confirmation !== "DELETE" || state === "submitting"}
+                onClick={deleteAccount}
+                disabled={confirmation !== "DELETE" || busy}
                 className="mt-5 rounded-lg bg-red-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {state === "submitting" ? "Submitting..." : "Request account deletion"}
+                {busy
+                  ? "Deleting account..."
+                  : "Permanently delete account"}
               </button>
+
+              <p className="mt-4 text-xs leading-5 text-zinc-500">
+                You will be asked for one final confirmation before deletion
+                begins.
+              </p>
             </>
           )}
         </div>
 
-        <Link
-          href="/account"
-          className="mt-6 inline-block text-sm font-semibold text-[#77f29b] hover:underline"
-        >
-          Back to your account
-        </Link>
+        {!busy && (
+          <Link
+            href="/account"
+            className="mt-6 inline-block text-sm font-semibold text-[#77f29b] hover:underline"
+          >
+            Back to your account
+          </Link>
+        )}
       </div>
     </main>
   );
