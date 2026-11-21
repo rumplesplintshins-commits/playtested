@@ -16,6 +16,7 @@ import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspa
 import type {DeveloperPlan} from "../components/DeveloperPlan";
 import {submissionIssues,submissionReviewPresentation} from "../../lib/submission-completeness";
 import { createClient } from "../../lib/supabase-server";
+import { platformOf, platformDisplayName } from "@/lib/platforms";
 
 type ClaimStatus =
   | "Pending"
@@ -244,6 +245,8 @@ type DeveloperReception = {
   averageHoursPlayed: number | null;
 };
 
+type GameCardMetadata = {title:string;developerName:string;genre:string;imageUrl:string|null;steamAppId:string|null;platform:string|null};
+
 type LinkedGame = {
   listingNotice?: string;
   approvedClaimIds: string[];
@@ -256,6 +259,7 @@ type LinkedGame = {
   gameTitle: string;
   developerName: string;
   genre: string;
+  platform: string | null;
   relationship: string;
   sourceType:
     | "Imported Steam game"
@@ -805,11 +809,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     )
   );
 
+  const publishedPlatformIds = Array.from(new Set([...approvedIds, ...submissionIds]));
   const gameDetailsPromise = Promise.all([
     importedIds.length > 0
       ? supabase
           .from("imported_games")
-          .select("id, title, developer_name, genre, image_url, steam_app_id")
+          .select("id, title, developer_name, genre, image_url, steam_app_id, platform")
           .in("id", importedIds)
       : Promise.resolve({
           data: [] as {
@@ -839,7 +844,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     submissionIds.length > 0
       ? supabase
           .from("game_submissions")
-          .select("id, title, developer_name, genre, image_url, steam_app_id")
+          .select("id, title, developer_name, genre, image_url, steam_app_id, platform")
           .in("id", submissionIds)
       : Promise.resolve({
           data: [] as {
@@ -851,8 +856,13 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
           }[],
           error: null,
         }),
+    // The owner-scoped approved-game RPC omits platform; this read-only lookup
+    // runs in parallel and also covers shared studio games.
+    publishedPlatformIds.length
+      ? supabase.from("approved_games").select("id, platform").in("id", publishedPlatformIds)
+      : Promise.resolve({data: [] as {id:string;platform:string|null}[], error: null}),
   ]);
-  const [{data:activityRows,error:activityError}, [importedResult,approvedResult,submissionResult]] =
+  const [{data:activityRows,error:activityError}, [importedResult,approvedResult,submissionResult,publishedPlatformResult]] =
     await Promise.all([activityPromise, gameDetailsPromise]);
   if (activityError) return <WorkspaceRetry message="Could not load submission activity. Please retry."/>;
   const latestActivity = new Map<string, string>();
@@ -880,7 +890,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     );
   }
 
-  const importedMap = new Map(
+  const publishedPlatforms = new Map<string,string>();
+  for (const row of publishedPlatformResult.data ?? []) {
+    const value=platformOf(row.platform);
+    if(value)publishedPlatforms.set(row.id,value);
+  }
+  const importedMap = new Map<string,GameCardMetadata>(
     (importedResult.data ?? []).map((game) => [
       game.id,
       {
@@ -890,11 +905,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
         steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
+        platform: platformOf("platform" in game ? game.platform : null) ?? "steam",
       },
     ])
   );
 
-  const approvedMap = new Map(
+  const approvedMap = new Map<string,GameCardMetadata>(
     ((approvedResult.data ?? []) as {id:string;title:string|null;developer_name:string|null;genre:string|null;image_url:string|null;steam_app_id:string|null}[]).map((game) => [
       game.id,
       {
@@ -904,11 +920,12 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
         steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
+        platform: publishedPlatforms.get(game.id) ?? null,
       },
     ])
   );
 
-  const submissionMap = new Map(
+  const submissionMap = new Map<string,GameCardMetadata>(
     (submissionResult.data ?? []).map((game) => [
       game.id,
       {
@@ -918,13 +935,15 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
         genre: game.genre ?? "Genre not listed",
         imageUrl: game.image_url ?? null,
         steamAppId: "steam_app_id" in game && /^[0-9]+$/.test(String(game.steam_app_id||"")) ? String(game.steam_app_id) : null,
+        platform: platformOf("platform" in game ? game.platform : null) ?? publishedPlatforms.get(game.id) ?? null,
       },
     ])
   );
 
   for(const row of studioId ? studio?.listings ?? [] : []) {
     const map = row.kind === "imported" ? importedMap : row.kind === "approved" ? approvedMap : submissionMap;
-    map.set(row.id,{title:row.title||"Unknown game",developerName:row.developer_name||"Unknown developer",genre:row.genre||"Genre not listed",imageUrl:row.image_url,steamAppId:row.steam_app_id});
+    const existing=map.get(row.id);
+    map.set(row.id,{title:row.title||"Unknown game",developerName:row.developer_name||"Unknown developer",genre:row.genre||"Genre not listed",imageUrl:row.image_url,steamAppId:row.steam_app_id,platform:existing?.platform??publishedPlatforms.get(row.id)??(row.kind==="imported"?"steam":null)});
   }
 
   const claims: DeveloperClaim[] = rawClaims.map(
@@ -988,6 +1007,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
           developerName:
             target?.developerName ?? "Unknown developer",
           genre: target?.genre ?? "Genre not listed",
+          platform: target?.platform ?? "steam",
           imageUrl: target?.imageUrl ?? null,
           relationship: link.relationship,
           sourceType: "Imported Steam game" as const,
@@ -1013,6 +1033,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
           developerName:
             target?.developerName ?? "Unknown developer",
           genre: target?.genre ?? "Genre not listed",
+          platform: target?.platform ?? null,
           imageUrl: target?.imageUrl ?? null,
           relationship: link.relationship,
           sourceType: "Approved game" as const,
@@ -1037,6 +1058,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
         developerName:
           target?.developerName ?? "Unknown developer",
         genre: target?.genre ?? "Genre not listed",
+        platform: target?.platform ?? null,
         imageUrl: target?.imageUrl ?? null,
         relationship: link.relationship,
         sourceType: "Submitted game" as const,
@@ -1094,13 +1116,13 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
     const playtests=Array.from(new Map([...previous.playtests,...game.playtests].map(p=>[p.id,p])).values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime());
     const active=playtests.find(p=>p.status!=="closed");
     const representative=active&&game.playtests.some(p=>p.id===active.id)?game:previous;
-    groups.set(key,{...representative,approvedClaimIds:[...new Set([...previous.approvedClaimIds,...game.approvedClaimIds])],playtests,latestPlaytest:active||playtests[0]||null,currentReception:representative.currentReception||previous.currentReception||game.currentReception});return groups;
+    groups.set(key,{...representative,platform:representative.platform??previous.platform??game.platform,approvedClaimIds:[...new Set([...previous.approvedClaimIds,...game.approvedClaimIds])],playtests,latestPlaytest:active||playtests[0]||null,currentReception:representative.currentReception||previous.currentReception||game.currentReception});return groups;
   },new Map<string,LinkedGame>()).values());
 
   for(let start=0;start<linkedGames.length;start+=12){
     const batch=linkedGames.slice(start,start+12);
     const changes=await listingUpdates(supabase,batch.map(game=>({kind:game.importedGameId?"imported":game.approvedGameId?"approved":"submission",id:(game.importedGameId||game.approvedGameId||game.submissionId)!})));
-    for(const game of batch){const update=changes?.find(row=>row.id===(game.importedGameId||game.approvedGameId||game.submissionId));if(update){game.gameTitle=update.fields.title||game.gameTitle;game.developerName=update.fields.developer_name||game.developerName;game.genre=update.fields.genre||game.genre;game.imageUrl=Object.hasOwn(update.fields,"image_url")?update.fields.image_url:game.imageUrl;game.listingNotice=listingNotice(update);}}
+    for(const game of batch){const update=changes?.find(row=>row.id===(game.importedGameId||game.approvedGameId||game.submissionId));if(update){game.gameTitle=update.fields.title||game.gameTitle;game.developerName=update.fields.developer_name||game.developerName;game.genre=update.fields.genre||game.genre;if(Object.hasOwn(update.fields,"platform"))game.platform=platformOf(update.fields.platform);game.imageUrl=Object.hasOwn(update.fields,"image_url")?update.fields.image_url:game.imageUrl;game.listingNotice=listingNotice(update);}}
   }
   const developerXp =
     typeof profile.developer_xp === "number"
@@ -1128,7 +1150,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
 
   return <DeveloperWorkspace key={studioId} initialPlan={initialPlan} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
+ games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,platformLabel:platformDisplayName(game.platform),status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
               const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
@@ -1142,7 +1164,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
               >
                 <header className="cursor-pointer list-none p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex min-w-0 flex-wrap items-start gap-4">
                     <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30">
                       {game.imageUrl ? (
                         <img
@@ -1158,8 +1180,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
                       )}
                     </div>
 
-                    <div className="min-w-0">
-                      <h3 className="text-xl font-semibold">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="break-words text-xl font-semibold [overflow-wrap:anywhere]">
                         {game.gameTitle}
                       </h3>
 
@@ -1167,9 +1189,10 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
                         {game.developerName}
                       </p>
 
-                      <p className="mt-2 text-sm text-zinc-500">
-                        {game.genre}
-                      </p>
+                      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+                        <span className="break-words">{game.genre}</span>
+                        <span className="inline-flex max-w-full items-center rounded-md border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-2 py-0.5 text-xs font-medium text-[#b9f9ca]">{platformDisplayName(game.platform) ?? "Platform not listed"}</span>
+                      </div>
                     </div>
                   </div>
 
