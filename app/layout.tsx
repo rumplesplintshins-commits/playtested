@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Rajdhani, Inter } from "next/font/google";
 import "./globals.css";
 import SiteFooter from "./components/SiteFooter";
+import { SiteHeaderProvider } from "./components/SiteHeader";
 import ToastHost from "./components/ToastHost";
 import PrivacyStorageMaintenance from "./components/PrivacyStorageMaintenance";
 import {publicMetadata,SITE_ORIGIN,SITE_TITLE,SITE_DESCRIPTION} from "../lib/seo";
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
-        {children}
+        <SiteHeaderProvider>{children}</SiteHeaderProvider>
         <SiteFooter />
         <Suspense fallback={null}><PrivacyAnalytics /></Suspense>
         <ToastHost />
