@@ -18,6 +18,7 @@ import {testerRankPresentation} from "../../../lib/tester-rank";
 import PublicGameGuides from "@/app/components/PublicGameGuides";
 import {serializeJsonLd,videoGameStructuredData} from "@/lib/seo";
 import GameProfileBreadcrumb from "@/app/components/GameProfileBreadcrumb";
+import { platformDisplayName } from "@/lib/platforms";
 
 export const instant = false;
 
@@ -98,7 +99,7 @@ export default async function SubmissionPage({
   const { data: originalGame, error } = await supabase
     .from("approved_games")
     .select(
-      "id, title, developer_name, genre, description, game_link, image_url, ai_type, ai_areas, ai_explanation, evidence_link"
+      "id, title, developer_name, genre, platform, description, game_link, image_url, ai_type, ai_areas, ai_explanation, evidence_link"
     )
     .eq("id", id)
     .maybeSingle();
@@ -365,10 +366,11 @@ export default async function SubmissionPage({
               <GameShareButton title={game.title || "Untitled game"} path={`/submissions/${id}`} />
             </div>
 
-            <p className="mt-1 text-sm text-zinc-400">
-              By <strong className="font-bold text-zinc-100">{game.developer_name || "Unknown developer"}</strong> ·{" "}
-              {game.genre}
-            </p>
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-400">
+              <span className="min-w-0 break-words">By <strong className="font-bold text-zinc-100">{game.developer_name || "Unknown developer"}</strong></span>
+              <span className="whitespace-nowrap">· {game.genre || "Uncategorised"}</span>
+              <span className="whitespace-nowrap">· <span className={platformDisplayName(game.platform) ? "font-medium text-[#b9f9ca]" : "text-zinc-500"}>{platformDisplayName(game.platform) ?? "Platform not listed"}</span></span>
+            </div>
 
             <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-zinc-300">
               {game.description}

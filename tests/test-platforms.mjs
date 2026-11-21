@@ -4,7 +4,7 @@ import ts from "typescript";
 import {createRequire} from "node:module";
 const require=createRequire(import.meta.url);
 const model={};new Function("exports","require",ts.transpileModule(fs.readFileSync("lib/platforms.tsx","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true,jsx:ts.JsxEmit.ReactJSX}}).outputText)(model,require);
-const {PLATFORMS,Platform,platformBadge,platformOf,legacyPlatform,platformLinkError,PLATFORM_INFO}=model;
+const {PLATFORMS,Platform,platformBadge,platformDisplayName,platformOf,legacyPlatform,platformLinkError,PLATFORM_INFO}=model;
 
 function expectPlatform(name,value){assert.equal(value,name,`expected platform ${name}`);}
 
@@ -20,6 +20,12 @@ assert.equal(platformBadge("steam"),null);
 assert.equal(platformBadge("pc"),null);
 assert.equal(platformBadge(null),null);
 assert.equal(platformBadge(undefined),null);
+
+for (const [input,display] of Object.entries({steam:"Steam",pc:"PC / Other",browser:"Web",roblox:"Roblox",android:"Android",ios:"iPhone / iPad"})) {
+  assert.equal(platformDisplayName(input),display);
+}
+assert.equal(platformDisplayName(null),null);
+assert.equal(platformDisplayName("not-a-platform"),null);
 
 // 3. platformOf narrows; legacyPlatform defaults legacy/unknown to steam.
 for(const p of PLATFORMS)assert.equal(platformOf(p),p);

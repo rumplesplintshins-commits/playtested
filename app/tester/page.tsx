@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase";
 import { GAME_GENRES, matchesGenrePreferences } from "../../lib/genres";
+import { platformDisplayName, platformOf } from "../../lib/platforms";
 import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
 
@@ -102,23 +103,16 @@ function getAccessButtonLabel(accessType: TestAccessType) {
   }
 }
 
-// Agent 2 platform contract integration: six platform values.
-// Browser → Web; Roblox → Roblox; Android/iOS → Mobile; Steam/PC → no special badge.
-// Android and iOS kept distinct for eligibility. Do not invent database values.
-function platformBadge(platform?: string | null) {
-  if (!platform) return null;
-  const p = platform.toLowerCase();
-  if (p === "browser" || p === "web") {
-    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Web</span>;
-  }
-  if (p === "roblox") {
-    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Roblox</span>;
-  }
-  if (p === "android" || p === "ios") {
-    return <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-zinc-300">Mobile</span>;
-  }
-  // Steam/PC: no special badge per Agent 2 contract
-  return null;
+// Display all recorded platforms. Legacy listings without a platform are
+// clearly labelled as unclassified rather than incorrectly labelled Steam.
+function testerPlatformLabel(value?: string | null) {
+  const label = platformDisplayName(value);
+  return <span
+    aria-label={label ? `Platform: ${label}` : "Platform not listed"}
+    className={label
+      ? "inline-flex max-w-full items-center rounded-md border border-[#77f29b]/25 bg-[#77f29b]/[0.045] px-2 py-0.5 text-[11px] font-medium text-[#b9f9ca]"
+      : "inline-flex max-w-full items-center rounded-md border border-white/10 px-2 py-0.5 text-[11px] text-zinc-500"}
+  >{label ?? "Platform not listed"}</span>;
 }
 
 function getAccessInstructions(accessType: TestAccessType) {
@@ -992,6 +986,7 @@ function TesterPage() {
         { data: gamesData, error: gamesError },
         { data: claimsData, error: claimsError },
         { data: progressData, error: progressError },
+        { data: approvedPlatformRows, error: approvedPlatformsError },
       ] = await Promise.all([
         (async () => {
           const discovery = await supabase.rpc("get_discoverable_community_test_games");
@@ -1005,6 +1000,11 @@ function TesterPage() {
           .select("tester_xp, completed_tests")
           .eq("id", user.id)
           .single(),
+        // The existing discovery RPC does not return platform. Approved listings
+        // are public and can be fetched in parallel; no new privileged RPC needed.
+        supabase.from("approved_games")
+          .select("title, developer_name, platform")
+          .not("platform", "is", null),
       ]);
 
       if (!active) return;
@@ -1029,7 +1029,31 @@ function TesterPage() {
         return;
       }
 
-      setGames((gamesData ?? []) as TestGame[]);
+      // Match the same title + developer pair used for public detail navigation.
+      // If different approved records disagree on platform, leave it unknown.
+      const nameKey = (title: string, developer: string) =>
+        JSON.stringify([title.trim().toLowerCase(), developer.trim().toLowerCase()]);
+      const knownPlatforms = new Map<string, string>();
+      const ambiguousPlatforms = new Set<string>();
+      if (!approvedPlatformsError) {
+        for (const row of approvedPlatformRows ?? []) {
+          const validPlatform = platformOf(row.platform);
+          if (!validPlatform || !row.title || !row.developer_name) continue;
+          const key = nameKey(row.title, row.developer_name);
+          if (knownPlatforms.has(key) && knownPlatforms.get(key) !== validPlatform) {
+            ambiguousPlatforms.add(key);
+          } else if (!ambiguousPlatforms.has(key)) {
+            knownPlatforms.set(key, validPlatform);
+          }
+        }
+      }
+      for (const key of ambiguousPlatforms) knownPlatforms.delete(key);
+      const platformReadyGames = ((gamesData ?? []) as TestGame[]).map(game => ({
+        ...game,
+        platform: platformOf(game.platform) ??
+          knownPlatforms.get(nameKey(game.title, game.developer_name)) ?? null,
+      }));
+      setGames(platformReadyGames);
       if(new URLSearchParams(window.location.search).has("campaign")) setGenreFilter("all");
       const mediaResult=await supabase.rpc("get_my_testing_activity_media");
       if(!active)return;
@@ -1320,7 +1344,7 @@ function TesterPage() {
       claim.status === "reviewed" || claim.status === "expired"
   );
 
-  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : (g.platform??"steam")===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
+  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
   const minimisedAvailableGames = availableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
   const expandedAvailableList = availableGames.filter(game => expandedAvailableGames[game.submission_id] !== false);
   useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});const t=setTimeout(()=>setJustClaimedId(null),0);return () => clearTimeout(t);},[justClaimedId,displayedActiveGames]);
@@ -1456,13 +1480,12 @@ function TesterPage() {
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#77f29b]">
                                   {game.genre || "Uncategorised"}
                                 </p>
-                                {game.platform && <span className="ml-2">{platformBadge(game.platform)}</span>}
-
                                 <h3 title={game.title} className="mt-2 line-clamp-2 break-words text-2xl font-bold text-white [overflow-wrap:anywhere]">
                                   {game.title}
                                 </h3>
 
-                                <p className="mt-1 truncate text-sm text-zinc-400">
+                                <div className="mt-2 flex min-h-6 min-w-0 flex-wrap items-center gap-2">{testerPlatformLabel(game.platform)}</div>
+                                <p title={game.developer_name} className="mt-1 truncate text-sm text-zinc-400">
                                   By {game.developer_name}
                                 </p>
 
@@ -1500,13 +1523,13 @@ function TesterPage() {
                           <p className="min-w-0 truncate text-xs uppercase tracking-wider text-[#77f29b]">
                             {game.genre || "Uncategorised"}
                           </p>
-                          {game.platform && <span className="shrink-0">{platformBadge(game.platform)}</span>}
                           </div>
 
                           <h3 title={game.title} className="mt-2 line-clamp-2 h-12 break-words text-xl font-semibold leading-6 [overflow-wrap:anywhere]">
                             {game.title}
                           </h3>
 
+                          <div className="mt-2 flex min-h-6 min-w-0 flex-wrap items-center gap-2">{testerPlatformLabel(game.platform)}</div>
                           <p title={game.developer_name} className="mt-1 truncate text-sm text-zinc-400">
                             By {game.developer_name}
                           </p>
@@ -1792,7 +1815,7 @@ function TesterPage() {
                   </div>
                 </div>
 
-                <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
+                <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Web / Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
                 <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
                 <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible games. Set your interests in Account.":"All games includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
                 <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-2 [&_summary]:text-xs [&_summary]:underline [&_summary]:underline-offset-4" aria-label="Testing information">

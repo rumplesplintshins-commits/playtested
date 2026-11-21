@@ -222,7 +222,7 @@ export default async function GamePage({
               <h1 className="mt-3 text-3xl font-bold md:text-5xl">
                 {importedGame.title || "Untitled game"}
               </h1>
-              <p className="mt-4 text-sm text-zinc-400">By {importedGame.developer_name || "Developer not listed"}</p>
+              <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-400"><span>By {importedGame.developer_name || "Developer not listed"}</span><span className="whitespace-nowrap">· {importedGame.genre || "Uncategorised"}</span><span className="whitespace-nowrap font-medium text-[#b9f9ca]">· Steam</span></p>
               <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-zinc-300">
                 {importedGame.description?.trim() || "No description provided."}
               </p>
@@ -578,9 +578,11 @@ export default async function GamePage({
                   <GameShareButton title={importedGame.title || "Untitled game"} path={`/games/${slug}`} />
                 </div>
 
-                <p className="mt-3 text-lg text-zinc-400">
-                  By <strong className="font-bold text-zinc-100">{importedGame.developer_name || "Unknown developer"}</strong>
-                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-zinc-400">
+                  <span className="min-w-0 break-words">By <strong className="font-bold text-zinc-100">{importedGame.developer_name || "Unknown developer"}</strong></span>
+                  <span className="whitespace-nowrap">· {importedGame.genre || "Uncategorised"}</span>
+                  <span className="whitespace-nowrap font-medium text-[#b9f9ca]">· Steam</span>
+                </div>
 
                 <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-300">
                   {importedGame.description ||

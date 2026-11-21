@@ -27,6 +27,22 @@ export function platformBadge(platform: Platform | null | undefined): "Web" | "R
   return PLATFORM_BADGE[platform] ?? null;
 }
 
+// Public-facing label for every supported platform, including Steam and PC.
+// A missing value stays unclassified rather than being guessed as Steam.
+export const PLATFORM_DISPLAY_NAME: Record<Platform, string> = {
+  steam: "Steam",
+  pc: "PC / Other",
+  browser: "Web",
+  roblox: "Roblox",
+  android: "Android",
+  ios: "iPhone / iPad",
+};
+
+export function platformDisplayName(value: unknown): string | null {
+  const platform = platformOf(value);
+  return platform ? PLATFORM_DISPLAY_NAME[platform] : null;
+}
+
 export interface PlatformInfo {
   value: Platform;
   label: string;

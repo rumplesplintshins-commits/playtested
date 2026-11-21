@@ -1,9 +1,10 @@
 "use client";
 
 import DisclosureControl from "./DisclosureControl";
+import { platformDisplayName } from "@/lib/platforms";
 import { CampaignPlaces } from "./TestingPolicy";
 
-type Game = { submission_id: string; title: string; genre: string; developer_name: string; image_url: string | null };
+type Game = { submission_id: string; title: string; genre: string; developer_name: string; image_url: string | null; platform?: string | null };
 
 export default function MinimisedTestGame({ game, status, onExpand, group }: { game: Game; status?: string; onExpand: () => void; group: "available" | "active" }) {
   return (
@@ -12,6 +13,7 @@ export default function MinimisedTestGame({ game, status, onExpand, group }: { g
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-white" title={game.title}>{game.title}</span>
         <span className="mt-1 block truncate text-xs text-zinc-400" title={`${game.genre || "Other"} · ${game.developer_name}`}>{game.genre || "Other"} · {game.developer_name}</span>
+        <span className="mt-1 block text-xs font-medium text-[#b9f9ca]">{platformDisplayName(game.platform) ?? <span className="text-zinc-500">Platform not listed</span>}</span>
         <span className="mt-1 block">{status ? <span className="line-clamp-2 block text-xs leading-4 text-[#77f29b]">{status}</span> : <CampaignPlaces id={game.submission_id} summaryOnly />}</span>
       </span>
       <span aria-hidden="true" className="flex shrink-0 flex-col items-center gap-1 text-[#77f29b]"><DisclosureControl expanded={false} /><span className="text-[10px] font-medium">Expand</span></span>
