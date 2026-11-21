@@ -181,15 +181,21 @@ export default function SiteHeader() {
   const developerLevel = getLevel(developerXp);
   const navigationReady = !checkingSession && (!loggedIn || profileLoaded);
   const showRoleLinks = navigationReady && loggedIn;
+  // Admin can always reach the developer and tester areas. Keep the header
+  // stable even if a profile role list is temporarily incomplete; all page
+  // and server-side permission checks still apply independently.
+  const isAdmin = loggedIn && role === "admin";
+  const canNavigateDeveloper = showRoleLinks && (isAdmin || roles.includes("developer"));
+  const canNavigateTester = showRoleLinks && (isAdmin || roles.includes("tester"));
   const rankPresentation = testerRankPresentation(testerRank);
-  const showTesterLevel = loggedIn && profileLoaded && roles.includes("tester");
-  const showDeveloperLevel = loggedIn && profileLoaded && roles.includes("developer");
+  const showTesterLevel = canNavigateTester && testerRank !== null;
+  const showDeveloperLevel = canNavigateDeveloper;
 
   const allNavLinks = [
     ...navLinks,
-    ...(showRoleLinks && roles.includes("developer") ? [{ label: "Submit a Game", href: "/submit" }, { label: "My Games", href: "/my-submissions" }] : []),
-    ...(showRoleLinks && roles.includes("tester") ? [{ label: "Tester Hub", href: carryJourney("/tester", journey) }] : []),
-    ...(navigationReady && loggedIn && role === "admin" ? [{ label: "Admin Review", href: "/admin/submissions" }] : []),
+    ...(canNavigateDeveloper ? [{ label: "Submit a Game", href: "/submit" }, { label: "My Games", href: "/my-submissions" }] : []),
+    ...(canNavigateTester ? [{ label: "Tester Hub", href: carryJourney("/tester", journey) }] : []),
+    ...(navigationReady && isAdmin ? [{ label: "Admin Review", href: "/admin/submissions" }] : []),
     ...(navigationReady && loggedIn ? [{ label: "Account", href: "/account" }] : []),
   ];
 

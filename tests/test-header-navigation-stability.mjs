@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const src=readFileSync(new URL("../app/components/SiteHeader.tsx",import.meta.url),"utf8");
+const root=readFileSync(new URL("../app/layout.tsx",import.meta.url),"utf8");
+assert(src.includes('const isAdmin = loggedIn && role === "admin";'),"admin must be evaluated once");
+assert(src.includes('const canNavigateDeveloper = showRoleLinks && (isAdmin || roles.includes("developer"));'),"developer navigation must not disappear for admin");
+assert(src.includes('const canNavigateTester = showRoleLinks && (isAdmin || roles.includes("tester"));'),"tester navigation must not disappear for admin");
+assert(src.includes('...(canNavigateDeveloper ? [{ label: "Submit a Game"'),"developer links must use the stable permission selector");
+assert(src.includes('...(canNavigateTester ? [{ label: "Tester Hub"'),"tester links must use the stable permission selector");
+assert(src.includes('const navigationReady = !checkingSession && (!loggedIn || profileLoaded);'),"all role links must wait on profile");
+assert(root.includes("<SiteHeaderProvider>{children}</SiteHeaderProvider>"),"header state must live above route content");
+assert(src.includes("subscription.unsubscribe()"),"unsubscribe on unmount");
+console.log("PASS: admin header links stay grouped, role links await profile, persistent context remains");
