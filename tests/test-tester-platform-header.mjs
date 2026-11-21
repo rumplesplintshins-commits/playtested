@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const src=readFileSync(new URL("../app/tester/page.tsx",import.meta.url),"utf8");
+const active=src.slice(src.indexOf('data-active-test-header'),src.indexOf('data-active-test-header')+850);
+const available=src.slice(src.indexOf('Minimise game</span>')-210,src.indexOf('Minimise game</span>')+650);
+assert(active.includes('testerPlatformLabel(game.platform)'),"active-test heading displays the platform");
+assert(available.includes('testerPlatformLabel(game.platform)'),"available-game heading displays the platform");
+assert(active.includes('gap-x-2 gap-y-1')&&available.includes('gap-x-2 gap-y-1'),"header labels wrap without colliding with controls");
+assert(src.includes('aria-label="Minimise active test"'),"active minimise button accessible name retained");
+assert(src.includes('aria-label={'),"available card retains explicit accessibility label");
+const normal=src.slice(src.indexOf(') : (\n                        <>\n                          <div className="flex min-h-6'),src.indexOf(') : (\n                        <>\n                          <div className="flex min-h-6')+850);
+assert(!normal.includes('testerPlatformLabel(game.platform)'),"expanded cards do not duplicate the platform below title");
+assert(src.includes('const platformReadyGames'),"recorded platform enrichment preserved");
+console.log("PASS tester platform in active and available card headers, wrapping and controls intact");

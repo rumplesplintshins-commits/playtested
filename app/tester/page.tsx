@@ -1416,7 +1416,10 @@ function TesterPage() {
                   >
                     {claim && activeTestId !== claim.id && (
                       <div data-active-test-header className="flex min-h-10 items-center justify-between gap-4 px-4 py-2">
-                        <span className="text-xs text-zinc-400">Active test</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-xs text-zinc-400">Active test</span>
+                          {testerPlatformLabel(game.platform)}
+                        </div>
                         <button id={`minimise-active-${game.submission_id}`} type="button" aria-label="Minimise active test" aria-expanded={true} onClick={() => minimiseGame(game, "active")} className="inline-flex shrink-0 items-center justify-center rounded p-1 text-zinc-400 hover:text-white focus-visible:outline-2 focus-visible:outline-[#77f29b]">
                           <DisclosureControl expanded />
                         </button>
@@ -1529,7 +1532,6 @@ function TesterPage() {
                             {game.title}
                           </h3>
 
-                          <div className="mt-2 flex min-h-6 min-w-0 flex-wrap items-center gap-2">{testerPlatformLabel(game.platform)}</div>
                           <p title={game.developer_name} className="mt-1 truncate text-sm text-zinc-400">
                             By {game.developer_name}
                           </p>
@@ -1852,7 +1854,11 @@ function TesterPage() {
                     {expandedAvailableList.map((game) => (
                       <div key={game.submission_id} data-tester-game={game.submission_id} className="flex h-full min-w-0 flex-col rounded-xl border border-white/10 bg-white/[0.02]">
                         <button id={`minimise-available-${game.submission_id}`} type="button" aria-label={`Minimise ${game.title}`} aria-expanded={true} aria-controls={`tester-card-${game.submission_id}`} onClick={() => minimiseGame(game, "available")} className="flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-t-xl px-4 py-2 text-left text-xs text-zinc-400 hover:text-white focus-visible:outline-2 focus-visible:outline-[#77f29b]">
-                          <span>Minimise game</span><DisclosureControl expanded />
+                          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                            <span>Minimise game</span>
+                            {testerPlatformLabel(game.platform)}
+                          </span>
+                          <DisclosureControl expanded />
                         </button>
                         <div id={`tester-card-${game.submission_id}`} className="flex min-h-0 min-w-0 flex-1 flex-col p-2 pt-0">{renderGameCard(game)}</div>
                       </div>
