@@ -3,12 +3,13 @@ import {ukDateTime} from "@/lib/uk-date-time";
 import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { needsFeedbackReview, feedbackQualityLabel, feedbackReasonSuggestion, FEEDBACK_QUALITY_CRITERIA, type FeedbackReviewItem } from "@/lib/feedback-review";
 import { QualityGuidance } from "./TestingPolicy";
 
-function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => Promise<void> }) {
+type PrivateDeveloperReason = { test_id: string; reason: string; marked_at: string; developer_id: string };
+function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem; reload: () => Promise<void>; privateReason?: PrivateDeveloperReason }) {
   const [error, setError] = useState("");
   const [rubricAttempt,setRubricAttempt]=useState(0);
   const [criteria, setCriteria] = useState<Record<string, boolean>>({specific:false,examples:false,impact:false,focus:false,takeaway:false});
@@ -86,6 +87,14 @@ function ReviewCard({ item, reload }: { item: FeedbackReviewItem; reload: () => 
       <div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-amber-400/20 px-3 py-1 text-xs">{waitingForDispute ? "Provisional rejection ? place retained" : activeDispute ? "Dispute awaiting review" : needsFeedbackReview(item) ? "Awaiting review" : t.review_outcome}</span>{t.status==="reviewed"&&<DeveloperUsefulnessBadge value={t.feedback_usefulness}/>}</div>
     </div>
     {t.appeal&&<section aria-label="Feedback dispute" className="space-y-2 rounded-lg border border-amber-200/30 p-3 text-sm"><p>Initial rejection: {t.appeal.rejection_reason}</p>{t.appeal.dispute_deadline&&<p>One-dispute deadline: {ukDateTime(t.appeal.dispute_deadline)}</p>}{activeDispute&&<><p className="font-semibold">Additional tester clarification</p><p className="whitespace-pre-wrap break-words">{t.appeal.dispute_text}</p><p>The original campaign place stays occupied until you decide this dispute.</p></>}{waitingForDispute&&<p>Wait for a dispute within 24 hours. Without a dispute, the server finalises rejection automatically. Do not release the place early.</p>}</section>}
+    {t.feedback_usefulness === "not_useful" && privateReason && (
+      <section aria-label="Developer explanation (admin only)" className="min-w-0 space-y-2 rounded-lg border border-amber-300/30 bg-amber-300/[0.045] p-3 sm:p-4">
+        <h4 className="break-words text-sm font-semibold text-amber-100">Developer marked this feedback as Not useful</h4>
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Developer's explanation</p>
+        <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-6 text-zinc-200">{privateReason.reason}</p>
+        <p className="text-xs text-zinc-400">Submitted {ukDateTime(privateReason.marked_at)} · Admin only</p>
+      </section>
+    )}
     <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
@@ -155,6 +164,46 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
 }) {
   const [view, setView] = useState<"pending" | "history">("pending");
   const [notice, setNotice] = useState("");
+  const [privateReasons, setPrivateReasons] = useState<Record<string, PrivateDeveloperReason>>({});
+  const [privateReasonsError, setPrivateReasonsError] = useState("");
+  const [focusedReviewId, setFocusedReviewId] = useState<string | null>(null);
+  const reasonReviewIds = useMemo(
+    () => items.filter(item => !needsFeedbackReview(item) && item.report.feedback_usefulness === "not_useful").map(item => item.report.id),
+    [items]
+  );
+  useEffect(() => {
+    let active = true;
+    if (!reasonReviewIds.length) {
+      setPrivateReasons({});
+      setPrivateReasonsError("");
+      return () => {active=false;};
+    }
+    void createClient().rpc("get_admin_feedback_not_useful_reasons", {p_test_ids: reasonReviewIds}).then(({data,error}) => {
+      if (!active) return;
+      if (error) {
+        setPrivateReasonsError("Private developer explanations could not be loaded. Refresh to retry.");
+        setPrivateReasons({});
+        return;
+      }
+      setPrivateReasons(Object.fromEntries(((data ?? []) as PrivateDeveloperReason[]).map(row => [row.test_id,row])));
+      setPrivateReasonsError("");
+    });
+    return () => {active=false;};
+  }, [reasonReviewIds]);
+  useEffect(() => {
+    const target = window.location.hash.match(/^#report-([0-9a-f-]{36})$/i)?.[1] ?? null;
+    if (target) {
+      setFocusedReviewId(target);
+      setView("history");
+    } else if (new URLSearchParams(window.location.search).get("review") === "reviewed") {
+      setView("history");
+    }
+  }, []);
+  useEffect(() => {
+    if (!focusedReviewId || !items.some(item => item.report.id === focusedReviewId)) return;
+    const timer = window.setTimeout(() => document.getElementById("report-" + focusedReviewId)?.scrollIntoView({block:"center"}),120);
+    return () => window.clearTimeout(timer);
+  }, [focusedReviewId,items]);
   const pending = items.filter(needsFeedbackReview);
   const history = items.filter(item => !needsFeedbackReview(item)).sort((a,b) => { const timeA = Date.parse(a.report.submitted_at || "") || 0; const timeB = Date.parse(b.report.submitted_at || "") || 0; return timeB - timeA || b.report.id.localeCompare(a.report.id); });
   const visible = view === "pending" ? pending : history;
@@ -165,6 +214,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
     <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => setView("pending")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => setView("history")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
-    {loading ? <p className="mt-4 text-sm text-zinc-400">Loading reviews...</p> : !error && visible.length === 0 ? <p className="mt-4 text-sm text-zinc-400">{view === "pending" ? "No playtest feedback is awaiting review." : "No reviewed feedback yet."}</p> : visible.map(item => view === "history" ? <details key={item.report.id} className="group my-3 min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/40"><summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"><div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 flex-1"><span className="block min-w-0 max-w-full break-words [overflow-wrap:anywhere] font-semibold text-zinc-100">{item.context?.title || "Legacy report"}</span><p className="mt-1 text-xs text-zinc-400">Submitted {ukDateTime(item.report.submitted_at)} · {item.report.review_outcome || "Reviewed"} · {item.report.base_xp_amount ?? 0} XP</p></div><span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span><span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload}/>)}
+    {privateReasonsError && <p role="alert" className="mt-4 text-sm text-amber-200">{privateReasonsError}</p>}
+    {loading ? <p className="mt-4 text-sm text-zinc-400">Loading reviews...</p> : !error && visible.length === 0 ? <p className="mt-4 text-sm text-zinc-400">{view === "pending" ? "No playtest feedback is awaiting review." : "No reviewed feedback yet."}</p> : visible.map(item => view === "history" ? <details key={item.report.id} open={focusedReviewId === item.report.id ? true : undefined} className="group my-3 min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/40"><summary className="cursor-pointer list-none px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"><div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 flex-1"><span className="block min-w-0 max-w-full break-words [overflow-wrap:anywhere] font-semibold text-zinc-100">{item.context?.title || "Legacy report"}</span><p className="mt-1 text-xs text-zinc-400">Submitted {ukDateTime(item.report.submitted_at)} · {item.report.review_outcome || "Reviewed"} · {item.report.base_xp_amount ?? 0} XP</p></div><span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span><span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload} privateReason={privateReasons[item.report.id]}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload} privateReason={privateReasons[item.report.id]}/>)}
   </section>;
 }

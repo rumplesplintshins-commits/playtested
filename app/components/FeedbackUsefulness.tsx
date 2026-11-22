@@ -16,6 +16,9 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [reasonOpen, setReasonOpen] = useState(false);
+  const [reasonDraft, setReasonDraft] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -39,31 +42,35 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
     };
   }, [testId]);
 
-  async function mark(next: Usefulness) {
-    if (busy) return;
-
-    setBusy(true);
-    setError("");
-    const previous = value;
-    setValue(next);
-
-    const { data, error } = await createClient().rpc(
-      "mark_test_feedback_usefulness",
-      { p_test_id: testId, p_usefulness: next }
-    );
-
-    if (error) {
-      setValue(previous);
-      setError(error.message || "Could not save feedback rating.");
-      showToast("Could not save feedback rating", "error");
-      setBusy(false);
+  async function mark(next: Usefulness, explanation?: string) {
+    if (loading || busy) return;
+    const trimmed = explanation?.trim() ?? "";
+    if (next === "not_useful" && (trimmed.length < 10 || trimmed.length > 500)) {
+      setError("Please explain why this feedback wasn't useful (10–500 characters).");
       return;
     }
-
-    setValue((data as Usefulness | null) ?? next);
-
-    showToast(next === "useful" ? "Feedback marked as useful" : "Feedback marked as not useful");
-    setBusy(false);
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const {data, error: failure} = await createClient().rpc("mark_test_feedback_usefulness", {
+        p_test_id: testId, p_usefulness: next, p_reason: next === "not_useful" ? trimmed : null
+      });
+      if (failure) {
+        setError(failure.message || "Could not save feedback rating.");
+        showToast("Could not save feedback rating", "error");
+        return;
+      }
+      setValue((data as Usefulness | null) ?? next);
+      setReasonOpen(false);
+      setReasonDraft("");
+      setNotice(next === "not_useful" ? "Saved. Your explanation was sent privately to administrators." : "Feedback marked as useful.");
+      showToast(next === "useful" ? "Feedback marked as useful" : "Feedback marked as not useful");
+    } catch {
+      setError("Could not save feedback rating. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -96,7 +103,7 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
             type="button"
             disabled={loading || busy}
             aria-pressed={value === "not_useful"}
-            onClick={() => void mark("not_useful")}
+            onClick={() => { setError(""); setNotice(""); setReasonOpen(true); }}
             className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
               value === "not_useful"
                 ? "border-amber-300/45 bg-amber-300/[0.08] text-amber-100"
@@ -107,6 +114,30 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
           </button>
         </div>
       </div>
+
+      {reasonOpen && !loading && (
+        <form onSubmit={(event) => {event.preventDefault();void mark("not_useful", reasonDraft);}}
+          className="mt-3 min-w-0 space-y-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.035] p-3 sm:p-4">
+          <label htmlFor={"feedback-reason-" + testId} className="block text-sm font-semibold leading-6 text-amber-100">
+            Can you explain why this wasn't useful feedback?
+          </label>
+          <textarea
+            id={"feedback-reason-" + testId} required minLength={10} maxLength={500} rows={3}
+            value={reasonDraft}
+            onChange={(event) => {setReasonDraft(event.target.value);setError("");}}
+            placeholder="For example, the feedback didn't address the testing objectives or provide enough detail to act on."
+            aria-describedby={"feedback-reason-counter-" + testId}
+            className="block w-full min-w-0 resize-y rounded-lg border border-white/20 bg-[#0d120f] p-3 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-amber-300/70 focus:ring-1 focus:ring-amber-300/35"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p id={"feedback-reason-counter-" + testId} className="text-xs text-zinc-400">10–500 characters required · {reasonDraft.length}/500</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={busy} onClick={() => {setReasonOpen(false);setReasonDraft("");setError("");}} className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-zinc-200 hover:border-white/40">Cancel</button>
+              <button type="submit" disabled={busy || reasonDraft.trim().length < 10 || reasonDraft.trim().length > 500} className="rounded-lg border border-[#77f29b]/35 bg-[#77f29b] px-3 py-2 text-xs font-bold text-[#07120b] disabled:cursor-not-allowed disabled:opacity-40">Submit feedback</button>
+            </div>
+          </div>
+        </form>
+      )}
 
       {value === "useful" && !loading && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
@@ -129,6 +160,7 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
       )}
 
       {error && <p role="alert" className="mt-2 text-xs text-red-200">{error}</p>}
+      {notice && <p role="status" className="mt-2 text-xs text-emerald-200">{notice}</p>}
     </div>
   );
 }

@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const db=readFileSync(new URL("../supabase/migrations/20261122183857_admin_only_negative_feedback_explanations.sql",import.meta.url),"utf8");
+const ui=readFileSync(new URL("../app/components/FeedbackUsefulness.tsx",import.meta.url),"utf8");
+const admin=readFileSync(new URL("../app/components/FeedbackReviewQueue.tsx",import.meta.url),"utf8");
+for(const line of ["CREATE TABLE IF NOT EXISTS playtested_studios.feedback_not_useful_reasons","ENABLE ROW LEVEL SECURITY","REVOKE ALL ON playtested_studios.feedback_not_useful_reasons","char_length(btrim(reason)) BETWEEN 10 AND 500","p_reason is null","if p_usefulness = 'not_useful' then","on conflict (test_id) do update","role='admin'","'admin_feedback_moderation'","feedback:not-useful-reason:","get_admin_feedback_not_useful_reasons(p_test_ids uuid[])","Administrator access required.","tester_feedback_useful","feedback_review"])
+  assert(db.includes(line),"SQL missing "+line);
+assert(db.includes("IF p_usefulness='not_useful' THEN"),"Old no-reason call must reject negatives");
+assert(!db.includes("ALTER TABLE public.community_game_tests ADD COLUMN"),"Do not put private reason on tester record");
+assert(ui.includes("Can you explain why this wasn't useful feedback?"));
+assert(ui.includes("maxLength={500}") && ui.includes("minLength={10}"));
+assert(ui.includes('reasonDraft.trim().length < 10'));
+assert(ui.includes("p_reason: next ==="),"Atomic rating and explanation required");
+assert(ui.includes("Cancel")&&ui.includes("Submit feedback"));
+assert(!ui.includes('onClick={() => void mark("not_useful")}'));
+assert(admin.includes("get_admin_feedback_not_useful_reasons"));
+assert(admin.includes("Developer marked this feedback as Not useful"));
+assert(admin.indexOf("Developer marked this feedback as Not useful") < admin.indexOf('<p className="text-xs text-zinc-500">Tester {t.tester_id}'));
+assert(admin.includes("whitespace-pre-wrap break-words"),"Mobile wrapping missing");
+assert(admin.includes("setView(\"history\")"),"Notification must open Reviewed");
+console.log("PASS: admin-only negative reasons, mobile form, validation, XP compatibility, notification deep link");
