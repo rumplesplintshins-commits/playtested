@@ -835,6 +835,9 @@ function ResultsDashboard({
   acceptedFeedback,
   testerGenres,
   privateEvidence,
+  usefulnessByTest,
+  usefulnessPrefetched,
+  onUsefulnessChange,
   feedbackTab,onFeedbackTabChange,actionFilter,onActionFilterChange,
 }: {
   gameTitle: string;
@@ -843,6 +846,9 @@ function ResultsDashboard({
   communityResults: CommunityPlaytestResults | null;
   independentProgress: PlaytestedTestProgress | null;
   acceptedFeedback: AcceptedIndependentFeedback[];
+  usefulnessByTest: Record<string, FeedbackUsefulnessValue>;
+  usefulnessPrefetched: boolean;
+  onUsefulnessChange: (testId: string, value: FeedbackUsefulnessValue) => void;
   readOnly?:boolean;
   sharedMember?:boolean;
   printTarget: HTMLDivElement | null;
@@ -853,14 +859,7 @@ function ResultsDashboard({
   const [snapshotExpanded,setSnapshotExpanded]=useState(true);
   const [localTab,setLocalTab]=useState<FeedbackTab>('said');
   const [localActionFilter,setLocalActionFilter]=useState('All reports');
-  // Each accepted report uses the saved rating loaded by FeedbackUsefulness;
-  // the badge updates only after that component confirms a successful RPC.
-  const [usefulnessByTest, setUsefulnessByTest] = useState<Record<string, FeedbackUsefulnessValue>>({});
-  const updateUsefulness = useCallback((testId: string, value: FeedbackUsefulnessValue) => {
-    setUsefulnessByTest(previous => previous[testId] === value
-      ? previous
-      : {...previous, [testId]: value});
-  }, []);
+  // Saved ratings are prefetched once per campaign and updated only on confirmed saves.
   const activeTab=feedbackTab??localTab;
   const changeTab=onFeedbackTabChange??setLocalTab;
   const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
@@ -1429,7 +1428,12 @@ function ResultsDashboard({
                 )}
                 <DeveloperEvidenceLinks evidence={privateEvidence?.[response.test_id]} />
                 {!sharedMember && !response.test_id.startsWith("preview-") && (
-                  <FeedbackUsefulness testId={response.test_id} onRatingChange={updateUsefulness} />
+                  <FeedbackUsefulness
+                    testId={response.test_id}
+                    onRatingChange={onUsefulnessChange}
+                    prefetched={usefulnessPrefetched}
+                    initialRating={usefulnessByTest[response.test_id] ?? null}
+                  />
                 )}
               </div>
             </details>
@@ -1560,6 +1564,11 @@ function BuildResultsPanel({
   const [communityResults, setCommunityResults] = useState<CommunityPlaytestResults | null>(null);
   const [independentProgress, setIndependentProgress] = useState<PlaytestedTestProgress | null>(null);
   const [acceptedFeedback, setAcceptedFeedback] = useState<AcceptedIndependentFeedback[]>([]);
+  const [usefulnessByTest, setUsefulnessByTest] = useState<Record<string, FeedbackUsefulnessValue>>({});
+  const [usefulnessPrefetched, setUsefulnessPrefetched] = useState(false);
+  const onUsefulnessChange = useCallback((testId: string, value: FeedbackUsefulnessValue) => {
+    setUsefulnessByTest(previous => previous[testId] === value ? previous : {...previous, [testId]: value});
+  }, []);
   const [testerGenres, setTesterGenres] = useState<Record<string, string[]>>({});
   const [privateEvidence, setPrivateEvidence] = useState<Record<string, PrivateEvidenceLink>>({});
   const [loading, setLoading] = useState(false);
@@ -1579,15 +1588,17 @@ function BuildResultsPanel({
     const request=++resultRequest.current;
     setLoading(true);
     setError("");
+    setUsefulnessPrefetched(false);
 
     const supabase = createClient();
     try {
-    const [communityResult, progressResult, feedbackResult, genresResult, evidenceResult] = await Promise.all([
+    const [communityResult, progressResult, feedbackResult, genresResult, evidenceResult, usefulnessResult] = await Promise.all([
       supabase.rpc("get_developer_community_playtest_results", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_playtested_test_progress", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_accepted_playtest_feedback", { p_playtest_id: playtestId }),
       supabase.rpc("get_developer_feedback_genres", { p_playtest_id: playtestId }),
       sharedMember ? Promise.resolve({data:[],error:null}) : supabase.rpc("get_developer_private_playtest_evidence", { p_playtest_id: playtestId }),
+      sharedMember ? Promise.resolve({data:[],error:null}) : supabase.rpc("get_developer_feedback_usefulness_for_campaign", { p_playtest_id: playtestId }),
     ]);
     if(request!==resultRequest.current)return;
     setLoadedBuildId(playtestId);
@@ -1612,6 +1623,12 @@ function BuildResultsPanel({
     const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
     setIndependentProgress(progressRows[0] ?? null);
     setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+    // If the optional batch RPC is unavailable, preserve the old per-report fallback.
+    setUsefulnessPrefetched(!usefulnessResult.error);
+    setUsefulnessByTest(Object.fromEntries(
+      ((usefulnessResult.data ?? []) as {test_id:string;usefulness:FeedbackUsefulnessValue}[])
+        .map(row=>[row.test_id,row.usefulness])
+    ));
     setPrivateEvidence(Object.fromEntries(((evidenceResult.data ?? []) as PrivateEvidenceLink[]).map(row=>[row.test_id,row])));
 
     setTesterGenres(Object.fromEntries(
@@ -1716,6 +1733,9 @@ function BuildResultsPanel({
             communityResults={communityResults}
             independentProgress={independentProgress}
             acceptedFeedback={acceptedFeedback}
+            usefulnessByTest={usefulnessByTest}
+            usefulnessPrefetched={usefulnessPrefetched}
+            onUsefulnessChange={onUsefulnessChange}
             testerGenres={testerGenres}
             privateEvidence={privateEvidence}
           />

@@ -12,17 +12,32 @@ type UsefulnessRow = {
   marked_at: string | null;
 };
 
-export default function FeedbackUsefulness({ testId, onRatingChange }: { testId: string; onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void }) {
-  const [value, setValue] = useState<Usefulness | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function FeedbackUsefulness({ testId, onRatingChange, initialRating = null, prefetched = false }: {
+  testId: string;
+  onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void;
+  initialRating?: FeedbackUsefulnessValue;
+  prefetched?: boolean;
+}) {
+  const [value, setValue] = useState<Usefulness | null>(prefetched ? initialRating : null);
+  const [loading, setLoading] = useState(!prefetched);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonDraft, setReasonDraft] = useState("");
   const [notice, setNotice] = useState("");
 
+  // A successful campaign-level batch prefetch completely avoids per-report calls.
+  // If that RPC fails, fall back to the previous individual reader.
+  const prefetchedValue = prefetched ? initialRating : undefined;
   useEffect(() => {
+    if (prefetched) {
+      setValue(prefetchedValue ?? null);
+      setLoading(false);
+      setError("");
+      return;
+    }
     let active = true;
+    setLoading(true);
     const supabase = createClient();
 
     void supabase
@@ -44,7 +59,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange }: { testId:
     return () => {
       active = false;
     };
-  }, [testId, onRatingChange]);
+  }, [testId, onRatingChange, prefetched, prefetchedValue]);
 
   async function mark(next: Usefulness, explanation?: string) {
     if (loading || busy) return;
