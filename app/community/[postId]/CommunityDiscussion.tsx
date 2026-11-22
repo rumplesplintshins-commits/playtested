@@ -93,7 +93,7 @@ export default function CommunityDiscussion({
     }
 
     let postAuthor = "Community member";
-    let postIsOwner = postData.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
+    const postIsOwner = postData.user_id === "1281af8d-0681-4f06-8cfa-9b045b39e883";
 
     if (postData.user_id) {
       const { data: profile } = await supabase
