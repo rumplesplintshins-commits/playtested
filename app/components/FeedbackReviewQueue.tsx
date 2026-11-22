@@ -4,6 +4,8 @@ import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
 import { useEffect, useMemo, useState } from "react";
+import PaginationControls from "./PaginationControls";
+import {pageCount,pagedItems} from "@/lib/pagination";
 import { createClient } from "@/lib/supabase";
 import { needsFeedbackReview, feedbackQualityLabel, feedbackReasonSuggestion, FEEDBACK_QUALITY_CRITERIA, type FeedbackReviewItem } from "@/lib/feedback-review";
 import { QualityGuidance } from "./TestingPolicy";
@@ -166,11 +168,17 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
   const [notice, setNotice] = useState("");
   const [privateReasons, setPrivateReasons] = useState<Record<string, PrivateDeveloperReason>>({});
   const [privateReasonsError, setPrivateReasonsError] = useState("");
-  const [focusedReviewId, setFocusedReviewId] = useState<string | null>(null);
-  const reasonReviewIds = useMemo(
-    () => items.filter(item => !needsFeedbackReview(item) && item.report.feedback_usefulness === "not_useful").map(item => item.report.id),
-    [items]
-  );
+  const [focusedReviewId,setFocusedReviewId]=useState<string|null>(null);
+  const [pendingPage,setPendingPage]=useState(1),[reviewedPage,setReviewedPage]=useState(1);
+  const [paginationReady,setPaginationReady]=useState(false);
+  const pending=useMemo(()=>items.filter(needsFeedbackReview),[items]);
+  const history=useMemo(()=>items.filter(item=>!needsFeedbackReview(item)).sort((a,b)=>{
+    const aa=Date.parse(a.report.submitted_at||"")||0,bb=Date.parse(b.report.submitted_at||"")||0;
+    return bb-aa||b.report.id.localeCompare(a.report.id);
+  }),[items]);
+  const activePage=view==="pending"?pendingPage:reviewedPage;
+  const visible=useMemo(()=>pagedItems(view==="pending"?pending:history,activePage,10),[view,pending,history,activePage]);
+  const reasonReviewIds=useMemo(()=>visible.filter(item=>!needsFeedbackReview(item)&&item.report.feedback_usefulness==="not_useful").map(item=>item.report.id),[visible]);
   useEffect(() => {
     let active = true;
     if (!reasonReviewIds.length) {
@@ -190,28 +198,45 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
     });
     return () => {active=false;};
   }, [reasonReviewIds]);
-  useEffect(() => {
-    const target = window.location.hash.match(/^#report-([0-9a-f-]{36})$/i)?.[1] ?? null;
-    if (target) {
-      setFocusedReviewId(target);
-      setView("history");
-    } else if (new URLSearchParams(window.location.search).get("review") === "reviewed") {
-      setView("history");
-    }
-  }, []);
-  useEffect(() => {
-    if (!focusedReviewId || !items.some(item => item.report.id === focusedReviewId)) return;
-    const timer = window.setTimeout(() => document.getElementById("report-" + focusedReviewId)?.scrollIntoView({block:"center"}),120);
-    return () => window.clearTimeout(timer);
-  }, [focusedReviewId,items]);
-  const pending = items.filter(needsFeedbackReview);
-  const history = items.filter(item => !needsFeedbackReview(item)).sort((a,b) => { const timeA = Date.parse(a.report.submitted_at || "") || 0; const timeB = Date.parse(b.report.submitted_at || "") || 0; return timeB - timeA || b.report.id.localeCompare(a.report.id); });
-  const visible = view === "pending" ? pending : history;
-  async function reload() { await refresh(); setNotice("Decision saved and audited."); }
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const page=Number(params.get("reviewPage"));
+    if(Number.isSafeInteger(page)&&page>0)setReviewedPage(page);
+    const target=window.location.hash.match(/^#report-([0-9a-f-]{36})$/i)?.[1]??null;
+    if(target){setFocusedReviewId(target);setView("history");}
+    else if(params.get("review")==="reviewed")setView("history");
+    setPaginationReady(true);
+  },[]);
+  useEffect(()=>{
+    if(!focusedReviewId)return;
+    const index=history.findIndex(item=>item.report.id===focusedReviewId);
+    if(index>=0)setReviewedPage(page=>page===Math.floor(index/10)+1?page:Math.floor(index/10)+1);
+  },[focusedReviewId,history]);
+  useEffect(()=>{
+    if(!focusedReviewId||!visible.some(item=>item.report.id===focusedReviewId))return;
+    const timer=window.setTimeout(()=>document.getElementById("report-"+focusedReviewId)?.scrollIntoView({block:"center"}),130);
+    return()=>window.clearTimeout(timer);
+  },[focusedReviewId,visible]);
+  useEffect(()=>{if(!loading)setPendingPage(page=>Math.min(page,pageCount(pending.length,10)));},[pending.length,loading]);
+  useEffect(()=>{if(!loading)setReviewedPage(page=>Math.min(page,pageCount(history.length,10)));},[history.length,loading]);
+  useEffect(()=>{
+    if(!paginationReady)return;
+    const url=new URL(window.location.href);
+    url.searchParams.set("review",view==="history"?"reviewed":"pending");
+    if(view==="history"&&reviewedPage>1)url.searchParams.set("reviewPage",String(reviewedPage));
+    else url.searchParams.delete("reviewPage");
+    window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+  },[view,reviewedPage,paginationReady]);
+  const changePage=(page:number)=>{
+    setFocusedReviewId(null);
+    if(window.location.hash.startsWith("#report-"))window.history.replaceState(window.history.state,"",window.location.pathname+window.location.search);
+    if(view==="history")setReviewedPage(page);else setPendingPage(page);
+  };
+    async function reload() { await refresh(); setNotice("Decision saved and audited."); }
   return <section aria-label="Playtest feedback reviews">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Independent playtest reviews</h2><p className="mt-1 text-sm text-zinc-400">Review submitted feedback against the quality criteria. Admin decisions control XP.</p></div><button disabled={loading} onClick={() => void refresh()} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-50">Refresh reviews</button></div>
     <details className="my-4 rounded-lg border border-white/10 p-4"><summary className="cursor-pointer font-semibold">How feedback earns XP</summary><QualityGuidance/></details>
-    <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => setView("pending")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => setView("history")} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
+    <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => {setFocusedReviewId(null);setView("pending");}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => {setFocusedReviewId(null);setView("history");}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
     {privateReasonsError && <p role="alert" className="mt-4 text-sm text-amber-200">{privateReasonsError}</p>}
@@ -229,5 +254,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
   <span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
   <span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span>
 </div></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload} privateReason={privateReasons[item.report.id]}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload} privateReason={privateReasons[item.report.id]}/>)}
+    {!loading&&!error&&<PaginationControls label={view==="history"?"Reviewed playtest reviews":"Awaiting playtest reviews"}
+      page={activePage} pageSize={10} total={view==="history"?history.length:pending.length} onPageChange={changePage}/>}
   </section>;
 }

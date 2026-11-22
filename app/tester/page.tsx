@@ -18,6 +18,8 @@ import { platformDisplayName, platformOf } from "../../lib/platforms";
 import { preserveTesterGamePlatforms, testerGamePlatformKey } from "../../lib/tester-game-platforms";
 import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
+import PaginationControls from "../components/PaginationControls";
+import {pageCount,pagedItems} from "@/lib/pagination";
 
 import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, PlacesRules, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
 
@@ -850,7 +852,16 @@ function TesterPage() {
       : {}
   );
   const [expandedHistoryClaims, setExpandedHistoryClaims] = useState<Record<string, boolean>>({});
+  const [historyPage,setHistoryPage]=useState(1),[historyPagingReady,setHistoryPagingReady]=useState(false);
   const [discoveryReady,setDiscoveryReady] = useState(false);
+  useEffect(()=>{const n=Number(new URLSearchParams(window.location.search).get("activityPage"));
+    if(Number.isSafeInteger(n)&&n>0)setHistoryPage(n);setHistoryPagingReady(true);
+  },[]);
+  useEffect(()=>{if(!historyPagingReady)return;const url=new URL(window.location.href);
+    if(historyPage>1)url.searchParams.set("activityPage",String(historyPage));
+    else url.searchParams.delete("activityPage");
+    window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
+  },[historyPage,historyPagingReady]);
 
   useEffect(() => {
     if (!games.length) return;
@@ -893,8 +904,12 @@ function TesterPage() {
     const openReport = () => {
       const match = /^#testing-activity-([0-9a-f-]{36})$/i.exec(window.location.hash);
       if (!match || !claims.some(claim => claim.id === match[1])) return;
-      setExpandedHistoryClaims(previous => previous[match[1]] ? previous : {...previous, [match[1]]: true});
-      frame = requestAnimationFrame(() => document.getElementById("testing-activity-" + match[1])?.scrollIntoView({block:"start"}));
+      const records=claims.filter(claim=>["submitted","reviewed","expired"].includes(claim.status))
+        .sort((a,b)=>(Date.parse(b.submitted_at??b.reservation_started_at??"")||0)-(Date.parse(a.submitted_at??a.reservation_started_at??"")||0)||b.id.localeCompare(a.id));
+      const index=records.findIndex(claim=>claim.id===match[1]);
+      if(index>=0)setHistoryPage(Math.floor(index/10)+1);
+      setExpandedHistoryClaims(previous=>previous[match[1]]?previous:{...previous,[match[1]]:true});
+      frame=requestAnimationFrame(()=>document.getElementById("testing-activity-"+match[1])?.scrollIntoView({block:"start"}));
     };
     openReport();
     window.addEventListener("hashchange", openReport);
@@ -1338,11 +1353,19 @@ function TesterPage() {
   const editorGame=expiredEditorClaim?(games.find(game=>claimMatchesGame(expiredEditorClaim,game))??{submission_id:expiredEditorClaim.playtest_id??expiredEditorClaim.submission_id!,title:expiredEditorClaim.game_title??"Historical test",developer_name:"Developer",genre:"",description:"The campaign is not currently available. Your saved draft is still accessible.",game_link:null,access_type:"other",image_url:null,ai_type:null,focus_areas:[]} as TestGame):undefined;
   const displayedActiveGames=editorGame&&!activeGames.includes(editorGame)?[...activeGames,editorGame]:activeGames;
 
-  const historyClaims = claims.filter(
-    (claim) =>
-      claim.status === "submitted" ||
-      claim.status === "reviewed" || claim.status === "expired"
-  );
+  const historyClaims=useMemo(()=>claims.filter(claim=>
+    claim.status==="submitted"||claim.status==="reviewed"||claim.status==="expired"
+  ).sort((a,b)=>(Date.parse(b.submitted_at??b.reservation_started_at??"")||0)
+    -(Date.parse(a.submitted_at??a.reservation_started_at??"")||0)||b.id.localeCompare(a.id)),[claims]);
+  const displayedHistoryClaims=pagedItems(historyClaims,historyPage,10);
+  useEffect(()=>{if(!loading)setHistoryPage(p=>Math.min(p,pageCount(historyClaims.length,10)));},[historyClaims.length,loading]);
+  useEffect(()=>{
+    if(loading)return;
+    const match=window.location.hash.match(/^#testing-activity-([0-9a-f-]{36})$/i);
+    if(!match||!displayedHistoryClaims.some(claim=>claim.id===match[1]))return;
+    const timer=window.setTimeout(()=>document.getElementById("testing-activity-"+match[1])?.scrollIntoView({block:"start"}),125);
+    return()=>window.clearTimeout(timer);
+  },[historyPage,historyClaims,loading]);
 
   const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
   const minimisedAvailableGames = availableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
@@ -1896,7 +1919,7 @@ function TesterPage() {
             </p>
           ) : (
             <div className="mt-6 space-y-3">
-              {historyClaims.map((claim) => {
+              {displayedHistoryClaims.map((claim) => {
                 const game = games.find((item) =>
                   claimMatchesGame(claim, item)
                 );
@@ -2001,6 +2024,11 @@ function TesterPage() {
                   </article>
                 );
               })}
+              <PaginationControls label="Testing activity" page={historyPage} pageSize={10} total={historyClaims.length}
+                onPageChange={next=>{
+                  setHistoryPage(next);
+                  if(window.location.hash.startsWith("#testing-activity-"))window.history.replaceState(window.history.state,"",window.location.pathname+window.location.search);
+                }}/>
             </div>
           )}
         </section>
