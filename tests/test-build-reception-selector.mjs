@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import {createRequire} from "node:module";
+const require=createRequire(import.meta.url);
 import ts from "typescript";
 const file = fs.readFileSync("app/components/BuildReceptionSummary.tsx","utf8");
 const page = fs.readFileSync("app/my-submissions/page.tsx","utf8");
