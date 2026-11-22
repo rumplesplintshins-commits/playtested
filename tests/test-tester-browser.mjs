@@ -31,6 +31,7 @@ try{
      else if(url.pathname.endsWith('/get_my_feedback_usefulness'))data=[];
      else if(url.pathname.endsWith('/get_my_notifications'))data={notifications:[],unread_count:0};
      else if(url.pathname.endsWith('/profiles'))data={id:uid,role:'user',roles:['tester'],tester_xp:0,developer_xp:0,completed_tests:0};
+     else if(url.pathname.endsWith('/approved_games'))data=[{title:'Browser fixture',developer_name:'Fixture developer',platform:'pc'},{title:'Adventure fixture',developer_name:'Fixture developer',platform:'browser'},{title:'Strategy restricted fixture',developer_name:'Fixture developer',platform:'browser'}];
      else if(url.pathname.endsWith('/community_game_tests'))data=req.headers().accept?.includes('object')?claim:(claim?[claim]:[]);
      else if(url.pathname.endsWith('/get_testing_capacity_policy'))data={places:4,reservation_hours:72,server_now:new Date().toISOString(),activated_at:new Date().toISOString()};
      else if(url.pathname.endsWith('/get_my_test_reservations'))data={server_now:new Date().toISOString(),claims:claim?[claim]:[]};
