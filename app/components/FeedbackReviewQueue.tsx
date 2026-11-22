@@ -221,6 +221,11 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
       Developer marked Not useful
     </span>
   )}
+  {item.report.feedback_usefulness === "useful" && (
+    <span className="inline-flex max-w-full items-center rounded-full border border-emerald-300/25 bg-emerald-300/[0.06] px-2.5 py-1 text-[11px] font-semibold leading-4 text-emerald-200">
+      ✓ Developer marked Useful
+    </span>
+  )}
   <span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
   <span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span>
 </div></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload} privateReason={privateReasons[item.report.id]}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload} privateReason={privateReasons[item.report.id]}/>)}

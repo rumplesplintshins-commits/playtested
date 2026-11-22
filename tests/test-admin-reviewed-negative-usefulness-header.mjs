@@ -8,10 +8,14 @@ assert(summaryStart>0 && summaryEnd>summaryStart, "Reviewed report summary must 
 const header=review.slice(summaryStart,summaryEnd);
 assert(header.includes('item.report.feedback_usefulness === "not_useful"'), "Show flag only when saved developer rating is Not useful");
 assert(header.includes("Developer marked Not useful"), "Admin sees negative usefulness without opening report");
+assert(header.includes('item.report.feedback_usefulness === "useful"'), "Show green badge only for saved Useful ratings");
+assert(header.includes("✓ Developer marked Useful"), "Admin sees positive usefulness without opening report");
+assert(header.includes("border-emerald-300/25") && header.includes("text-emerald-200"), "Useful badge uses subtle green styling");
+assert(header.includes('feedback_usefulness === "not_useful"') && header.includes('feedback_usefulness === "useful"'), "Unrated reviews show neither badge");
 assert(header.includes('group-open:hidden') && header.includes('group-open:inline'), "Collapsed and expanded summaries retain their controls");
 assert(header.includes('flex max-w-full flex-wrap items-center justify-end gap-2'), "Badge and expand action wrap on narrow screens");
 assert(header.includes('border-amber-300/25') && header.includes('text-amber-200'), "The negative badge uses subtle amber styling");
 assert(!header.includes("privateReason.reason"), "Private explanation must remain inside expanded admin-only report");
 assert(review.includes('t.feedback_usefulness === "not_useful" && privateReason'), "Expanded report still shows admin-only explanation");
 assert(review.includes('get_admin_feedback_not_useful_reasons'), "Admin-only data permission path remains");
-console.log("PASS: admin Reviewed header shows Not useful state, mobile layout, retained expand controls and private explanation isolation");
+console.log("PASS: admin Reviewed summary shows Useful/Not useful saved ratings, no unrated badge, responsive layout and private explanation isolation");
