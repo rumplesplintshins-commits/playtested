@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { showToast } from "./ToastHost";
 
-type Usefulness = "useful" | "not_useful";
+export type FeedbackUsefulnessValue = "useful" | "not_useful" | null;
+type Usefulness = Exclude<FeedbackUsefulnessValue, null>;
 
 type UsefulnessRow = {
   usefulness: Usefulness | null;
   marked_at: string | null;
 };
 
-export default function FeedbackUsefulness({ testId }: { testId: string }) {
+export default function FeedbackUsefulness({ testId, onRatingChange }: { testId: string; onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void }) {
   const [value, setValue] = useState<Usefulness | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -30,9 +31,12 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
         if (!active) return;
         if (error) {
           setError("Feedback rating unavailable.");
+          onRatingChange?.(testId, null);
         } else {
           const rows = (data ?? []) as UsefulnessRow[];
-          setValue(rows[0]?.usefulness ?? null);
+          const savedValue = rows[0]?.usefulness ?? null;
+          setValue(savedValue);
+          onRatingChange?.(testId, savedValue);
         }
         setLoading(false);
       });
@@ -40,7 +44,7 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
     return () => {
       active = false;
     };
-  }, [testId]);
+  }, [testId, onRatingChange]);
 
   async function mark(next: Usefulness, explanation?: string) {
     if (loading || busy) return;
@@ -61,7 +65,9 @@ export default function FeedbackUsefulness({ testId }: { testId: string }) {
         showToast("Could not save feedback rating", "error");
         return;
       }
-      setValue((data as Usefulness | null) ?? next);
+      const confirmedValue = (data as Usefulness | null) ?? next;
+      setValue(confirmedValue);
+      onRatingChange?.(testId, confirmedValue);
       setReasonOpen(false);
       setReasonDraft("");
       setNotice(next === "not_useful" ? "Saved. Your explanation was sent privately to administrators." : "Feedback marked as useful.");

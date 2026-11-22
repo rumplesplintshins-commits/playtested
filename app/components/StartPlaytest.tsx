@@ -4,7 +4,7 @@ import DisclosureControl from "./DisclosureControl";
 import {intentCounts,intentText} from "@/lib/intent-counts";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase";
 
 import { CampaignPlaces, FeedbackSignal, useTestingCapacityPolicy, PlacesRules } from "./TestingPolicy";
@@ -15,7 +15,8 @@ import { createPortal } from "react-dom";
 import PrintFeedback, { PrintFeedbackButton } from "./PrintFeedback";
 import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
-import FeedbackUsefulness from "./FeedbackUsefulness";
+import FeedbackUsefulness, { type FeedbackUsefulnessValue } from "./FeedbackUsefulness";
+import UsefulFeedbackBadge from "./UsefulFeedbackBadge";
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
@@ -852,6 +853,14 @@ function ResultsDashboard({
   const [snapshotExpanded,setSnapshotExpanded]=useState(true);
   const [localTab,setLocalTab]=useState<FeedbackTab>('said');
   const [localActionFilter,setLocalActionFilter]=useState('All reports');
+  // Each accepted report uses the saved rating loaded by FeedbackUsefulness;
+  // the badge updates only after that component confirms a successful RPC.
+  const [usefulnessByTest, setUsefulnessByTest] = useState<Record<string, FeedbackUsefulnessValue>>({});
+  const updateUsefulness = useCallback((testId: string, value: FeedbackUsefulnessValue) => {
+    setUsefulnessByTest(previous => previous[testId] === value
+      ? previous
+      : {...previous, [testId]: value});
+  }, []);
   const activeTab=feedbackTab??localTab;
   const changeTab=onFeedbackTabChange??setLocalTab;
   const feedbackTabRefs=useRef<Array<HTMLButtonElement|null>>([]);
@@ -1317,9 +1326,12 @@ function ResultsDashboard({
                         : "Submission date unavailable"}
                     </p>
                   </div>
-                  <span className="max-w-full shrink-0 rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
-                    Independent · Accepted
-                  </span>
+                  <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5">
+                    <span className="max-w-full rounded-full border border-[#77f29b]/20 bg-[#77f29b]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#b9f9ca]">
+                      Independent · Accepted
+                    </span>
+                    <UsefulFeedbackBadge value={usefulnessByTest[response.test_id]} />
+                  </div>
                 </div>
               </summary>
 
@@ -1417,7 +1429,7 @@ function ResultsDashboard({
                 )}
                 <DeveloperEvidenceLinks evidence={privateEvidence?.[response.test_id]} />
                 {!sharedMember && !response.test_id.startsWith("preview-") && (
-                  <FeedbackUsefulness testId={response.test_id} />
+                  <FeedbackUsefulness testId={response.test_id} onRatingChange={updateUsefulness} />
                 )}
               </div>
             </details>
