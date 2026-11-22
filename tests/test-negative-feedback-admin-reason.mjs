@@ -17,5 +17,5 @@ assert(admin.includes("get_admin_feedback_not_useful_reasons"));
 assert(admin.includes("Developer marked this feedback as Not useful"));
 assert(admin.indexOf("Developer marked this feedback as Not useful") < admin.indexOf('<p className="text-xs text-zinc-500">Tester {t.tester_id}'));
 assert(admin.includes("whitespace-pre-wrap break-words"),"Mobile wrapping missing");
-assert(admin.includes("setView(\"history\")"),"Notification must open Reviewed");
+assert(admin.includes('focusedReviewId || urlParams.get("review") === "reviewed" ? "history" : "pending"'),"Notification must open Reviewed");
 console.log("PASS: admin-only negative reasons, mobile form, validation, XP compatibility, notification deep link");

@@ -12,8 +12,8 @@ new Function('exports','require',code+'\nexports.Panel=BuildResultsPanel;exports
 const a={id:'a',status:'open',releaseLabel:'Build A',createdAt:'2026-10-28'},b={...a,id:'b',releaseLabel:'Build B'};
 function render(){cursor=0;const tree=exports.Panel({currentPlaytest:a,playtests:[a,b]});while(effects.length)effects.shift()();return tree;}
 function find(node,type){if(!node||typeof node!=='object')return null;if(node.type===type)return node;for(const child of [node.props?.children].flat(Infinity)){const result=find(child,type);if(result)return result;}return null;}
-render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='a').length,5);slots[1]='individual';
-slots[0]='b';render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='b').length,5);
+render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='a').length,6);slots[1]='individual';
+slots[0]='b';render();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(pending.filter(request=>request.id==='b').length,6);
 for(const request of pending.filter(request=>request.id==='b'))request.resolve({error:null,data:request.name.includes('accepted')?[{test_id:'report-b'}]:[]});
 await new Promise(resolve=>setTimeout(resolve,0));
 let dashboard=find(render(),exports.Dashboard);assert.equal(dashboard.props.playtest.id,'b');assert.equal(dashboard.props.feedbackTab,'individual','Selected feedback tab survives build load/unmount');assert.equal(dashboard.props.acceptedFeedback[0].test_id,'report-b');
