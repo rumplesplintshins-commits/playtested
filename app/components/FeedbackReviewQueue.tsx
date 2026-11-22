@@ -92,7 +92,7 @@ function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem;
     {t.feedback_usefulness === "not_useful" && privateReason && (
       <section aria-label="Developer explanation (admin only)" className="min-w-0 space-y-2 rounded-lg border border-amber-300/30 bg-amber-300/[0.045] p-3 sm:p-4">
         <h4 className="break-words text-sm font-semibold text-amber-100">Developer marked this feedback as Not useful</h4>
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Developer's explanation</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Developer&apos;s explanation</p>
         <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-6 text-zinc-200">{privateReason.reason}</p>
         <p className="text-xs text-zinc-400">Submitted {ukDateTime(privateReason.marked_at)} · Admin only</p>
       </section>
