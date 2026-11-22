@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const slots=[],effects=[],pending=[];let cursor=0;
-const react={...require('react'),useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];},useRef(value){const index=cursor++;return slots[index]??(slots[index]={current:value});},useEffect(effect,deps){const index=cursor++;if(!slots[index]||deps.some((value,i)=>value!==slots[index].deps[i])){slots[index]?.cleanup?.();effects.push(()=>{slots[index]={deps,cleanup:effect()};});}}};
+const react={...require('react'),useCallback(callback){return callback;},useId(){return 'fixture-id';},useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];},useRef(value){const index=cursor++;return slots[index]??(slots[index]={current:value});},useEffect(effect,deps){const index=cursor++;if(!slots[index]||deps.some((value,i)=>value!==slots[index].deps[i])){slots[index]?.cleanup?.();effects.push(()=>{slots[index]={deps,cleanup:effect()};});}}};
 const client={from(){const query={select(){return query;},in(){return query;},then(resolve){return Promise.resolve({data:[],error:null}).then(resolve);}};return query;},rpc(name,args){return new Promise(resolve=>pending.push({name,id:args.p_playtest_id,resolve}));}};
 const exports={};
 const code=ts.transpileModule(fs.readFileSync('app/components/StartPlaytest.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
