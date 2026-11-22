@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 
 export const organicOrigin = "https://playtested.co.uk";
 export const organicPages = [
-  { path: "/playtesting", title: "Indie Game Playtesting Platform", description: "Playtested connects indie developers with testers. Get structured feedback on enjoyment, bugs, gameplay and performance. Free plan available." },
-  { path: "/find-playtesters", title: "How to Find Playtesters for Your Indie Game", description: "Practical ways to find playtesters for your indie game, from communities and demos to structured playtesting platforms. Start with a clear testing goal." },
-  { path: "/become-a-playtester", title: "Become a Playtester – Play Indie Games & Earn XP", description: "Join Playtested as a tester. Try indie games before release, give structured feedback, earn XP and climb tester ranks. Free to sign up." },
-  { path: "/guides/playtest-feedback", title: "How to Get Useful Playtest Feedback", description: "How to collect playtest feedback you can act on: what to ask, how to structure reports, and how to spot what matters most." },
+  { path: "/playtesting", title: "What Is Playtesting? A Practical Guide | Playtested", description: "Learn what a playtest reveals, how playtesting differs from QA, and how developers and players can turn game feedback into useful decisions." },
+  { path: "/find-playtesters", title: "How to Find Playtesters for Your Indie Game | Playtested", description: "Practical ways to find playtesters for your indie game, from communities and demos to structured playtesting platforms. Start with a clear testing goal." },
+  { path: "/become-a-playtester", title: "Become a Playtester – Play Indie Games | Playtested", description: "Learn how to start playtesting indie games, check a test brief and write helpful feedback. Understand access requirements and avoid promises of paid work." },
+  { path: "/guides/playtest-feedback", title: "How to Write Useful Playtest Feedback | Playtested", description: "Use a practical playtest feedback template to describe gameplay, performance and bugs with clear examples, reproduction steps and build context." },
 ] as const;
 
 export function publicContentSitemapEntries() {
