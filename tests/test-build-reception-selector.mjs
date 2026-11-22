@@ -1,34 +1,30 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import {createRequire} from "node:module";
-const require=createRequire(import.meta.url);
 import ts from "typescript";
-const file = fs.readFileSync("app/components/BuildReceptionSummary.tsx","utf8");
-const page = fs.readFileSync("app/my-submissions/page.tsx","utf8");
-const results = fs.readFileSync("app/components/StartPlaytest.tsx","utf8");
-const compiled=ts.transpileModule(file,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-const module={exports:{}};
-new Function("module","exports","require",compiled)(module,module.exports,(name)=>{
-  if(name==="react")return require("react");
-  if(name==="react/jsx-runtime")return require("react/jsx-runtime");
-  throw Error("Unexpected import "+name);
-});
-const {receptionFromReports}=module.exports;
-const build={id:"round-current",releaseLabel:"Demo 0.6",status:"open",targetTesters:10};
-const a=receptionFromReports(build,[{overall_score:8,recommend_game:"definitely",continue_playing:"probably"},{overall_score:7,recommend_game:"probably",continue_playing:"definitely"},{overall_score:8,recommend_game:"definitely",continue_playing:"definitely"}]);
-assert.equal(a.playtestId,"round-current");
-assert.equal(a.releaseLabel,"Demo 0.6");
-assert.equal(a.acceptedTests,3);
-assert.equal(a.overallScore,7.7);
-assert.equal(a.recommendPercent,100);
-assert.equal(a.state,"ready");
-const b=receptionFromReports({...build,id:"round-old",releaseLabel:"Demo 0.7 - Reception Test",status:"closed"},[{overall_score:4,recommend_game:"no",continue_playing:"no"}]);
-assert.equal(b.overallScore,4);
-assert.equal(b.playtestId,"round-old");
-assert.equal(receptionFromReports(build,[]).overallScore,null);
-assert(page.includes("<BuildReceptionSummary") && page.includes("campaignIds={game.playtests.map(p=>p.id)}"));
-assert(results.includes('emitBuildReception(receptionFromReports(loadedBuild,acceptedRows))'));
-assert(results.includes('state:"loading"')&&results.includes('state:"error"'));
-assert(file.includes("campaignIds.includes(value.playtestId)"));
-assert(results.includes("usefulnessPrefetched")&&results.includes("get_developer_feedback_usefulness_for_campaign"));
-console.log("PASS build-sensitive dashboard reception, accurate per-round stats, independent badge logic, no extra feedback network requests");
+const source=fs.readFileSync(new URL("../lib/developer-overall-reception.ts",import.meta.url),"utf8");
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const mod={exports:{}};
+new Function("module","exports",compiled)(mod,mod.exports);
+const {overallReceptionAcrossBuilds}=mod.exports;
+const rows=[
+ {playtest_id:"one",accepted_test_count:1,rated_test_count:1,average_overall_score:"10"},
+ {playtest_id:"two",accepted_test_count:9,rated_test_count:9,average_overall_score:"6"},
+ {playtest_id:"other",accepted_test_count:15,rated_test_count:15,average_overall_score:"1"},
+];
+const overall=overallReceptionAcrossBuilds(["one","two"],rows);
+assert.equal(overall.overallScore,6.4,"Overall rating must weight accepted tester scores, not rounds");
+assert.equal(overall.acceptedTests,10);
+assert.equal(overall.rounds,2);
+assert.equal(overallReceptionAcrossBuilds(["one"],rows).overallScore,10);
+assert.equal(overallReceptionAcrossBuilds(["none"],rows).overallScore,null);
+assert.equal(overallReceptionAcrossBuilds(["one","missing"],[
+ rows[0],{playtest_id:"missing",accepted_test_count:2,rated_test_count:0,average_overall_score:null}
+]).overallScore,10,"Unrated reports never count as zero scores");
+const page=fs.readFileSync(new URL("../app/my-submissions/page.tsx",import.meta.url),"utf8");
+const catalog=fs.readFileSync(new URL("../supabase/migrations/20261112201921_security_catalogue_read_models.sql",import.meta.url),"utf8");
+assert(page.includes('supabase.rpc("get_developer_all_build_receptions")'));
+assert(page.includes('studioId ? Promise.resolve({ data: [], error: null })'));
+assert(page.includes('overallReceptionAcrossBuilds(game.playtests.map(p=>p.id),rawReceptions)'));
+assert(page.includes("Overall · All builds"));
+assert(!page.includes("<BuildReceptionSummary"),"Header must not switch to selected round");
+console.log("PASS all-build weighting, campaign isolation, unrated reviews and studio/personally owned aggregation");

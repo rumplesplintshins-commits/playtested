@@ -11,7 +11,7 @@ import SiteHeader from "../components/SiteHeader";
 import GameLinksEngagement from "../components/GameLinksEngagement";
 import LegacyPrivateEvidence from "../components/LegacyPrivateEvidence";
 import StartPlaytest from "../components/StartPlaytest";
-import BuildReceptionSummary from "../components/BuildReceptionSummary";
+import {overallReceptionAcrossBuilds} from "@/lib/developer-overall-reception";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
 import type {DeveloperPlan} from "../components/DeveloperPlan";
@@ -673,7 +673,7 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
       .order("created_at", { ascending: false })
       .limit(50),
 
-    studioId ? Promise.resolve({ data: [], error: null }) : supabase.rpc("get_developer_current_reception"),
+    studioId ? Promise.resolve({ data: [], error: null }) : supabase.rpc("get_developer_all_build_receptions"),
   ]);
 
   if (submissionsError) {
@@ -1107,8 +1107,8 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
 
   return <DeveloperWorkspace key={studioId} initialPlan={initialPlan} studioId={studioId} studios={studio?.studios??[]} studioRole={studioRole??undefined} diagnosticsNotice={<PulseAvailability submissions={submissions.map(game=>({id:game.id,title:game.title||"Submitted game"}))}/>} showPlan feedbackCountsReady={!receptionError}
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
- games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,platformLabel:platformDisplayName(game.platform),status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
-              const reception = game.currentReception;
+ games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,platformLabel:platformDisplayName(game.platform),status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:overallReceptionAcrossBuilds(game.playtests.map(p=>p.id),rawReceptions).acceptedTests>0,content:((game) => {
+              const overallReception=overallReceptionAcrossBuilds(game.playtests.map(p=>p.id),rawReceptions);
               const hasPulse = completedPulseRuns.some(
                 (run) => run.submission_id === game.submissionId
               );
@@ -1158,28 +1158,18 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
                     </div>
                   </div>
 
-                  {game.latestPlaytest ? (
-                    <BuildReceptionSummary
-                      campaignIds={game.playtests.map(p=>p.id)}
-                      currentBuild={{
-                        id:game.latestPlaytest.id,
-                        releaseLabel:game.latestPlaytest.releaseLabel,
-                        status:game.latestPlaytest.status,
-                        targetTesters:game.latestPlaytest.targetTesters
-                      }}
-                      initialReception={reception ? {
-                        playtestId:reception.playtestId,
-                        releaseLabel:reception.releaseLabel,
-                        playtestStatus:reception.playtestStatus,
-                        targetTesters:reception.targetTesters,
-                        acceptedTests:reception.acceptedTests,
-                        ratedTests:reception.ratedTests,
-                        overallScore:reception.overallScore,
-                        recommendPercent:reception.recommendPercent,
-                        continuePercent:reception.continuePercent
-                      } : null}
-                    />
-                  ) : <p className="mt-3 text-xs text-zinc-500">No playtest feedback yet.</p>}
+                  <div className="mt-4 flex min-w-0 flex-wrap items-center gap-2" aria-label="Overall feedback across all builds">
+                    <span className="rounded-md border border-emerald-400/20 bg-emerald-400/[0.05] px-2.5 py-1 text-xs font-semibold text-emerald-200">
+                      Overall · All builds
+                    </span>
+                    <span className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                      {overallReception.overallScore===null ? "No score yet" : `${overallReception.overallScore.toFixed(1)}/10`}
+                    </span>
+                    <span className="text-xs text-zinc-400">
+                      {overallReception.acceptedTests} accepted report{overallReception.acceptedTests===1?"":"s"}
+                      {" · "}{overallReception.rounds} playtest round{overallReception.rounds===1?"":"s"}
+                    </span>
+                  </div>
 
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500">
                     <span>
