@@ -11,6 +11,7 @@ import SiteHeader from "../components/SiteHeader";
 import GameLinksEngagement from "../components/GameLinksEngagement";
 import LegacyPrivateEvidence from "../components/LegacyPrivateEvidence";
 import StartPlaytest from "../components/StartPlaytest";
+import BuildReceptionSummary from "../components/BuildReceptionSummary";
 import {listingUpdates,listingNotice} from "@/lib/listing-updates";
 import DeveloperWorkspace, {WorkspaceRetry} from "../components/DeveloperWorkspace";
 import type {DeveloperPlan} from "../components/DeveloperPlan";
@@ -417,50 +418,6 @@ function nullableNumber(value: number | string | null | undefined) {
 
 function requiredNumber(value: number | string | null | undefined) {
   return nullableNumber(value) ?? 0;
-}
-
-function receptionStatus(reception: DeveloperReception) {
-  if (reception.acceptedTests < 5 || reception.ratedTests < 5) {
-    return "Early results";
-  }
-
-  const overall = reception.overallScore ?? 0;
-  const recommend = reception.recommendPercent ?? 0;
-  const continued = reception.continuePercent ?? 0;
-
-  if (overall >= 8 && recommend >= 70 && continued >= 70) {
-    return "Excellent reception";
-  }
-
-  if (overall >= 6.5 && recommend >= 60 && continued >= 60) {
-    return "Positive reception";
-  }
-
-  if (overall < 5 && recommend < 40 && continued < 40) {
-    return "Poor reception";
-  }
-
-  return "Mixed reception";
-}
-
-function receptionStatusClasses(status: string) {
-  if (status === "Excellent reception") {
-    return "border-[#77f29b]/30 bg-[#77f29b]/10 text-[#77f29b]";
-  }
-
-  if (status === "Positive reception") {
-    return "border-emerald-300/25 bg-emerald-300/[0.08] text-emerald-200";
-  }
-
-  if (status === "Poor reception") {
-    return "border-red-400/30 bg-red-400/10 text-red-300";
-  }
-
-  if (status === "Mixed reception") {
-    return "border-amber-300/30 bg-amber-300/10 text-amber-200";
-  }
-
-  return "border-sky-300/25 bg-sky-300/[0.08] text-sky-200";
 }
 
 function receptionForGame(
@@ -1152,7 +1109,6 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
  warnings={[...(pulseJobsError?["PULSE diagnostics could not be loaded. Your games and campaign actions remain available."]:[]),...(receptionError?["Feedback totals could not be loaded. Open a game to retry its build results."]:[]),...((importedResult.error||approvedResult.error||submissionResult.error)?["Some game details could not be loaded; titles or covers may be unavailable."]:[])]}
  games={linkedGames.map(game=>({campaignIds:game.playtests.map(p=>p.id),id:game.linkId,title:game.gameTitle,image:game.imageUrl,platformLabel:platformDisplayName(game.platform),status:game.latestPlaytest?`Playtest ${game.latestPlaytest.completedAt?"completed":game.latestPlaytest.status}`:"No playtest",...sidebarFeedback(game,rawReceptions,!!receptionError),hasPlaytest:game.playtests.length>0,active:game.playtests.some(p=>p.status==="open"||p.status==="paused"),hasFeedback:!!game.currentReception?.acceptedTests,content:((game) => {
               const reception = game.currentReception;
-              const status = reception ? receptionStatus(reception) : null;
               const hasPulse = completedPulseRuns.some(
                 (run) => run.submission_id === game.submissionId
               );
@@ -1202,40 +1158,28 @@ async function DeveloperDashboard({ searchParams }: { searchParams?: Promise<{st
                     </div>
                   </div>
 
-                  {reception ? (
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <span className="rounded-md border border-white/10 bg-black/20 px-2.5 py-1 text-xs font-semibold text-zinc-200">
-                        {reception.releaseLabel}
-                      </span>
-                      <span
-                        className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${receptionStatusClasses(
-                          status ?? "Early results"
-                        )}`}
-                      >
-                        {status}
-                      </span>
-                      <span className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-semibold text-zinc-200">
-                        {reception.overallScore !== null
-                          ? `${reception.overallScore.toFixed(1)}/10`
-                          : "No score yet"}
-                      </span>
-                      <span className="text-xs text-zinc-500">
-                        {reception.acceptedTests} accepted
-                        {reception.targetTesters > 0
-                          ? ` / ${reception.targetTesters} target`
-                          : ""}
-                      </span>
-                      {reception.recommendPercent !== null && (
-                        <span className="text-xs text-zinc-500">
-                          · {Math.round(reception.recommendPercent)}% recommend
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-3 text-xs text-zinc-500">
-                      No community reception yet
-                    </div>
-                  )}
+                  {game.latestPlaytest ? (
+                    <BuildReceptionSummary
+                      campaignIds={game.playtests.map(p=>p.id)}
+                      currentBuild={{
+                        id:game.latestPlaytest.id,
+                        releaseLabel:game.latestPlaytest.releaseLabel,
+                        status:game.latestPlaytest.status,
+                        targetTesters:game.latestPlaytest.targetTesters
+                      }}
+                      initialReception={reception ? {
+                        playtestId:reception.playtestId,
+                        releaseLabel:reception.releaseLabel,
+                        playtestStatus:reception.playtestStatus,
+                        targetTesters:reception.targetTesters,
+                        acceptedTests:reception.acceptedTests,
+                        ratedTests:reception.ratedTests,
+                        overallScore:reception.overallScore,
+                        recommendPercent:reception.recommendPercent,
+                        continuePercent:reception.continuePercent
+                      } : null}
+                    />
+                  ) : <p className="mt-3 text-xs text-zinc-500">No playtest feedback yet.</p>}
 
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500">
                     <span>

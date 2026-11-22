@@ -17,6 +17,7 @@ import {openGameTraffic} from "./GameLinksEngagement";
 import { FeedbackActions } from "./FeedbackActions";
 import FeedbackUsefulness, { type FeedbackUsefulnessValue } from "./FeedbackUsefulness";
 import UsefulFeedbackBadge from "./UsefulFeedbackBadge";
+import {emitBuildReception,receptionFromReports} from "./BuildReceptionSummary";
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 import { summarizePlaytime, formatPlaytime } from "@/lib/playtime";
 
@@ -1583,6 +1584,11 @@ function BuildResultsPanel({
   const selectedPlaytest = allBuilds.find((playtest) => playtest.id === selectedId) ?? currentPlaytest;
   const isCurrent = selectedPlaytest.id === currentPlaytest.id;
   const resultsReady = !loading && loadedBuildId === selectedPlaytest.id && !error;
+  useEffect(() => {
+    // Update the top header instantly when switching between builds.
+    const build = [currentPlaytest,...playtests].find(p=>p.id===selectedId) ?? currentPlaytest;
+    emitBuildReception({...receptionFromReports(build,[]),state:"loading"});
+  },[selectedId,currentPlaytest,playtests]);
 
   async function loadResults(playtestId: string) {
     const request=++resultRequest.current;
@@ -1604,6 +1610,8 @@ function BuildResultsPanel({
     setLoadedBuildId(playtestId);
 
     if (communityResult.error || progressResult.error || feedbackResult.error || genresResult.error || evidenceResult.error) {
+      const failedBuild = [currentPlaytest,...playtests].find(p=>p.id===playtestId) ?? currentPlaytest;
+      emitBuildReception({...receptionFromReports(failedBuild,[]),state:"error"});
       setCommunityResults(null);
       setIndependentProgress(null);
       setAcceptedFeedback([]);
@@ -1622,7 +1630,10 @@ function BuildResultsPanel({
     setCommunityResults((communityResult.data ?? null) as CommunityPlaytestResults | null);
     const progressRows = (progressResult.data ?? []) as PlaytestedTestProgress[];
     setIndependentProgress(progressRows[0] ?? null);
-    setAcceptedFeedback((feedbackResult.data ?? []) as AcceptedIndependentFeedback[]);
+    const acceptedRows = (feedbackResult.data ?? []) as AcceptedIndependentFeedback[];
+    setAcceptedFeedback(acceptedRows);
+    const loadedBuild = [currentPlaytest,...playtests].find(p=>p.id===playtestId) ?? currentPlaytest;
+    emitBuildReception(receptionFromReports(loadedBuild,acceptedRows));
     // If the optional batch RPC is unavailable, preserve the old per-report fallback.
     setUsefulnessPrefetched(!usefulnessResult.error);
     setUsefulnessByTest(Object.fromEntries(
@@ -1641,6 +1652,8 @@ function BuildResultsPanel({
       if(request!==resultRequest.current)return;
       setLoadedBuildId(playtestId);
       setError("Results could not be loaded. Use Refresh results to try again.");
+      const failedBuild = [currentPlaytest,...playtests].find(p=>p.id===playtestId) ?? currentPlaytest;
+      emitBuildReception({...receptionFromReports(failedBuild,[]),state:"error"});
       setLoading(false);
     }
   }
