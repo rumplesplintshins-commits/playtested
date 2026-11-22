@@ -3,14 +3,40 @@ import {ukDateTime} from "@/lib/uk-date-time";
 import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import PaginationControls from "./PaginationControls";
-import {pageCount,pagedItems} from "@/lib/pagination";
+import {pagedItems,safePage} from "@/lib/pagination";
 import { createClient } from "@/lib/supabase";
 import { needsFeedbackReview, feedbackQualityLabel, feedbackReasonSuggestion, FEEDBACK_QUALITY_CRITERIA, type FeedbackReviewItem } from "@/lib/feedback-review";
 import { QualityGuidance } from "./TestingPolicy";
 
 type PrivateDeveloperReason = { test_id: string; reason: string; marked_at: string; developer_id: string };
+type ReviewView = "pending" | "history";
+type ReviewLocation = { requestKey: string; testIds: string[] };
+type ReviewReasonResult = { location: ReviewLocation; reasons: Record<string, PrivateDeveloperReason>; error: string };
+
+const serverReviewLocation = "__server-review-location__";
+function subscribeToReviewLocation(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  window.addEventListener("hashchange", onChange);
+  window.addEventListener("review-location-change", onChange);
+  return () => {
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener("hashchange", onChange);
+    window.removeEventListener("review-location-change", onChange);
+  };
+}
+function getReviewLocationSnapshot() {
+  return JSON.stringify([window.location.search, window.location.hash]);
+}
+function getServerReviewLocationSnapshot() {
+  return serverReviewLocation;
+}
+function replaceReviewLocation(url: URL) {
+  window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  window.dispatchEvent(new Event("review-location-change"));
+}
+
 function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem; reload: () => Promise<void>; privateReason?: PrivateDeveloperReason }) {
   const [error, setError] = useState("");
   const [rubricAttempt,setRubricAttempt]=useState(0);
@@ -92,7 +118,7 @@ function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem;
     {t.feedback_usefulness === "not_useful" && privateReason && (
       <section aria-label="Developer explanation (admin only)" className="min-w-0 space-y-2 rounded-lg border border-amber-300/30 bg-amber-300/[0.045] p-3 sm:p-4">
         <h4 className="break-words text-sm font-semibold text-amber-100">Developer marked this feedback as Not useful</h4>
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Developer's explanation</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Developer&apos;s explanation</p>
         <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-6 text-zinc-200">{privateReason.reason}</p>
         <p className="text-xs text-zinc-400">Submitted {ukDateTime(privateReason.marked_at)} · Admin only</p>
       </section>
@@ -164,79 +190,72 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
   error: string;
   refresh: () => Promise<void>;
 }) {
-  const [view, setView] = useState<"pending" | "history">("pending");
+  const locationSnapshot = useSyncExternalStore(subscribeToReviewLocation, getReviewLocationSnapshot, getServerReviewLocationSnapshot);
+  const locationReady = locationSnapshot !== serverReviewLocation;
+  const [urlSearch, urlHash] = locationReady ? JSON.parse(locationSnapshot) as [string, string] : ["", ""];
+  const urlParams = new URLSearchParams(urlSearch);
+  const urlPageValue = Number(urlParams.get("reviewPage"));
+  const urlReviewedPage = Number.isSafeInteger(urlPageValue) && urlPageValue > 0 ? urlPageValue : 1;
+  const focusedReviewId = urlHash.match(/^#report-([0-9a-f-]{36})$/i)?.[1] ?? null;
+  const urlView: ReviewView = focusedReviewId || urlParams.get("review") === "reviewed" ? "history" : "pending";
+  const [selectedView, setSelectedView] = useState<ReviewView | null>(null);
+  const view = selectedView ?? urlView;
   const [notice, setNotice] = useState("");
-  const [privateReasons, setPrivateReasons] = useState<Record<string, PrivateDeveloperReason>>({});
-  const [privateReasonsError, setPrivateReasonsError] = useState("");
-  const [focusedReviewId,setFocusedReviewId]=useState<string|null>(null);
-  const [pendingPage,setPendingPage]=useState(1),[reviewedPage,setReviewedPage]=useState(1);
-  const [paginationReady,setPaginationReady]=useState(false);
+  const [privateReasonResult, setPrivateReasonResult] = useState<ReviewReasonResult | null>(null);
+  const [pendingPageSelection, setPendingPageSelection] = useState<number | null>(null);
+  const [reviewedPageSelection, setReviewedPageSelection] = useState<number | null>(null);
   const pending=useMemo(()=>items.filter(needsFeedbackReview),[items]);
   const history=useMemo(()=>items.filter(item=>!needsFeedbackReview(item)).sort((a,b)=>{
     const aa=Date.parse(a.report.submitted_at||"")||0,bb=Date.parse(b.report.submitted_at||"")||0;
     return bb-aa||b.report.id.localeCompare(a.report.id);
   }),[items]);
+  const pendingPage=safePage(pendingPageSelection ?? 1,pending.length,10);
+  const historyFocusIndex=focusedReviewId ? history.findIndex(item=>item.report.id===focusedReviewId) : -1;
+  const historyFocusPage=historyFocusIndex>=0 ? Math.floor(historyFocusIndex/10)+1 : null;
+  const reviewedPage=safePage(historyFocusPage ?? reviewedPageSelection ?? urlReviewedPage,history.length,10);
   const activePage=view==="pending"?pendingPage:reviewedPage;
   const visible=useMemo(()=>pagedItems(view==="pending"?pending:history,activePage,10),[view,pending,history,activePage]);
   const reasonReviewIds=useMemo(()=>visible.filter(item=>!needsFeedbackReview(item)&&item.report.feedback_usefulness==="not_useful").map(item=>item.report.id),[visible]);
+  const reasonLocation=useMemo<ReviewLocation>(()=>({requestKey:reasonReviewIds.join("\u0000"),testIds:reasonReviewIds}),[reasonReviewIds]);
+  const matchingPrivateReasonResult=privateReasonResult?.location===reasonLocation ? privateReasonResult : null;
+  const privateReasons=matchingPrivateReasonResult?.reasons ?? {};
+  const privateReasonsError=matchingPrivateReasonResult?.error ?? "";
   useEffect(() => {
     let active = true;
-    if (!reasonReviewIds.length) {
-      setPrivateReasons({});
-      setPrivateReasonsError("");
-      return () => {active=false;};
-    }
-    void createClient().rpc("get_admin_feedback_not_useful_reasons", {p_test_ids: reasonReviewIds}).then(({data,error}) => {
+    if (!reasonLocation.testIds.length) return () => {active=false;};
+    void createClient().rpc("get_admin_feedback_not_useful_reasons", {p_test_ids: reasonLocation.testIds}).then(({data,error}) => {
       if (!active) return;
       if (error) {
-        setPrivateReasonsError("Private developer explanations could not be loaded. Refresh to retry.");
-        setPrivateReasons({});
+        setPrivateReasonResult({location:reasonLocation,reasons:{},error:"Private developer explanations could not be loaded. Refresh to retry."});
         return;
       }
-      setPrivateReasons(Object.fromEntries(((data ?? []) as PrivateDeveloperReason[]).map(row => [row.test_id,row])));
-      setPrivateReasonsError("");
+      setPrivateReasonResult({location:reasonLocation,reasons:Object.fromEntries(((data ?? []) as PrivateDeveloperReason[]).map(row => [row.test_id,row])),error:""});
     });
     return () => {active=false;};
-  }, [reasonReviewIds]);
-  useEffect(()=>{
-    const params=new URLSearchParams(window.location.search);
-    const page=Number(params.get("reviewPage"));
-    if(Number.isSafeInteger(page)&&page>0)setReviewedPage(page);
-    const target=window.location.hash.match(/^#report-([0-9a-f-]{36})$/i)?.[1]??null;
-    if(target){setFocusedReviewId(target);setView("history");}
-    else if(params.get("review")==="reviewed")setView("history");
-    setPaginationReady(true);
-  },[]);
-  useEffect(()=>{
-    if(!focusedReviewId)return;
-    const index=history.findIndex(item=>item.report.id===focusedReviewId);
-    if(index>=0)setReviewedPage(page=>page===Math.floor(index/10)+1?page:Math.floor(index/10)+1);
-  },[focusedReviewId,history]);
+  }, [reasonLocation]);
   useEffect(()=>{
     if(!focusedReviewId||!visible.some(item=>item.report.id===focusedReviewId))return;
     const timer=window.setTimeout(()=>document.getElementById("report-"+focusedReviewId)?.scrollIntoView({block:"center"}),130);
     return()=>window.clearTimeout(timer);
   },[focusedReviewId,visible]);
-  useEffect(()=>{if(!loading)setPendingPage(page=>Math.min(page,pageCount(pending.length,10)));},[pending.length,loading]);
-  useEffect(()=>{if(!loading)setReviewedPage(page=>Math.min(page,pageCount(history.length,10)));},[history.length,loading]);
   useEffect(()=>{
-    if(!paginationReady)return;
+    if(!locationReady)return;
     const url=new URL(window.location.href);
     url.searchParams.set("review",view==="history"?"reviewed":"pending");
     if(view==="history"&&reviewedPage>1)url.searchParams.set("reviewPage",String(reviewedPage));
     else url.searchParams.delete("reviewPage");
-    window.history.replaceState(window.history.state,"",url.pathname+url.search+url.hash);
-  },[view,reviewedPage,paginationReady]);
+    if(url.pathname+url.search+url.hash!==window.location.pathname+window.location.search+window.location.hash)replaceReviewLocation(url);
+  },[view,reviewedPage,locationReady]);
   const changePage=(page:number)=>{
-    setFocusedReviewId(null);
-    if(window.location.hash.startsWith("#report-"))window.history.replaceState(window.history.state,"",window.location.pathname+window.location.search);
-    if(view==="history")setReviewedPage(page);else setPendingPage(page);
+    const url=new URL(window.location.href);
+    if(url.hash.startsWith("#report-")){url.hash="";replaceReviewLocation(url);}
+    if(view==="history")setReviewedPageSelection(page);else setPendingPageSelection(page);
   };
     async function reload() { await refresh(); setNotice("Decision saved and audited."); }
   return <section aria-label="Playtest feedback reviews">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Independent playtest reviews</h2><p className="mt-1 text-sm text-zinc-400">Review submitted feedback against the quality criteria. Admin decisions control XP.</p></div><button disabled={loading} onClick={() => void refresh()} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm disabled:opacity-50">Refresh reviews</button></div>
     <details className="my-4 rounded-lg border border-white/10 p-4"><summary className="cursor-pointer font-semibold">How feedback earns XP</summary><QualityGuidance/></details>
-    <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => {setFocusedReviewId(null);setView("pending");}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => {setFocusedReviewId(null);setView("history");}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
+    <div className="flex gap-3"><button aria-pressed={view === "pending"} onClick={() => {setSelectedView("pending");const url=new URL(window.location.href);if(url.hash.startsWith("#report-")){url.hash="";replaceReviewLocation(url);}}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Awaiting review ({pending.length})</button><button aria-pressed={view === "history"} onClick={() => {setSelectedView("history");const url=new URL(window.location.href);if(url.hash.startsWith("#report-")){url.hash="";replaceReviewLocation(url);}}} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm">Reviewed ({history.length})</button></div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
     {privateReasonsError && <p role="alert" className="mt-4 text-sm text-amber-200">{privateReasonsError}</p>}

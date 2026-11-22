@@ -12,8 +12,8 @@ assert(page.includes("setUsefulnessByTest(Object.fromEntries("),"batch results u
 assert(page.includes("initialRating={usefulnessByTest[response.test_id] ?? null}"),"historical saved values passed to form");
 assert(page.includes("onUsefulnessChange={onUsefulnessChange}"),"saved rating updates badge without refresh");
 assert(page.includes("usefulnessByTest[response.test_id]"),"badge uses stored status");
-assert(rating.includes("if (prefetched) {") && rating.indexOf("if (prefetched) {") < rating.indexOf('.rpc("get_test_feedback_usefulness_for_developer"'),"skip per-report reader on success");
-assert(rating.includes("prefetched ? initialRating : undefined"),"failed batch fallback stable across state changes");
+assert(rating.includes("if (request.prefetched) return;") && rating.indexOf("if (request.prefetched) return;") < rating.indexOf('.rpc("get_test_feedback_usefulness_for_developer"'),"skip per-report reader on success");
+assert(rating.includes("matchesRequest ? feedbackState.value : prefetched ? initialRating : null") && rating.includes("matchesRequest ? feedbackState.loading : !prefetched"),"batch rating and loading state stay derived from current props while the fallback loads");
 assert(rating.includes("p_reason: next ==="),"not-useful private reason validation preserved");
 assert(rating.includes("onRatingChange?.(testId, confirmedValue)"),"badge only updates on confirmed save");
 assert(sql.includes("AND c.developer_id=auth.uid()"),"batch restricted to owner");
