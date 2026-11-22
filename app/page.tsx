@@ -3,10 +3,14 @@ import { blueskyLogoPath } from "./components/SocialLinks";
 import GameCatalogue from "./components/GameCatalogue";
 import SiteHeader from "./components/SiteHeader";
 import Link from "next/link";
-import {SITE_ORIGIN,serializeJsonLd,websiteStructuredData} from "../lib/seo";
+import {SITE_ORIGIN,serializeJsonLd,websiteStructuredData,publicMetadata} from "../lib/seo";
 import { connection } from "next/server";
 import { homepageCatalogueSeed } from "@/lib/homepage-catalogue";
-export const metadata={alternates:{canonical:SITE_ORIGIN+"/"}};
+export const metadata=publicMetadata(
+  "Playtested – Indie Game Playtesting & Feedback",
+  "Discover indie games, become a tester, or get structured playtest feedback for your own game. Free to join. Browse our indie game catalogue.",
+  "/",
+);
 export const instant = false;
 
 export default async function Home() {

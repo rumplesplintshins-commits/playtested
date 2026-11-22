@@ -9,8 +9,14 @@ import {publicMetadata,SITE_ORIGIN} from "./seo";
 
 export async function gameMetadata(kind:"imported"|"approved",value:string) {
   const game=await publicGame(kind,value);
-  if(!game)notFound();
-  return publicMetadata(`${game.title} | Playtested`,`${game.title}${game.developer?` by ${game.developer}`:""}. ${game.description}`.slice(0,300),game.path);
+  if(!game) {
+    if(kind==="approved")return publicMetadata("Indie Game – Playtest Feedback","Playtest feedback, tester ratings and details for this indie game on Playtested. Explore structured reports from recent game builds and see what players reported.",`/submissions/${value}`);
+    return notFound();
+  }
+  if(kind==="imported")return publicMetadata(`${game.title} | Playtested`,`${game.title}${game.developer?` by ${game.developer}`:""}. ${game.description}`.slice(0,300),game.path);
+  const title=`${game.title.slice(0, 39)} – Playtest Feedback`;
+  const description=`Playtest feedback, tester ratings and details for ${game.title} on Playtested. Explore structured reports from recent game builds and see what players reported.`.slice(0,155);
+  return publicMetadata(title,description,game.path);
 }
 
 async function publicGame(kind:"imported"|"approved",value:string) {
