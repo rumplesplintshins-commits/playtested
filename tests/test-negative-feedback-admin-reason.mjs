@@ -7,7 +7,7 @@ for(const line of ["CREATE TABLE IF NOT EXISTS playtested_studios.feedback_not_u
   assert(db.includes(line),"SQL missing "+line);
 assert(db.includes("IF p_usefulness='not_useful' THEN"),"Old no-reason call must reject negatives");
 assert(!db.includes("ALTER TABLE public.community_game_tests ADD COLUMN"),"Do not put private reason on tester record");
-assert(ui.includes("Can you explain why this wasn't useful feedback?"));
+assert(ui.includes("Can you explain why this wasn&apos;t useful feedback?"));
 assert(ui.includes("maxLength={500}") && ui.includes("minLength={10}"));
 assert(ui.includes('reasonDraft.trim().length < 10'));
 assert(ui.includes("p_reason: next ==="),"Atomic rating and explanation required");
