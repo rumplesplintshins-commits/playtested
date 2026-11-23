@@ -20,6 +20,7 @@ import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-re
 import SiteHeader from "../components/SiteHeader";
 import PaginationControls from "../components/PaginationControls";
 import {pageCount,pagedItems,safePage} from "@/lib/pagination";
+import {sortTesterGamesOldestFirst} from "@/lib/tester-game-order";
 
 import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, PlacesRules, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
 
@@ -46,6 +47,7 @@ type TestGame = {
   ai_type: string | null;
   focus_areas: string[];
   platform?: string | null;
+  published_at?: string | null;
 };
 
 type TestClaim = FeedbackQualityRecord & {
@@ -1369,9 +1371,13 @@ function TesterPage() {
     return()=>window.clearTimeout(timer);
   },[historyPage,historyClaims,loading]);
 
-  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))) && (!availableSearch.trim() || [g.title,g.developer_name,g.genre,g.description].some(value=>value.toLowerCase().includes(availableSearch.trim().toLowerCase()))));
+  const availableGames=sortTesterGamesOldestFirst(eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))) && (!availableSearch.trim() || [g.title,g.developer_name,g.genre,g.description].some(value=>value.toLowerCase().includes(availableSearch.trim().toLowerCase())))));
   const currentAvailablePage=safePage(availablePage,availableGames.length,9);
   const pageAvailableGames=pagedItems(availableGames,currentAvailablePage,9);
+  const changeAvailablePage=(next:number)=>{
+    setAvailablePage(next);
+    requestAnimationFrame(()=>document.getElementById("available-tests-heading")?.scrollIntoView({block:"start",behavior:"smooth"}));
+  };
   const minimisedAvailableGames = pageAvailableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
   const expandedAvailableList = pageAvailableGames.filter(game => expandedAvailableGames[game.submission_id] !== false);
   useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});const t=setTimeout(()=>setJustClaimedId(null),0);return () => clearTimeout(t);},[justClaimedId,displayedActiveGames]);
@@ -1893,7 +1899,7 @@ function TesterPage() {
                     ))}
                   </div>
                 )}
-                {availableGames.length>0&&<PaginationControls label="Available games" page={currentAvailablePage} pageSize={9} total={availableGames.length} onPageChange={setAvailablePage}/>}
+                {availableGames.length>0&&<PaginationControls label="Available games" page={currentAvailablePage} pageSize={9} total={availableGames.length} onPageChange={changeAvailablePage}/>}
               </section>
             )}
           </>

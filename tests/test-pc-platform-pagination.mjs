@@ -25,12 +25,25 @@ for(const count of [0,1,9,10,12,18,19]){
 }
 assert.equal(pagination.pagedItems(Array.from({length:19},(_,i)=>i),2,9)[0],9,'next page starts at the following game');
 
+const ordering={};
+new Function('exports',ts.transpileModule(fs.readFileSync('lib/tester-game-order.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(ordering);
+const unorderedGames=[
+ {submission_id:'z-game',published_at:'2026-11-03T00:00:00Z'},
+ {submission_id:'b-game',published_at:'2026-11-01T00:00:00Z'},
+ {submission_id:'a-game',published_at:'2026-11-01T00:00:00Z'},
+ {submission_id:'missing-date',published_at:null},
+ {submission_id:'invalid-date',published_at:'not-a-date'},
+];
+assert.deepEqual(ordering.sortTesterGamesOldestFirst(unorderedGames).map(game=>game.submission_id),['a-game','b-game','z-game','invalid-date','missing-date'],'available games sort oldest first with deterministic ID ties and undated games last');
+assert.equal(unorderedGames[0].submission_id,'z-game','available game sort does not mutate the source array');
+
 const submit=fs.readFileSync('app/submit/page.tsx','utf8');
 const edit=fs.readFileSync('app/components/SubmissionCorrection.tsx','utf8');
 const hub=fs.readFileSync('app/tester/page.tsx','utf8');
 const pcCard=fs.readFileSync('app/components/GamePcRequirements.tsx','utf8');
 const pcData=fs.readFileSync('lib/game-pc-requirements.ts','utf8');
 const editMigration=fs.readFileSync('supabase/migrations/202611230001_optional_pc_requirements_edits.sql','utf8');
+const discoveryMigration=fs.readFileSync('supabase/migrations/20261123222713_tester_hub_publication_order.sql','utf8');
 assert.match(submit,/supportsPcRequirements\(platform\)&&<div className="mb-6"><GamePcFields/,'new form hides hardware fields for unsupported platforms');
 assert.match(submit,/if\(supportsPcRequirements\(platform\)\).*parsePcSpecs/,'new form submits specs only on supported platforms');
 assert.match(edit,/supportsPcRequirements\(platform\)\?parsePcSpecs[\s\S]*?:null/,'edit omits hidden specs so existing values are preserved');
@@ -39,6 +52,11 @@ assert.match(pcData,/rpc\('get_game_pc_requirements'/,'Tester Hub retrieves requ
 assert.match(pcCard,/tiers\.map\(tier/,'Tester Hub renders supplied minimum and recommended requirement tiers');
 assert.match(pcCard,/if\(!showEmpty&&!tiers\.length&&!error\)return null/,'Tester Hub omits empty optional requirements for every platform');
 assert.match(hub,/pagedItems\(availableGames,currentAvailablePage,9\)/,'Tester Hub pages the filtered game order at nine per page');
+assert.match(hub,/sortTesterGamesOldestFirst\(eligibleGames\.filter/,'Tester Hub sorts after preserving its existing filters and search');
+assert.match(hub,/onPageChange=\{changeAvailablePage\}/,'Available games page changes use the return-to-section handler');
+assert.match(hub,/scrollIntoView\(\{block:"start",behavior:"smooth"\}\)/,'Available games page changes scroll the section heading into view');
+assert.match(discoveryMigration,/coalesce\(c\.published_at,c\.created_at,s\.created_at\)/,'discovery returns immutable publication time, with creation-time fallback for legacy listings');
+assert.doesNotMatch(discoveryMigration,/updated_at/,'publication ordering never uses mutable update time');
 assert.match(hub,/setAvailablePage\(1\)/,'search and filters return to the first available-game page');
 assert.match(hub,/availableSearch\.trim\(\)/,'Tester Hub search is applied before pagination');
 assert.match(fs.readFileSync('app/components/PaginationControls.tsx','utf8'),/Page \{current\} of \{pages\}/,'pager identifies the current page and total pages');
