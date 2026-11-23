@@ -25,7 +25,7 @@ import {submissionHttpUrl,submissionIssues,AI_AREAS} from "../../lib/submission-
 import SiteHeader from "../components/SiteHeader";
 import PlatformTiles from "../components/PlatformTiles";
 import PlatformLinkField from "../components/PlatformLinkField";
-import {type Platform} from "@/lib/platforms";
+import {supportsPcRequirements,type Platform} from "@/lib/platforms";
 
 import { createClient } from "../../lib/supabase";
 import { GAME_GENRES } from "../../lib/genres";
@@ -1239,7 +1239,7 @@ export default function SubmitGamePage() {
     const footageInput=String(formData.get("gameplayVideo")||"").trim();
     if(footageInput&&!gameplayVideo(footageInput)){setError("Use a supported HTTPS YouTube, Vimeo or Google Drive video link, or leave optional footage blank.");return;}
     const draft={title:String(formData.get('title')||'').trim(),developer_name:String(formData.get('developer')||'').trim(),genre:String(formData.get('genre')||''),description:String(formData.get('description')||'').trim(),platform,game_link:platform==="steam"?"":gameLink,steam_url:platform==="steam"?steamUrl:null,image_url:String(formData.get('imageUrl')||'').trim()||null,release_status:String(formData.get('releaseStatus')||'')||null,release_date:String(formData.get('releaseDate')||'')||null,ai_type:String(formData.get('aiType')||''),ai_explanation:String(formData.get('aiExplanation')||'').trim(),ai_areas:formData.getAll('aiAreas').map(String),evidence_link:String(formData.get('evidenceLink')||'').trim()};
-    let pcMinimum,pcRecommended;try{pcMinimum=parsePcSpecs(pcRequirements.minimum,true);pcRecommended=parsePcSpecs(pcRequirements.recommended,true);}catch(e){setError(e instanceof Error?e.message:"Check optional PC requirements.");return;}
+    let pcMinimum={},pcRecommended={};if(supportsPcRequirements(platform)){try{pcMinimum=parsePcSpecs(pcRequirements.minimum,true);pcRecommended=parsePcSpecs(pcRequirements.recommended,true);}catch(e){setError(e instanceof Error?e.message:"Check optional PC requirements.");return;}}
 
 
 
@@ -3707,7 +3707,7 @@ export default function SubmitGamePage() {
 
 
               <div>
-                <div className="mb-6"><GamePcFields value={pcRequirements} onChange={value=>{setPcRequirements(value);setPcDirty(true);}} disabled={submitting}/></div>
+                {supportsPcRequirements(platform)&&<div className="mb-6"><GamePcFields value={pcRequirements} onChange={value=>{setPcRequirements(value);setPcDirty(true);}} disabled={submitting}/></div>}
                 <ScreenshotPicker onChange={setScreenshotFiles} onBusyChange={setScreenshotSelecting} disabled={submitting}/>
                 <label className="mb-6 block text-sm">Gameplay footage (optional)<input type="url" name="gameplayVideo" maxLength={500} placeholder="https://www.youtube.com/watch?v=?" className={inputClass}/><span className="mt-2 block text-xs leading-5 text-zinc-400">{gameplayGuidance} This link appears on your approved public game page.</span></label>
                 <p className={labelClass}>Game thumbnail *</p>

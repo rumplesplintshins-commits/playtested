@@ -15,6 +15,7 @@ let evidenceRank=0;
 let restrictionReason='Requires Strategy interest';
 let claim={id:test,submission_id:null,playtest_id:campaign,status:'in_progress',review_outcome:'pending',review_reason:null,xp_awarded:false};
 let failSubmit=true,failRelease=true,failReclaim=true,reclaims=0;let reviewEvents=[],submittedPayloads=[];
+let discoveryGames=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[],platform:'browser'},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[],platform:'browser'},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],platform:'browser',can_claim:false,restriction_reason:restrictionReason}];
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext();
@@ -31,7 +32,7 @@ try{
      else if(url.pathname.endsWith('/get_my_feedback_usefulness'))data=[];
      else if(url.pathname.endsWith('/get_my_notifications'))data={notifications:[],unread_count:0};
      else if(url.pathname.endsWith('/profiles'))data={id:uid,role:'user',roles:['tester'],tester_xp:0,developer_xp:0,completed_tests:0};
-     else if(url.pathname.endsWith('/approved_games'))data=[{title:'Browser fixture',developer_name:'Fixture developer',platform:'pc'},{title:'Adventure fixture',developer_name:'Fixture developer',platform:'browser'},{title:'Strategy restricted fixture',developer_name:'Fixture developer',platform:'browser'}];
+     else if(url.pathname.endsWith('/approved_games'))data=discoveryGames.filter(game=>game.platform).map(({title,developer_name,platform})=>({title,developer_name,platform}));
      else if(url.pathname.endsWith('/community_game_tests'))data=req.headers().accept?.includes('object')?claim:(claim?[claim]:[]);
      else if(url.pathname.endsWith('/get_testing_capacity_policy'))data={places:4,reservation_hours:72,server_now:new Date().toISOString(),activated_at:new Date().toISOString()};
      else if(url.pathname.endsWith('/get_my_test_reservations'))data={server_now:new Date().toISOString(),claims:claim?[claim]:[]};
@@ -39,9 +40,9 @@ try{
      else if(url.pathname.endsWith('/start_community_game_test')){claim={...claim,status:'in_progress'};data=null;}
      else if(url.pathname.endsWith('/test_review_events'))data=reviewEvents;
      else if(url.pathname.endsWith('/get_my_testing_progress'))data={rank:evidenceRank,xp:0,accepted:0,reviewed:0,passed:0,genres:['Action']};
-     else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=[{submission_id:campaign,title:'Browser fixture',developer_name:'Fixture developer',genre:'Action',description:'Test movement',game_link:'https://example.test/build.zip',access_type:'download_build',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000002',title:'Adventure fixture',developer_name:'Fixture developer',genre:'Adventure',description:'Explore',game_link:'https://example.test/adventure',access_type:'browser_game',image_url:null,focus_areas:[]},{submission_id:'20000000-0000-0000-0000-000000000003',title:'Strategy restricted fixture',developer_name:'Fixture developer',genre:'Strategy',description:'Plan your station',game_link:null,access_type:'browser_game',image_url:null,focus_areas:[],can_claim:false,restriction_reason:restrictionReason}];
+     else if(url.pathname.endsWith('/get_discoverable_community_test_games'))data=discoveryGames.map(game=>game.can_claim===false?{...game,restriction_reason:restrictionReason}:game);
       else if(url.pathname.endsWith('/get_campaign_testing_details'))data={minimum_rank:0,testing_genre:'Action',genre_restricted:false,capacity:4,submitted:0,testing:1,available:3};
-      else if(url.pathname.endsWith('/get_game_pc_requirements'))data=null;
+      else if(url.pathname.endsWith('/get_game_pc_requirements')){const request=req.postDataJSON()?.p_games||[];data=request.filter(game=>game.kind==='campaign'&&game.id===campaign).map(game=>({...game,minimum:{os:'Windows 11'},recommended:{ram_gb:16}}));}
       else if(url.pathname.endsWith('/tester_availability_preferences'))data=[];
       else if(url.pathname.endsWith('/account_pc_specs'))data={specs:null};
       else if(url.pathname.endsWith('/get_my_testing_activity_media'))data=[];
@@ -63,6 +64,12 @@ try{
  page.setDefaultTimeout(15000);
  await page.goto(`${origin}/tester`);
  await expect(page.getByRole('heading',{name:'Bronze Tester'})).toBeVisible();
+ const browserRequirements=page.locator('article').filter({has:page.getByRole('heading',{name:'Browser fixture'})});
+ await browserRequirements.locator('summary').filter({hasText:'PC requirements'}).click();
+ await expect(browserRequirements.getByText('Minimum',{exact:true})).toBeVisible();
+ await expect(browserRequirements.getByText('Recommended',{exact:true})).toBeVisible();
+ await expect(browserRequirements.getByText('Windows 11',{exact:true})).toBeVisible();
+ await expect(browserRequirements.getByText('16 GB',{exact:true})).toBeVisible();
  await page.getByLabel('Testing genre',{exact:false}).selectOption('preferred');
  await expect(page.getByRole('heading',{name:'Adventure fixture'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Strategy restricted fixture'})).toHaveCount(0);
@@ -177,6 +184,19 @@ try{
  await expect(history.getByText(/Feedback quality 60%/).first()).toBeVisible();
  await history.locator('summary').click();await expect(history.getByText('60 XP change',{exact:false})).toBeVisible();await expect(history.getByRole('button',{name:'Collapse testing history'})).toBeVisible();
  await history.getByRole('button',{name:'Collapse testing history'}).click();await expect(history.getByRole('button',{name:'Expand testing history'})).toBeVisible();
+ claim=null;
+ discoveryGames=Array.from({length:19},(_,index)=>({submission_id:`40000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,title:`Pagination Game ${String(index+1).padStart(2,'0')}`,developer_name:'Pagination Studio',genre:index%3===0?'Adventure':'Action',description:`Searchable description ${index+1}`,game_link:'https://example.test/game',access_type:'browser_game',image_url:null,focus_areas:[],platform:'browser'}));
+ await page.reload();
+ const cards=page.locator('[data-tester-game]'),pager=page.getByRole('navigation',{name:'Available games pagination'});
+ await expect(cards).toHaveCount(9);await expect(pager).toContainText('Page 1 of 3');await expect(cards.first().getByRole('region',{name:'Game PC requirements'})).toHaveCount(0);
+ await pager.getByRole('button',{name:'Next'}).click();await expect(cards).toHaveCount(9);await expect(cards.first()).toContainText('Pagination Game 10');await expect(pager).toContainText('Page 2 of 3');
+ await pager.getByRole('button',{name:'Next'}).click();await expect(cards).toHaveCount(1);await expect(cards.first()).toContainText('Pagination Game 19');await expect(pager).toContainText('Page 3 of 3');await expect(pager.getByRole('button',{name:'Next'})).toBeDisabled();
+ await page.getByLabel('Search available games').fill('Pagination Game 19');await expect(cards).toHaveCount(1);await expect(cards.first()).toContainText('Pagination Game 19');await expect(page.getByRole('navigation',{name:'Available games pagination'})).toHaveCount(0);
+ await page.getByLabel('Search available games').fill('');await pager.getByRole('button',{name:'Next'}).click();await pager.getByRole('button',{name:'Next'}).click();
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('Action');await expect(pager).toContainText('Page 1 of 2');await expect(cards).toHaveCount(9);
+ await page.getByLabel('Filter test games by platform').selectOption('browser');await expect(cards).toHaveCount(9);await expect(pager).toContainText('Page 1 of 2');
+ await page.getByLabel('Testing genre',{exact:false}).selectOption('all');await expect(cards).toHaveCount(9);await expect(pager).toContainText('Page 1 of 3');
+ console.log('PASS Tester Hub pagination: 19 mocked Browser games, nine cards per page, ordered navigation, 1-card final page, search and platform/genre filters reset to page one.');
  console.log('PASS accepted history: header and diamond toggle, preserved scores/time/XP history, no reconsideration or unrated badges; nested history stays expanded.');
  console.log('PASS reservation browser: server deadline/final-24h warning, expired activity and freed active slot, disabled expired submission, retained draft after reload/failed reclaim, same-ID successful reclaim and editor continuity; desktop/mobile no overflow. All backend traffic mocked.');
  console.log('PASS: mocked-service browser check — preferred/All genres, blank ratings, drafts after failed submission/reload/release, cleanup after confirmed submission/release. No live Supabase calls.');
