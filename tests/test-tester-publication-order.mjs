@@ -15,7 +15,7 @@ try{
   );
   create table public.imported_games(id uuid,developer_name text,genre text,description text,image_url text);
   create table public.approved_games(id uuid,developer_name text,genre text,description text,image_url text);
-  create table public.game_submissions(id uuid,developer_name text,genre text,description text,image_url text,ai_type text,created_at timestamptz);
+  create table public.game_submissions(id uuid,developer_name text,genre text,description text,image_url text,ai_type text,submitted_at timestamptz);
   create table public.community_game_tests(playtest_id uuid,tester_id uuid,status text,reservation_expires_at timestamptz,review_outcome text);
   create table public.fixture_available(
    submission_id uuid,title text,developer_name text,genre text,description text,game_link text,

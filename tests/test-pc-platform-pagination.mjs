@@ -55,7 +55,7 @@ assert.match(hub,/pagedItems\(availableGames,currentAvailablePage,9\)/,'Tester H
 assert.match(hub,/sortTesterGamesOldestFirst\(eligibleGames\.filter/,'Tester Hub sorts after preserving its existing filters and search');
 assert.match(hub,/onPageChange=\{changeAvailablePage\}/,'Available games page changes use the return-to-section handler');
 assert.match(hub,/scrollIntoView\(\{block:"start",behavior:"smooth"\}\)/,'Available games page changes scroll the section heading into view');
-assert.match(discoveryMigration,/coalesce\(c\.published_at,c\.created_at,s\.created_at\)/,'discovery returns immutable publication time, with creation-time fallback for legacy listings');
+assert.match(discoveryMigration,/coalesce\(c\.published_at,c\.created_at,s\.submitted_at\)/,'discovery returns immutable publication time, with submission-time fallback for legacy listings');
 assert.doesNotMatch(discoveryMigration,/updated_at/,'publication ordering never uses mutable update time');
 assert.match(hub,/setAvailablePage\(1\)/,'search and filters return to the first available-game page');
 assert.match(hub,/availableSearch\.trim\(\)/,'Tester Hub search is applied before pagination');

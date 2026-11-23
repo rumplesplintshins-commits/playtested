@@ -13,11 +13,11 @@ begin
   from (
    select
     to_jsonb(g)||jsonb_build_object(
-      'published_at',coalesce(c.published_at,c.created_at,s.created_at),
+      'published_at',coalesce(c.published_at,c.created_at,s.submitted_at),
       'can_claim',true,
       'restriction_reason',null
     ) item,
-    coalesce(c.published_at,c.created_at,s.created_at) published_at,
+    coalesce(c.published_at,c.created_at,s.submitted_at) published_at,
     g.submission_id
    from public.get_available_community_test_games() g
    left join public.community_playtests c on c.id=g.submission_id
