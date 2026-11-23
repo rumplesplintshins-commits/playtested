@@ -190,6 +190,10 @@ export function platformOf(value: unknown): Platform | null {
   return null;
 }
 
+export function supportsPcRequirements(platform: unknown): boolean {
+  return platform === "steam" || platform === "pc" || platform === "browser";
+}
+
 export function legacyPlatform(value: unknown): Platform {
   return platformOf(value) ?? "steam";
 }

@@ -19,7 +19,7 @@ import { preserveTesterGamePlatforms, testerGamePlatformKey } from "../../lib/te
 import {feedbackQualityLabel,type FeedbackQualityRecord} from "@/lib/feedback-review";
 import SiteHeader from "../components/SiteHeader";
 import PaginationControls from "../components/PaginationControls";
-import {pageCount,pagedItems} from "@/lib/pagination";
+import {pageCount,pagedItems,safePage} from "@/lib/pagination";
 
 import { TesterRankPanel, QualityGuidance, Reconsideration, CampaignPlaces, PlacesRules, ReservationNotice, useTestingCapacityPolicy } from "../components/TestingPolicy";
 
@@ -844,6 +844,8 @@ function TesterPage() {
   });
   const [genreFilter,setGenreFilter] = useState(savedTesterReturn?.genre ?? "all");
   const [platformFilter,setPlatformFilter] = useState("all");
+  const [availableSearch,setAvailableSearch] = useState("");
+  const [availablePage,setAvailablePage] = useState(1);
   const [justClaimedId,setJustClaimedId] = useState<string|null>(null);
   const [minimisedActiveGames, setMinimisedActiveGames] = useState<Record<string, boolean>>({});
   const [expandedAvailableGames, setExpandedAvailableGames] = useState<Record<string, boolean>>(
@@ -1367,9 +1369,11 @@ function TesterPage() {
     return()=>window.clearTimeout(timer);
   },[historyPage,historyClaims,loading]);
 
-  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))));
-  const minimisedAvailableGames = availableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
-  const expandedAvailableList = availableGames.filter(game => expandedAvailableGames[game.submission_id] !== false);
+  const availableGames=eligibleGames.filter(g=>(platformFilter==="all" || (platformFilter==="mobile" ? ["android","ios"].includes(g.platform??"") : g.platform===platformFilter)) && (genreFilter==="all" || (genreFilter==="preferred" ? g.can_claim !== false && (preferredGenres.length===0 || matchesGenrePreferences(g.genre, preferredGenres)) : matchesGenrePreferences(g.genre, [genreFilter]))) && (!availableSearch.trim() || [g.title,g.developer_name,g.genre,g.description].some(value=>value.toLowerCase().includes(availableSearch.trim().toLowerCase()))));
+  const currentAvailablePage=safePage(availablePage,availableGames.length,9);
+  const pageAvailableGames=pagedItems(availableGames,currentAvailablePage,9);
+  const minimisedAvailableGames = pageAvailableGames.filter(game => expandedAvailableGames[game.submission_id] === false);
+  const expandedAvailableList = pageAvailableGames.filter(game => expandedAvailableGames[game.submission_id] !== false);
   useEffect(()=>{if(!justClaimedId)return;const target=document.getElementById("active-test-"+justClaimedId);if(!target)return;target.scrollIntoView({behavior:"smooth",block:"center"});const t=setTimeout(()=>setJustClaimedId(null),0);return () => clearTimeout(t);},[justClaimedId,displayedActiveGames]);
   const unmetRequirementsCount = availableGames.filter(game => game.can_claim === false).length;
   const testableGamesCount = availableGames.length - unmetRequirementsCount;
@@ -1563,7 +1567,7 @@ function TesterPage() {
                       )}
 
                       <div className="mt-3 min-w-0 shrink-0 border-t border-white/10 pt-2 [&>section]:my-0 [&_summary]:px-3 [&_summary]:py-2">
-                        <GamePcRequirements id={game.submission_id} kind="campaign" compact platform={game.platform}/>
+                        <GamePcRequirements id={game.submission_id} kind="campaign" compact/>
                         <CampaignPlaces id={game.submission_id} showRules={false} availabilityOptIn canRequestAvailability={!hasActiveTest&&(!claim||claim.status==="expired")} refreshKey={claims.map(c=>c.id+c.status+c.reservation_expires_at).join("|")} />
                         {claim && <ReservationNotice claimed expiresAt={claim.reservation_expires_at} now={now??(capacityPolicy?Date.parse(capacityPolicy.server_now):null)} hours={capacityPolicy?.reservation_hours}/>}
                         {claim?.status==="expired"&&<button type="button" disabled={claimingId!==null||hasActiveTest||!(claim.playtest_id||claim.reclaim_campaign_id)} onClick={()=>void claimGame({...game,submission_id:claim.playtest_id||claim.reclaim_campaign_id!})} className="mt-2 rounded-lg border border-amber-200/30 px-3 py-2 text-sm text-amber-200">Reclaim place</button>}
@@ -1840,8 +1844,9 @@ function TesterPage() {
                   </div>
                 </div>
 
-                <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>setPlatformFilter(e.target.value)}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Web / Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
-                <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>setGenreFilter(e.target.value)}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
+                <label className="mt-4 ml-3 inline-block">Platform <select aria-label="Filter test games by platform" className="rounded bg-black p-2" value={platformFilter} onChange={e=>{setPlatformFilter(e.target.value);setAvailablePage(1);}}><option value="all">All platforms</option><option value="steam">Steam</option><option value="pc">PC / Other</option><option value="browser">Web / Browser</option><option value="roblox">Roblox</option><option value="android">Android</option><option value="ios">iPhone / iPad</option><option value="mobile">All mobile</option></select></label>
+                <label className="mt-4 block">Testing genre <select className="rounded bg-black p-2" value={genreFilter} onChange={e=>{setGenreFilter(e.target.value);setAvailablePage(1);}}><option value="preferred">My preferred genres</option><option value="all">{discoveryReady ? "All games" : "All eligible games"}</option>{GAME_GENRES.map(g=><option key={g} value={g}>{g}</option>)}</select></label>
+                <label className="mt-4 block text-sm">Search games <input aria-label="Search available games" type="search" value={availableSearch} onChange={e=>{setAvailableSearch(e.target.value);setAvailablePage(1);}} className="mt-2 block w-full max-w-md rounded-lg border border-white/15 bg-black p-3" placeholder="Title, developer, genre or description" /></label>
                 <p className="mt-2 text-sm text-zinc-400">{preferredGenres.length===0?"No preferences selected: showing all eligible games. Set your interests in Account.":"All games includes games outside your interests."} Restricted games show their requirements and cannot be claimed.</p>
                 <div className="mt-3 flex flex-wrap items-start gap-x-5 gap-y-2 [&_summary]:text-xs [&_summary]:underline [&_summary]:underline-offset-4" aria-label="Testing information">
                   <PlacesRules hours={capacityPolicy?.reservation_hours}/>
@@ -1888,6 +1893,7 @@ function TesterPage() {
                     ))}
                   </div>
                 )}
+                {availableGames.length>0&&<PaginationControls label="Available games" page={currentAvailablePage} pageSize={9} total={availableGames.length} onPageChange={setAvailablePage}/>}
               </section>
             )}
           </>
