@@ -17,7 +17,7 @@ export function assertPublicSources(sources,publication){
 export async function prepareThumbnails(sources,root='.',publication){
  assertPublicSources(sources,publication);
  const manifest={},measurements=[];
- const output=path.join(root,'public/catalogue-thumbnails');await fs.mkdir(output,{recursive:true});
+ const output=path.join(root,'supabase/storage/game-thumbnails/catalogue-thumbnails');await fs.mkdir(output,{recursive:true});
  for(const source of sources){
   const bytes=await fs.readFile(source.file);
   const image=sharp(bytes,{limitInputPixels:25_000_000,failOn:'warning',animated:true});
@@ -28,7 +28,7 @@ export async function prepareThumbnails(sources,root='.',publication){
   for(const width of [320,640,960]){
    const {data,info}=await image.clone().rotate().resize({width,withoutEnlargement:true}).webp({quality:75,effort:5}).toBuffer({resolveWithObject:true});
    const url=`/catalogue-thumbnails/${hash}-${width}.webp`;
-   await fs.writeFile(path.join(root,'public',url),data);
+   await fs.writeFile(path.join(output,path.basename(url)),data);
    variants.push({url,width:info.width,bytes:data.length});
   }
   manifest[source.url]=variants;

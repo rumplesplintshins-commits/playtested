@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 import {prepareThumbnails,assertPublicSources} from '../scripts/prepare-catalogue-thumbnails.mjs';
 const manifest=JSON.parse(await fs.readFile('lib/catalogue-thumbnails.json','utf8'));
 for(const variants of Object.values(manifest))for(const variant of variants){
- const file=path.join('public',variant.url),bytes=await fs.readFile(file),meta=await sharp(bytes).metadata();
+ const file=path.join('supabase/storage/game-thumbnails',variant.url.slice(1)),bytes=await fs.readFile(file),meta=await sharp(bytes).metadata();
  assert.equal(meta.format,'webp');assert.equal(meta.width,variant.width);assert.equal(meta.exif,undefined);assert.equal(bytes.length,variant.bytes);
 }
 const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'playtested-thumbnails-'));
@@ -21,7 +21,7 @@ try{
  for(const visibility of ['hidden','private','unpublished'])assert.throws(()=>assertPublicSources(sources,{...publication,games:[{...publication.games[0],visibility}]}),/not a verified/);
  assert.throws(()=>assertPublicSources([{...sources[0],url:'https://example.test/storage/v1/object/authenticated/game-thumbnails/private.jpg'}],publication),/not a verified/);
  await prepareThumbnails(sources,temporary,publication);assert.deepEqual(await fs.readFile(file),original,'Original untouched');
- const orphan=path.join(temporary,'public/catalogue-thumbnails','0'.repeat(64)+'-640.webp');await fs.writeFile(orphan,'excluded fixture');
+ const orphan=path.join(temporary,'supabase/storage/game-thumbnails/catalogue-thumbnails','0'.repeat(64)+'-640.webp');await fs.writeFile(orphan,'excluded fixture');
  const first=await fs.readFile(path.join(temporary,'lib/catalogue-thumbnails.json'),'utf8');
  await prepareThumbnails(sources,temporary,publication);assert.equal(await fs.readFile(path.join(temporary,'lib/catalogue-thumbnails.json'),'utf8'),first,'Deterministic versioned variants');
  await assert.rejects(fs.access(orphan),'Excluded static files are pruned, not just unlinked from the manifest');
