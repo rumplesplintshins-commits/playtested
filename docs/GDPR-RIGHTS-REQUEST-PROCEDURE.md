@@ -4,7 +4,7 @@ Status: operational procedure for Playtested production review.
 
 ## Controller and contact
 
-Playtested is an independent website operated by Nathan Rose, trading as Playtested, in the United Kingdom. Privacy and data-protection requests can be sent to `support.playtested@gmail.com` or through an available Playtested support/contact route.
+Playtested is an independent website operated by Nathan Rose, trading as Playtested, in the United Kingdom. Privacy and data-protection requests can be sent to `support@playtested.co.uk` or through an available Playtested support/contact route.
 
 A valid request does not need to mention GDPR or use a particular form. Treat a clear request to access, correct, erase, restrict, export or object to use of personal information as a rights request.
 

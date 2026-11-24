@@ -38,8 +38,8 @@ if(process.argv.includes('--information')){
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content',/noindex/);
    }
    if(path==='/contact'){
-    await expect(page.getByRole('link',{name:'support.playtested@gmail.com'})).toHaveAttribute('href','mailto:support.playtested@gmail.com');
-    const copy=page.getByRole('button',{name:'Copy email address'});await copy.focus();await page.keyboard.press('Enter');await expect(page.getByRole('status').filter({hasText:'Email address copied.'})).toBeVisible();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'support.playtested@gmail.com');
+    await expect(page.getByRole('link',{name:'support@playtested.co.uk'})).toHaveAttribute('href','mailto:support@playtested.co.uk');
+    const copy=page.getByRole('button',{name:'Copy email address'});await copy.focus();await page.keyboard.press('Enter');await expect(page.getByRole('status').filter({hasText:'Email address copied.'})).toBeVisible();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'support@playtested.co.uk');
     await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:()=>Promise.reject(new Error('fixture denied'))}}));await copy.click();await expect(page.getByRole('status').filter({hasText:'Copy was unavailable'})).toBeVisible();
     await page.getByRole('navigation',{name:'Legal and support'}).getByRole('link',{name:'Terms of Use',exact:true}).click();await expect(page).toHaveURL(/\/terms$/);
    }
