@@ -48,7 +48,7 @@ Minimisation: server-authorised accepted-public-only rank resolution, no public 
 | Consent, processors and transfers | Medium | Separate analytics opt-ins; verify live settings, retention jobs, contracts, transfer safeguards and logs. |
 
 ## 5. Rights and operational procedure
-Contact: support.playtested@gmail.com. The individual operator should verify requests proportionately, track deadlines and decisions, and apply interim public-rank restriction where appropriate. Existing minimisation RPC is **partial**, not full erasure; original reports, Auth data and free text can remain. Preserve justified evidence and review retained categories. Verify sessions when banning an account.
+Contact: support@playtested.co.uk. The individual operator should verify requests proportionately, track deadlines and decisions, and apply interim public-rank restriction where appropriate. Existing minimisation RPC is **partial**, not full erasure; original reports, Auth data and free text can remain. Preserve justified evidence and review retained categories. Verify sessions when banning an account.
 
 ## 6. Consultation and transparency
 Give existing testers accurate notice before showing rank on historical feedback; document consultation or reasoned alternative. Finalise privacy/terms notices and effective date. Controller public alias is N Quanja, but legal identity and required contact/address disclosure are unconfirmed; do not publish a residential address automatically. Verify account-level Supabase/Render/Google processor terms, transfer arrangements, logs, backups, retention and ICO registration/fee applicability.
