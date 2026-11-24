@@ -92,7 +92,7 @@ async function seoChecks(){
  const home=load('app/page.tsx',name=>name==='../lib/public-game-seo'?{publicProfileLinks:()=>gameSeo.publicProfileLinks()}:name==='../lib/seo'?seo:name.startsWith('./components/')?{default:()=>null}:require(name),'\nexports.profiles=PublicProfiles;');
  assert.equal(await home.profiles(),null,'No heading, description, links or wrapper when no eligible genuine profiles remain');emptyProfiles=false;assert.equal((await home.profiles()).type,'section','A genuine eligible profile retains the section');
  fail=true;await assert.rejects(gameSeo.publicSitemap(),/unavailable/);await assert.rejects(gameSeo.gameMetadata('imported','123'),/unavailable/);
- assert(fs.existsSync('public/images/roles/player-role.png'));
+ assert(fs.existsSync('public/images/roles/player-role.jpg'));
  console.log('PASS SEO units: canonical origin/title, private noindex classification, crawlable directives, bounded public view/link sitemap batches, dedup/external Steam omission, no invented dates, published metadata, hidden/missing 404 and service-error distinction. Mocked public reads only.');
 }
 

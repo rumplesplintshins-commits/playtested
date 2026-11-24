@@ -8,7 +8,7 @@ const env={NODE_ENV:'production',NEXT_PUBLIC_SUPABASE_URL:'https://fixture.supab
 const config=load('next.config.ts',env).default;
 function globalSecurityRule(rules){const matches=rules.filter(r=>r.source==='/:path*'&&!r.has&&!r.missing);assert.equal(matches.length,1,'Exactly one unconditional global security rule');return matches[0];}
 const rules=await config.headers(),headers=Object.fromEntries(globalSecurityRule(rules).headers.map(h=>[h.key.toLowerCase(),h.value]));
-const thumbnail=rules.find(r=>r.source==='/catalogue-thumbnails/:file');assert(thumbnail);assert.deepEqual(thumbnail.headers,[{key:'Cache-Control',value:'public, max-age=31536000, immutable'}]);
+assert(!rules.some(r=>r.source==='/catalogue-thumbnails/:file'),'Catalogue thumbnails are served from Supabase Storage, not the Render app origin');
 assert.equal(headers['x-frame-options'],'DENY');assert.equal(headers['x-content-type-options'],'nosniff');assert.equal(headers['cross-origin-opener-policy'],'same-origin-allow-popups');
 assert(headers['content-security-policy'].includes("frame-ancestors 'none'"));assert(!headers['content-security-policy'].includes('script-src'),'Do not claim a strict script policy');
 const report=headers['content-security-policy-report-only'];for(const origin of ['https://fixture.supabase.co','wss://fixture.supabase.co','https://www.youtube-nocookie.com','https://player.vimeo.com','https://drive.google.com'])assert(report.includes(origin));
