@@ -8,7 +8,7 @@ const roleImages = [
 ];
 
 async function convert(source) {
-  const target = source.replace(/\\.png$/i, ".webp");
+  const target = source.replace(/\.png$/i, ".webp");
   const original = await stat(source);
   const metadata = await sharp(source, { failOn: "error" }).metadata();
   if (!metadata.width || !metadata.height) {
