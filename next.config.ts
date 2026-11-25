@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
       "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'",
     ].join("; ");
     return [
+      // These are version-stable, public files in /public. Cache them in the
+      // visitor's browser to avoid retransferring large role artwork on repeat visits.
+      { source: "/images/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      { source: "/demo-assets/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
       { source: "/:path*", headers: [
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "X-Frame-Options", value: "DENY" },
