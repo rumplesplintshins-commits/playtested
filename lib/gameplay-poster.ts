@@ -2,7 +2,7 @@ import { screenshotUrl, type GameScreenshot } from "./game-screenshots";
 
 export function safePosterSource(value?: string | null): string | null {
   if (!value) return null;
-  if (/^\\/(?!\\/)[^\\\\\\s]*$/.test(value)) return value;
+  if (value.startsWith("/") && !value.startsWith("//") && !value.includes(String.fromCharCode(92)) && !/\s/.test(value)) return value;
   try { const url = new URL(value); return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.href : null; }
   catch { return null; }
 }
