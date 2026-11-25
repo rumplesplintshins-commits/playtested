@@ -1,4 +1,4 @@
--- Stripe-managed Accounts v2 Merchant accounts for tester tips.
+-- Stripe-managed Accounts v2 Merchant accounts and fee reconciliation for tester tips.
 -- Additive only: preserve legacy Recipient mappings and tip ledger history.
 BEGIN;
 
@@ -29,7 +29,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS tester_stripe_accounts_merchant_account_id_uid
 
 ALTER TABLE playtested_studios.tester_tips
   ADD COLUMN IF NOT EXISTS stripe_connected_account_id text,
-  ADD COLUMN IF NOT EXISTS charge_amount_pence integer;
+  ADD COLUMN IF NOT EXISTS charge_amount_pence integer,
+  ADD COLUMN IF NOT EXISTS processing_allowance_pence integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS actual_processing_fee_pence integer,
+  ADD COLUMN IF NOT EXISTS processing_refund_pence integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS processing_refund_status text NOT NULL DEFAULT 'not_started',
+  ADD COLUMN IF NOT EXISTS stripe_processing_refund_id text;
 
 ALTER TABLE playtested_studios.tester_tips
   DROP CONSTRAINT IF EXISTS tester_tips_charge_amount_check;
@@ -37,19 +42,25 @@ ALTER TABLE playtested_studios.tester_tips
   ADD CONSTRAINT tester_tips_charge_amount_check
   CHECK (charge_amount_pence IS NULL OR charge_amount_pence >= total_amount_pence);
 
+ALTER TABLE playtested_studios.tester_tips
+  DROP CONSTRAINT IF EXISTS tester_tips_processing_refund_status_check;
+ALTER TABLE playtested_studios.tester_tips
+  ADD CONSTRAINT tester_tips_processing_refund_status_check
+  CHECK (processing_refund_status IN ('not_started','processing','completed','failed'));
+
 CREATE OR REPLACE FUNCTION public.tester_tip_get_merchant_account(p_tester_id uuid)
 RETURNS TABLE(merchant_stripe_account_id text,merchant_status text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
-AS $$
+AS $fn$
   SELECT a.merchant_stripe_account_id,a.merchant_status
   FROM playtested_studios.tester_stripe_accounts a
   WHERE a.tester_id=p_tester_id;
-$$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_save_merchant_account(p_tester_id uuid,p_stripe_account_id text)
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $$
+AS $fn$
 BEGIN
   IF p_tester_id IS NULL OR p_stripe_account_id IS NULL OR p_stripe_account_id !~ '^acct_[A-Za-z0-9]+$' THEN
     RAISE EXCEPTION 'Invalid Stripe Merchant account mapping.';
@@ -65,13 +76,13 @@ BEGIN
     RAISE EXCEPTION 'A different Stripe Merchant account is already linked.';
   END IF;
 END;
-$$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_update_merchant_account_status(
   p_tester_id uuid,p_status text,p_details_submitted boolean,p_requirements_due jsonb
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $$
+AS $fn$
 BEGIN
   IF p_status NOT IN ('pending','active','restricted','disabled') THEN
     RAISE EXCEPTION 'Invalid Stripe Merchant status.';
@@ -83,16 +94,17 @@ BEGIN
       merchant_updated_at=clock_timestamp()
   WHERE tester_id=p_tester_id AND merchant_stripe_account_id IS NOT NULL;
 END;
-$$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_set_charge_details(
   p_tip_id uuid,p_stripe_account_id text,p_charge_amount_pence integer,p_processing_allowance_pence integer
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $$
+AS $fn$
 BEGIN
   IF p_stripe_account_id IS NULL OR p_stripe_account_id !~ '^acct_[A-Za-z0-9]+$'
-     OR p_charge_amount_pence < 1 OR p_processing_allowance_pence < 0 THEN
+     OR p_charge_amount_pence < 1 OR p_processing_allowance_pence < 0
+     OR p_charge_amount_pence < p_processing_allowance_pence THEN
     RAISE EXCEPTION 'Invalid connected account charge details.';
   END IF;
   UPDATE playtested_studios.tester_tips
@@ -103,27 +115,13 @@ BEGIN
   WHERE id=p_tip_id AND status IN ('pending','checkout_created');
   IF NOT FOUND THEN RAISE EXCEPTION 'Tip is no longer available for checkout.'; END IF;
 END;
-$$;
-
-
-ALTER TABLE playtested_studios.tester_tips
-  ADD COLUMN IF NOT EXISTS processing_allowance_pence integer NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS actual_processing_fee_pence integer,
-  ADD COLUMN IF NOT EXISTS processing_refund_pence integer NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS processing_refund_status text NOT NULL DEFAULT 'not_started',
-  ADD COLUMN IF NOT EXISTS stripe_processing_refund_id text;
-
-ALTER TABLE playtested_studios.tester_tips
-  DROP CONSTRAINT IF EXISTS tester_tips_processing_refund_status_check;
-ALTER TABLE playtested_studios.tester_tips
-  ADD CONSTRAINT tester_tips_processing_refund_status_check
-  CHECK (processing_refund_status IN ('not_started','processing','completed','failed'));
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_prepare_processing_refund(
   p_tip_id uuid,p_actual_fee_pence integer
 ) RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $fn$
 DECLARE
   v_allowance integer;
   v_status text;
@@ -146,33 +144,15 @@ BEGIN
   WHERE id=p_tip_id;
   RETURN v_refund;
 END;
-$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_complete_processing_refund(
   p_tip_id uuid,p_refund_id text
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $fn$
 BEGIN
-  IF p_refund_id IS NULL OR p_refund_id !~ '^re_[A-Za-z0-9]+(uuid),
-  public.tester_tip_save_merchant_account(uuid,text),
-  public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer,integer),
-  public.tester_tip_prepare_processing_refund(uuid,integer),
-  public.tester_tip_complete_processing_refund(uuid,text),
-  public.tester_tip_fail_processing_refund(uuid)
-FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.tester_tip_get_merchant_account(uuid),
-  public.tester_tip_save_merchant_account(uuid,text),
-  public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer,integer),
-  public.tester_tip_prepare_processing_refund(uuid,integer),
-  public.tester_tip_complete_processing_refund(uuid,text),
-  public.tester_tip_fail_processing_refund(uuid)
-TO service_role;
-
-COMMIT;
- THEN
+  IF p_refund_id IS NULL OR p_refund_id !~ '^re_[A-Za-z0-9]+$' THEN
     RAISE EXCEPTION 'Invalid Stripe refund ID.';
   END IF;
   UPDATE playtested_studios.tester_tips
@@ -182,26 +162,33 @@ COMMIT;
   WHERE id=p_tip_id AND processing_refund_status IN ('processing','completed');
   IF NOT FOUND THEN RAISE EXCEPTION 'Processing refund is not pending.'; END IF;
 END;
-$;
+$fn$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_fail_processing_refund(p_tip_id uuid)
 RETURNS void
 LANGUAGE sql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $fn$
   UPDATE playtested_studios.tester_tips
   SET processing_refund_status='failed',updated_at=clock_timestamp()
   WHERE id=p_tip_id AND processing_refund_status='processing';
-$;
+$fn$;
 
 REVOKE ALL ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer,integer)
+  public.tester_tip_set_charge_details(uuid,text,integer,integer),
+  public.tester_tip_prepare_processing_refund(uuid,integer),
+  public.tester_tip_complete_processing_refund(uuid,text),
+  public.tester_tip_fail_processing_refund(uuid)
 FROM PUBLIC,anon,authenticated;
+
 GRANT EXECUTE ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer,integer)
+  public.tester_tip_set_charge_details(uuid,text,integer,integer),
+  public.tester_tip_prepare_processing_refund(uuid,integer),
+  public.tester_tip_complete_processing_refund(uuid,text),
+  public.tester_tip_fail_processing_refund(uuid)
 TO service_role;
 
 COMMIT;
