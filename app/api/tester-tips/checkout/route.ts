@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     if (insertError || !tipId) throw insertError ?? new Error("Could not record the tip.");
     const tip = { id: tipId as string };
 
-    const origin = new URL(request.url).origin;
+    const origin = request.headers.get("origin")!;
     try {
       const session = await stripePostForm("checkout/sessions", {
         mode: "payment",
