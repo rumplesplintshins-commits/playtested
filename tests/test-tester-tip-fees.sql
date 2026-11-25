@@ -30,4 +30,4 @@ BEGIN
     RAISE EXCEPTION 'Tip fee test failed: £30.01 should be rejected.';
   END IF;
 END;
-$;
+$$;
