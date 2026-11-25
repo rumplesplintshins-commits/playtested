@@ -46,7 +46,7 @@ try{
  `)).rows[0];
  assert.equal(platformBeforeMeta.lanname,'sql');
  assert.equal(platformBeforeMeta.source_hash,'6c27ad3dfda1bf0472a125fc65f2f505','Platform migration must match the reviewed production SQL definition');
- await db.exec(`update imported_games set platform=case when (steam_app_id::integer)%2=0 then 'pc' else 'browser' end;
+ await db.exec(`update imported_games set platform=case when (steam_app_id::integer)%3=0 then 'steam' when (steam_app_id::integer)%2=0 then 'pc' else 'browser' end;
  update game_submissions set platform='steam'; analyze; set role anon;`);
  const platformArgs=[1,12,'','All genres','All verification statuses','All AI types',true,'Featured','all'];
  const platformQuery='select game_id,source_type,title,total_count,platform from get_public_catalogue($1,$2,$3,$4,$5,$6,$7,$8,$9)';
