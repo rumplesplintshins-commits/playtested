@@ -8,6 +8,7 @@ import Link from "next/link";
 import SiteHeader from "../components/SiteHeader";
 import { createClient } from "../../lib/supabase";
 import PasswordSettings from "../components/PasswordSettings";
+import TesterPayoutSetup from "../components/TesterPayoutSetup";
 
 const availableRoles = [
   { id: "player", title: "Player", description: "Discover games, read reviews and build your library.", image: "/images/roles/player-role.jpg" },
@@ -163,7 +164,7 @@ export default function AccountPage() {
 
             <div className="min-w-0">
               <AccountPcSpecifications />
-              {roles.includes("tester") && <><TesterRankPanel /><GenrePreferences /></>}
+              {roles.includes("tester") && <><TesterRankPanel /><GenrePreferences /><TesterPayoutSetup /></>}
             </div>
 
             <section className="mt-8 rounded-2xl border border-red-400/25 bg-[#0d110f] p-5 sm:p-7">

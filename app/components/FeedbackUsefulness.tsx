@@ -24,6 +24,9 @@ type UsefulnessState = {
   error: string;
 };
 
+const gbpFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+const formatGbp = (amountPence: number) => gbpFormatter.format(amountPence / 100);
+
 export default function FeedbackUsefulness({ testId, onRatingChange, initialRating = null, prefetched = false }: {
   testId: string;
   onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void;
@@ -45,6 +48,48 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonDraft, setReasonDraft] = useState("");
   const [notice, setNotice] = useState("");
+  const [tipOpen, setTipOpen] = useState(false);
+  const [tipAmount, setTipAmount] = useState("10.00");
+  const [customTipSelected, setCustomTipSelected] = useState(false);
+  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;totalAmountPence:number}|null>(null);
+  const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
+  const [tipCheckoutBusy, setTipCheckoutBusy] = useState(false);
+  const [tipError, setTipError] = useState("");
+
+  async function loadTipQuote() {
+    const parsed = Number(tipAmount);
+    const pence = Math.round(parsed * 100);
+    if (!Number.isFinite(parsed) || !Number.isSafeInteger(pence) || pence < 500 || pence > 3000 || Math.abs(parsed * 100 - pence) > 0.000001) {
+      setTipError("Enter a tip between £5.00 and £30.00.");
+      return;
+    }
+    setTipQuoteBusy(true); setTipError(""); setTipQuote(null);
+    try {
+      const response = await fetch("/api/tester-tips/quote?tipAmountPence=" + pence, { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to calculate the fee.");
+      setTipQuote(data);
+    } catch (cause) {
+      setTipError(cause instanceof Error ? cause.message : "Unable to calculate the fee.");
+    } finally { setTipQuoteBusy(false); }
+  }
+
+  async function startTipCheckout() {
+    if (!tipQuote || tipCheckoutBusy) return;
+    setTipCheckoutBusy(true); setTipError("");
+    try {
+      const response = await fetch("/api/tester-tips/checkout", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testId, tipAmountPence: tipQuote.tipAmountPence }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.url !== "string") throw new Error(data.error || "Unable to start checkout.");
+      window.location.assign(data.url);
+    } catch (cause) {
+      setTipError(cause instanceof Error ? cause.message : "Unable to start checkout.");
+      setTipCheckoutBusy(false);
+    }
+  }
 
   function updateFeedbackState(patch: Partial<UsefulnessState>) {
     setFeedbackState(previous => {
@@ -188,23 +233,88 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
       {value === "useful" && !loading && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
           <div>
-            <p className="text-sm font-semibold text-zinc-200">Want to reward this tester?</p>
+            <p className="text-sm font-semibold text-zinc-200">Keep great testers coming back</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">
+              If this tester helped improve your game, consider recognising their time and effort with a tip. Supporting great testers helps keep the Playtested community active.
+            </p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">
-              Tips will let you reward particularly useful feedback while keeping testers anonymous.
+              Completely optional. Your tester stays anonymous and receives the full tip.
             </p>
           </div>
           <button
             type="button"
-            disabled
-            aria-disabled="true"
-            title="Tester tips are coming soon"
-            className="cursor-not-allowed rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-3 py-2 text-xs font-semibold text-[#aef8c2]/65"
+            onClick={() => { setTipAmount("10.00"); setCustomTipSelected(false); setTipOpen(true); setTipQuote(null); setTipError(""); }}
+            className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-2 text-xs font-semibold text-[#aef8c2] transition hover:bg-[#77f29b]/15"
           >
-            Send a tip · Coming soon
+            Send a tip
           </button>
         </div>
       )}
 
+      {tipOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tipCheckoutBusy) setTipOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby={"tip-dialog-title-" + testId} className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-[#77f29b]/25 bg-[#0d110f] p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 id={"tip-dialog-title-" + testId} className="text-lg font-bold text-white">Recognise great feedback</h3>
+                <p className="mt-1 text-sm leading-5 text-zinc-300">Good testers put time and effort into helping you improve your game. A tip is a simple way to thank them and encourage great testers to keep supporting indie developers on Playtested.</p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">Tipping is optional. Your tester stays anonymous and receives the full tip.</p>
+                <p className="mt-2 text-xs leading-5 text-zinc-400">The Playtested fee is shown separately before checkout.</p>
+              </div>
+              <button type="button" onClick={() => setTipOpen(false)} disabled={tipCheckoutBusy} aria-label="Close tip dialog" title="Close" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  <path d="m5 5 10 10M15 5 5 15" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-5 text-xs font-semibold text-zinc-300">Choose a tip amount</p>
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {[5, 10, 15].map((amount) => (
+                <button key={amount} type="button" aria-pressed={!customTipSelected && Number(tipAmount) === amount}
+                  onClick={() => { setTipAmount(amount.toFixed(2)); setCustomTipSelected(false); setTipQuote(null); setTipError(""); }}
+                  className={"rounded-lg border px-2 py-3 text-sm font-semibold transition " + (!customTipSelected && Number(tipAmount) === amount ? "border-[#77f29b] bg-[#77f29b]/10 text-[#aef8c2]" : "border-white/15 text-zinc-300 hover:border-[#77f29b]/50")}>
+                  {formatGbp(amount * 100).replace(/\.00$/, "")}
+                </button>
+              ))}
+              <button type="button" aria-pressed={customTipSelected}
+                onClick={() => { setCustomTipSelected(true); setTipQuote(null); setTipError(""); }}
+                className={"rounded-lg border px-2 py-3 text-xs font-semibold transition " + (customTipSelected ? "border-[#77f29b] bg-[#77f29b]/10 text-[#aef8c2]" : "border-white/15 text-zinc-300 hover:border-[#77f29b]/50")}>
+                Custom tip
+              </button>
+            </div>
+            {customTipSelected && (
+              <>
+                <label className="mt-3 block text-xs font-semibold text-zinc-300" htmlFor={"tip-amount-" + testId}>Custom amount ({formatGbp(500)}–{formatGbp(3000)})</label>
+                <div className="mt-2 flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/15 bg-[#090b0a] px-3 transition focus-within:border-[#77f29b] focus-within:ring-1 focus-within:ring-[#77f29b]/30">
+                  <span aria-hidden="true" className="shrink-0 text-sm tabular-nums text-zinc-400">{"\u00A3"}</span>
+                  <input id={"tip-amount-" + testId} type="number" min="5" max="30" step="0.01" value={tipAmount}
+                    onChange={(event) => { setTipAmount(event.target.value); setTipQuote(null); setTipError(""); }}
+                    className="h-full min-w-0 flex-1 bg-transparent text-right text-sm tabular-nums text-white outline-none" />
+                </div>
+              </>
+            )}
+            <button type="button" onClick={() => void loadTipQuote()} disabled={tipQuoteBusy || tipCheckoutBusy}
+              className="mt-3 w-full rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:bg-white/5 disabled:opacity-50">
+              {tipQuoteBusy ? "Calculating..." : "Calculate total"}
+            </button>
+            {tipQuote && (
+              <div className="mt-4 space-y-2 rounded-lg border border-white/10 bg-[#090b0a] p-4 text-sm">
+                <div className="flex justify-between gap-3 text-zinc-300"><span>Tester receives</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.tipAmountPence)}</span></div>
+                <div className="flex justify-between gap-3 text-zinc-400"><span>Playtested fee</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.platformFeePence)}</span></div>
+                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total to pay</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
+              </div>
+            )}
+            {tipError && <p role="alert" className="mt-3 text-xs text-red-300">{tipError}</p>}
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setTipOpen(false)} disabled={tipCheckoutBusy} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/5 disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={() => void startTipCheckout()} disabled={!tipQuote || tipCheckoutBusy}
+                className="rounded-lg bg-[#77f29b] px-4 py-2.5 text-sm font-bold text-[#071009] hover:bg-[#8af6a8] disabled:cursor-not-allowed disabled:opacity-40">
+                {tipCheckoutBusy ? "Opening checkout..." : "Continue to secure checkout"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {error && <p role="alert" className="mt-2 text-xs text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-2 text-xs text-emerald-200">{notice}</p>}
     </div>
