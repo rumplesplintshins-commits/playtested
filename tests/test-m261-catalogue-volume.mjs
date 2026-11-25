@@ -50,7 +50,6 @@ try{
  update game_submissions set platform='steam'; analyze; set role anon;`);
  const platformArgs=[1,12,'','All genres','All verification statuses','All AI types',true,'Featured','all'];
  const platformQuery='select game_id,source_type,title,total_count,platform from get_public_catalogue($1,$2,$3,$4,$5,$6,$7,$8,$9)';
- const platformBeforePlan=(await db.query('explain(analyze,buffers,format json) '+platformQuery,platformArgs)).rows[0]['QUERY PLAN'][0];
  const platformBaseline=(await db.query(platformQuery,platformArgs)).rows;
  assert.deepEqual(platformBaseline.map(({platform,...row})=>row),prePlatformBaseline,'Nine-argument all-platform results must match the pre-platform catalogue');
  await db.exec('reset role');
@@ -63,7 +62,6 @@ try{
  assert.equal(platformAfterMeta.lanname,'plpgsql');
  assert.match(platformAfterMeta.result_signature,/platform text\)$/);
  await db.exec('analyze; set role anon');
- const platformAfterPlan=(await db.query('explain(analyze,buffers,format json) '+platformQuery,platformArgs)).rows[0]['QUERY PLAN'][0];
  const platformAfterRows=(await db.query(platformQuery,platformArgs)).rows;
  assert.deepEqual(platformAfterRows,platformBaseline,'Custom planning must not change the public catalogue rows');
  for(const platform of ['pc','browser','steam']){
