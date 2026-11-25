@@ -30,6 +30,47 @@ try{
  const safe=await run([1,12,'','All genres','All verification statuses','All AI types',false,'Featured']);assert(Number(safe[0].total_count)<9550);
  await db.exec(`reset role;insert into listing_controls(game_kind,source_id,is_admin_test) values('submission','${id(10)}',true);set role anon`);
  assert(!(await run(args)).some(r=>r.game_id===id(10)),'Test/demo remains excluded including shared Steam identity');
+
+ // Capture the catalogue after the Test/Demo exclusion case, then compare later migrations.
+ const prePlatformBaseline=await run(args);
+ // Recreate the production platform-filter migration sequence, then verify
+ // the custom-plan restoration preserves the nine-argument RPC and results.
+ await db.exec('reset role');
+ await db.exec(sql('202611080001_platform_submissions.sql'));
+ await db.exec(sql('202611080003_platform_catalogue.sql'));
+ await db.exec(sql('202611090002_platform_catalogue_filter.sql'));
+ const platformBeforeMeta=(await db.query(`
+  select l.lanname,md5(btrim(replace(p.prosrc,chr(13),''),chr(32)||chr(10)||chr(9))) source_hash
+  from pg_proc p join pg_language l on l.oid=p.prolang
+  where p.oid='public.get_public_catalogue(integer,integer,text,text,text,text,boolean,text,text)'::regprocedure
+ `)).rows[0];
+ assert.equal(platformBeforeMeta.lanname,'sql');
+ assert.equal(platformBeforeMeta.source_hash,'6c27ad3dfda1bf0472a125fc65f2f505','Platform migration must match the reviewed production SQL definition');
+ await db.exec(`update imported_games set platform=case when (steam_app_id::integer)%3=0 then 'steam' when (steam_app_id::integer)%2=0 then 'pc' else 'browser' end;
+ update game_submissions set platform='steam'; analyze; set role anon;`);
+ const platformArgs=[1,12,'','All genres','All verification statuses','All AI types',true,'Featured','all'];
+ const platformQuery='select game_id,source_type,title,total_count,platform from get_public_catalogue($1,$2,$3,$4,$5,$6,$7,$8,$9)';
+ const platformBaseline=(await db.query(platformQuery,platformArgs)).rows;
+ assert.deepEqual(platformBaseline.map(({platform,...row})=>row),prePlatformBaseline,'Nine-argument all-platform results must match the pre-platform catalogue');
+ await db.exec('reset role');
+ await db.exec(sql('20261125120000_restore_catalogue_custom_plan_with_platform_filter.sql'));
+ const platformAfterMeta=(await db.query(`
+  select l.lanname,pg_get_function_result(p.oid) result_signature
+  from pg_proc p join pg_language l on l.oid=p.prolang
+  where p.oid='public.get_public_catalogue(integer,integer,text,text,text,text,boolean,text,text)'::regprocedure
+ `)).rows[0];
+ assert.equal(platformAfterMeta.lanname,'plpgsql');
+ assert.match(platformAfterMeta.result_signature,/platform text\)$/);
+ await db.exec('analyze; set role anon');
+ const platformAfterRows=(await db.query(platformQuery,platformArgs)).rows;
+ assert.deepEqual(platformAfterRows,platformBaseline,'Custom planning must not change the public catalogue rows');
+ for(const platform of ['pc','browser','steam']){
+  const rows=(await db.query(platformQuery, [1,12,'','All genres','All verification statuses','All AI types',true,'Featured',platform])).rows;
+  assert(rows.length>0,platform+' filter should return matching games');
+  assert(rows.every(row=>row.platform===platform),platform+' filter must not leak other platforms');
+  assert(Number(rows[0].total_count)>=rows.length);
+ }
+
  const result={environment:'Isolated PGlite PostgreSQL fixture, no hosted data',imported_rows:195362,eligible_imported_rows:9550,baseline:'Production-equivalent guard reconciliation and existing indexes',before_samples_ms:beforeSamples,after_samples_ms:afterSamples,before_ms:[...beforeSamples].sort((a,b)=>a-b)[2],after_ms:[...afterSamples].sort((a,b)=>a-b)[2],before_plan:before,after_plan:after,production_target_met:false,notes:'Database-only WASM measurements, not hosted/network latency. Pages1–7, all four sorts, search/empty/genre/verification/NSFW/approval priority/Steam dedupe tested.'};
  fs.mkdirSync('docs/performance',{recursive:true});fs.writeFileSync('docs/performance/MERGE-26-1-CATALOGUE-VOLUME.json',JSON.stringify(result,null,2));console.log('PASS realistic catalogue: '+JSON.stringify({rows:195362,eligible:9550,before_ms:result.before_ms,after_ms:result.after_ms}));
 }finally{await db.close();}
