@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, verifyStripeWebhook } from "@/lib/tester-tips/server";
+import { createAdminClient, stripeV1Get, verifyStripeWebhook } from "@/lib/tester-tips/server";
 
 type JsonRecord = Record<string, unknown>;
 function isRecord(value: unknown): value is JsonRecord {
@@ -47,18 +47,28 @@ export async function POST(request: Request) {
     } else if (event.type === "payment_intent.payment_failed" && metadataTipId) {
       const { error } = await admin.rpc("tester_tip_mark_failed", { p_tip_id: metadataTipId });
       if (error) throw error;
-    } else if (event.type === "charge.refunded" && paymentIntentId && objectId) {
-      const { error } = await admin.rpc("tester_tip_mark_refund", {
-        p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
-        p_refunded_amount_pence: Number(object.amount_refunded ?? 0),
-        p_charge_amount_pence: Number(object.amount ?? 0),
-      });
-      if (error) throw error;
-    } else if (event.type === "charge.dispute.created" && paymentIntentId && objectId) {
-      const { error } = await admin.rpc("tester_tip_mark_disputed", {
-        p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
-      });
-      if (error) throw error;
+    } else if ((event.type === "charge.refunded" || event.type === "charge.dispute.created") && paymentIntentId && objectId) {
+      // Stripe does not guarantee event delivery order. Resolve the tip from PaymentIntent
+      // metadata so refunds/disputes can be recorded even before checkout.session.completed.
+      let tipId = metadataTipId;
+      if (!tipId) {
+        const paymentIntent = await stripeV1Get(`payment_intents/${encodeURIComponent(paymentIntentId)}`);
+        const paymentMetadata = isRecord(paymentIntent.metadata) ? paymentIntent.metadata : {};
+        tipId = typeof paymentMetadata.tester_tip_id === "string" ? paymentMetadata.tester_tip_id : null;
+      }
+      if (tipId && event.type === "charge.refunded") {
+        const { error } = await admin.rpc("tester_tip_mark_refund", {
+          p_tip_id: tipId, p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
+          p_refunded_amount_pence: Number(object.amount_refunded ?? 0),
+          p_charge_amount_pence: Number(object.amount ?? 0),
+        });
+        if (error) throw error;
+      } else if (tipId && event.type === "charge.dispute.created") {
+        const { error } = await admin.rpc("tester_tip_mark_disputed", {
+          p_tip_id: tipId, p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
+        });
+        if (error) throw error;
+      }
     }
 
     return NextResponse.json({ received: true });
