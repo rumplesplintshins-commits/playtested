@@ -13,5 +13,6 @@ assert.deepEqual(poster.videoPosterSources(id,youtube,[shot],'https://example.te
 for(const url of [drive,'https://vimeo.com/123456'])assert.deepEqual(poster.videoPosterSources(id,url,[shot],'https://example.test/cover.jpg'),[screenshot,'https://example.test/cover.jpg']);
 assert.deepEqual(poster.videoPosterSources(id,drive,[],'/cover.jpg'),['/cover.jpg']);assert.deepEqual(poster.videoPosterSources(id,drive,[],null),[]);
 assert.deepEqual(poster.videoPosterSources(id,youtube,[],'https://example.test/cover.jpg'),['https://example.test/cover.jpg']);
-for(const url of ['javascript:alert(1)','data:image/svg+xml,unsafe','//evil.test/image','/\\\\evil.test/image','https://user:secret@example.test/image'])assert.equal(poster.safePosterSource(url),null);
+for(const url of ['javascript:alert(1)','data:image/svg+xml,unsafe','//evil.test/image','https://user:secret@example.test/image'])assert.equal(poster.safePosterSource(url),null);
+assert.equal(poster.safePosterSource('/'+String.fromCharCode(92)+'evil.test/image'),null);
 console.log('PASS posters: screenshot-first fallback, no third-party video-thumbnail proxy requests, catalogue fallback, empty fallback and safe source validation.');
