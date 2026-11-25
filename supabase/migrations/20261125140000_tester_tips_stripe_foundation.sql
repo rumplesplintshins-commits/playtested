@@ -91,7 +91,7 @@ DECLARE
   v_fee integer := 0;
   v_portion integer;
 BEGIN
-  IF p_tip_amount_pence IS NULL OR p_tip_amount_pence NOT BETWEEN 500 AND 100000 THEN
+  IF p_tip_amount_pence IS NULL OR p_tip_amount_pence NOT BETWEEN 500 AND 10000 THEN
     RAISE EXCEPTION 'Tip must be between £5 and £100.';
   END IF;
 
