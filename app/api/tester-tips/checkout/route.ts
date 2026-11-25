@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient, stripeV2Get, stripePostForm } from "@/lib/tester-tips/server";
-import { calculateTesterTipFeePence } from "@/lib/tester-tips/fees";
+import { calculateTesterTipFeePence, type TesterTipFeeRule } from "@/lib/tester-tips/fees";
 import { hasTrustedOrigin } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     const { data: rules, error: rulesError } = await admin.rpc("tester_tip_get_fee_rules");
     if (rulesError) throw rulesError;
-    const activeRules = rules ?? [];
+    const activeRules = (rules ?? []) as TesterTipFeeRule[];
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, activeRules);
     const totalAmountPence = tipAmountPence + platformFeePence;
     const feeSnapshot = activeRules.map(rule => ({
