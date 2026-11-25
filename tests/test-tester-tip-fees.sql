@@ -7,7 +7,6 @@ DECLARE
     ARRAY[1500,250],
     ARRAY[2000,275],
     ARRAY[2500,300],
-    ARRAY[3000,350],
     ARRAY[3000,350]
   ];
   item integer[];
