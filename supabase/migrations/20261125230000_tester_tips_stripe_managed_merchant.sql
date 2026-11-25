@@ -86,18 +86,19 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_set_charge_details(
-  p_tip_id uuid,p_stripe_account_id text,p_charge_amount_pence integer
+  p_tip_id uuid,p_stripe_account_id text,p_charge_amount_pence integer,p_processing_allowance_pence integer
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $$
 BEGIN
   IF p_stripe_account_id IS NULL OR p_stripe_account_id !~ '^acct_[A-Za-z0-9]+$'
-     OR p_charge_amount_pence < 1 THEN
+     OR p_charge_amount_pence < 1 OR p_processing_allowance_pence < 0 THEN
     RAISE EXCEPTION 'Invalid connected account charge details.';
   END IF;
   UPDATE playtested_studios.tester_tips
   SET stripe_connected_account_id=p_stripe_account_id,
       charge_amount_pence=p_charge_amount_pence,
+      processing_allowance_pence=p_processing_allowance_pence,
       updated_at=clock_timestamp()
   WHERE id=p_tip_id AND status IN ('pending','checkout_created');
   IF NOT FOUND THEN RAISE EXCEPTION 'Tip is no longer available for checkout.'; END IF;
@@ -156,7 +157,7 @@ BEGIN
   IF p_refund_id IS NULL OR p_refund_id !~ '^re_[A-Za-z0-9]+(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer),
+  public.tester_tip_set_charge_details(uuid,text,integer,integer),
   public.tester_tip_prepare_processing_refund(uuid,integer),
   public.tester_tip_complete_processing_refund(uuid,text),
   public.tester_tip_fail_processing_refund(uuid)
@@ -164,7 +165,7 @@ FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer),
+  public.tester_tip_set_charge_details(uuid,text,integer,integer),
   public.tester_tip_prepare_processing_refund(uuid,integer),
   public.tester_tip_complete_processing_refund(uuid,text),
   public.tester_tip_fail_processing_refund(uuid)
@@ -195,12 +196,12 @@ $;
 REVOKE ALL ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer)
+  public.tester_tip_set_charge_details(uuid,text,integer,integer)
 FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer)
+  public.tester_tip_set_charge_details(uuid,text,integer,integer)
 TO service_role;
 
 COMMIT;
