@@ -68,7 +68,7 @@ DECLARE
   v_id uuid;
   v_fee integer;
 BEGIN
-  IF p_tip_amount_pence NOT BETWEEN 500 AND 100000
+  IF p_tip_amount_pence NOT BETWEEN 500 AND 10000
      OR p_platform_fee_pence < 0
      OR p_total_amount_pence <> p_tip_amount_pence + p_platform_fee_pence THEN
     RAISE EXCEPTION 'Invalid tester tip amounts.';
