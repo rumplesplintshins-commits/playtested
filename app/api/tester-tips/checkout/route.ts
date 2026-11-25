@@ -4,8 +4,6 @@ import { createAdminClient, stripeV2Get, stripePostForm } from "@/lib/tester-tip
 import { calculateTesterTipFeePence, type TesterTipFeeRule } from "@/lib/tester-tips/fees";
 import { hasTrustedOrigin } from "@/lib/request-origin";
 
-export const runtime = "nodejs";
-
 const reply = (status: number, body: Record<string, unknown>) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 
