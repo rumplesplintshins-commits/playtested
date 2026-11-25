@@ -11,8 +11,8 @@ import PasswordSettings from "../components/PasswordSettings";
 
 const availableRoles = [
   { id: "player", title: "Player", description: "Discover games, read reviews and build your library.", image: "/images/roles/player-role.jpg" },
-  { id: "tester", title: "Tester", description: "Playtest games, submit feedback and earn XP.", image: "/images/roles/tester-role.png" },
-  { id: "developer", title: "Game Developer", description: "Submit games, manage playtests and review feedback.", image: "/images/roles/developer-role.png" },
+  { id: "tester", title: "Tester", description: "Playtest games, submit feedback and earn XP.", image: "/images/roles/tester-role.webp" },
+  { id: "developer", title: "Game Developer", description: "Submit games, manage playtests and review feedback.", image: "/images/roles/developer-role.webp" },
 ] as const;
 
 type UserRole = (typeof availableRoles)[number]["id"];
