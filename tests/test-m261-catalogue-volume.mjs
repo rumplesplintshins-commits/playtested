@@ -61,7 +61,7 @@ try{
   where p.oid='public.get_public_catalogue(integer,integer,text,text,text,text,boolean,text,text)'::regprocedure
  `)).rows[0];
  assert.equal(platformAfterMeta.lanname,'plpgsql');
- assert.match(platformAfterMeta.result_signature,/platform text$/);
+ assert.match(platformAfterMeta.result_signature,/platform text\\)$/);
  await db.exec('analyze; set role anon');
  const platformAfterPlan=(await db.query('explain(analyze,buffers,format json) '+platformQuery,platformArgs)).rows[0]['QUERY PLAN'][0];
  const platformAfterRows=(await db.query(platformQuery,platformArgs)).rows;
