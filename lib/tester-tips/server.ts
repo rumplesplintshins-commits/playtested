@@ -72,6 +72,16 @@ export async function stripeV2Get(path: string, include: string[] = []) {
   return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
+export async function stripeV1Get(path: string) {
+  const response = await fetch(`https://api.stripe.com/v1/${path}`, {
+    headers: { Authorization: `Bearer ${stripeSecret()}` },
+    cache: "no-store",
+  });
+  const payload: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe request failed."));
+  return isRecord(payload) ? payload as StripeApiResponse : {};
+}
+
 export async function stripePostForm(path: string, values: Record<string, string>, idempotencyKey: string) {
   const form = new URLSearchParams(values);
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
