@@ -87,6 +87,9 @@ export async function POST(request: Request) {
       p_platform_fee_pence: platformFeePence, p_total_amount_pence: totalAmountPence,
       p_fee_rules_snapshot: feeSnapshot,
     });
+    if (insertError?.code === "23505") {
+      return reply(409, { error: "A tip has already been sent or is being paid for this feedback." });
+    }
     if (insertError || !tipId) throw insertError ?? new Error("Could not record the tip.");
     const tip = { id: tipId as string };
 
