@@ -31,6 +31,8 @@ try{
  await db.exec(`reset role;insert into listing_controls(game_kind,source_id,is_admin_test) values('submission','${id(10)}',true);set role anon`);
  assert(!(await run(args)).some(r=>r.game_id===id(10)),'Test/demo remains excluded including shared Steam identity');
 
+ // Capture the catalogue after the Test/Demo exclusion case, then compare later migrations.
+ const prePlatformBaseline=await run(args);
  // Recreate the production platform-filter migration sequence, then verify
  // the custom-plan restoration preserves the nine-argument RPC and results.
  await db.exec('reset role');
@@ -50,7 +52,7 @@ try{
  const platformQuery='select game_id,source_type,title,total_count,platform from get_public_catalogue($1,$2,$3,$4,$5,$6,$7,$8,$9)';
  const platformBeforePlan=(await db.query('explain(analyze,buffers,format json) '+platformQuery,platformArgs)).rows[0]['QUERY PLAN'][0];
  const platformBaseline=(await db.query(platformQuery,platformArgs)).rows;
- assert.deepEqual(platformBaseline.map(({platform,...row})=>row),baseline,'Nine-argument all-platform results must match the pre-platform catalogue');
+ assert.deepEqual(platformBaseline.map(({platform,...row})=>row),prePlatformBaseline,'Nine-argument all-platform results must match the pre-platform catalogue');
  await db.exec('reset role');
  await db.exec(sql('20261125120000_restore_catalogue_custom_plan_with_platform_filter.sql'));
  const platformAfterMeta=(await db.query(`
