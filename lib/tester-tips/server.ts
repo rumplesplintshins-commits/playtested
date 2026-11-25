@@ -69,7 +69,7 @@ export async function stripeV2Get(path: string, include: string[] = []) {
   });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe request failed."));
-  return isRecord(payload) ? payload : {};
+  return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
 export async function stripePostForm(path: string, values: Record<string, string>, idempotencyKey: string) {
@@ -86,7 +86,7 @@ export async function stripePostForm(path: string, values: Record<string, string
   });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe checkout could not be created."));
-  return isRecord(payload) ? payload : {};
+  return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
 export function verifyStripeWebhook(rawBody: string, signatureHeader: string | null, secret: string) {
@@ -94,7 +94,7 @@ export function verifyStripeWebhook(rawBody: string, signatureHeader: string | n
   const parts = signatureHeader.split(",").map(part => part.split("=", 2));
   const timestamp = parts.find(([key]) => key === "t")?.[1];
   const signatures = parts.filter(([key]) => key === "v1").map(([, value]) => value);
-  if (!timestamp || !/^\\d+$/.test(timestamp) || signatures.length === 0) return false;
+  if (!timestamp || !/^\d+$/.test(timestamp) || signatures.length === 0) return false;
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const expected = createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest();
   return signatures.some(signature => {
