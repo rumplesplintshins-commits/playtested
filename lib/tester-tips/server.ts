@@ -3,6 +3,16 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const STRIPE_V2_VERSION = "2026-09-30.endive";
 
+type JsonRecord = Record<string, unknown>;
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stripeErrorMessage(value: unknown, fallback: string) {
+  if (!isRecord(value) || !isRecord(value.error)) return fallback;
+  return typeof value.error.message === "string" ? value.error.message : fallback;
+}
+
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,7 +26,7 @@ function stripeSecret() {
   return secret;
 }
 
-export async function stripeV2Post(path: string, body: Record<string, unknown>, idempotencyKey?: string) {
+export async function stripeV2Post(path: string, body: JsonRecord, idempotencyKey?: string) {
   const response = await fetch(`https://api.stripe.com/v2/${path}`, {
     method: "POST",
     headers: {
@@ -28,11 +38,9 @@ export async function stripeV2Post(path: string, body: Record<string, unknown>, 
     body: JSON.stringify(body),
     cache: "no-store",
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(typeof data?.error?.message === "string" ? data.error.message : "Stripe request failed.");
-  }
-  return data as Record<string, any>;
+  const payload: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe request failed."));
+  return isRecord(payload) ? payload : {};
 }
 
 export async function stripeV2Get(path: string, include: string[] = []) {
@@ -45,11 +53,9 @@ export async function stripeV2Get(path: string, include: string[] = []) {
     },
     cache: "no-store",
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(typeof data?.error?.message === "string" ? data.error.message : "Stripe request failed.");
-  }
-  return data as Record<string, any>;
+  const payload: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe request failed."));
+  return isRecord(payload) ? payload : {};
 }
 
 export async function stripePostForm(path: string, values: Record<string, string>, idempotencyKey: string) {
@@ -64,11 +70,9 @@ export async function stripePostForm(path: string, values: Record<string, string
     body: form.toString(),
     cache: "no-store",
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(typeof data?.error?.message === "string" ? data.error.message : "Stripe checkout could not be created.");
-  }
-  return data as Record<string, any>;
+  const payload: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe checkout could not be created."));
+  return isRecord(payload) ? payload : {};
 }
 
 export function verifyStripeWebhook(rawBody: string, signatureHeader: string | null, secret: string) {
@@ -76,7 +80,7 @@ export function verifyStripeWebhook(rawBody: string, signatureHeader: string | n
   const parts = signatureHeader.split(",").map(part => part.split("=", 2));
   const timestamp = parts.find(([key]) => key === "t")?.[1];
   const signatures = parts.filter(([key]) => key === "v1").map(([, value]) => value);
-  if (!timestamp || !/^\d+$/.test(timestamp) || signatures.length === 0) return false;
+  if (!timestamp || !/^\\d+$/.test(timestamp) || signatures.length === 0) return false;
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const expected = createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest();
   return signatures.some(signature => {
