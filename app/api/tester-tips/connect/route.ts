@@ -9,8 +9,7 @@ const reply = (status: number, body: Record<string, unknown>) =>
 export async function POST(request: Request) {
   if (!hasTrustedOrigin(request)) return reply(403, { error: "Request origin could not be verified." });
   if (!request.headers.get("content-type")?.startsWith("application/json")) return reply(415, { error: "Expected JSON." });
-  const length = Number(request.headers.get("content-length") ?? 0);
-  if (length > 256) return reply(413, { error: "Request too large." });
+  if (Number(request.headers.get("content-length") ?? 0) > 256) return reply(413, { error: "Request too large." });
 
   let country = "";
   try {
@@ -38,28 +37,35 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: existingRows, error: lookupError } = await admin.rpc("tester_tip_get_stripe_account", { p_tester_id: user.id });
+  const { data: existingRows, error: lookupError } = await admin.rpc("tester_tip_get_merchant_account", {
+    p_tester_id: user.id,
+  });
   if (lookupError) return reply(503, { error: "Unable to load payout setup." });
   const existing = existingRows?.[0] ?? null;
 
   try {
-    let accountId = existing?.stripe_account_id as string | undefined;
+    let accountId = existing?.merchant_stripe_account_id as string | undefined;
     if (!accountId) {
       const account = await stripeV2Post("core/accounts", {
         contact_email: user.email,
         display_name: "Playtested tester",
         identity: { country: country.toLowerCase() },
         configuration: {
-          recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } },
+          merchant: { capabilities: { card_payments: { requested: true } } },
         },
-        defaults: { responsibilities: { fees_collector: "application", losses_collector: "application" } },
+        defaults: {
+          responsibilities: {
+            fees_collector: "stripe",
+            losses_collector: "stripe",
+          },
+        },
         dashboard: "express",
-        metadata: { playtested_user_id: user.id },
-        include: ["configuration.recipient", "identity", "defaults"],
-      }, `playtested-tester-connect-${user.id}`);
+        metadata: { playtested_user_id: user.id, playtested_account_purpose: "tester_tips" },
+        include: ["configuration.merchant", "identity", "defaults", "requirements"],
+      }, `playtested-tester-merchant-${user.id}`);
       if (typeof account.id !== "string" || !account.id) throw new Error("Stripe did not return an account ID.");
       accountId = account.id;
-      const { error: saveError } = await admin.rpc("tester_tip_save_stripe_account", {
+      const { error: saveError } = await admin.rpc("tester_tip_save_merchant_account", {
         p_tester_id: user.id, p_stripe_account_id: accountId,
       });
       if (saveError) throw new Error("Unable to save your payout account. Please try again.");
