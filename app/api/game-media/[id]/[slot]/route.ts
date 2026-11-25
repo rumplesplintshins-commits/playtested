@@ -30,9 +30,11 @@ export async function GET(request: Request, context: Context) {
   const result = await service.from("game_screenshots").select("object_path").eq("submission_id", id).eq("slot", Number(slot)).eq("revision", visible.data.revision).maybeSingle();
   if (result.error || !result.data) return reply("Media not found.", 404);
   const path = new URL(request.url).searchParams.get("thumb") === "1" ? result.data.object_path.replace(/\.webp$/, ".thumb.webp") : result.data.object_path;
-  const file = await service.storage.from("game-screenshots").download(path);
-  if (file.error || !file.data) return reply("Screenshot temporarily unavailable.", 503);
-  return new Response(file.data, { headers: { ...headers, "Content-Type": "image/webp" } });
+  // Keep the RLS visibility check above, but let Supabase Storage deliver the bytes.
+  // The short-lived URL is issued only after the exact visible revision is verified.
+  const signed = await service.storage.from("game-screenshots").createSignedUrl(path, 300);
+  if (signed.error || !signed.data?.signedUrl) return reply("Screenshot temporarily unavailable.", 503);
+  return new Response(null, { status: 302, headers: { ...headers, Location: signed.data.signedUrl } });
 }
 async function mutate(request: Request, context: Context, remove: boolean) {
   if (!hasTrustedOrigin(request)) return reply("Same-origin request required.", 403);
