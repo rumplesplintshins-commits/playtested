@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, verifyStripeWebhook } from "@/lib/tester-tips/server";
 
-export const runtime = "nodejs";
-
 type JsonRecord = Record<string, unknown>;
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
