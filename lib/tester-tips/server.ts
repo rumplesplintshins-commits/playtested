@@ -8,6 +8,9 @@ type StripeApiResponse = JsonRecord & {
   id?: string;
   url?: string;
   configuration?: {
+    merchant?: {
+      capabilities?: { card_payments?: { status?: string } };
+    };
     recipient?: {
       capabilities?: {
         stripe_balance?: {
