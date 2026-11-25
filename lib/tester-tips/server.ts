@@ -4,6 +4,20 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const STRIPE_V2_VERSION = "2026-09-30.endive";
 
 type JsonRecord = Record<string, unknown>;
+type StripeApiResponse = JsonRecord & {
+  id?: string;
+  url?: string;
+  configuration?: {
+    recipient?: {
+      capabilities?: {
+        stripe_balance?: {
+          stripe_transfers?: { status?: string };
+        };
+      };
+    };
+  };
+  requirements?: { currently_due?: unknown[] };
+};
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -40,7 +54,7 @@ export async function stripeV2Post(path: string, body: JsonRecord, idempotencyKe
   });
   const payload: unknown = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(stripeErrorMessage(payload, "Stripe request failed."));
-  return isRecord(payload) ? payload : {};
+  return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
 export async function stripeV2Get(path: string, include: string[] = []) {
