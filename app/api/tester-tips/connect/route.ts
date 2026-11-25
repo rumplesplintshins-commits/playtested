@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase-server";
 import { createAdminClient, stripeV2Post } from "@/lib/tester-tips/server";
 import { hasTrustedOrigin } from "@/lib/request-origin";
 
-export const runtime = "nodejs";
-
 const reply = (status: number, body: Record<string, unknown>) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 
