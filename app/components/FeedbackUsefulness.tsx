@@ -49,7 +49,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [reasonDraft, setReasonDraft] = useState("");
   const [notice, setNotice] = useState("");
   const [tipOpen, setTipOpen] = useState(false);
-  const [tipAmount, setTipAmount] = useState("5.00");
+  const [tipAmount, setTipAmount] = useState("10.00");
   const [customTipSelected, setCustomTipSelected] = useState(false);
   const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;totalAmountPence:number}|null>(null);
   const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
@@ -243,7 +243,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
           </div>
           <button
             type="button"
-            onClick={() => { setTipOpen(true); setTipQuote(null); setTipError(""); }}
+            onClick={() => { setTipAmount("10.00"); setCustomTipSelected(false); setTipOpen(true); setTipQuote(null); setTipError(""); }}
             className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-2 text-xs font-semibold text-[#aef8c2] transition hover:bg-[#77f29b]/15"
           >
             Send a tip
