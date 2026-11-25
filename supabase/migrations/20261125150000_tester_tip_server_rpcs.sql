@@ -146,7 +146,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.tester_tip_mark_refund(
   p_tip_id uuid,p_payment_intent_id text,p_charge_id text,p_refunded_amount_pence integer,p_charge_amount_pence integer
 ) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $$
   UPDATE playtested_studios.tester_tips
   SET status=CASE WHEN p_refunded_amount_pence>=p_charge_amount_pence THEN 'refunded' ELSE 'partially_refunded' END,
       refunded_amount_pence=greatest(0,p_refunded_amount_pence),
@@ -154,18 +154,18 @@ AS $
       stripe_charge_id=p_charge_id,updated_at=clock_timestamp()
   WHERE id=p_tip_id
     AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id=p_payment_intent_id);
-$;
+$$;
 
 CREATE OR REPLACE FUNCTION public.tester_tip_mark_disputed(
   p_tip_id uuid,p_payment_intent_id text,p_charge_id text
 ) RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $$
   UPDATE playtested_studios.tester_tips
   SET status='disputed',stripe_payment_intent_id=coalesce(stripe_payment_intent_id,p_payment_intent_id),
       stripe_charge_id=p_charge_id,updated_at=clock_timestamp()
   WHERE id=p_tip_id
     AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id=p_payment_intent_id);
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.tester_tip_get_stripe_account(uuid),
   public.tester_tip_save_stripe_account(uuid,text),
