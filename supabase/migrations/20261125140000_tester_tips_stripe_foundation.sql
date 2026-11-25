@@ -68,6 +68,10 @@ CREATE INDEX IF NOT EXISTS tester_tips_tester_created_idx
   ON playtested_studios.tester_tips(tester_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS tester_tips_test_idx
   ON playtested_studios.tester_tips(test_id);
+-- One successful or in-flight tip per accepted feedback item; expired/failed attempts can be retried.
+CREATE UNIQUE INDEX IF NOT EXISTS tester_tips_one_per_feedback_idx
+  ON playtested_studios.tester_tips(test_id,developer_id)
+  WHERE status NOT IN ('failed','expired');
 
 ALTER TABLE playtested_studios.tester_stripe_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE playtested_studios.tester_tip_fee_rules ENABLE ROW LEVEL SECURITY;
