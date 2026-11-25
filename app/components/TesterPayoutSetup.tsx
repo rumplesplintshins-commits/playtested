@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const countries = [
   ["GB","United Kingdom"],["US","United States"],["CA","Canada"],["AU","Australia"],
@@ -17,6 +17,21 @@ export default function TesterPayoutSetup() {
   const [country, setCountry] = useState("GB");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/tester-tips/connect/status", { cache: "no-store" })
+      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
+      .then(({ response, data }) => {
+        if (!active) return;
+        if (!response.ok) { setStatus("unavailable"); return; }
+        if (!data.connected) { setStatus("not_connected"); return; }
+        setStatus(data.transfersActive ? "active" : "pending");
+      })
+      .catch(() => { if (active) setStatus("unavailable"); });
+    return () => { active = false; };
+  }, []);
 
   async function startSetup() {
     if (busy) return;
@@ -57,9 +72,12 @@ export default function TesterPayoutSetup() {
         </label>
         <button type="button" onClick={() => void startSetup()} disabled={busy}
           className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8] disabled:cursor-wait disabled:opacity-50">
-          {busy ? "Opening Stripe..." : "Set up Stripe payouts"}
+          {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe details" : "Set up Stripe payouts"}
         </button>
       </div>
+      {status === "active" && <p role="status" className="mt-3 text-sm text-[#77f29b]">Your Stripe account can receive tester tips.</p>}
+      {status === "pending" && <p role="status" className="mt-3 text-sm text-amber-200">Stripe still needs information before your account can receive tips.</p>}
+      {status === "checking" && <p className="mt-3 text-xs text-zinc-500">Checking Stripe account status...</p>}
       {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
       <p className="mt-3 text-xs leading-5 text-zinc-500">Stripe determines eligibility and payout timing. You must complete its verification before tips can be sent.</p>
     </section>
