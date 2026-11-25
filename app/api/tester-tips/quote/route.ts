@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/tester-tips/server";
 import { calculateTesterTipFeePence } from "@/lib/tester-tips/fees";
 
-export const runtime = "nodejs";
-
 export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
