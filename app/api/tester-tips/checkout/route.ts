@@ -100,10 +100,10 @@ export async function POST(request: Request) {
         p_tip_id: tip.id,
         p_stripe_account_id: connectedAccountId,
         p_charge_amount_pence: chargeAmountPence,
+        p_processing_allowance_pence: processingAllowancePence,
       });
       if (chargeDetailsError) throw chargeDetailsError;
 
-      const money = (pence: number) => (pence / 100).toFixed(2);
       const session = await stripePostForm("checkout/sessions", {
         mode: "payment",
         "payment_method_types[0]": "card",
