@@ -42,7 +42,7 @@ async function removeTemporaryFile(file) {
 }
 
 async function convert(source) {
-  const target = source.replace(/\\.png$/i, ".webp");
+  const target = source.replace(/\.png$/i, ".webp");
   const original = await stat(source);
   const input = sharp(source, { failOn: "error" });
   const metadata = await input.metadata();
