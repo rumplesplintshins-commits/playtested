@@ -16,7 +16,7 @@ BEGIN
   FOREACH item SLICE 1 IN ARRAY cases LOOP
     SELECT playtested_studios.calculate_tester_tip_fee_pence(item[1]) INTO actual;
     IF actual <> item[2] THEN
-      RAISE EXCEPTION 'Tip fee test failed: tip %p expected %p but got %p',
+      RAISE EXCEPTION 'Tip fee test failed: tip % expected % but got %',
         item[1], item[2], actual;
     END IF;
   END LOOP;
