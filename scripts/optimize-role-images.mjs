@@ -7,6 +7,23 @@ const roleImages = [
   "public/images/roles/tester-role.png",
 ];
 
+async function renameWithRetry(source, target) {
+  const retryableCodes = new Set(["EBUSY", "EPERM", "EACCES"]);
+  const delays = [150, 300, 600, 1000, 1500, 2000];
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rename(source, target);
+      return;
+    } catch (error) {
+      if (!retryableCodes.has(error?.code) || attempt >= delays.length) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+  }
+}
+
 async function convert(source) {
   const target = source.replace(/\.png$/i, ".webp");
   const original = await stat(source);
@@ -46,7 +63,15 @@ async function convert(source) {
     if (chosen) await rm(chosen.temporary, { force: true });
     throw new Error(`WebP did not reduce file size for ${source}; original retained`);
   }
-  await rename(chosen.temporary, target);
+  try {
+    await renameWithRetry(chosen.temporary, target);
+  } catch (error) {
+    await rm(chosen.temporary, { force: true });
+    throw new Error(
+      `Could not replace ${target} after retrying. Close any process previewing or watching this image, then rerun the build. Original image retained.`,
+      { cause: error },
+    );
+  }
   const saved = original.size - chosen.size;
   console.log(`${source} -> ${target}: ${original.size.toLocaleString()} -> ${chosen.size.toLocaleString()} bytes (quality ${chosen.quality}, saved ${(saved / original.size * 100).toFixed(1)}%)`);
 }
