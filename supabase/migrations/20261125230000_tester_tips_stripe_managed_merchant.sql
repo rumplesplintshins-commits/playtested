@@ -112,7 +112,9 @@ BEGIN
       charge_amount_pence=p_charge_amount_pence,
       processing_allowance_pence=p_processing_allowance_pence,
       updated_at=clock_timestamp()
-  WHERE id=p_tip_id AND status IN ('pending','checkout_created');
+  WHERE id=p_tip_id
+    AND status IN ('pending','checkout_created')
+    AND p_charge_amount_pence=total_amount_pence+p_processing_allowance_pence;
   IF NOT FOUND THEN RAISE EXCEPTION 'Tip is no longer available for checkout.'; END IF;
 END;
 $fn$;
