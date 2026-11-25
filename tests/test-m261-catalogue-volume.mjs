@@ -53,7 +53,7 @@ try{
  const platformBaseline=(await db.query(platformQuery,platformArgs)).rows;
  assert.deepEqual(platformBaseline.map(({platform,...row})=>row),prePlatformBaseline,'Nine-argument all-platform results must match the pre-platform catalogue');
  await db.exec('reset role');
- await db.exec(sql('20261125120000_restore_catalogue_custom_plan_with_platform_filter.sql'));
+ await db.exec(sql('20261125121345_restore_catalogue_custom_plan_with_platform_filter.sql'));
  const platformAfterMeta=(await db.query(`
   select l.lanname,pg_get_function_result(p.oid) result_signature
   from pg_proc p join pg_language l on l.oid=p.prolang
