@@ -45,7 +45,9 @@
     "test:bell-placement": "node tests/test-notification-bell-placement-browser.mjs",
     "test:campaign-controls": "node tests/test-start-playtest-controls.mjs",
     "dev:qa:pr67": "node scripts/start-pr67-qa.mjs",
-    "build:qa:pr67": "node scripts/start-pr67-qa.mjs --build"
+    "build:qa:pr67": "node scripts/start-pr67-qa.mjs --build",
+    "predev": "node scripts/optimize-role-images.mjs",
+    "prebuild": "node scripts/optimize-role-images.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
