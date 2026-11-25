@@ -56,7 +56,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
     const parsed = Number(tipAmount);
     const pence = Math.round(parsed * 100);
     if (!Number.isFinite(parsed) || !Number.isSafeInteger(pence) || pence < 500 || pence > 100000 || Math.abs(parsed * 100 - pence) > 0.000001) {
-      setTipError("Enter a tip between £5.00 and £1,000.00.");
+      setTipError("Enter a tip between £5.00 and £100.00.");
       return;
     }
     setTipQuoteBusy(true); setTipError(""); setTipQuote(null);
@@ -257,7 +257,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
             <label className="mt-5 block text-xs font-semibold text-zinc-300" htmlFor={"tip-amount-" + testId}>Tip amount (GBP)</label>
             <div className="mt-2 flex items-center rounded-lg border border-white/15 bg-[#090b0a] px-3 focus-within:border-[#77f29b]">
               <span className="text-zinc-400">£</span>
-              <input id={"tip-amount-" + testId} type="number" min="5" max="1000" step="0.01" value={tipAmount}
+              <input id={"tip-amount-" + testId} type="number" min="5" max="100" step="0.01" value={tipAmount}
                 onChange={(event) => { setTipAmount(event.target.value); setTipQuote(null); setTipError(""); }}
                 className="w-full bg-transparent px-2 py-3 text-sm text-white outline-none" />
             </div>
