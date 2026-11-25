@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS playtested_studios.tester_tips (
   playtest_id uuid NOT NULL REFERENCES public.community_playtests(id) ON DELETE RESTRICT,
   developer_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
   tester_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
-  tip_amount_pence integer NOT NULL CHECK (tip_amount_pence BETWEEN 500 AND 100000),
+  tip_amount_pence integer NOT NULL CHECK (tip_amount_pence BETWEEN 500 AND 10000),
   platform_fee_pence integer NOT NULL CHECK (platform_fee_pence >= 0),
   total_amount_pence integer NOT NULL CHECK (total_amount_pence = tip_amount_pence + platform_fee_pence),
   currency text NOT NULL DEFAULT 'gbp' CHECK (currency='gbp'),
@@ -92,7 +92,7 @@ DECLARE
   v_portion integer;
 BEGIN
   IF p_tip_amount_pence IS NULL OR p_tip_amount_pence NOT BETWEEN 500 AND 100000 THEN
-    RAISE EXCEPTION 'Tip must be between £5 and £1,000.';
+    RAISE EXCEPTION 'Tip must be between £5 and £100.';
   END IF;
 
   FOR v_rule IN
