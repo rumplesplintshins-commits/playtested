@@ -59,9 +59,8 @@ export async function POST(request: Request) {
     }
     if (test.tester_id === user.id) return reply(403, { error: "You cannot tip your own feedback." });
 
-    const { data: payoutAccount, error: payoutError } = await admin.schema("playtested_studios")
-      .from("tester_stripe_accounts").select("stripe_account_id,transfers_status")
-      .eq("tester_id", test.tester_id).maybeSingle();
+    const { data: payoutRows, error: payoutError } = await admin.rpc("tester_tip_get_stripe_account", { p_tester_id: test.tester_id });
+    const payoutAccount = payoutRows?.[0];
     if (payoutError || !payoutAccount) {
       return reply(409, { error: "This tester has not set up Stripe payouts yet." });
     }
@@ -73,10 +72,7 @@ export async function POST(request: Request) {
       return reply(409, { error: "This tester's Stripe account is not ready to receive tips yet." });
     }
 
-    const { data: rules, error: rulesError } = await admin.schema("playtested_studios")
-      .from("tester_tip_fee_rules")
-      .select("rule_order,from_pence,to_pence,fee_type,fee_value,description")
-      .eq("active", true).order("rule_order");
+    const { data: rules, error: rulesError } = await admin.rpc("tester_tip_get_fee_rules");
     if (rulesError) throw rulesError;
     const activeRules = rules ?? [];
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, activeRules);
@@ -86,19 +82,13 @@ export async function POST(request: Request) {
       fee_type: rule.fee_type, fee_value: rule.fee_value, description: rule.description,
     }));
 
-    const { data: tip, error: insertError } = await admin.schema("playtested_studios")
-      .from("tester_tips").insert({
-        test_id: test.id,
-        playtest_id: campaign.id,
-        developer_id: user.id,
-        tester_id: test.tester_id,
-        tip_amount_pence: tipAmountPence,
-        platform_fee_pence: platformFeePence,
-        total_amount_pence: totalAmountPence,
-        fee_rules_snapshot: feeSnapshot,
-        status: "pending",
-      }).select("id").single();
-    if (insertError || !tip) throw insertError ?? new Error("Could not record the tip.");
+    const { data: tipId, error: insertError } = await admin.rpc("tester_tip_create_ledger", {
+      p_test_id: test.id, p_developer_id: user.id, p_tip_amount_pence: tipAmountPence,
+      p_platform_fee_pence: platformFeePence, p_total_amount_pence: totalAmountPence,
+      p_fee_rules_snapshot: feeSnapshot,
+    });
+    if (insertError || !tipId) throw insertError ?? new Error("Could not record the tip.");
+    const tip = { id: tipId as string };
 
     const origin = new URL(request.url).origin;
     try {
@@ -121,17 +111,15 @@ export async function POST(request: Request) {
       if (typeof session.url !== "string" || typeof session.id !== "string") {
         throw new Error("Stripe did not return a checkout URL.");
       }
-      const { error: updateError } = await admin.schema("playtested_studios")
-        .from("tester_tips").update({
-          stripe_checkout_session_id: session.id,
-          status: "checkout_created",
-          updated_at: new Date().toISOString(),
-        }).eq("id", tip.id);
+      const { error: updateError } = await admin.rpc("tester_tip_update_checkout", {
+        p_tip_id: tip.id, p_session_id: session.id, p_status: "checkout_created",
+      });
       if (updateError) throw updateError;
       return reply(200, { url: session.url });
     } catch (error) {
-      await admin.schema("playtested_studios").from("tester_tips")
-        .update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", tip.id);
+      await admin.rpc("tester_tip_update_checkout", {
+        p_tip_id: tip.id, p_session_id: null, p_status: "failed",
+      });
       throw error;
     }
   } catch (error) {
