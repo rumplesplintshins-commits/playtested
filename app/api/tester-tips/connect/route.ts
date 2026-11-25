@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         metadata: { playtested_user_id: user.id },
         include: ["configuration.recipient", "identity", "defaults"],
       }, `playtested-tester-connect-${user.id}`);
+      if (typeof account.id !== "string" || !account.id) throw new Error("Stripe did not return an account ID.");
       accountId = account.id;
       const { error: saveError } = await admin.rpc("tester_tip_save_stripe_account", {
         p_tester_id: user.id, p_stripe_account_id: accountId,
