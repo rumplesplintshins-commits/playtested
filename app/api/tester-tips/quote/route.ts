@@ -15,10 +15,7 @@ export async function GET(request: Request) {
   const tipAmountPence = Number(amount);
   try {
     const admin = createAdminClient();
-    const { data: rules, error: rulesError } = await admin.schema("playtested_studios")
-      .from("tester_tip_fee_rules")
-      .select("rule_order,from_pence,to_pence,fee_type,fee_value,description")
-      .eq("active", true).order("rule_order");
+    const { data: rules, error: rulesError } = await admin.rpc("tester_tip_get_fee_rules");
     if (rulesError) throw rulesError;
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, rules ?? []);
     return NextResponse.json({
