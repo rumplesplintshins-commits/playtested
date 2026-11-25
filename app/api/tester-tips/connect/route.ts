@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       const account = await stripeV2Post("core/accounts", {
         contact_email: user.email,
         display_name: "Playtested tester",
-        identity: { country },
+        identity: { country: country.toLowerCase() },
         configuration: {
           recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } },
         },
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       if (saveError) throw new Error("Unable to save your payout account. Please try again.");
     }
 
-    const origin = new URL(request.url).origin;
+    const origin = request.headers.get("origin")!;
     const link = await stripeV2Post("core/account_links", {
       account: accountId,
       use_case: {
