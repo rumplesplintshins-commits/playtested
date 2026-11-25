@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS playtested_studios.tester_stripe_accounts (
   transfers_status text NOT NULL DEFAULT 'pending'
     CHECK (transfers_status IN ('pending','active','restricted','disabled')),
   details_submitted boolean NOT NULL DEFAULT false,
-  payouts_enabled boolean NOT NULL DEFAULT false,
   requirements_due jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
