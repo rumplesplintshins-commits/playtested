@@ -8,8 +8,8 @@ export type TesterTipFeeRule = {
 };
 
 export function calculateTesterTipFeePence(tipAmountPence: number, rules: TesterTipFeeRule[]) {
-  if (!Number.isSafeInteger(tipAmountPence) || tipAmountPence < 500 || tipAmountPence > 100000) {
-    throw new Error("Choose a tip between £5 and £1,000.");
+  if (!Number.isSafeInteger(tipAmountPence) || tipAmountPence < 500 || tipAmountPence > 10000) {
+    throw new Error("Choose a tip between £5 and £100.");
   }
   if (!rules.length) throw new Error("Tester tip fees are not configured.");
   let fee = 0;
