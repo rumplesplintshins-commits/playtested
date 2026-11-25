@@ -26,38 +26,28 @@ export async function POST(request: Request) {
       : typeof object.id === "string" && object.object === "payment_intent" ? object.id : null;
 
     if (event.type === "checkout.session.completed" && object.payment_status === "paid" && metadataTipId) {
-      const { error } = await admin.schema("playtested_studios").from("tester_tips").update({
-        status: "paid",
-        stripe_checkout_session_id: object.id,
-        stripe_payment_intent_id: paymentIntentId,
-        paid_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq("id", metadataTipId).in("status", ["pending", "checkout_created"]);
+      const { error } = await admin.rpc("tester_tip_mark_paid", {
+        p_tip_id: metadataTipId, p_session_id: object.id, p_payment_intent_id: paymentIntentId,
+      });
       if (error) throw error;
     } else if (event.type === "checkout.session.expired" && metadataTipId) {
-      const { error } = await admin.schema("playtested_studios").from("tester_tips")
-        .update({ status: "expired", updated_at: new Date().toISOString() })
-        .eq("id", metadataTipId).in("status", ["pending", "checkout_created"]);
+      const { error } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: metadataTipId });
       if (error) throw error;
     } else if (event.type === "payment_intent.payment_failed" && metadataTipId) {
-      const { error } = await admin.schema("playtested_studios").from("tester_tips")
-        .update({ status: "failed", updated_at: new Date().toISOString() })
-        .eq("id", metadataTipId).in("status", ["pending", "checkout_created"]);
+      const { error } = await admin.rpc("tester_tip_mark_failed", { p_tip_id: metadataTipId });
       if (error) throw error;
     } else if (event.type === "charge.refunded" && object.payment_intent) {
       const amountRefunded = Number(object.amount_refunded ?? 0);
       const amount = Number(object.amount ?? 0);
-      const { error } = await admin.schema("playtested_studios").from("tester_tips").update({
-        status: amountRefunded >= amount ? "refunded" : "partially_refunded",
-        refunded_amount_pence: amountRefunded,
-        stripe_charge_id: object.id,
-        updated_at: new Date().toISOString(),
-      }).eq("stripe_payment_intent_id", object.payment_intent);
+      const { error } = await admin.rpc("tester_tip_mark_refund", {
+        p_payment_intent_id: object.payment_intent, p_charge_id: object.id,
+        p_refunded_amount_pence: amountRefunded, p_charge_amount_pence: amount,
+      });
       if (error) throw error;
     } else if (event.type === "charge.dispute.created" && object.payment_intent) {
-      const { error } = await admin.schema("playtested_studios").from("tester_tips")
-        .update({ status: "disputed", stripe_charge_id: object.id, updated_at: new Date().toISOString() })
-        .eq("stripe_payment_intent_id", object.payment_intent);
+      const { error } = await admin.rpc("tester_tip_mark_disputed", {
+        p_payment_intent_id: object.payment_intent, p_charge_id: object.id,
+      });
       if (error) throw error;
     }
 
