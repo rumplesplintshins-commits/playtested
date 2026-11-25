@@ -8,9 +8,10 @@ DECLARE
     ARRAY[2000,275],
     ARRAY[2500,300],
     ARRAY[3000,350],
-    ARRAY[5000,550]
+    ARRAY[3000,350]
   ];
   item integer[];
+  rejected boolean := false;
   actual integer;
 BEGIN
   FOREACH item SLICE 1 IN ARRAY cases LOOP
@@ -20,5 +21,14 @@ BEGIN
         item[1], item[2], actual;
     END IF;
   END LOOP;
+
+  BEGIN
+    PERFORM playtested_studios.calculate_tester_tip_fee_pence(3001);
+  EXCEPTION WHEN OTHERS THEN
+    rejected := true;
+  END;
+  IF NOT rejected THEN
+    RAISE EXCEPTION 'Tip fee test failed: £30.01 should be rejected.';
+  END IF;
 END;
-$$;
+$;
