@@ -88,6 +88,9 @@ export async function POST(request: Request) {
               "metadata[refund_type]": "unused_processing_allowance",
             }, `playtested-tip-processing-refund-${tipId}`, connectedAccountId);
             if (typeof refund.id !== "string") throw new Error("Stripe did not return a refund ID.");
+            await stripePostForm(`payment_intents/${encodeURIComponent(paymentIntentId)}`, {
+              "metadata[processing_allowance_refunded_pence]": String(refundPence),
+            }, `playtested-tip-processing-refund-metadata-${tipId}`, connectedAccountId);
             const { error: completeError } = await admin.rpc("tester_tip_complete_processing_refund", {
               p_tip_id: tipId, p_refund_id: refund.id,
             });
@@ -127,14 +130,23 @@ export async function POST(request: Request) {
           `payment_intents/${encodeURIComponent(paymentIntentId)}`, connectedAccountId,
         );
         const paymentMetadata = isRecord(paymentIntent.metadata) ? paymentIntent.metadata : {};
-        const allowance = Number(paymentMetadata.processing_allowance_pence ?? 0);
+        const recordedAllowanceRefund = Number(paymentMetadata.processing_allowance_refunded_pence ?? 0);
+        const refunds = isRecord(object.refunds) && Array.isArray(object.refunds.data)
+          ? object.refunds.data.filter(isRecord) : null;
+        const customerRefundedPence = refunds
+          ? refunds.reduce((sum, refund) => {
+              const refundMetadata = isRecord(refund.metadata) ? refund.metadata : {};
+              return refundMetadata.refund_type === "unused_processing_allowance"
+                ? sum : sum + Number(refund.amount ?? 0);
+            }, 0)
+          : Math.max(0, Number(object.amount_refunded ?? 0) - recordedAllowanceRefund);
         // The automatic allowance return is not a refund of the tester's reward.
-        if (Number(object.amount_refunded ?? 0) <= allowance) {
+        if (!Number.isSafeInteger(customerRefundedPence) || customerRefundedPence <= 0) {
           return NextResponse.json({ received: true });
         }
         const { error } = await admin.rpc("tester_tip_mark_refund", {
           p_tip_id: tipId, p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
-          p_refunded_amount_pence: Number(object.amount_refunded ?? 0),
+          p_refunded_amount_pence: customerRefundedPence,
           p_charge_amount_pence: Number(object.amount ?? 0),
         });
         if (error) throw error;
