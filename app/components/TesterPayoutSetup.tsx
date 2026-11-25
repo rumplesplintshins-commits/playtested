@@ -27,7 +27,7 @@ export default function TesterPayoutSetup() {
         if (!active) return;
         if (!response.ok) { setStatus("unavailable"); return; }
         if (!data.connected) { setStatus("not_connected"); return; }
-        setStatus(data.transfersActive ? "active" : "pending");
+        setStatus(data.cardPaymentsActive ? "active" : "pending");
       })
       .catch(() => { if (active) setStatus("unavailable"); });
     return () => { active = false; };
