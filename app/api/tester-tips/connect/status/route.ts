@@ -11,11 +11,9 @@ export async function GET() {
 
   try {
     const admin = createAdminClient();
-    const { data: saved, error: lookupError } = await admin.schema("playtested_studios")
-      .from("tester_stripe_accounts")
-      .select("stripe_account_id,transfers_status")
-      .eq("tester_id", user.id).maybeSingle();
+    const { data: savedRows, error: lookupError } = await admin.rpc("tester_tip_get_stripe_account", { p_tester_id: user.id });
     if (lookupError) throw lookupError;
+    const saved = savedRows?.[0];
     if (!saved) return NextResponse.json({ connected: false }, { headers: { "Cache-Control": "private, no-store" } });
 
     const account = await stripeV2Get(`core/accounts/${encodeURIComponent(saved.stripe_account_id)}`, [
@@ -28,13 +26,10 @@ export async function GET() {
       : rawStatus === "inactive" ? "disabled" : "pending";
     const requirements = account.requirements ?? {};
     const due = Array.isArray(requirements.currently_due) ? requirements.currently_due : [];
-    const { error: updateError } = await admin.schema("playtested_studios")
-      .from("tester_stripe_accounts").update({
-        transfers_status: transfersStatus,
-        details_submitted: due.length === 0,
-        requirements_due: due,
-        updated_at: new Date().toISOString(),
-      }).eq("tester_id", user.id);
+    const { error: updateError } = await admin.rpc("tester_tip_update_stripe_account_status", {
+      p_tester_id: user.id, p_status: transfersStatus,
+      p_details_submitted: due.length === 0, p_requirements_due: due,
+    });
     if (updateError) throw updateError;
 
     return NextResponse.json({
