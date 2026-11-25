@@ -1,35 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient, stripeV2Post } from "@/lib/tester-tips/server";
 import { hasTrustedOrigin } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 
-const STRIPE_V2_VERSION = "2026-09-30.endive";
 const reply = (status: number, body: Record<string, unknown>) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
-
-async function stripeV2(path: string, body: Record<string, unknown>, idempotencyKey?: string) {
-  const secret = process.env.STRIPE_SECRET_KEY;
-  if (!secret) throw new Error("Stripe is not configured.");
-  const response = await fetch(`https://api.stripe.com/v2/${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      "Content-Type": "application/json",
-      "Stripe-Version": STRIPE_V2_VERSION,
-      ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = typeof data?.error?.message === "string" ? data.error.message : "Stripe could not start payout setup.";
-    throw new Error(message);
-  }
-  return data as { id: string; url?: string };
-}
 
 export async function POST(request: Request) {
   if (!hasTrustedOrigin(request)) return reply(403, { error: "Request origin could not be verified." });
@@ -58,24 +35,19 @@ export async function POST(request: Request) {
     return reply(403, { error: "Tester access is required to set up payouts." });
   }
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!serviceKey || !supabaseUrl || !process.env.STRIPE_SECRET_KEY) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.STRIPE_SECRET_KEY) {
     return reply(503, { error: "Payout setup is not configured yet." });
   }
 
-  const admin = createSupabaseClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: existing, error: lookupError } = await admin
-    .schema("playtested_studios").from("tester_stripe_accounts")
-    .select("stripe_account_id").eq("tester_id", user.id).maybeSingle();
+  const admin = createAdminClient();
+  const { data: existingRows, error: lookupError } = await admin.rpc("tester_tip_get_stripe_account", { p_tester_id: user.id });
   if (lookupError) return reply(503, { error: "Unable to load payout setup." });
+  const existing = existingRows?.[0] ?? null;
 
   try {
     let accountId = existing?.stripe_account_id as string | undefined;
     if (!accountId) {
-      const account = await stripeV2("core/accounts", {
+      const account = await stripeV2Post("core/accounts", {
         contact_email: user.email,
         display_name: "Playtested tester",
         identity: { country },
@@ -88,20 +60,14 @@ export async function POST(request: Request) {
         include: ["configuration.recipient", "identity", "defaults"],
       }, `playtested-tester-connect-${user.id}`);
       accountId = account.id;
-      const { error: saveError } = await admin.schema("playtested_studios")
-        .from("tester_stripe_accounts").upsert({
-          tester_id: user.id,
-          stripe_account_id: accountId,
-          transfers_status: "pending",
-          details_submitted: false,
-          payouts_enabled: false,
-          requirements_due: [],
-        }, { onConflict: "tester_id" });
+      const { error: saveError } = await admin.rpc("tester_tip_save_stripe_account", {
+        p_tester_id: user.id, p_stripe_account_id: accountId,
+      });
       if (saveError) throw new Error("Unable to save your payout account. Please try again.");
     }
 
     const origin = new URL(request.url).origin;
-    const link = await stripeV2("core/account_links", {
+    const link = await stripeV2Post("core/account_links", {
       account: accountId,
       use_case: {
         type: "account_onboarding",
