@@ -48,6 +48,10 @@ try{
   measurements.push({viewport,device_scale_factor:deviceScaleFactor,current_src:src.split('/').at(-1),response_bytes:responseBody.length,cache_control:responseHeaders['cache-control']});
   if(viewport.width===1280){
    const normal=await context.request.get('http://localhost:32930/contact');assertSecurity(normal.headers());assert.equal(normal.headers()['strict-transport-security'],undefined);assert(!normal.headers()['cache-control']?.includes('immutable'));
+   const publicImage=await context.request.get('http://localhost:32930/images/roles/player-role.jpg');
+   assert.match(publicImage.headers()['cache-control']||/,/,/public, max-age=86400/);
+   const demoAsset=await context.request.get('http://localhost:32930/demo-assets/mosslight-grove.svg');
+   assert.match(demoAsset.headers()['cache-control']||/,/,/public, max-age=86400/);
    const apex=await context.request.get('http://localhost:32930/contact',{headers:{host:'playtested.co.uk','x-forwarded-proto':'https'}});assertSecurity(apex.headers());assert.equal(apex.headers()['strict-transport-security'],'max-age=31536000');
    const privatePage=await context.request.get('http://localhost:32930/account');assertSecurity(privatePage.headers());assert.match(privatePage.headers()['cache-control'],/private, no-store/);
   }
