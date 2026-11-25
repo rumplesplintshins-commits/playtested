@@ -28,8 +28,8 @@ export async function POST(request: Request) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(testId)) {
     return reply(400, { error: "Invalid feedback reference." });
   }
-  if (!Number.isSafeInteger(tipAmountPence) || tipAmountPence < 500 || tipAmountPence > 100000) {
-    return reply(400, { error: "Choose a tip between £5 and £1,000." });
+  if (!Number.isSafeInteger(tipAmountPence) || tipAmountPence < 500 || tipAmountPence > 10000) {
+    return reply(400, { error: "Choose a tip between £5 and £100." });
   }
 
   const supabase = await createClient();
