@@ -51,7 +51,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [tipOpen, setTipOpen] = useState(false);
   const [tipAmount, setTipAmount] = useState("10.00");
   const [customTipSelected, setCustomTipSelected] = useState(false);
-  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;totalAmountPence:number}|null>(null);
+  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;processingAllowancePence:number;totalAmountPence:number;processingRefundPolicy:string}|null>(null);
   const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
   const [tipCheckoutBusy, setTipCheckoutBusy] = useState(false);
   const [tipError, setTipError] = useState("");
@@ -301,7 +301,9 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
               <div className="mt-4 space-y-2 rounded-lg border border-white/10 bg-[#090b0a] p-4 text-sm">
                 <div className="flex justify-between gap-3 text-zinc-300"><span>Tester receives</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.tipAmountPence)}</span></div>
                 <div className="flex justify-between gap-3 text-zinc-400"><span>Playtested fee</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.platformFeePence)}</span></div>
-                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total to pay</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
+                <div className="flex justify-between gap-3 text-zinc-400"><span>Estimated card processing allowance</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.processingAllowancePence)}</span></div>
+                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total charged initially</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
+                <p className="border-t border-white/10 pt-2 text-xs leading-5 text-[#aef8c2]">{tipQuote.processingRefundPolicy}</p>
               </div>
             )}
             {tipError && <p role="alert" className="mt-3 text-xs text-red-300">{tipError}</p>}
