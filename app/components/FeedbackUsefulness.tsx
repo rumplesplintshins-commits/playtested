@@ -286,7 +286,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
               <>
                 <label className="mt-3 block text-xs font-semibold text-zinc-300" htmlFor={"tip-amount-" + testId}>Custom amount ({formatGbp(500)}–{formatGbp(3000)})</label>
                 <div className="mt-2 flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/15 bg-[#090b0a] px-3 transition focus-within:border-[#77f29b] focus-within:ring-1 focus-within:ring-[#77f29b]/30">
-                  <span aria-hidden="true" className="shrink-0 text-sm tabular-nums text-zinc-400">{"\\u00A3"}</span>
+                  <span aria-hidden="true" className="shrink-0 text-sm tabular-nums text-zinc-400">{"\u00A3"}</span>
                   <input id={"tip-amount-" + testId} type="number" min="5" max="30" step="0.01" value={tipAmount}
                     onChange={(event) => { setTipAmount(event.target.value); setTipQuote(null); setTipError(""); }}
                     className="h-full min-w-0 flex-1 bg-transparent text-right text-sm tabular-nums text-white outline-none" />
