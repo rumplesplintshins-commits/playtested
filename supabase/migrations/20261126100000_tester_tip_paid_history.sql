@@ -120,6 +120,31 @@ CREATE TRIGGER tester_tip_paid_notification
 AFTER UPDATE OF status ON playtested_studios.tester_tips
 FOR EACH ROW EXECUTE FUNCTION public._notify_paid_tester_tip();
 
+-- Backfill notifications for tips that were already paid before this migration.
+DO $
+DECLARE
+  v_tip record;
+  v_amount text;
+BEGIN
+  FOR v_tip IN
+    SELECT x.id,x.tester_id,x.test_id,x.playtest_id,x.tip_amount_pence,
+      coalesce(nullif(btrim(c.title),''),'a game') AS game_title
+    FROM playtested_studios.tester_tips x
+    JOIN public.community_playtests c ON c.id=x.playtest_id
+    WHERE x.status='paid'
+  LOOP
+    v_amount := '£' || to_char(v_tip.tip_amount_pence / 100.0,'FM999990.00');
+    PERFORM public._create_notification(
+      v_tip.tester_id,'tester_tip_received',
+      v_amount || ' tip received!',
+      'A developer has sent you a thank-you tip for your accepted feedback on ' || v_tip.game_title || '.',
+      '/tester#testing-activity-' || v_tip.test_id::text,
+      'playtest',v_tip.playtest_id,'tester-tip:paid:' || v_tip.id::text
+    );
+  END LOOP;
+END;
+$;
+
 CREATE OR REPLACE FUNCTION public.get_developer_tester_tip(p_test_id uuid)
 RETURNS TABLE(status text,tip_amount_pence integer,paid_at timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = ''
