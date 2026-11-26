@@ -8,6 +8,17 @@ export default function TesterPayoutSetup() {
   const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
 
   useEffect(() => {
+    if (window.location.hash !== "#tester-payouts") return;
+
+    window.requestAnimationFrame(() => {
+      document.getElementById("tester-payouts")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     let checking = false;
 
