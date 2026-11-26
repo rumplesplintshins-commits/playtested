@@ -19,5 +19,7 @@ export default function TesterTipHistory({testId}:{testId:string}){
       <p className="text-xs text-zinc-500">{row.paid_at?new Date(row.paid_at).toLocaleString():"Payment confirmed"}</p>
     </div>
     <p className="mt-1 text-xs leading-5 text-zinc-300">A developer appreciated your feedback and sent you a tip. Thank you for helping make Playtested a stronger community.</p>
+    <p className="mt-2 text-xs leading-5 text-zinc-400">Check your tip and payout status in your Stripe account.</p>
+    <a href="/account#tester-payouts" className="mt-2 inline-block text-sm font-semibold text-[#77f29b] hover:text-[#aef8c2]">Manage Stripe account &rarr;</a>
   </div>;
 }

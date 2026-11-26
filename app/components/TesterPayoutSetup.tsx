@@ -87,7 +87,7 @@ export default function TesterPayoutSetup() {
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
+    <section id="tester-payouts" className="mt-8 scroll-mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester rewards</p>
       <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
