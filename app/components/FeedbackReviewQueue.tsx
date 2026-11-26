@@ -228,7 +228,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
     void createClient().rpc("get_admin_feedback_not_useful_reasons", {p_test_ids: reasonLocation.testIds}).then(({data,error}) => {
       if (!active) return;
       if (error) {
-        setPrivateReasonResult({location:reasonLocation,reasons:{},error:"Private developer explanations could not be loaded. Refresh to retry."});
+        setPrivateReasonResult({location:reasonLocation,reasons:{},error:`Private developer explanations could not be loaded: ${error.message || "Unknown database error"}. Refresh to retry.`});
         return;
       }
       setPrivateReasonResult({location:reasonLocation,reasons:Object.fromEntries(((data ?? []) as PrivateDeveloperReason[]).map(row => [row.test_id,row])),error:""});
