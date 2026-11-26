@@ -142,8 +142,13 @@ export async function POST(request: Request) {
         });
         if (error) throw error;
       } else if (tipId && event.type === "charge.dispute.created") {
+        // A dispute event's object ID is dp_..., not the underlying charge ID.
+        const disputeChargeId = typeof object.charge === "string"
+          ? object.charge
+          : isRecord(object.charge) && typeof object.charge.id === "string" ? object.charge.id : null;
+        if (!disputeChargeId) throw new Error("Dispute is missing its underlying charge ID.");
         const { error } = await admin.rpc("tester_tip_mark_disputed", {
-          p_tip_id: tipId, p_payment_intent_id: paymentIntentId, p_charge_id: objectId,
+          p_tip_id: tipId, p_payment_intent_id: paymentIntentId, p_charge_id: disputeChargeId,
         });
         if (error) throw error;
       }
