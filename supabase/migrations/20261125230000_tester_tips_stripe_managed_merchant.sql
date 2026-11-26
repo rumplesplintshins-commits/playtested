@@ -57,7 +57,14 @@ BEGIN
     merchant_created_at, merchant_updated_at
   )
   VALUES (p_tester_id, p_stripe_account_id, 'pending', clock_timestamp(), clock_timestamp())
-  ON CONFLICT (tester_id) DO NOTHING;
+  ON CONFLICT (tester_id) DO UPDATE
+  SET merchant_stripe_account_id = EXCLUDED.merchant_stripe_account_id,
+      merchant_status = 'pending',
+      merchant_created_at = coalesce(
+        playtested_studios.tester_stripe_accounts.merchant_created_at, clock_timestamp()
+      ),
+      merchant_updated_at = clock_timestamp()
+  WHERE playtested_studios.tester_stripe_accounts.merchant_stripe_account_id IS NULL;
 
   IF NOT EXISTS (
     SELECT 1
