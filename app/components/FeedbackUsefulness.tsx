@@ -259,7 +259,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
                 <h3 id={"tip-dialog-title-" + testId} className="text-lg font-bold text-white">Recognise great feedback</h3>
                 <p className="mt-1 text-sm leading-5 text-zinc-300">Good testers put time and effort into helping you improve your game. A tip is a simple way to thank them and encourage great testers to keep supporting indie developers on Playtested.</p>
                 <p className="mt-1 text-xs leading-5 text-zinc-500">Tipping is optional. Your tester stays anonymous and receives the full tip.</p>
-                <p className="mt-2 text-xs leading-5 text-zinc-400">The Playtested fee is shown separately before checkout.</p>
+                <p className="mt-2 text-xs leading-5 text-zinc-400">You pay the tester tip plus the Playtested fee. Playtested covers Stripe processing costs, so no extra processing charge is added.</p>
               </div>
               <button type="button" onClick={() => setTipOpen(false)} disabled={tipCheckoutBusy} aria-label="Close tip dialog" title="Close" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
                 <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -301,9 +301,9 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
               <div className="mt-4 space-y-2 rounded-lg border border-white/10 bg-[#090b0a] p-4 text-sm">
                 <div className="flex justify-between gap-3 text-zinc-300"><span>Tester receives</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.tipAmountPence)}</span></div>
                 <div className="flex justify-between gap-3 text-zinc-400"><span>Playtested fee</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.platformFeePence)}</span></div>
-                <div className="flex justify-between gap-3 text-zinc-400"><span>Estimated card processing allowance</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.processingAllowancePence)}</span></div>
-                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total charged initially</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
-                <p className="border-t border-white/10 pt-2 text-xs leading-5 text-[#aef8c2]">{tipQuote.processingRefundPolicy}</p>
+                
+                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total you pay</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
+                <p className="border-t border-white/10 pt-2 text-xs leading-5 text-[#aef8c2]">{tipQuote.processingFeePolicy}</p>
               </div>
             )}
             {tipError && <p role="alert" className="mt-3 text-xs text-red-300">{tipError}</p>}
