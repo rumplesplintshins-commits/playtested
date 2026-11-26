@@ -70,13 +70,31 @@ export async function POST(request: Request) {
       const balanceTransaction = await stripeV1Get(
         `balance_transactions/${encodeURIComponent(balanceTransactionId)}`, connectedId,
       );
-      let actualFeePence = Number(balanceTransaction.fee);
-      if (!Number.isSafeInteger(actualFeePence) || actualFeePence < 0) {
-        throw new Error("Stripe returned an invalid processing fee.");
+      // For Connect direct charges, balance_transaction.fee can include both
+      // Stripe's processing fee and the platform application fee. Refund only
+      // the itemised Stripe processing component, never the application fee.
+      if (!Array.isArray(balanceTransaction.fee_details)) {
+        throw new Error("Stripe did not return itemised balance transaction fees.");
       }
       const chargeCurrency = typeof charge.currency === "string" ? charge.currency.toLowerCase() : "gbp";
       const settlementCurrency = typeof balanceTransaction.currency === "string"
         ? balanceTransaction.currency.toLowerCase() : chargeCurrency;
+      const stripeFeeDetails = balanceTransaction.fee_details.filter((detail: unknown) =>
+        isRecord(detail) && detail.type === "stripe_fee",
+      );
+      let actualFeePence = 0;
+      for (const detail of stripeFeeDetails) {
+        if (!isRecord(detail)) continue;
+        const amount = Number(detail.amount);
+        const feeCurrency = typeof detail.currency === "string" ? detail.currency.toLowerCase() : settlementCurrency;
+        if (!Number.isSafeInteger(amount) || amount < 0 || feeCurrency !== settlementCurrency) {
+          throw new Error("Stripe returned an invalid itemised processing fee.");
+        }
+        actualFeePence += amount;
+      }
+      if (!Number.isSafeInteger(actualFeePence)) {
+        throw new Error("Stripe returned an invalid total processing fee.");
+      }
       if (settlementCurrency !== chargeCurrency) {
         const exchangeRate = Number(balanceTransaction.exchange_rate);
         if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) {
