@@ -99,8 +99,6 @@ export async function POST(request: Request) {
       const { error: chargeDetailsError } = await admin.rpc("tester_tip_set_charge_details", {
         p_tip_id: tip.id,
         p_stripe_account_id: connectedAccountId,
-        p_charge_amount_pence: chargeAmountPence,
-        p_processing_allowance_pence: processingAllowancePence,
       });
       if (chargeDetailsError) throw chargeDetailsError;
 
