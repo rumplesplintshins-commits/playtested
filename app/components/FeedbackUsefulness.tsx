@@ -17,6 +17,7 @@ type UsefulnessRequest = {
   initialRating: FeedbackUsefulnessValue;
   onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void;
 };
+type TipStatus = { status:string; tip_amount_pence:number; paid_at:string|null };
 type UsefulnessState = {
   request: UsefulnessRequest;
   value: Usefulness | null;
@@ -55,6 +56,35 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
   const [tipCheckoutBusy, setTipCheckoutBusy] = useState(false);
   const [tipError, setTipError] = useState("");
+  const [tipStatus,setTipStatus]=useState<TipStatus|null>(null);
+  const [tipStatusLoading,setTipStatusLoading]=useState(true);
+  const [tipStatusError,setTipStatusError]=useState("");
+
+  async function refreshTipStatus(){
+    const {data,error}=await createClient().rpc("get_developer_tester_tip",{p_test_id:testId});
+    if(error){setTipStatusError("Tip payment status could not be checked. Refresh before trying again.");return;}
+    const row=Array.isArray(data)?data[0]:null;
+    setTipStatus(row&&typeof row.status==="string"?row as TipStatus:null);
+    setTipStatusError("");
+    if(row?.status==="paid")setTipOpen(false);
+  }
+
+  useEffect(()=>{
+    let active=true;
+    const load=async()=>{
+      const {data,error}=await createClient().rpc("get_developer_tester_tip",{p_test_id:testId});
+      if(!active)return;
+      if(error){setTipStatusError("Tip payment status could not be checked. Refresh before trying again.");setTipStatusLoading(false);return;}
+      const row=Array.isArray(data)?data[0]:null;
+      setTipStatus(row&&typeof row.status==="string"?row as TipStatus:null);
+      setTipStatusError("");setTipStatusLoading(false);
+    };
+    void load();
+    const timer=window.setInterval(()=>{
+      if(tipStatus?.status==="pending"||tipStatus?.status==="checkout_created")void refreshTipStatus();
+    },3000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[testId,tipStatus?.status]);
 
   async function loadTipQuote() {
     const parsed = Number(tipAmount);
@@ -80,7 +110,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
     try {
       const response = await fetch("/api/tester-tips/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testId, tipAmountPence: tipQuote.tipAmountPence }),
+        body: JSON.stringify({ testId, tipAmountPence: tipQuote.tipAmountPence, returnUrl: window.location.pathname + window.location.search + window.location.hash }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || typeof data.url !== "string") throw new Error(data.error || "Unable to start checkout.");
@@ -231,27 +261,37 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
       )}
 
       {value === "useful" && !loading && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
-          <div>
-            <p className="text-sm font-semibold text-zinc-200">Keep great testers coming back</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-400">
-              If this tester helped improve your game, consider recognising their time and effort with a tip. Supporting great testers helps keep the Playtested community active.
-            </p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
-              Completely optional. Your tester stays anonymous and receives the full tip.
-            </p>
+        tipStatusLoading ? <p className="mt-4 text-xs text-zinc-400">Checking tip history...</p> :
+        tipStatusError ? <p role="alert" className="mt-4 text-xs text-amber-200">{tipStatusError}</p> :
+        tipStatus?.status === "paid" ? (
+          <div className="mt-4 rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.045] p-4">
+            <p className="text-base font-bold text-[#aef8c2]">{formatGbp(tipStatus.tip_amount_pence)} Tip sent!</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-200">Thank you for recognising this tester&apos;s contribution.</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">Your support rewards useful feedback, helps great testers stay engaged and makes the Playtested community stronger.</p>
+            <p className="mt-2 text-xs text-zinc-500">Successfully paid{tipStatus.paid_at ? " · " + new Date(tipStatus.paid_at).toLocaleString() : ""}.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => { setTipAmount("10.00"); setCustomTipSelected(false); setTipOpen(true); setTipQuote(null); setTipError(""); }}
-            className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-2 text-xs font-semibold text-[#aef8c2] transition hover:bg-[#77f29b]/15"
-          >
-            Send a tip
-          </button>
-        </div>
+        ) : tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" ? (
+          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/[0.035] p-3">
+            <p className="text-sm font-semibold text-amber-100">Tip payment processing</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">We&apos;re confirming the payment with Stripe. Another tip cannot be started for this feedback while it is being checked.</p>
+            <button type="button" onClick={()=>void refreshTipStatus()} className="mt-2 text-xs font-semibold text-[#aef8c2]">Check payment status</button>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
+            <div>
+              <p className="text-sm font-semibold text-zinc-200">Keep great testers coming back</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-400">Recognising useful feedback helps great testers stay engaged and keeps the Playtested community active.</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Completely optional. Your tester stays anonymous and receives the full tip.</p>
+            </div>
+            <button type="button" onClick={() => { setTipAmount("10.00"); setCustomTipSelected(false); setTipOpen(true); setTipQuote(null); setTipError(""); }}
+              className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-2 text-xs font-semibold text-[#aef8c2] transition hover:bg-[#77f29b]/15">
+              Send a tip
+            </button>
+          </div>
+        )
       )}
 
-      {tipOpen && (
+      {tipOpen && !tipStatusLoading && !tipStatusError && tipStatus?.status !== "paid" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tipCheckoutBusy) setTipOpen(false); }}>
           <section role="dialog" aria-modal="true" aria-labelledby={"tip-dialog-title-" + testId} className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-[#77f29b]/25 bg-[#0d110f] p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-4">
