@@ -7,12 +7,18 @@ function isRecord(value: unknown): value is JsonRecord {
 }
 
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
+  const webhookSecrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
+  ].filter((value): value is string => Boolean(value));
+  if (webhookSecrets.length === 0) {
+    return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
+  }
 
   const rawBody = await request.text();
   if (rawBody.length > 1024 * 1024) return NextResponse.json({ error: "Payload too large." }, { status: 413 });
-  if (!verifyStripeWebhook(rawBody, request.headers.get("stripe-signature"), secret)) {
+  const signature = request.headers.get("stripe-signature");
+  if (!webhookSecrets.some(secret => verifyStripeWebhook(rawBody, signature, secret))) {
     return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
   }
 
