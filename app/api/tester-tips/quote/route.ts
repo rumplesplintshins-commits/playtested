@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient } from "@/lib/tester-tips/server";
-import { calculateTesterTipFeePence, calculateGrossTesterTipChargePence } from "@/lib/tester-tips/fees";
+import { calculateTesterTipFeePence } from "@/lib/tester-tips/fees";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -17,13 +17,11 @@ export async function GET(request: Request) {
     if (rulesError) throw rulesError;
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, rules ?? []);
     const totalAmountPence = tipAmountPence + platformFeePence;
-    const chargeAmountPence = calculateGrossTesterTipChargePence(tipAmountPence, platformFeePence);
     return NextResponse.json({
       tipAmountPence,
       platformFeePence,
-      processingAllowancePence: chargeAmountPence - totalAmountPence,
-      totalAmountPence: chargeAmountPence,
-      processingRefundPolicy: "Any unused card-processing allowance is automatically refunded to your original payment method after Stripe confirms the actual fee.",
+      totalAmountPence,
+      processingFeePolicy: "Playtested covers Stripe processing fees. No processing surcharge is added to the developer checkout total.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "Unable to calculate the tip.";
