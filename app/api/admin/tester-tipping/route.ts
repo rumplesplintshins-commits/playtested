@@ -19,15 +19,35 @@ async function adminContext() {
   return { user };
 }
 
+async function loadPauseState(admin: ReturnType<typeof createAdminClient>) {
+  const { data, error } = await admin.rpc("admin_get_tester_tipping_pause_state");
+  if (error || !data?.[0]) throw error ?? new Error("Pause state is unavailable.");
+  return data[0];
+}
+
+async function listOpenCheckouts(admin: ReturnType<typeof createAdminClient>) {
+  const { data, error } = await admin.rpc("admin_list_open_tester_tip_checkouts");
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
 export async function GET() {
   const context = await adminContext();
   if ("response" in context) return context.response;
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin.rpc("admin_get_tester_tipping_pause_state");
-    if (error || !data?.[0]) throw error ?? new Error("Pause state is unavailable.");
-    return reply(200, { state: data[0] });
+    const state = await loadPauseState(admin);
+    try {
+      const sessions = await listOpenCheckouts(admin);
+      return reply(200, { state, openSessions: sessions.length });
+    } catch {
+      return reply(200, {
+        state,
+        openSessions: null,
+        warning: "Tipping status loaded, but open Checkout Sessions could not be checked. Keep tipping paused until this can be verified.",
+      });
+    }
   } catch {
     return reply(503, { error: "Tipping status could not be loaded." });
   }
@@ -60,6 +80,48 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
+
+    // Do not resume while any recorded Checkout Session is still open or its
+    // status cannot be verified. Completed payments remain for webhooks to record.
+    if (!isPaused) {
+      const remaining = await listOpenCheckouts(admin);
+      let unresolved = 0;
+      for (const target of remaining) {
+        const sessionId = typeof target.checkout_session_id === "string" ? target.checkout_session_id : "";
+        const connectedAccountId = typeof target.connected_account_id === "string" ? target.connected_account_id : "";
+        const tipId = typeof target.tip_id === "string" ? target.tip_id : "";
+        if (!sessionId || !connectedAccountId || !tipId) {
+          unresolved += 1;
+          continue;
+        }
+        try {
+          const session = await stripeV1Get(
+            `checkout/sessions/${encodeURIComponent(sessionId)}`,
+            connectedAccountId,
+          );
+          if (session.status === "open") {
+            unresolved += 1;
+          } else if (session.status === "expired") {
+            const { error: markError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
+            if (markError) unresolved += 1;
+          } else if (session.status !== "complete") {
+            unresolved += 1;
+          }
+        } catch {
+          unresolved += 1;
+        }
+      }
+
+      if (unresolved > 0) {
+        const state = await loadPauseState(admin);
+        return reply(409, {
+          state,
+          openSessions: unresolved,
+          error: `${unresolved} Checkout Session(s) are still open or could not be verified. Tipping remains paused. Retry checkout expiry before resuming.`,
+        });
+      }
+    }
+
     const { data, error } = await admin.rpc("admin_set_tester_tipping_paused", {
       p_is_paused: isPaused,
       p_actor_id: context.user.id,
@@ -68,22 +130,24 @@ export async function POST(request: Request) {
     const state = data[0];
 
     if (!isPaused) {
-      return reply(200, { state, expiry: { attempted: 0, expired: 0, alreadyCompletedOrExpired: 0, failed: 0 } });
+      return reply(200, { state, openSessions: 0, expiry: { attempted: 0, expired: 0, alreadyCompletedOrExpired: 0, failed: 0 } });
     }
 
     // The database pause is committed first. Every checkout path now rejects new tips.
     // Expire sessions already recorded in the ledger; webhooks remain enabled to reconcile
     // sessions that completed before Stripe accepted the expiry request.
-    const { data: sessions, error: sessionsError } = await admin.rpc("admin_list_open_tester_tip_checkouts");
-    if (sessionsError) {
+    let targets: Record<string, unknown>[];
+    try {
+      targets = await listOpenCheckouts(admin);
+    } catch {
       return reply(200, {
         state,
-        warning: "Tipping is paused, but existing checkout sessions could not be enumerated. Review Stripe Connect sessions before resuming.",
+        openSessions: null,
+        warning: "Tipping is paused, but existing Checkout Sessions could not be enumerated. Keep tipping paused and retry expiry before resuming.",
         expiry: { attempted: 0, expired: 0, alreadyCompletedOrExpired: 0, failed: 0 },
       });
     }
 
-    const targets = Array.isArray(sessions) ? sessions : [];
     let expired = 0;
     let alreadyCompletedOrExpired = 0;
     let failed = 0;
@@ -116,7 +180,13 @@ export async function POST(request: Request) {
             connectedAccountId,
           );
           if (session.status === "complete" || session.status === "expired") {
-            alreadyCompletedOrExpired += 1;
+            if (session.status === "expired") {
+              const { error: markError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
+              if (markError) failed += 1;
+              else alreadyCompletedOrExpired += 1;
+            } else {
+              alreadyCompletedOrExpired += 1;
+            }
           } else {
             failed += 1;
           }
@@ -126,12 +196,22 @@ export async function POST(request: Request) {
       }
     }
 
+    let openSessions: number | null = null;
+    try {
+      openSessions = (await listOpenCheckouts(admin)).length;
+    } catch {
+      // The pause remains active if the follow-up check is unavailable.
+    }
+
     return reply(200, {
       state,
+      openSessions,
       expiry: { attempted: targets.length, expired, alreadyCompletedOrExpired, failed },
-      ...(failed ? { warning: `${failed} existing checkout session(s) could not be confirmed expired. Tipping remains paused; review these sessions in Stripe before resuming.` } : {}),
+      ...(failed || openSessions === null || openSessions > 0
+        ? { warning: "Tipping is paused, but some Checkout Sessions still need verification. The control will retry expiry and will not resume tipping until the remaining sessions are resolved." }
+        : {}),
     });
   } catch {
-    return reply(503, { error: "The tipping pause could not be saved. Tipping status has not been changed." });
+    return reply(503, { error: "The tipping pause could not be saved. Check the current status before trying again." });
   }
 }
