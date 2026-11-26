@@ -10,6 +10,21 @@ export default function TesterPayoutSetup() {
   const [tipTotals, setTipTotals] = useState<{ total: number; count: number } | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+    void createClient().rpc("get_my_tester_tip_totals").then(({ data, error }) => {
+      if (!mounted || error) return;
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) return;
+      const total = Number(row.total_tip_amount_pence);
+      const count = Number(row.tip_count);
+      if (Number.isSafeInteger(total) && total >= 0 && Number.isSafeInteger(count) && count >= 0) {
+        setTipTotals({ total, count });
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
     if (window.location.hash !== "#tester-payouts") return;
 
     window.requestAnimationFrame(() => {
@@ -102,7 +117,8 @@ export default function TesterPayoutSetup() {
   return (
     <section id="tester-payouts" className="mt-8 scroll-mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester rewards</p>
-      <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>\n      {tipTotals && <div className="mt-4 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4"><p className="text-xs font-medium text-zinc-400">Playtested tips received</p><p className="mt-1 text-2xl font-bold text-[#aef8c2]">{new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(tipTotals.total / 100)}</p><p className="mt-1 text-xs text-zinc-500">{tipTotals.count} {tipTotals.count === 1 ? "paid tip" : "paid tips"} through Playtested. This is separate from your overall Stripe balance and payout schedule.</p></div>}
+      <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>
+      {tipTotals && <div className="mt-4 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4"><p className="text-xs font-medium text-zinc-400">Playtested tips received</p><p className="mt-1 text-2xl font-bold text-[#aef8c2]">{new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(tipTotals.total / 100)}</p><p className="mt-1 text-xs text-zinc-500">{tipTotals.count} {tipTotals.count === 1 ? "paid tip" : "paid tips"} through Playtested. This is separate from your overall Stripe balance and payout schedule.</p></div>}
       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
         Connect a Stripe account to receive tips from developers when they find your accepted feedback particularly useful. Stripe securely collects your identity and bank details. Your personal details are not shown to the developer.
       </p>
