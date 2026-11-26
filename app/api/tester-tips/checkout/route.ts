@@ -38,6 +38,14 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
+    const { data: pauseRows, error: pauseError } = await admin.rpc("admin_get_tester_tipping_pause_state");
+    if (pauseError || !pauseRows?.[0]) {
+      return reply(503, { error: "Tip checkout is temporarily unavailable. Please try again later." });
+    }
+    if (pauseRows[0].is_paused === true) {
+      return reply(503, { error: "Tester tipping is temporarily paused. No payment has been started." });
+    }
+
     const { data: profile, error: profileError } = await admin.from("profiles")
       .select("roles").eq("id", user.id).maybeSingle();
     if (profileError || !profile?.roles?.includes("developer")) {
@@ -107,6 +115,7 @@ export async function POST(request: Request) {
     }
     successUrl.searchParams.set("tip", "success");
     cancelUrl.searchParams.set("tip", "cancelled");
+    let createdSessionId: string | null = null;
     try {
       const { error: chargeDetailsError } = await admin.rpc("tester_tip_set_charge_details", {
         p_tip_id: tip.id,
@@ -138,10 +147,34 @@ export async function POST(request: Request) {
       if (typeof session.url !== "string" || typeof session.id !== "string") {
         throw new Error("Stripe did not return a checkout URL.");
       }
+      createdSessionId = session.id;
       const { error: updateError } = await admin.rpc("tester_tip_update_checkout", {
         p_tip_id: tip.id, p_session_id: session.id, p_status: "checkout_created",
       });
       if (updateError) throw updateError;
+
+      // Recheck after Stripe creates the session. This closes the pause race where
+      // an administrator pauses while a checkout request is already in flight.
+      const { data: latestPauseRows, error: latestPauseError } = await admin.rpc("admin_get_tester_tipping_pause_state");
+      if (latestPauseError || !latestPauseRows?.[0]) {
+        throw new Error("Tipping status could not be confirmed. The checkout link was not returned.");
+      }
+      if (latestPauseRows[0].is_paused === true) {
+        try {
+          await stripePostForm(
+            `checkout/sessions/${encodeURIComponent(session.id)}/expire`,
+            {},
+            `playtested-tip-pause-race-expire-${session.id}`,
+            connectedAccountId,
+          );
+          await admin.rpc("tester_tip_mark_expired", { p_tip_id: tip.id });
+        } catch {
+          // The admin pause sweep also expires all sessions already recorded in the ledger.
+          // Never return the checkout URL while tipping is paused.
+        }
+        return reply(503, { error: "Tester tipping was paused while checkout was starting. No payment link was issued." });
+      }
+
       return reply(200, {
         url: session.url,
         breakdown: {
@@ -152,9 +185,31 @@ export async function POST(request: Request) {
         },
       });
     } catch (error) {
-      await admin.rpc("tester_tip_update_checkout", {
-        p_tip_id: tip.id, p_session_id: null, p_status: "failed",
-      });
+      if (createdSessionId) {
+        let expired = false;
+        try {
+          await stripePostForm(
+            `checkout/sessions/${encodeURIComponent(createdSessionId)}/expire`,
+            {},
+            `playtested-tip-checkout-error-expire-${createdSessionId}`,
+            connectedAccountId,
+          );
+          await admin.rpc("tester_tip_mark_expired", { p_tip_id: tip.id });
+          expired = true;
+        } catch {
+          // Keep a recorded session in checkout_created state so an admin pause sweep
+          // can still find and expire it if Stripe is temporarily unavailable.
+        }
+        if (!expired) {
+          await admin.rpc("tester_tip_update_checkout", {
+            p_tip_id: tip.id, p_session_id: createdSessionId, p_status: "checkout_created",
+          });
+        }
+      } else {
+        await admin.rpc("tester_tip_update_checkout", {
+          p_tip_id: tip.id, p_session_id: null, p_status: "failed",
+        });
+      }
       throw error;
     }
   } catch (error) {
