@@ -5,12 +5,18 @@ import {createClient} from "@/lib/supabase";
 type TipRow={test_id:string;tip_amount_pence:number;paid_at:string|null};
 const gbp=new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"});
 let historyRequest: Promise<TipRow[]> | null = null;
-function loadTipHistory(){
-  if(!historyRequest){
-    historyRequest=createClient().rpc("get_my_tester_tip_history").then(({data,error})=>{
-      if(error) throw error;
-      return Array.isArray(data)?data as TipRow[]:[];
-    }).catch(error=>{historyRequest=null;throw error;});
+function loadTipHistory(): Promise<TipRow[]> {
+  if (!historyRequest) {
+    const pending: Promise<TipRow[]> = Promise.resolve(
+      createClient().rpc("get_my_tester_tip_history")
+    ).then(({data,error}) => {
+      if (error) throw error;
+      return Array.isArray(data) ? data as TipRow[] : [];
+    }).catch((error: unknown) => {
+      if (historyRequest === pending) historyRequest = null;
+      throw error;
+    });
+    historyRequest = pending;
   }
   return historyRequest;
 }
