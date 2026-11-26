@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
       const session = await stripePostForm("checkout/sessions", {
         mode: "payment",
-        "payment_method_types[0]": "card",
+        "allowed_payment_method_types[0]": "card",
         "line_items[0][price_data][currency]": "gbp",
         "line_items[0][price_data][unit_amount]": String(tipAmountPence),
         "line_items[0][price_data][product_data][name]": "Tester reward",
