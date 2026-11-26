@@ -2,19 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const countries = [
-  ["GB","United Kingdom"],["US","United States"],["CA","Canada"],["AU","Australia"],
-  ["NZ","New Zealand"],["IE","Ireland"],["DE","Germany"],["FR","France"],
-  ["NL","Netherlands"],["ES","Spain"],["IT","Italy"],["PT","Portugal"],
-  ["BE","Belgium"],["AT","Austria"],["CH","Switzerland"],["SE","Sweden"],
-  ["NO","Norway"],["DK","Denmark"],["FI","Finland"],["PL","Poland"],
-  ["CZ","Czechia"],["GR","Greece"],["RO","Romania"],["HU","Hungary"],
-  ["JP","Japan"],["SG","Singapore"],["HK","Hong Kong"],["MY","Malaysia"],
-  ["TH","Thailand"],["BR","Brazil"],["MX","Mexico"],
-] as const;
-
 export default function TesterPayoutSetup() {
-  const [country, setCountry] = useState("GB");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
@@ -41,7 +29,7 @@ export default function TesterPayoutSetup() {
       const response = await fetch("/api/tester-tips/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country }),
+        body: JSON.stringify({ country: "GB" }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || typeof data.url !== "string") {
@@ -62,14 +50,10 @@ export default function TesterPayoutSetup() {
         Connect a Stripe account to receive tips from developers when they find your accepted feedback particularly useful. Stripe securely collects your identity and bank details. Your personal details are not shown to the developer.
       </p>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="block w-full max-w-xs">
-          <span className="mb-2 block text-xs font-medium text-zinc-400">Country for your Stripe account</span>
-          <select value={country} onChange={event => setCountry(event.target.value)}
-            disabled={busy}
-            className="w-full rounded-lg border border-white/15 bg-[#090b0a] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:opacity-60">
-            {countries.map(([code,name]) => <option key={code} value={code}>{name}</option>)}
-          </select>
-        </label>
+        <div className="w-full max-w-xs">
+          <span className="mb-2 block text-xs font-medium text-zinc-400">Payout country</span>
+          <p className="rounded-lg border border-white/10 bg-[#090b0a] px-3 py-3 text-sm text-white">United Kingdom</p>
+        </div>
         <button type="button" onClick={() => void startSetup()} disabled={busy}
           className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8] disabled:cursor-wait disabled:opacity-50">
           {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe details" : "Set up Stripe payouts"}
