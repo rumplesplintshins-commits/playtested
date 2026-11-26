@@ -7,28 +7,29 @@ function isRecord(value: unknown): value is JsonRecord {
 }
 
 export async function POST(request: Request) {
-  const webhookSecrets = [
-    process.env.STRIPE_WEBHOOK_SECRET,
-    process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
-  ].filter((value): value is string => Boolean(value));
-  if (webhookSecrets.length === 0) {
-    return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
-  }
-
   const rawBody = await request.text();
   if (rawBody.length > 1024 * 1024) return NextResponse.json({ error: "Payload too large." }, { status: 413 });
-  const signature = request.headers.get("stripe-signature");
-  if (!webhookSecrets.some(secret => verifyStripeWebhook(rawBody, signature, secret))) {
-    return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
-  }
 
+  // Parse only to select the expected endpoint secret. No event data is acted on
+  // until its signature has been verified with that event family's own secret.
   let event: JsonRecord;
   try {
     const parsed: unknown = JSON.parse(rawBody);
-    if (!isRecord(parsed)) throw new Error("Invalid event");
+    if (!isRecord(parsed) || typeof parsed.type !== "string") throw new Error("Invalid event");
     event = parsed;
   } catch {
     return NextResponse.json({ error: "Invalid event payload." }, { status: 400 });
+  }
+
+  const webhookSecret = event.type === "application_fee.created"
+    ? process.env.STRIPE_WEBHOOK_SECRET
+    : process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "Webhook is not configured." }, { status: 503 });
+  }
+  const signature = request.headers.get("stripe-signature");
+  if (!verifyStripeWebhook(rawBody, signature, webhookSecret)) {
+    return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
   }
 
   try {
