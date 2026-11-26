@@ -1,5 +1,6 @@
 "use client";
 import TestingActivityHeader from '../components/TestingActivityHeader';
+import TesterTipHistory from '../components/TesterTipHistory';
 import ActivityStorefrontLink from '../components/ActivityStorefrontLink';
 import {type ActivityMedia} from '@/lib/testing-activity';
 import GamePcRequirements from "../components/GamePcRequirements";
@@ -1986,6 +1987,7 @@ function TesterPage() {
                             {claim.feedback && <div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}
                           </div>
                           <TesterHistoryPrivateEvidence testId={claim.id} />
+                          <TesterTipHistory testId={claim.id}/>
                           {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                           {reviewHistory.some(event=>event.test_id===claim.id) && (
                             <details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm" onClick={(e) => e.stopPropagation()}>
