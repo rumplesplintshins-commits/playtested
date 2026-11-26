@@ -206,37 +206,43 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2" aria-label="Feedback usefulness">
-          <button
-            type="button"
-            disabled={loading || busy}
-            aria-pressed={value === "useful"}
-            onClick={() => void mark("useful")}
-            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
-              value === "useful"
-                ? "border-[#77f29b]/55 bg-[#77f29b]/12 text-[#aef8c2]"
-                : "border-white/15 text-zinc-300 hover:border-[#77f29b]/35 hover:text-white"
-            }`}
-          >
-            Useful
-          </button>
-          <button
-            type="button"
-            disabled={loading || busy}
-            aria-pressed={value === "not_useful"}
-            onClick={() => { updateFeedbackState({error:""}); setNotice(""); setReasonOpen(true); }}
-            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
-              value === "not_useful"
-                ? "border-amber-300/45 bg-amber-300/[0.08] text-amber-100"
-                : "border-white/15 text-zinc-300 hover:border-white/30 hover:text-white"
-            }`}
-          >
-            Not useful
-          </button>
-        </div>
+        {tipStatus?.paid_at ? (
+          <div className="rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.045] px-3 py-2 text-xs font-semibold text-[#aef8c2]" role="status">
+            <span className="inline-flex items-center gap-2"><span aria-hidden="true">✓</span> Useful · Rating locked after tip sent</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2" aria-label="Feedback usefulness">
+            <button
+              type="button"
+              disabled={loading || busy || tipStatusLoading || Boolean(tipStatusError)}
+              aria-pressed={value === "useful"}
+              onClick={() => void mark("useful")}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+                value === "useful"
+                  ? "border-[#77f29b]/55 bg-[#77f29b]/12 text-[#aef8c2]"
+                  : "border-white/15 text-zinc-300 hover:border-[#77f29b]/35 hover:text-white"
+              }`}
+            >
+              Useful
+            </button>
+            <button
+              type="button"
+              disabled={loading || busy || tipStatusLoading || Boolean(tipStatusError)}
+              aria-pressed={value === "not_useful"}
+              onClick={() => { updateFeedbackState({error:""}); setNotice(""); setReasonOpen(true); }}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+                value === "not_useful"
+                  ? "border-amber-300/45 bg-amber-300/[0.08] text-amber-100"
+                  : "border-white/15 text-zinc-300 hover:border-white/30 hover:text-white"
+              }`}
+            >
+              Not useful
+            </button>
+          </div>
+        )}
       </div>
 
-      {reasonOpen && !loading && (
+      {reasonOpen && !loading && !tipStatus?.paid_at && (
         <form onSubmit={(event) => {event.preventDefault();void mark("not_useful", reasonDraft);}}
           className="mt-3 min-w-0 space-y-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.035] p-3 sm:p-4">
           <label htmlFor={"feedback-reason-" + testId} className="block text-sm font-semibold leading-6 text-amber-100">
