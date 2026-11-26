@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return reply(413, { error: "Request too large." });
   }
 
-  let isPaused: boolean | null = null;
+  let isPaused = false;
   try {
     const raw = await request.text();
     if (raw.length > 128) return reply(413, { error: "Request too large." });
