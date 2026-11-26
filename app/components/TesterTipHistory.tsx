@@ -4,15 +4,25 @@ import {createClient} from "@/lib/supabase";
 
 type TipRow={test_id:string;tip_amount_pence:number;paid_at:string|null};
 const gbp=new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"});
-export default function TesterTipHistory({testId}:{testId:string}){
+let historyRequest: Promise<TipRow[]> | null = null;
+function loadTipHistory(){
+  if(!historyRequest){
+    historyRequest=createClient().rpc("get_my_tester_tip_history").then(({data,error})=>{
+      if(error) throw error;
+      return Array.isArray(data)?data as TipRow[]:[];
+    }).catch(error=>{historyRequest=null;throw error;});
+  }
+  return historyRequest;
+}
+export default function TesterTipHistory({testId,variant="badge"}:{testId:string;variant?:"badge"|"detail"}){
   const [row,setRow]=useState<TipRow|null>(null);
   const [loaded,setLoaded]=useState(false);
-  useEffect(()=>{let active=true;void createClient().rpc("get_my_tester_tip_history").then(({data,error})=>{
+  useEffect(()=>{let active=true;void loadTipHistory().then(rows=>{
     if(!active)return;
-    const match=!error&&Array.isArray(data)?(data as TipRow[]).find(item=>item.test_id===testId):null;
-    setRow(match??null);setLoaded(true);
-  });return()=>{active=false;};},[testId]);
+    setRow(rows.find(item=>item.test_id===testId)??null);setLoaded(true);
+  }).catch(()=>{if(active)setLoaded(true);});return()=>{active=false;};},[testId]);
   if(!loaded||!row)return null;
+  if(variant==="badge") return <span className="inline-flex shrink-0 items-center rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#aef8c2]">Tipped {gbp.format(row.tip_amount_pence/100)}</span>;
   return <div className="mt-3 rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.04] p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-sm font-semibold text-[#aef8c2]">{gbp.format(row.tip_amount_pence/100)} Tip received</p>

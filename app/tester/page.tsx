@@ -1956,7 +1956,7 @@ function TesterPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={(feedbackUsefulness[claim.id]??claim.feedback_usefulness)==='useful'?'useful':undefined} usefulOnly status={getStatusLabel(claim)}/>
-                      <button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button>
+                      <div className="flex flex-wrap items-center justify-end gap-2"><TesterTipHistory testId={claim.id} variant="badge"/><button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button></div>
                     </div>
                     <div className="mt-3 min-w-0">
                       {/* Submission details remain visible in either state. */}
@@ -1987,6 +1987,7 @@ function TesterPage() {
                             {claim.feedback && <div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}
                           </div>
                           <TesterHistoryPrivateEvidence testId={claim.id} />
+                          <TesterTipHistory testId={claim.id} variant="detail"/>
                           <TesterTipHistory testId={claim.id}/>
                           {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                           {reviewHistory.some(event=>event.test_id===claim.id) && (
