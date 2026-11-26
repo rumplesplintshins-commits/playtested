@@ -263,12 +263,12 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
       {value === "useful" && !loading && (
         tipStatusLoading ? <p className="mt-4 text-xs text-zinc-400">Checking tip history...</p> :
         tipStatusError ? <p role="alert" className="mt-4 text-xs text-amber-200">{tipStatusError}</p> :
-        tipStatus?.status === "paid" ? (
+        tipStatus?.paid_at ? (
           <div className="mt-4 rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.045] p-4">
             <p className="text-base font-bold text-[#aef8c2]">{formatGbp(tipStatus.tip_amount_pence)} Tip sent!</p>
             <p className="mt-2 text-sm leading-6 text-zinc-200">Thank you for recognising this tester&apos;s contribution.</p>
             <p className="mt-1 text-sm leading-6 text-zinc-400">Your support rewards useful feedback, helps great testers stay engaged and makes the Playtested community stronger.</p>
-            <p className="mt-2 text-xs text-zinc-500">Successfully paid{tipStatus.paid_at ? " · " + new Date(tipStatus.paid_at).toLocaleString() : ""}.</p>
+            <p className="mt-2 text-xs text-zinc-500">Payment completed{tipStatus.paid_at ? " · " + new Date(tipStatus.paid_at).toLocaleString() : ""}.{tipStatus.status === "refunded" ? " This tip was later refunded." : tipStatus.status === "partially_refunded" ? " This tip was partially refunded." : tipStatus.status === "disputed" ? " This payment is under dispute." : ""}</p>
           </div>
         ) : tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" ? (
           <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/[0.035] p-3">
@@ -291,7 +291,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
         )
       )}
 
-      {tipOpen && !tipStatusLoading && !tipStatusError && tipStatus?.status !== "paid" && (
+      {tipOpen && !tipStatusLoading && !tipStatusError && !tipStatus?.paid_at && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tipCheckoutBusy) setTipOpen(false); }}>
           <section role="dialog" aria-modal="true" aria-labelledby={"tip-dialog-title-" + testId} className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-[#77f29b]/25 bg-[#0d110f] p-5 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-4">
