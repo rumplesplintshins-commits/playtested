@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         dashboard: "express",
         metadata: { playtested_user_id: user.id, playtested_account_purpose: "tester_tips" },
         include: ["configuration.merchant", "identity", "defaults", "requirements"],
-      }, `playtested-tester-merchant-${user.id}`);
+      }, `playtested-tester-merchant-gb-v2-${user.id}`);
       if (typeof account.id !== "string" || !account.id) throw new Error("Stripe did not return an account ID.");
       accountId = account.id;
       const { error: saveError } = await admin.rpc("tester_tip_save_merchant_account", {
