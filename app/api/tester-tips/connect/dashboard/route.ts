@@ -6,7 +6,9 @@ import { hasTrustedOrigin } from "@/lib/request-origin";
 const reply = (status: number, body: Record<string, unknown>) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 
-async function createDashboardLink(request: Request) {
+type DashboardLinkResult = { response: NextResponse; url?: never } | { url: string; response?: never };
+
+async function createDashboardLink(request: Request): Promise<DashboardLinkResult> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
