@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient, stripeV2Get, stripePostForm } from "@/lib/tester-tips/server";
-import { calculateTesterTipFeePence, calculateGrossTesterTipChargePence, type TesterTipFeeRule } from "@/lib/tester-tips/fees";
+import { calculateTesterTipFeePence, type TesterTipFeeRule } from "@/lib/tester-tips/fees";
 import { hasTrustedOrigin } from "@/lib/request-origin";
 
 const reply = (status: number, body: Record<string, unknown>) =>
@@ -76,8 +76,8 @@ export async function POST(request: Request) {
     const activeRules = (rules ?? []) as TesterTipFeeRule[];
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, activeRules);
     const totalAmountPence = tipAmountPence + platformFeePence;
-    const chargeAmountPence = calculateGrossTesterTipChargePence(tipAmountPence, platformFeePence);
-    const processingAllowancePence = chargeAmountPence - totalAmountPence;
+    const chargeAmountPence = totalAmountPence;
+    const processingAllowancePence = 0;
     const feeSnapshot = activeRules.map(rule => ({
       rule_order: rule.rule_order, from_pence: rule.from_pence, to_pence: rule.to_pence,
       fee_type: rule.fee_type, fee_value: rule.fee_value, description: rule.description,
@@ -116,18 +116,11 @@ export async function POST(request: Request) {
         "line_items[1][price_data][unit_amount]": String(platformFeePence),
         "line_items[1][price_data][product_data][name]": "Playtested fee",
         "line_items[1][quantity]": "1",
-        "line_items[2][price_data][currency]": "gbp",
-        "line_items[2][price_data][unit_amount]": String(processingAllowancePence),
-        "line_items[2][price_data][product_data][name]": "Estimated card processing allowance",
-        "line_items[2][price_data][product_data][description]": "Any unused amount is automatically refunded after Stripe confirms the actual processing fee.",
-        "line_items[2][quantity]": "1",
         "payment_intent_data[application_fee_amount]": String(platformFeePence),
         "payment_intent_data[metadata][tester_tip_id]": tip.id,
-        "payment_intent_data[metadata][processing_allowance_pence]": String(processingAllowancePence),
         "metadata[tester_tip_id]": tip.id,
         "metadata[tip_amount_pence]": String(tipAmountPence),
         "metadata[platform_fee_pence]": String(platformFeePence),
-        "metadata[processing_allowance_pence]": String(processingAllowancePence),
         client_reference_id: tip.id,
         success_url: `${origin}/account?tip=success`,
         cancel_url: `${origin}/account?tip=cancelled`,
@@ -144,9 +137,8 @@ export async function POST(request: Request) {
         breakdown: {
           tipAmountPence,
           platformFeePence,
-          estimatedProcessingAllowancePence: processingAllowancePence,
           totalChargePence: chargeAmountPence,
-          processingAllowanceRefund: "Any unused processing allowance is automatically refunded.",
+          processingFeeHandling: "Stripe processing fees are paid by Playtested, not added to your checkout total.",
         },
       });
     } catch (error) {
