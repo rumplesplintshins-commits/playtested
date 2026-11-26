@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, stripeV1Get, stripePostForm, verifyStripeWebhook } from "@/lib/tester-tips/server";
+import { createAdminClient, stripeV1Get, verifyStripeWebhook } from "@/lib/tester-tips/server";
 
 type JsonRecord = Record<string, unknown>;
 function isRecord(value: unknown): value is JsonRecord {
@@ -62,21 +62,7 @@ export async function POST(request: Request) {
         tipId = typeof paymentMetadata.tester_tip_id === "string" ? paymentMetadata.tester_tip_id : null;
       }
       if (tipId && event.type === "charge.refunded") {
-        const paymentIntent = await stripeV1Get(
-          `payment_intents/${encodeURIComponent(paymentIntentId)}`, connectedAccountId,
-        );
-        const paymentMetadata = isRecord(paymentIntent.metadata) ? paymentIntent.metadata : {};
-        const recordedAllowanceRefund = Number(paymentMetadata.processing_allowance_refunded_pence ?? 0);
-        const refunds = isRecord(object.refunds) && Array.isArray(object.refunds.data)
-          ? object.refunds.data.filter(isRecord) : null;
-        const customerRefundedPence = refunds
-          ? refunds.reduce((sum, refund) => {
-              const refundMetadata = isRecord(refund.metadata) ? refund.metadata : {};
-              return refundMetadata.refund_type === "unused_processing_allowance"
-                ? sum : sum + Number(refund.amount ?? 0);
-            }, 0)
-          : Math.max(0, Number(object.amount_refunded ?? 0) - recordedAllowanceRefund);
-        // The automatic allowance return is not a refund of the tester's reward.
+        const customerRefundedPence = Number(object.amount_refunded ?? 0);
         if (!Number.isSafeInteger(customerRefundedPence) || customerRefundedPence <= 0) {
           return NextResponse.json({ received: true });
         }
