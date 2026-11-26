@@ -1956,7 +1956,7 @@ function TesterPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={(feedbackUsefulness[claim.id]??claim.feedback_usefulness)==='useful'?'useful':undefined} usefulOnly status={getStatusLabel(claim)}/>
-                      <button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button>
+                      <div className="flex flex-wrap items-center justify-end gap-2"><TesterTipHistory testId={claim.id} expanded={isExpanded}/><button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button></div>
                     </div>
                     <div className="mt-3 min-w-0">
                       {/* Submission details remain visible in either state. */}
