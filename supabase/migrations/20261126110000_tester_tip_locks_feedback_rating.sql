@@ -13,7 +13,6 @@ BEGIN
        SELECT 1
        FROM playtested_studios.tester_tips tip
        WHERE tip.test_id = OLD.id
-         AND tip.developer_id = auth.uid()
          AND tip.paid_at IS NOT NULL
      ) THEN
     RAISE EXCEPTION 'Feedback rating is locked because a tip has already been sent.';
