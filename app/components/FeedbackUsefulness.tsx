@@ -51,7 +51,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [tipOpen, setTipOpen] = useState(false);
   const [tipAmount, setTipAmount] = useState("10.00");
   const [customTipSelected, setCustomTipSelected] = useState(false);
-  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;processingAllowancePence:number;totalAmountPence:number;processingRefundPolicy:string}|null>(null);
+  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;totalAmountPence:number;processingFeePolicy:string}|null>(null);
   const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
   const [tipCheckoutBusy, setTipCheckoutBusy] = useState(false);
   const [tipError, setTipError] = useState("");
