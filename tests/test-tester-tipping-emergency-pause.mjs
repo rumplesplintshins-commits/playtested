@@ -27,6 +27,8 @@ try {
   `);
 
   await db.exec(migration);
+  // A rerun must preserve the singleton state row and must not duplicate audit events.
+  await db.exec(migration);
 
   const initial = await db.query("SELECT * FROM public.admin_get_tester_tipping_pause_state()");
   assert.equal(initial.rows[0].is_paused, false);
@@ -90,7 +92,25 @@ try {
     "SELECT is_paused FROM playtested_studios.tester_tipping_pause_events ORDER BY id",
   );
   assert.deepEqual(audit.rows.map(row => row.is_paused), [true, false]);
-  console.log("Tester tipping emergency pause migration tests passed.");
+
+  const checkoutRoute = await readFile(
+    new URL("../app/api/tester-tips/checkout/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(checkoutRoute, /admin_get_tester_tipping_pause_state/);
+  assert.match(checkoutRoute, /latestPauseRows/);
+  assert.match(checkoutRoute, /checkout\/sessions\/.*\/expire/);
+
+  const webhookRoute = await readFile(
+    new URL("../app/api/stripe/webhook/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(webhookRoute, /checkout\.session\.completed/);
+  assert.match(webhookRoute, /charge\.refunded/);
+  assert.match(webhookRoute, /charge\.dispute\.created/);
+  assert.doesNotMatch(webhookRoute, /admin_get_tester_tipping_pause_state/);
+
+  console.log("Tester tipping emergency pause migration and route checks passed.");
 } finally {
   await db.close();
 }
