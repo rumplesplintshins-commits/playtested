@@ -2,6 +2,7 @@
 import {ukDateTime} from "@/lib/uk-date-time";
 import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
+import AdminTipHistory from "./AdminTipHistory";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import PaginationControls from "./PaginationControls";
@@ -124,6 +125,7 @@ function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem;
       </section>
     )}
     <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
+    <AdminTipHistory testId={t.id}/>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}
