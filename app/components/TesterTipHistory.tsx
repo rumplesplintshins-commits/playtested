@@ -4,14 +4,23 @@ import {createClient} from "@/lib/supabase";
 
 type TipRow={test_id:string;tip_amount_pence:number;paid_at:string|null};
 const gbp=new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"});
+let historyRequest: Promise<TipRow[]> | null = null;
+function loadTipHistory(){
+  if(!historyRequest){
+    historyRequest=createClient().rpc("get_my_tester_tip_history").then(({data,error})=>{
+      if(error) throw error;
+      return Array.isArray(data)?data as TipRow[]:[];
+    }).catch(error=>{historyRequest=null;throw error;});
+  }
+  return historyRequest;
+}
 export default function TesterTipHistory({testId,expanded=false}:{testId:string;expanded?:boolean}){
   const [row,setRow]=useState<TipRow|null>(null);
   const [loaded,setLoaded]=useState(false);
-  useEffect(()=>{let active=true;void createClient().rpc("get_my_tester_tip_history").then(({data,error})=>{
+  useEffect(()=>{let active=true;void loadTipHistory().then(rows=>{
     if(!active)return;
-    const match=!error&&Array.isArray(data)?(data as TipRow[]).find(item=>item.test_id===testId):null;
-    setRow(match??null);setLoaded(true);
-  });return()=>{active=false;};},[testId]);
+    setRow(rows.find(item=>item.test_id===testId)??null);setLoaded(true);
+  }).catch(()=>{if(active)setLoaded(true);});return()=>{active=false;};},[testId]);
   if(!loaded||!row)return null;
   return <>
     <span className="inline-flex shrink-0 items-center rounded-full border border-[#77f29b]/30 bg-[#77f29b]/10 px-2.5 py-1 text-xs font-semibold text-[#aef8c2]">
