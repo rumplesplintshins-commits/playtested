@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase";
 
 export default function TesterPayoutSetup() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
+  const [tipTotals, setTipTotals] = useState<{ total: number; count: number } | null>(null);
 
   useEffect(() => {
     if (window.location.hash !== "#tester-payouts") return;
@@ -100,7 +102,7 @@ export default function TesterPayoutSetup() {
   return (
     <section id="tester-payouts" className="mt-8 scroll-mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester rewards</p>
-      <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>
+      <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>\n      {tipTotals && <div className="mt-4 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4"><p className="text-xs font-medium text-zinc-400">Playtested tips received</p><p className="mt-1 text-2xl font-bold text-[#aef8c2]">{new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(tipTotals.total / 100)}</p><p className="mt-1 text-xs text-zinc-500">{tipTotals.count} {tipTotals.count === 1 ? "paid tip" : "paid tips"} through Playtested. This is separate from your overall Stripe balance and payout schedule.</p></div>}
       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
         Connect a Stripe account to receive tips from developers when they find your accepted feedback particularly useful. Stripe securely collects your identity and bank details. Your personal details are not shown to the developer.
       </p>
