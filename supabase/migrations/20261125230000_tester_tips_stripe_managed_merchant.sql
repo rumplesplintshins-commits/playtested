@@ -104,10 +104,7 @@ FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.tester_tip_get_merchant_account(uuid),
   public.tester_tip_save_merchant_account(uuid,text),
   public.tester_tip_update_merchant_account_status(uuid,text,boolean,jsonb),
-  public.tester_tip_set_charge_details(uuid,text,integer,integer),
-  public.tester_tip_prepare_processing_refund(uuid,integer),
-  public.tester_tip_complete_processing_refund(uuid,text),
-  public.tester_tip_fail_processing_refund(uuid)
+  public.tester_tip_set_charge_details(uuid,text)
 TO service_role;
 
 COMMIT;
