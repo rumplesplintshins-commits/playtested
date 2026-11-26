@@ -132,8 +132,8 @@ export async function POST(request: Request) {
         "metadata[tip_amount_pence]": String(tipAmountPence),
         "metadata[platform_fee_pence]": String(platformFeePence),
         client_reference_id: tip.id,
-        success_url: `${origin}/account?tip=success`,
-        cancel_url: `${origin}/account?tip=cancelled`,
+        success_url: successUrl.toString(),
+        cancel_url: cancelUrl.toString(),
       }, `playtested-tip-checkout-${tip.id}`, connectedAccountId);
       if (typeof session.url !== "string" || typeof session.id !== "string") {
         throw new Error("Stripe did not return a checkout URL.");
