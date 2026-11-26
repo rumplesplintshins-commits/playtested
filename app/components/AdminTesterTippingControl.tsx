@@ -19,6 +19,7 @@ type ExpirySummary = {
 export default function AdminTesterTippingControl() {
   const [state, setState] = useState<PauseState | null>(null);
   const [expiry, setExpiry] = useState<ExpirySummary | null>(null);
+  const [openSessions, setOpenSessions] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,8 @@ export default function AdminTesterTippingControl() {
       const result = await response.json();
       if (!response.ok || !result.state) throw new Error(result.error || "Tipping status could not be loaded.");
       setState(result.state);
+      setOpenSessions(typeof result.openSessions === "number" ? result.openSessions : null);
+      setWarning(typeof result.warning === "string" ? result.warning : "");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Tipping status could not be loaded.");
     } finally {
@@ -43,11 +46,14 @@ export default function AdminTesterTippingControl() {
 
   async function togglePause() {
     if (!state || saving) return;
-    const nextPaused = !state.is_paused;
+    const retryingExpiry = state.is_paused && openSessions !== 0;
+    const nextPaused = state.is_paused ? retryingExpiry : true;
     const confirmed = window.confirm(
       nextPaused
-        ? "Pause all new tester tipping now? Open Checkout Sessions will be expired where Stripe allows."
-        : "Resume tester tipping? Developers will be able to create new tip checkouts again.",
+        ? retryingExpiry
+          ? "Retry expiring the remaining open Checkout Sessions? Tipping will stay paused."
+          : "Pause all new tester tipping now? Open Checkout Sessions will be expired where Stripe allows."
+        : "Resume tester tipping? The server will first verify that no Checkout Sessions remain open.",
     );
     if (!confirmed) return;
 
@@ -63,10 +69,13 @@ export default function AdminTesterTippingControl() {
         cache: "no-store",
       });
       const result = await response.json();
-      if (!response.ok || !result.state) throw new Error(result.error || "Tipping state could not be changed.");
-      setState(result.state);
+      if (result.state) setState(result.state);
+      if (typeof result.openSessions === "number" || result.openSessions === null) {
+        setOpenSessions(result.openSessions);
+      }
       setExpiry(result.expiry ?? null);
       setWarning(typeof result.warning === "string" ? result.warning : "");
+      if (!response.ok || !result.state) throw new Error(result.error || "Tipping state could not be changed.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Tipping state could not be changed.");
     } finally {
@@ -100,7 +109,11 @@ export default function AdminTesterTippingControl() {
           disabled={loading || saving || !state}
           className={`min-h-12 rounded-lg px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${state?.is_paused ? "bg-emerald-400 text-black hover:bg-emerald-300" : "border border-red-400/60 bg-red-500/15 text-red-200 hover:bg-red-500/25"}`}
         >
-          {saving ? "Updating…" : state?.is_paused ? "RESUME TIPPING" : "PAUSE ALL TIPPING"}
+          {saving
+            ? "Updating…"
+            : state?.is_paused
+              ? openSessions === 0 ? "RESUME TIPPING" : "RETRY CHECKOUT EXPIRY"
+              : "PAUSE ALL TIPPING"}
         </button>
       </div>
 
@@ -109,6 +122,11 @@ export default function AdminTesterTippingControl() {
       {expiry && state?.is_paused && (
         <p className="mt-4 text-xs text-zinc-400">
           Checkout expiry: {expiry.expired} expired, {expiry.alreadyCompletedOrExpired} already completed/expired, {expiry.failed} requiring review (of {expiry.attempted} found).
+        </p>
+      )}
+      {state?.is_paused && openSessions !== null && openSessions > 0 && (
+        <p className="mt-2 text-xs text-amber-200">
+          {openSessions} Checkout Session(s) still need to be expired or verified before tipping can resume.
         </p>
       )}
       {state?.changed_at && (
