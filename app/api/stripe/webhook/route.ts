@@ -120,6 +120,7 @@ export async function POST(request: Request) {
       }
       const { error: recordError } = await admin.rpc("tester_tip_record_processing_fee_refund", {
         p_tip_id: tipId,
+        p_charge_id: chargeId,
         p_actual_processing_fee_pence: actualFeePence,
         p_refund_pence: refundPence,
         p_refund_id: refundId,
