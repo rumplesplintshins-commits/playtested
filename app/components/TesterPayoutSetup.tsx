@@ -8,17 +8,41 @@ export default function TesterPayoutSetup() {
   const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/tester-tips/connect/status", { cache: "no-store" })
-      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
-      .then(({ response, data }) => {
-        if (!active) return;
+    let mounted = true;
+    let checking = false;
+
+    async function refreshStatus() {
+      if (checking) return;
+      checking = true;
+      try {
+        const response = await fetch("/api/tester-tips/connect/status", { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        if (!mounted) return;
         if (!response.ok) { setStatus("unavailable"); return; }
         if (!data.connected) { setStatus("not_connected"); return; }
         setStatus(data.cardPaymentsActive ? "active" : "pending");
-      })
-      .catch(() => { if (active) setStatus("unavailable"); });
-    return () => { active = false; };
+      } catch {
+        if (mounted) setStatus("unavailable");
+      } finally {
+        checking = false;
+      }
+    }
+
+    void refreshStatus();
+    const handleFocus = () => { void refreshStatus(); };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void refreshStatus();
+    };
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   async function startSetup() {
