@@ -122,7 +122,7 @@ AFTER UPDATE OF status ON playtested_studios.tester_tips
 FOR EACH ROW EXECUTE FUNCTION public._notify_paid_tester_tip();
 
 -- Backfill notifications for tips that were already paid before this migration.
-DO $
+DO $backfill$
 DECLARE
   v_tip record;
   v_amount text;
@@ -144,7 +144,7 @@ BEGIN
     );
   END LOOP;
 END;
-$;
+$backfill$;
 
 CREATE OR REPLACE FUNCTION public.get_developer_tester_tip(p_test_id uuid)
 RETURNS TABLE(status text,tip_amount_pence integer,paid_at timestamptz)
