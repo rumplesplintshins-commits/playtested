@@ -31,6 +31,36 @@ async function listOpenCheckouts(admin: ReturnType<typeof createAdminClient>) {
   return Array.isArray(data) ? data : [];
 }
 
+async function reconcileCompletedOrExpiredSession(
+  admin: ReturnType<typeof createAdminClient>,
+  tipId: string,
+  sessionId: string,
+  session: Record<string, unknown>,
+) {
+  if (session.status === "expired") {
+    const { error } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
+    return !error;
+  }
+
+  if (session.status === "complete" && session.payment_status === "paid") {
+    const paymentIntent = session.payment_intent;
+    const paymentIntentId = typeof paymentIntent === "string"
+      ? paymentIntent
+      : typeof paymentIntent === "object" && paymentIntent !== null &&
+          "id" in paymentIntent && typeof paymentIntent.id === "string"
+        ? paymentIntent.id
+        : null;
+    const { error } = await admin.rpc("tester_tip_mark_paid", {
+      p_tip_id: tipId,
+      p_session_id: sessionId,
+      p_payment_intent_id: paymentIntentId,
+    });
+    return !error;
+  }
+
+  return false;
+}
+
 export async function GET() {
   const context = await adminContext();
   if ("response" in context) return context.response;
@@ -99,12 +129,8 @@ export async function POST(request: Request) {
             `checkout/sessions/${encodeURIComponent(sessionId)}`,
             connectedAccountId,
           );
-          if (session.status === "open") {
-            unresolved += 1;
-          } else if (session.status === "expired") {
-            const { error: markError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
-            if (markError) unresolved += 1;
-          } else if (session.status !== "complete") {
+          if (session.status === "open" ||
+              !await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, session)) {
             unresolved += 1;
           }
         } catch {
@@ -179,14 +205,8 @@ export async function POST(request: Request) {
             `checkout/sessions/${encodeURIComponent(sessionId)}`,
             connectedAccountId,
           );
-          if (session.status === "complete" || session.status === "expired") {
-            if (session.status === "expired") {
-              const { error: markError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
-              if (markError) failed += 1;
-              else alreadyCompletedOrExpired += 1;
-            } else {
-              alreadyCompletedOrExpired += 1;
-            }
+          if (await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, session)) {
+            alreadyCompletedOrExpired += 1;
           } else {
             failed += 1;
           }
