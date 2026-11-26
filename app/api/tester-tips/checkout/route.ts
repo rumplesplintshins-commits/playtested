@@ -14,12 +14,14 @@ export async function POST(request: Request) {
 
   let testId = "";
   let tipAmountPence = 0;
+  let requestedReturnUrl = "";
   try {
     const raw = await request.text();
     if (raw.length > 512) return reply(413, { error: "Request too large." });
     const body = JSON.parse(raw);
     testId = typeof body?.testId === "string" ? body.testId : "";
     tipAmountPence = Number(body?.tipAmountPence);
+    requestedReturnUrl = typeof body?.returnUrl === "string" ? body.returnUrl : "";
   } catch {
     return reply(400, { error: "Invalid request." });
   }
@@ -93,6 +95,18 @@ export async function POST(request: Request) {
     const tip = { id: tipId as string };
 
     const origin = request.headers.get("origin")!;
+    let successUrl = new URL("/account", origin);
+    let cancelUrl = new URL("/account", origin);
+    if (requestedReturnUrl.startsWith("/") && !requestedReturnUrl.startsWith("//")) {
+      try {
+        const candidate = new URL(requestedReturnUrl, origin);
+        if (candidate.origin === origin && !candidate.pathname.startsWith("/api/")) {
+          successUrl = candidate; cancelUrl = new URL(candidate.toString());
+        }
+      } catch { /* Fall back to the account page. */ }
+    }
+    successUrl.searchParams.set("tip", "success");
+    cancelUrl.searchParams.set("tip", "cancelled");
     try {
       const { error: chargeDetailsError } = await admin.rpc("tester_tip_set_charge_details", {
         p_tip_id: tip.id,
