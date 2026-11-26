@@ -50,23 +50,3 @@ export function formatGbpPence(value: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value / 100);
 }
 
-// Conservative card-processing allowance: 3.15% international card + 2% FX,
-// plus 20p. The actual fee is reconciled from the Stripe balance transaction.
-export function calculateGrossTesterTipChargePence(tipAmountPence: number, platformFeePence: number) {
-  if (!Number.isSafeInteger(tipAmountPence) || tipAmountPence < 500 || tipAmountPence > 3000 ||
-      !Number.isSafeInteger(platformFeePence) || platformFeePence < 0) {
-    throw new Error("Invalid tester tip charge amounts.");
-  }
-  const targetPence = tipAmountPence + platformFeePence;
-  let grossPence = targetPence;
-  const processingFee = (amount: number) => Math.ceil((amount * 5150) / 10000) + 20;
-  while (grossPence - processingFee(grossPence) < targetPence) grossPence += 1;
-  return grossPence;
-}
-
-export function calculateTesterTipProcessingAllowancePence(chargeAmountPence: number) {
-  if (!Number.isSafeInteger(chargeAmountPence) || chargeAmountPence < 1) {
-    throw new Error("Invalid tester tip charge amount.");
-  }
-  return Math.ceil((chargeAmountPence * 5150) / 10000) + 20;
-}
