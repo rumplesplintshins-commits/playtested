@@ -114,11 +114,21 @@ export default function AdminTesterTippingControl() {
       {state?.changed_at && (
         <p className="mt-3 text-xs text-zinc-500">
           Last state change: {new Date(state.changed_at).toLocaleString("en-GB")}
+          {state.changed_by ? ` · administrator ${state.changed_by}` : ""}
         </p>
       )}
-      <button type="button" onClick={() => void load()} disabled={loading || saving} className="mt-3 text-xs text-zinc-400 underline disabled:opacity-50">
-        Refresh status
-      </button>
+      {!!state?.recent_events?.length && (
+        <details className="mt-3 text-xs text-zinc-400">
+          <summary className="cursor-pointer underline">Recent pause history</summary>
+          <ul className="mt-2 space-y-1">
+            {state.recent_events.map((event, index) => (
+              <li key={`${event.changed_at}-${index}`}>
+                {event.is_paused ? "Paused" : "Resumed"} · {new Date(event.changed_at).toLocaleString("en-GB")} · {event.changed_by ?? "administrator"}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </section>
   );
 }
