@@ -160,7 +160,7 @@ BEGIN
   RETURN QUERY
   SELECT x.status,x.tip_amount_pence,x.paid_at
   FROM playtested_studios.tester_tips x
-  WHERE x.test_id=p_test_id AND x.developer_id=auth.uid()
+  WHERE x.test_id=p_test_id AND x.developer_id=auth.uid() AND x.paid_at IS NOT NULL
   ORDER BY x.created_at DESC LIMIT 1;
 END;
 $$;
@@ -176,7 +176,7 @@ BEGIN
     coalesce(nullif(btrim(c.title),''),'Previously tested game')
   FROM playtested_studios.tester_tips x
   JOIN public.community_playtests c ON c.id=x.playtest_id
-  WHERE x.tester_id=auth.uid() AND x.status='paid'
+  WHERE x.tester_id=auth.uid() AND x.paid_at IS NOT NULL
   ORDER BY x.paid_at DESC,x.id DESC;
 END;
 $$;
@@ -195,7 +195,7 @@ BEGIN
   RETURN QUERY
   SELECT x.test_id,x.tip_amount_pence,x.paid_at
   FROM playtested_studios.tester_tips x
-  WHERE x.test_id=ANY(p_test_ids) AND x.status='paid'
+  WHERE x.test_id=ANY(p_test_ids) AND x.paid_at IS NOT NULL
   ORDER BY x.paid_at DESC;
 END;
 $$;
