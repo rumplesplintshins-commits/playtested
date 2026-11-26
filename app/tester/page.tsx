@@ -428,8 +428,7 @@ function FeedbackForm({
                                     Your playtest
                                   </p>
                                   <p className="mt-2 text-sm leading-6 text-zinc-300">
-                                    Answer from your actual experience. There are no
-                                    right answers — specific criticism is useful.
+                                    Answer from your actual experience, specific criticism is useful.
                                   </p>
                                   <p className="mt-2 text-xs leading-5 text-zinc-400">
                                     Developers may choose to tip feedback they find particularly useful. Clear, specific and constructive feedback gives them more to act on. Tips are optional and never guaranteed.
