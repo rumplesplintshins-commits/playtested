@@ -76,8 +76,6 @@ export async function POST(request: Request) {
     const activeRules = (rules ?? []) as TesterTipFeeRule[];
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, activeRules);
     const totalAmountPence = tipAmountPence + platformFeePence;
-    const chargeAmountPence = totalAmountPence;
-    const processingAllowancePence = 0;
     const feeSnapshot = activeRules.map(rule => ({
       rule_order: rule.rule_order, from_pence: rule.from_pence, to_pence: rule.to_pence,
       fee_type: rule.fee_type, fee_value: rule.fee_value, description: rule.description,
@@ -135,7 +133,7 @@ export async function POST(request: Request) {
         breakdown: {
           tipAmountPence,
           platformFeePence,
-          totalChargePence: chargeAmountPence,
+          totalChargePence: totalAmountPence,
           processingFeeHandling: "Stripe processing fees are paid by Playtested, not added to your checkout total.",
         },
       });
