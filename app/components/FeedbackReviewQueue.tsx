@@ -272,7 +272,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
       ✓ Developer marked Useful
     </span>
   )}
-  <span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
+  <AdminTipHistory testId={item.report.id} compact/><span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
   <span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span>
 </div></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload} privateReason={privateReasons[item.report.id]}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload} privateReason={privateReasons[item.report.id]}/>)}
     {!loading&&!error&&<PaginationControls label={view==="history"?"Reviewed playtest reviews":"Awaiting playtest reviews"}
