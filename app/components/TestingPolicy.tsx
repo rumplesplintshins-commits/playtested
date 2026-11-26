@@ -60,23 +60,43 @@ export function GenrePreferences() {
         const client = createClient();
         void Promise.all([
             client.rpc("get_testing_genres"), client.rpc("get_my_testing_progress")
-        ]).then(([options, progress]) => { if (!active)
-            return;
+        ]).then(([options, progress]) => {
+            if (!active) return;
             const ready = options.data?.length === GAME_GENRES.length && options.data.every((g: string) => GAME_GENRES.some(option => option === g));
             setMappingReady(!!ready);
             setSelected(normalizeGenrePreferences(progress.data?.genres || []));
             setStatus(options.error?.message || progress.error?.message || (!ready ? "Your saved preferences remain active. Genre updates will be available shortly." : ""));
-            setBusy(false); });
+            setBusy(false);
+        });
         return () => { active = false; };
     }, []);
-    async function save() { setBusy(true); const { error } = await createClient().rpc("update_my_testing_genres", { p_genres: selected }); setStatus(error?.message || "Preferences saved. These are interests, not verified expertise."); setBusy(false); }
-    return <section id="testing-interests" className="my-6 scroll-mt-24 rounded-xl border border-white/10 p-5">
-    <h2 className="font-bold">Preferred testing genres</h2>
-    <p className="my-2 text-sm text-zinc-400">Select any genres you enjoy testing. You can change these normally; existing claims remain usable.</p>
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{GAME_GENRES.map(g => <label key={g} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={selected.includes(g)} onChange={e => setSelected(s => e.target.checked ? [...s, g] : s.filter(x => x !== g))}/> {g}</label>)}</div>
-    <button type="button" disabled={busy || !mappingReady} onClick={save} className="mt-4 rounded border px-3 py-2 disabled:opacity-50">Save testing genres</button>
-    <p role="status" className="mt-2 text-sm">{status}</p>
-  </section>;
+    async function save() {
+        setBusy(true);
+        const { error } = await createClient().rpc("update_my_testing_genres", { p_genres: selected });
+        setStatus(error?.message || "Preferences saved. These are interests, not verified expertise.");
+        setBusy(false);
+    }
+    return (
+        <section id="testing-interests" className="my-6 scroll-mt-24 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester interests</p>
+            <h2 className="mt-2 text-lg font-semibold text-white">Preferred testing genres</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Select any genres you enjoy testing. You can change these at any time. These are interests, not verified expertise.</p>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {GAME_GENRES.map(g => (
+                    <label key={g} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-[#090b0a] px-3 py-2.5 text-sm text-zinc-200 transition hover:border-[#77f29b]/30 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
+                        <input type="checkbox" disabled={busy} checked={selected.includes(g)} onChange={e => setSelected(s => e.target.checked ? [...s, g] : s.filter(x => x !== g))} className="h-4 w-4 shrink-0 accent-[#77f29b]"/>
+                        <span>{g}</span>
+                    </label>
+                ))}
+            </div>
+            <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                <button type="button" disabled={busy || !mappingReady} onClick={() => void save()} className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8] disabled:cursor-not-allowed disabled:opacity-50">
+                    {busy ? "Loading genres..." : "Save testing genres"}
+                </button>
+                {status && <p role="status" className="text-sm text-zinc-400">{status}</p>}
+            </div>
+        </section>
+    );
 }
 export function Reconsideration({testId,reason,appeal,serverNow,onRefresh}: {testId:string;reason:string|null;appeal?:FeedbackAppeal|null;serverNow?:number|null;onRefresh?:()=>Promise<void>}) {
  const [text,setText]=useState(""),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
