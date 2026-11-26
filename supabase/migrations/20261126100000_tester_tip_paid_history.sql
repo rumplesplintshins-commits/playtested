@@ -131,7 +131,7 @@ BEGIN
       coalesce(nullif(btrim(c.title),''),'a game') AS game_title
     FROM playtested_studios.tester_tips x
     JOIN public.community_playtests c ON c.id=x.playtest_id
-    WHERE x.status='paid'
+    WHERE x.paid_at IS NOT NULL
   LOOP
     v_amount := '£' || to_char(v_tip.tip_amount_pence / 100.0,'FM999990.00');
     PERFORM public._create_notification(
