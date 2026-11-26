@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       let refundId: string | null = null;
       if (refundPence > 0) {
         const feeRefund = await stripePostForm(
-          `application_fees/${encodeURIComponent(feeId)}/refunds`,
+          `application_fees/${encodeURIComponent(feeId)}/refund`,
           { amount: String(refundPence) },
           `playtested-tip-processing-fee-offset-${tipId}`,
         );
