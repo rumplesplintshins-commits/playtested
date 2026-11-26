@@ -66,6 +66,26 @@ export default function TesterPayoutSetup() {
     }
   }
 
+  async function openStripeDashboard() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/tester-tips/connect/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.url !== "string") {
+        throw new Error(typeof data.error === "string" ? data.error : "Unable to open your Stripe dashboard.");
+      }
+      window.location.assign(data.url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to open your Stripe dashboard.");
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester rewards</p>
@@ -78,9 +98,9 @@ export default function TesterPayoutSetup() {
           <span className="mb-2 block text-xs font-medium text-zinc-400">Payout country</span>
           <p className="rounded-lg border border-white/10 bg-[#090b0a] px-3 py-3 text-sm text-white">United Kingdom</p>
         </div>
-        <button type="button" onClick={() => void startSetup()} disabled={busy}
+        <button type="button" onClick={() => void (status === "active" ? openStripeDashboard() : startSetup())} disabled={busy}
           className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8] disabled:cursor-wait disabled:opacity-50">
-          {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe details" : "Set up Stripe payouts"}
+          {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe account" : "Set up Stripe payouts"}
         </button>
       </div>
       {status === "active" && <p role="status" className="mt-3 text-sm text-[#77f29b]">Your Stripe account can receive tester tips.</p>}
