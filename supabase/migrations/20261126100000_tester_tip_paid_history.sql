@@ -5,7 +5,7 @@ ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_kind_ch
 ALTER TABLE public.notifications ADD CONSTRAINT notifications_kind_check CHECK (kind IN (
   'admin_new_submission','submission_needs_info','submission_approved','submission_rejected',
   'tester_playtest_available','tester_feedback_useful','developer_feedback_received',
-  'campaign_completed','admin_feedback_moderation','tester_tip_received'
+  'campaign_completed','admin_feedback_moderation','studio_invitation','tester_tip_received'
 ));
 
 create or replace function public._create_notification(
@@ -40,6 +40,7 @@ begin
     'developer_feedback_received',
     'campaign_completed',
     'admin_feedback_moderation',
+    'studio_invitation',
     'tester_tip_received'
   ) then
     raise exception 'Unsupported notification type.';
