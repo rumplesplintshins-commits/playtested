@@ -1977,8 +1977,6 @@ function TesterPage() {
                           <div className="mt-3" onClick={(event) => event.stopPropagation()}>
                             <ActivityStorefrontLink testId={claim.id} url={media?.store_url} />
                           </div>
-                          <p className="mt-2 text-xs text-zinc-500">{claim.submitted_at && `Submitted ${new Date(claim.submitted_at).toLocaleString()}`}</p>
-                          {claim.hours_played != null && <p className="mt-1 text-xs text-zinc-500">Time played: {claim.hours_played} hours</p>}
                           <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm space-y-3">
                             {claim.enjoyed_most && <div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}
                             {claim.frustrations && <div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}
@@ -1988,7 +1986,6 @@ function TesterPage() {
                           </div>
                           <TesterHistoryPrivateEvidence testId={claim.id} />
                           <TesterTipHistory testId={claim.id} variant="detail"/>
-                          <TesterTipHistory testId={claim.id}/>
                           {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                           {reviewHistory.some(event=>event.test_id===claim.id) && (
                             <details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm" onClick={(e) => e.stopPropagation()}>
