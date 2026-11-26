@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   } catch {
     return reply(400, { error: "Invalid request." });
   }
-  if (!/^[A-Z]{2}$/.test(country)) return reply(400, { error: "Choose a valid country." });
+  if (country !== "GB") return reply(400, { error: "Tester payouts are currently available for UK-based accounts only." });
 
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
