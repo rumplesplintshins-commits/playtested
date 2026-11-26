@@ -194,7 +194,8 @@ export async function POST(request: Request) {
             `playtested-tip-checkout-error-expire-${createdSessionId}`,
             connectedAccountId,
           );
-          await admin.rpc("tester_tip_mark_expired", { p_tip_id: tip.id });
+          const { error: markExpiredError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tip.id });
+          if (markExpiredError) throw markExpiredError;
           expired = true;
         } catch {
           // Keep a recorded session in checkout_created state so an admin pause sweep
