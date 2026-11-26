@@ -428,8 +428,10 @@ function FeedbackForm({
                                     Your playtest
                                   </p>
                                   <p className="mt-2 text-sm leading-6 text-zinc-300">
-                                    Answer from your actual experience. There are no
-                                    right answers — specific criticism is useful.
+                                    Answer from your actual experience, specific criticism is useful.
+                                  </p>
+                                  <p className="mt-2 text-xs leading-5 text-zinc-400">
+                                    Developers may choose to tip feedback they find particularly useful. Clear, specific and constructive feedback gives them more to act on. Tips are optional and never guaranteed.
                                   </p>
                                 </div>
 
@@ -634,7 +636,7 @@ function FeedbackForm({
                 </label>
                 <label className="text-sm font-semibold">Gameplay recording <span className="font-normal text-zinc-400">(optional)</span>
                   <input type="url" maxLength={2048} value={gameplayRecordingUrl} onChange={event=>updateField("gameplayRecordingUrl",event.target.value)} placeholder="https://drive.google.com/file/d/..." className={inputClass} />
-                  <span className="mt-1 block text-xs font-normal text-zinc-400">Google Drive, YouTube, Vimeo or direct MP4/WebM/MOV link. No video upload required.</span>
+                  <span className="mt-1 block text-xs font-normal text-zinc-400">A short clip can help developers understand bugs, confusing moments or unexpected behaviour. Sharing is optional. Check access settings and personal information before sharing.</span>
                 </label>
               </div>
               <p className="text-xs text-amber-200">Before sharing, check the document owner, filename, access permissions and any personal details visible in the recording. Only link files you have permission to share.</p>
