@@ -92,6 +92,15 @@ try {
     ),
     /identifiers conflict/i,
   );
+  await db.query(
+    "SELECT public.tester_tip_mark_disputed($1,$2,$3)",
+    [tip2,"pi_payment_2","ch_charge_2"],
+  );
+  const afterDispute = await db.query(
+    "SELECT status FROM playtested_studios.tester_tips WHERE id=$1",
+    [tip2],
+  );
+  assert.equal(afterDispute.rows[0].status,"refunded");
 
   const grants = await db.query(`
     SELECT
