@@ -81,7 +81,7 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
     };
     void load();
     const timer=window.setInterval(()=>{
-      if(tipStatus?.status==="pending"||tipStatus?.status==="checkout_created")void refreshTipStatus();
+      if(tipStatus?.status==="pending"||tipStatus?.status==="checkout_created"||tipStatus?.status==="payment_failed")void refreshTipStatus();
     },3000);
     return()=>{active=false;window.clearInterval(timer);};
   },[testId,tipStatus?.status]);
@@ -105,18 +105,22 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   }
 
   async function startTipCheckout() {
-    if (!tipQuote || tipCheckoutBusy) return;
+    const recovering = tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" || tipStatus?.status === "payment_failed";
+    const amountPence = recovering ? tipStatus.tip_amount_pence : tipQuote?.tipAmountPence;
+    if (!amountPence || tipCheckoutBusy) return;
     setTipCheckoutBusy(true); setTipError("");
     try {
       const response = await fetch("/api/tester-tips/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testId, tipAmountPence: tipQuote.tipAmountPence, returnUrl: window.location.pathname + window.location.search + window.location.hash }),
+        body: JSON.stringify({ testId, tipAmountPence: amountPence, returnUrl: window.location.pathname + window.location.search + window.location.hash }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || typeof data.url !== "string") throw new Error(data.error || "Unable to start checkout.");
       window.location.assign(data.url);
     } catch (cause) {
-      setTipError(cause instanceof Error ? cause.message : "Unable to start checkout.");
+      const message = cause instanceof Error ? cause.message : "Unable to start checkout.";
+      setTipError(message);
+      if (recovering) setTipStatusError(message);
       setTipCheckoutBusy(false);
     }
   }
@@ -276,11 +280,14 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
             <p className="mt-1 text-sm leading-6 text-zinc-400">Your support rewards useful feedback, helps great testers stay engaged and makes the Playtested community stronger.</p>
             <p className="mt-2 text-xs text-zinc-500">Payment completed{tipStatus.paid_at ? " · " + new Date(tipStatus.paid_at).toLocaleString() : ""}.{tipStatus.status === "refunded" ? " This tip was later refunded." : tipStatus.status === "partially_refunded" ? " This tip was partially refunded." : tipStatus.status === "disputed" ? " This payment is under dispute." : ""}</p>
           </div>
-        ) : tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" ? (
+        ) : tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" || tipStatus?.status === "payment_failed" ? (
           <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/[0.035] p-3">
-            <p className="text-sm font-semibold text-amber-100">Tip payment processing</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-400">We&apos;re confirming the payment with Stripe. Another tip cannot be started for this feedback while it is being checked.</p>
+            <p className="text-sm font-semibold text-amber-100">{tipStatus.status === "payment_failed" ? "Tip payment needs resolution" : "Tip payment processing"}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">{tipStatus.status === "payment_failed"
+              ? "Stripe reported a failed payment, but the checkout may still be open. We're checking its final status; another tip cannot be started yet."
+              : "We're confirming the payment with Stripe. Another tip cannot be started for this feedback while it is being checked."}</p>
             <button type="button" onClick={()=>void refreshTipStatus()} className="mt-2 text-xs font-semibold text-[#aef8c2]">Check payment status</button>
+            <button type="button" disabled={tipCheckoutBusy} onClick={()=>void startTipCheckout()} className="ml-4 mt-2 text-xs font-semibold text-[#aef8c2] disabled:opacity-50">Resume secure checkout</button>
           </div>
         ) : (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">

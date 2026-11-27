@@ -9,8 +9,10 @@ CREATE OR REPLACE FUNCTION public.tester_tip_mark_paid(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
-  IF p_session_id IS NULL OR p_session_id !~ '^cs_[A-Za-z0-9_]+$' THEN
-    RAISE EXCEPTION 'Invalid Checkout Session ID.';
+  IF p_tip_id IS NULL
+     OR p_session_id IS NULL OR p_session_id !~ '^cs_[A-Za-z0-9_]+$'
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$' THEN
+    RAISE EXCEPTION 'Invalid Stripe checkout payment identifiers.';
   END IF;
 
   UPDATE playtested_studios.tester_tips
@@ -23,10 +25,10 @@ BEGIN
       paid_at = coalesce(paid_at,clock_timestamp()),
       updated_at = clock_timestamp()
   WHERE id = p_tip_id
-    AND status IN ('pending','checkout_created','payment_failed','paid','refunded','partially_refunded','disputed')
+    AND status IN ('pending','checkout_created','failed','expired','payment_failed','paid','refunded','partially_refunded','disputed')
     AND (stripe_checkout_session_id IS NULL OR stripe_checkout_session_id = p_session_id)
-    AND (p_payment_intent_id IS NULL OR stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id);
-  IF NOT FOUND THEN RAISE EXCEPTION 'Tip conflicts with another payment or was not found.'; END IF;
+    AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id);
+  IF NOT FOUND THEN RAISE EXCEPTION 'Tip not found or Stripe checkout/payment identifiers conflict.'; END IF;
 END;
 $fn$;
 
@@ -37,16 +39,45 @@ CREATE OR REPLACE FUNCTION public.tester_tip_mark_refund(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
+  IF p_tip_id IS NULL
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$'
+     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9_]+$'
+     OR p_refunded_amount_pence IS NULL OR p_refunded_amount_pence <= 0
+     OR p_charge_amount_pence IS NULL OR p_charge_amount_pence <= 0
+     OR p_refunded_amount_pence > p_charge_amount_pence THEN
+    RAISE EXCEPTION 'Invalid Stripe refund details.';
+  END IF;
+
   UPDATE playtested_studios.tester_tips
-  SET status = CASE WHEN p_refunded_amount_pence >= p_charge_amount_pence
-                    THEN 'refunded' ELSE 'partially_refunded' END,
-      refunded_amount_pence = greatest(0,p_refunded_amount_pence),
+  SET status = CASE
+        WHEN status = 'disputed' THEN 'disputed'
+        WHEN p_refunded_amount_pence >= p_charge_amount_pence THEN 'refunded'
+        ELSE 'partially_refunded'
+      END,
+      refunded_amount_pence = p_refunded_amount_pence,
       stripe_payment_intent_id = coalesce(stripe_payment_intent_id,p_payment_intent_id),
-      stripe_charge_id = p_charge_id,
+      stripe_charge_id = coalesce(stripe_charge_id,p_charge_id),
       paid_at = coalesce(paid_at,clock_timestamp()),
       updated_at = clock_timestamp()
   WHERE id = p_tip_id
-    AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id);
+    AND total_amount_pence = p_charge_amount_pence
+    AND p_refunded_amount_pence >= refunded_amount_pence
+    AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id)
+    AND (stripe_charge_id IS NULL OR stripe_charge_id = p_charge_id)
+    AND status IN ('pending','checkout_created','failed','expired','payment_failed','paid','partially_refunded','refunded','disputed');
+  IF NOT FOUND THEN
+    IF EXISTS (
+      SELECT 1 FROM playtested_studios.tester_tips
+      WHERE id = p_tip_id
+        AND total_amount_pence = p_charge_amount_pence
+        AND refunded_amount_pence > p_refunded_amount_pence
+        AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id)
+        AND (stripe_charge_id IS NULL OR stripe_charge_id = p_charge_id)
+    ) THEN
+      RETURN;
+    END IF;
+    RAISE EXCEPTION 'Tip not found or Stripe refund identifiers/amount conflict.';
+  END IF;
 END;
 $fn$;
 
@@ -56,14 +87,23 @@ CREATE OR REPLACE FUNCTION public.tester_tip_mark_disputed(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
+  IF p_tip_id IS NULL
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$'
+     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9_]+$' THEN
+    RAISE EXCEPTION 'Invalid Stripe dispute details.';
+  END IF;
+
   UPDATE playtested_studios.tester_tips
-  SET status = 'disputed',
+  SET status = CASE WHEN status = 'refunded' THEN 'refunded' ELSE 'disputed' END,
       stripe_payment_intent_id = coalesce(stripe_payment_intent_id,p_payment_intent_id),
-      stripe_charge_id = p_charge_id,
+      stripe_charge_id = coalesce(stripe_charge_id,p_charge_id),
       paid_at = coalesce(paid_at,clock_timestamp()),
       updated_at = clock_timestamp()
   WHERE id = p_tip_id
-    AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id);
+    AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id)
+    AND (stripe_charge_id IS NULL OR stripe_charge_id = p_charge_id)
+    AND status IN ('pending','checkout_created','failed','expired','payment_failed','paid','partially_refunded','refunded','disputed');
+  IF NOT FOUND THEN RAISE EXCEPTION 'Tip not found or Stripe dispute identifiers conflict.'; END IF;
 END;
 $fn$;
 

@@ -196,7 +196,10 @@ export async function POST(request: Request) {
       });
       if (error) throw error;
     } else if (event.type === "checkout.session.expired" && metadataTipId) {
-      const { error } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: metadataTipId });
+      if (!objectId || !connectedAccountId) throw new Error("Expired Checkout event is missing its Session or connected account.");
+      const { error } = await admin.rpc("tester_tip_mark_expired", {
+        p_tip_id: metadataTipId, p_session_id: objectId, p_connected_account_id: connectedAccountId,
+      });
       if (error) throw error;
     } else if (event.type === "payment_intent.payment_failed" && metadataTipId) {
       const { error } = await admin.rpc("tester_tip_mark_failed", { p_tip_id: metadataTipId });

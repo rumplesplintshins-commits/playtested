@@ -35,10 +35,13 @@ async function reconcileCompletedOrExpiredSession(
   admin: ReturnType<typeof createAdminClient>,
   tipId: string,
   sessionId: string,
+  connectedAccountId: string,
   session: Record<string, unknown>,
 ) {
   if (session.status === "expired") {
-    const { error } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
+    const { error } = await admin.rpc("tester_tip_mark_expired", {
+      p_tip_id: tipId, p_session_id: sessionId, p_connected_account_id: connectedAccountId,
+    });
     return !error;
   }
 
@@ -130,7 +133,7 @@ export async function POST(request: Request) {
             connectedAccountId,
           );
           if (session.status === "open" ||
-              !await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, session)) {
+              !await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, connectedAccountId, session)) {
             unresolved += 1;
           }
         } catch {
@@ -194,7 +197,9 @@ export async function POST(request: Request) {
           `playtested-tip-emergency-expire-${sessionId}`,
           connectedAccountId,
         );
-        const { error: markError } = await admin.rpc("tester_tip_mark_expired", { p_tip_id: tipId });
+        const { error: markError } = await admin.rpc("tester_tip_mark_expired", {
+          p_tip_id: tipId, p_session_id: sessionId, p_connected_account_id: connectedAccountId,
+        });
         if (markError) failed += 1;
         else expired += 1;
       } catch {
@@ -205,7 +210,7 @@ export async function POST(request: Request) {
             `checkout/sessions/${encodeURIComponent(sessionId)}`,
             connectedAccountId,
           );
-          if (await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, session)) {
+          if (await reconcileCompletedOrExpiredSession(admin, tipId, sessionId, connectedAccountId, session)) {
             alreadyCompletedOrExpired += 1;
           } else {
             failed += 1;

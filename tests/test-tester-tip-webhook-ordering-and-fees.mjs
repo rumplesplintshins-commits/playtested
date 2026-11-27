@@ -6,6 +6,12 @@ import { PGlite } from "@electric-sql/pglite";
 const migration = await readFile(new URL(
   "../supabase/migrations/20261127120000_tester_tip_webhook_ordering_notifications.sql", import.meta.url,
 ), "utf8");
+const reconciliationMigration = await readFile(new URL(
+  "../supabase/migrations/20261127100000_tester_tip_payment_reconciliation_hardening.sql", import.meta.url,
+), "utf8");
+const checkoutRecoveryMigration = await readFile(new URL(
+  "../supabase/migrations/20261127130000_tester_tip_checkout_recovery.sql", import.meta.url,
+), "utf8");
 const baseSchema = `
   CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
   CREATE SCHEMA auth;
@@ -40,6 +46,8 @@ const baseSchema = `
     stripe_connected_account_id text,paid_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
   );
+  CREATE FUNCTION public.tester_tip_mark_expired(p_tip_id uuid) RETURNS void
+    LANGUAGE sql SECURITY DEFINER AS $$ SELECT $$;
   CREATE FUNCTION public.tester_tip_mark_paid(p_tip_id uuid,p_session_id text,p_payment_intent_id text)
   RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $$
   BEGIN
@@ -186,7 +194,11 @@ function createHarness() {
     setBalanceTransaction(value) { balanceTransaction = value; },
     async init({ migrate = true } = {}) {
       await db.exec(baseSchema);
-      if (migrate) await db.exec(migration);
+      await db.exec(reconciliationMigration);
+      if (migrate) {
+        await db.exec(migration);
+        await db.exec(checkoutRecoveryMigration);
+      }
       const source = webhookJs;
       webhookExports = {};
       new Function("exports", "require", source)(webhookExports, mockRequire);
@@ -258,6 +270,17 @@ process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_platform";
   assert.ok(state.paid_at);
   assert.equal((await h.db.query("SELECT count(*)::int AS count FROM public.notifications WHERE recipient_id=$1", [tip.testerId])).rows[0].count, 1);
   assert.equal((await h.db.query("SELECT title FROM public.notifications WHERE recipient_id=$1", [tip.testerId])).rows[0].title, "£10.00 tip received!");
+  // A stale partial refund and a later dispute cannot downgrade the full refund.
+  assert.equal((await deliver(h, "charge.refunded", {
+    object: "charge", id: "ch_legacy", payment_intent: "pi_legacy", amount: 1150, amount_refunded: 500, metadata: {},
+  })).status, 200);
+  assert.equal((await deliver(h, "charge.dispute.created", {
+    object: "dispute", id: "dp_legacy", payment_intent: "pi_legacy", charge: "ch_legacy",
+  })).status, 200);
+  const afterStaleEvents = await tipState(h.db, tip.id);
+  assert.equal(afterStaleEvents.status, "refunded");
+  assert.equal((await h.db.query("SELECT refunded_amount_pence FROM playtested_studios.tester_tips WHERE id=$1", [tip.id])).rows[0].refunded_amount_pence, 1150);
+  assert.equal((await h.db.query("SELECT count(*)::int AS count FROM public.notifications WHERE recipient_id=$1", [tip.testerId])).rows[0].count, 1);
   await h.db.close();
 }
 
@@ -312,6 +335,9 @@ process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_platform";
   assert.equal((await deliver(h, "charge.dispute.created", {
     object: "dispute", id: "dp_payment_first", payment_intent: pi, charge: "ch_payment_first",
   })).status, 200);
+  assert.equal((await deliver(h, "checkout.session.expired", {
+    object: "checkout.session", id: "cs_payment_first", metadata: { tester_tip_id: tip.id },
+  })).status, 200, "a late expiry event is session-bound and idempotent after payment/refund/dispute events");
   const state = await tipState(h.db, tip.id);
   assert.equal(state.status, "disputed");
   assert.ok(state.paid_at);
