@@ -79,6 +79,7 @@ export async function stripeV1Get(path: string, connectedAccountId?: string) {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
+      "Stripe-Version": STRIPE_V2_VERSION,
       ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
     },
     cache: "no-store",
@@ -96,6 +97,7 @@ export async function stripePostForm(
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
+      "Stripe-Version": STRIPE_V2_VERSION,
       "Content-Type": "application/x-www-form-urlencoded",
       "Idempotency-Key": idempotencyKey,
       ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
