@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type PauseState = {
   is_paused: boolean;
@@ -25,24 +25,33 @@ export default function AdminTesterTippingControl() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/admin/tester-tipping", { cache: "no-store" });
-      const result = await response.json();
-      if (!response.ok || !result.state) throw new Error(result.error || "Tipping status could not be loaded.");
-      setState(result.state);
-      setOpenSessions(typeof result.openSessions === "number" ? result.openSessions : null);
-      setWarning(typeof result.warning === "string" ? result.warning : "");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Tipping status could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useEffect(() => {
+    let active = true;
 
-  useEffect(() => { void load(); }, [load]);
+    void fetch("/api/admin/tester-tipping", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !result.state) {
+          throw new Error(result.error || "Tipping status could not be loaded.");
+        }
+        if (!active) return;
+        setState(result.state);
+        setOpenSessions(typeof result.openSessions === "number" ? result.openSessions : null);
+        setWarning(typeof result.warning === "string" ? result.warning : "");
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setError(cause instanceof Error ? cause.message : "Tipping status could not be loaded.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function togglePause() {
     if (!state || saving) return;
