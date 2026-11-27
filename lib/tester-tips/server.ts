@@ -1,13 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const STRIPE_V2_VERSION = "2026-09-30.endive";
+export const STRIPE_V2_VERSION = "2026-11-18.endive";
 
 type JsonRecord = Record<string, unknown>;
 type StripeApiResponse = JsonRecord & {
   id?: string;
   url?: string;
   configuration?: {
+    merchant?: {
+      capabilities?: { card_payments?: { status?: string } };
+    };
     recipient?: {
       capabilities?: {
         stripe_balance?: {
@@ -72,9 +75,12 @@ export async function stripeV2Get(path: string, include: string[] = []) {
   return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
-export async function stripeV1Get(path: string) {
+export async function stripeV1Get(path: string, connectedAccountId?: string) {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
-    headers: { Authorization: `Bearer ${stripeSecret()}` },
+    headers: {
+      Authorization: `Bearer ${stripeSecret()}`,
+      ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
+    },
     cache: "no-store",
   });
   const payload: unknown = await response.json().catch(() => ({}));
@@ -82,7 +88,9 @@ export async function stripeV1Get(path: string) {
   return isRecord(payload) ? payload as StripeApiResponse : {};
 }
 
-export async function stripePostForm(path: string, values: Record<string, string>, idempotencyKey: string) {
+export async function stripePostForm(
+  path: string, values: Record<string, string>, idempotencyKey: string, connectedAccountId?: string,
+) {
   const form = new URLSearchParams(values);
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     method: "POST",
@@ -90,6 +98,7 @@ export async function stripePostForm(path: string, values: Record<string, string
       Authorization: `Bearer ${stripeSecret()}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "Idempotency-Key": idempotencyKey,
+      ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
     },
     body: form.toString(),
     cache: "no-store",

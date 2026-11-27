@@ -2,6 +2,7 @@
 import {ukDateTime} from "@/lib/uk-date-time";
 import DeveloperUsefulnessBadge from './DeveloperUsefulnessBadge';
 import AnonymousTesterLabel from "./AnonymousTesterLabel";
+import AdminTipHistory from "./AdminTipHistory";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import PaginationControls from "./PaginationControls";
@@ -124,6 +125,7 @@ function ReviewCard({ item, reload, privateReason }: { item: FeedbackReviewItem;
       </section>
     )}
     <p className="text-xs text-zinc-500">Tester {t.tester_id} · <AnonymousTesterLabel testId={t.id} rankOnly compact/> · {feedbackQualityLabel(t)}</p>
+    <AdminTipHistory testId={t.id}/>
     {t.hours_played != null && <p className="text-sm text-zinc-400">Time played: {t.hours_played} hours</p>}
     {(t.continue_playing || t.recommend_game) && <p className="text-sm text-zinc-400">Continue playing: {t.continue_playing?.replaceAll("_", " ") || "Not answered"} · Recommend: {t.recommend_game?.replaceAll("_", " ") || "Not answered"}</p>}
     {!!t.focus_responses && Object.keys(t.focus_responses).length > 0 && <details className="text-sm text-zinc-400"><summary>Testing focus responses</summary>{Object.entries(t.focus_responses).map(([key,value]) => <p key={key} className="mt-2 whitespace-pre-wrap">{key}: {typeof value === "string" ? value : JSON.stringify(value)}</p>)}</details>}
@@ -226,7 +228,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
     void createClient().rpc("get_admin_feedback_not_useful_reasons", {p_test_ids: reasonLocation.testIds}).then(({data,error}) => {
       if (!active) return;
       if (error) {
-        setPrivateReasonResult({location:reasonLocation,reasons:{},error:"Private developer explanations could not be loaded. Refresh to retry."});
+        setPrivateReasonResult({location:reasonLocation,reasons:{},error:`Private developer explanations could not be loaded: ${error.message || "Unknown database error"}. Refresh to retry.`});
         return;
       }
       setPrivateReasonResult({location:reasonLocation,reasons:Object.fromEntries(((data ?? []) as PrivateDeveloperReason[]).map(row => [row.test_id,row])),error:""});
@@ -270,7 +272,7 @@ export function FeedbackReviewQueue({ items, loading, error, refresh }: {
       ✓ Developer marked Useful
     </span>
   )}
-  <span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
+  <AdminTipHistory testId={item.report.id} compact/><span className="text-xs text-emerald-300 group-open:hidden">View feedback +</span>
   <span className="hidden text-xs text-emerald-300 group-open:inline">Collapse −</span>
 </div></div></summary><div className="border-t border-zinc-800 px-3 pb-3"><ReviewCard item={item} reload={reload} privateReason={privateReasons[item.report.id]}/></div></details> : <ReviewCard key={item.report.id} item={item} reload={reload} privateReason={privateReasons[item.report.id]}/>)}
     {!loading&&!error&&<PaginationControls label={view==="history"?"Reviewed playtest reviews":"Awaiting playtest reviews"}

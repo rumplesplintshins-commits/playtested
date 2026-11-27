@@ -16,8 +16,12 @@ export async function GET(request: Request) {
     const { data: rules, error: rulesError } = await admin.rpc("tester_tip_get_fee_rules");
     if (rulesError) throw rulesError;
     const platformFeePence = calculateTesterTipFeePence(tipAmountPence, rules ?? []);
+    const totalAmountPence = tipAmountPence + platformFeePence;
     return NextResponse.json({
-      tipAmountPence, platformFeePence, totalAmountPence: tipAmountPence + platformFeePence,
+      tipAmountPence,
+      platformFeePence,
+      totalAmountPence,
+      processingFeePolicy: "Playtested covers Stripe processing fees. No processing surcharge is added to the developer checkout total.",
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : "Unable to calculate the tip.";

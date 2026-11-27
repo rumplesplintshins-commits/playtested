@@ -14,12 +14,14 @@ export async function POST(request: Request) {
 
   let testId = "";
   let tipAmountPence = 0;
+  let requestedReturnUrl = "";
   try {
     const raw = await request.text();
     if (raw.length > 512) return reply(413, { error: "Request too large." });
     const body = JSON.parse(raw);
     testId = typeof body?.testId === "string" ? body.testId : "";
     tipAmountPence = Number(body?.tipAmountPence);
+    requestedReturnUrl = typeof body?.returnUrl === "string" ? body.returnUrl : "";
   } catch {
     return reply(400, { error: "Invalid request." });
   }
@@ -57,16 +59,17 @@ export async function POST(request: Request) {
     }
     if (test.tester_id === user.id) return reply(403, { error: "You cannot tip your own feedback." });
 
-    const { data: payoutRows, error: payoutError } = await admin.rpc("tester_tip_get_stripe_account", { p_tester_id: test.tester_id });
+    const { data: payoutRows, error: payoutError } = await admin.rpc("tester_tip_get_merchant_account", { p_tester_id: test.tester_id });
     const payoutAccount = payoutRows?.[0];
-    if (payoutError || !payoutAccount) {
+    const connectedAccountId = payoutAccount?.merchant_stripe_account_id as string | undefined;
+    if (payoutError || !connectedAccountId) {
       return reply(409, { error: "This tester has not set up Stripe payouts yet." });
     }
-    const stripeAccount = await stripeV2Get(`core/accounts/${encodeURIComponent(payoutAccount.stripe_account_id)}`, [
-      "configuration.recipient", "requirements",
+    const stripeAccount = await stripeV2Get(`core/accounts/${encodeURIComponent(connectedAccountId)}`, [
+      "configuration.merchant", "requirements",
     ]);
-    const transferStatus = stripeAccount.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status;
-    if (transferStatus !== "active") {
+    const cardPaymentsStatus = stripeAccount.configuration?.merchant?.capabilities?.card_payments?.status;
+    if (cardPaymentsStatus !== "active") {
       return reply(409, { error: "This tester's Stripe account is not ready to receive tips yet." });
     }
 
@@ -92,23 +95,46 @@ export async function POST(request: Request) {
     const tip = { id: tipId as string };
 
     const origin = request.headers.get("origin")!;
+    let successUrl = new URL("/account", origin);
+    let cancelUrl = new URL("/account", origin);
+    if (requestedReturnUrl.startsWith("/") && !requestedReturnUrl.startsWith("//")) {
+      try {
+        const candidate = new URL(requestedReturnUrl, origin);
+        if (candidate.origin === origin && !candidate.pathname.startsWith("/api/")) {
+          successUrl = candidate; cancelUrl = new URL(candidate.toString());
+        }
+      } catch { /* Fall back to the account page. */ }
+    }
+    successUrl.searchParams.set("tip", "success");
+    cancelUrl.searchParams.set("tip", "cancelled");
     try {
+      const { error: chargeDetailsError } = await admin.rpc("tester_tip_set_charge_details", {
+        p_tip_id: tip.id,
+        p_stripe_account_id: connectedAccountId,
+      });
+      if (chargeDetailsError) throw chargeDetailsError;
+
       const session = await stripePostForm("checkout/sessions", {
         mode: "payment",
-        "payment_method_types[0]": "card",
+        "allowed_payment_method_types[0]": "card",
         "line_items[0][price_data][currency]": "gbp",
-        "line_items[0][price_data][unit_amount]": String(totalAmountPence),
-        "line_items[0][price_data][product_data][name]": "Playtested tester tip",
-        "line_items[0][price_data][product_data][description]": "Reward for accepted and useful playtest feedback",
+        "line_items[0][price_data][unit_amount]": String(tipAmountPence),
+        "line_items[0][price_data][product_data][name]": "Tester reward",
+        "line_items[0][price_data][product_data][description]": "The tester receives this full amount.",
         "line_items[0][quantity]": "1",
+        "line_items[1][price_data][currency]": "gbp",
+        "line_items[1][price_data][unit_amount]": String(platformFeePence),
+        "line_items[1][price_data][product_data][name]": "Playtested fee",
+        "line_items[1][quantity]": "1",
         "payment_intent_data[application_fee_amount]": String(platformFeePence),
-        "payment_intent_data[transfer_data][destination]": payoutAccount.stripe_account_id,
         "payment_intent_data[metadata][tester_tip_id]": tip.id,
         "metadata[tester_tip_id]": tip.id,
+        "metadata[tip_amount_pence]": String(tipAmountPence),
+        "metadata[platform_fee_pence]": String(platformFeePence),
         client_reference_id: tip.id,
-        success_url: `${origin}/account?tip=success`,
-        cancel_url: `${origin}/account?tip=cancelled`,
-      }, `playtested-tip-checkout-${tip.id}`);
+        success_url: successUrl.toString(),
+        cancel_url: cancelUrl.toString(),
+      }, `playtested-tip-checkout-${tip.id}`, connectedAccountId);
       if (typeof session.url !== "string" || typeof session.id !== "string") {
         throw new Error("Stripe did not return a checkout URL.");
       }
@@ -116,7 +142,15 @@ export async function POST(request: Request) {
         p_tip_id: tip.id, p_session_id: session.id, p_status: "checkout_created",
       });
       if (updateError) throw updateError;
-      return reply(200, { url: session.url });
+      return reply(200, {
+        url: session.url,
+        breakdown: {
+          tipAmountPence,
+          platformFeePence,
+          totalChargePence: totalAmountPence,
+          processingFeeHandling: "Stripe processing fees are paid by Playtested, not added to your checkout total.",
+        },
+      });
     } catch (error) {
       await admin.rpc("tester_tip_update_checkout", {
         p_tip_id: tip.id, p_session_id: null, p_status: "failed",

@@ -49,3 +49,4 @@ export function calculateTesterTipFeePence(tipAmountPence: number, rules: Tester
 export function formatGbpPence(value: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value / 100);
 }
+

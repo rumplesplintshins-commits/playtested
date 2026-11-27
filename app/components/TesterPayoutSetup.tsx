@@ -1,36 +1,76 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-const countries = [
-  ["GB","United Kingdom"],["US","United States"],["CA","Canada"],["AU","Australia"],
-  ["NZ","New Zealand"],["IE","Ireland"],["DE","Germany"],["FR","France"],
-  ["NL","Netherlands"],["ES","Spain"],["IT","Italy"],["PT","Portugal"],
-  ["BE","Belgium"],["AT","Austria"],["CH","Switzerland"],["SE","Sweden"],
-  ["NO","Norway"],["DK","Denmark"],["FI","Finland"],["PL","Poland"],
-  ["CZ","Czechia"],["GR","Greece"],["RO","Romania"],["HU","Hungary"],
-  ["JP","Japan"],["SG","Singapore"],["HK","Hong Kong"],["MY","Malaysia"],
-  ["TH","Thailand"],["BR","Brazil"],["MX","Mexico"],
-] as const;
+import { createClient } from "@/lib/supabase";
 
 export default function TesterPayoutSetup() {
-  const [country, setCountry] = useState("GB");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"checking" | "not_connected" | "pending" | "active" | "unavailable">("checking");
+  const [tipTotals, setTipTotals] = useState<{ total: number; count: number } | null>(null);
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/tester-tips/connect/status", { cache: "no-store" })
-      .then(async response => ({ response, data: await response.json().catch(() => ({})) }))
-      .then(({ response, data }) => {
-        if (!active) return;
+    let mounted = true;
+    void createClient().rpc("get_my_tester_tip_totals").then(({ data, error }) => {
+      if (!mounted || error) return;
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) return;
+      const total = Number(row.total_tip_amount_pence);
+      const count = Number(row.tip_count);
+      if (Number.isSafeInteger(total) && total >= 0 && Number.isSafeInteger(count) && count >= 0) {
+        setTipTotals({ total, count });
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash !== "#tester-payouts") return;
+
+    window.requestAnimationFrame(() => {
+      document.getElementById("tester-payouts")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let checking = false;
+
+    async function refreshStatus() {
+      if (checking) return;
+      checking = true;
+      try {
+        const response = await fetch("/api/tester-tips/connect/status", { cache: "no-store" });
+        const data = await response.json().catch(() => ({}));
+        if (!mounted) return;
         if (!response.ok) { setStatus("unavailable"); return; }
         if (!data.connected) { setStatus("not_connected"); return; }
-        setStatus(data.transfersActive ? "active" : "pending");
-      })
-      .catch(() => { if (active) setStatus("unavailable"); });
-    return () => { active = false; };
+        setStatus(data.cardPaymentsActive ? "active" : "pending");
+      } catch {
+        if (mounted) setStatus("unavailable");
+      } finally {
+        checking = false;
+      }
+    }
+
+    void refreshStatus();
+    const handleFocus = () => { void refreshStatus(); };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void refreshStatus();
+    };
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   async function startSetup() {
@@ -41,7 +81,7 @@ export default function TesterPayoutSetup() {
       const response = await fetch("/api/tester-tips/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country }),
+        body: JSON.stringify({ country: "GB" }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || typeof data.url !== "string") {
@@ -54,25 +94,42 @@ export default function TesterPayoutSetup() {
     }
   }
 
+  async function openStripeDashboard() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/tester-tips/connect/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.url !== "string") {
+        throw new Error(typeof data.error === "string" ? data.error : "Unable to open your Stripe dashboard.");
+      }
+      window.location.assign(data.url);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to open your Stripe dashboard.");
+      setBusy(false);
+    }
+  }
+
   return (
-    <section className="mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
+    <section id="tester-payouts" className="mt-8 scroll-mt-8 rounded-2xl border border-[#77f29b]/20 bg-[#0d110f] p-5 sm:p-7">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#77f29b]">Tester rewards</p>
       <h2 className="mt-2 text-lg font-semibold text-white">Set up tip payouts</h2>
+      {tipTotals && <div className="mt-4 rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.04] p-4"><p className="text-xs font-medium text-zinc-400">Playtested tips received</p><p className="mt-1 text-2xl font-bold text-[#aef8c2]">{new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(tipTotals.total / 100)}</p><p className="mt-1 text-xs text-zinc-500">{tipTotals.count} {tipTotals.count === 1 ? "paid tip" : "paid tips"} through Playtested. This is separate from your overall Stripe balance and payout schedule.</p></div>}
       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
         Connect a Stripe account to receive tips from developers when they find your accepted feedback particularly useful. Stripe securely collects your identity and bank details. Your personal details are not shown to the developer.
       </p>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="block w-full max-w-xs">
-          <span className="mb-2 block text-xs font-medium text-zinc-400">Country for your Stripe account</span>
-          <select value={country} onChange={event => setCountry(event.target.value)}
-            disabled={busy}
-            className="w-full rounded-lg border border-white/15 bg-[#090b0a] px-3 py-3 text-sm text-white outline-none focus:border-[#77f29b] disabled:opacity-60">
-            {countries.map(([code,name]) => <option key={code} value={code}>{name}</option>)}
-          </select>
-        </label>
-        <button type="button" onClick={() => void startSetup()} disabled={busy}
+        <div className="w-full max-w-xs">
+          <span className="mb-2 block text-xs font-medium text-zinc-400">Payout country</span>
+          <p className="rounded-lg border border-white/10 bg-[#090b0a] px-3 py-3 text-sm text-white">United Kingdom</p>
+        </div>
+        <button type="button" onClick={() => void (status === "active" ? openStripeDashboard() : startSetup())} disabled={busy}
           className="rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8] disabled:cursor-wait disabled:opacity-50">
-          {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe details" : "Set up Stripe payouts"}
+          {busy ? "Opening Stripe..." : status === "pending" ? "Continue Stripe setup" : status === "active" ? "Manage Stripe account" : "Set up Stripe payouts"}
         </button>
       </div>
       {status === "active" && <p role="status" className="mt-3 text-sm text-[#77f29b]">Your Stripe account can receive tester tips.</p>}
