@@ -48,7 +48,7 @@
     "build:qa:pr67": "node scripts/start-pr67-qa.mjs --build",
     "predev": "node scripts/optimize-role-images.mjs",
     "prebuild": "node scripts/optimize-role-images.mjs",
-    "test:tipping-pause": "node tests/test-tester-tipping-emergency-pause.mjs"
+    "test:tipping-pause": "node tests/test-tester-tipping-emergency-pause.mjs && node tests/test-tester-tip-payment-reconciliation.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
