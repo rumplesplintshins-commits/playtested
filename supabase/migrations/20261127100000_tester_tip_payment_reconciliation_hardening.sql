@@ -15,8 +15,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
   IF p_tip_id IS NULL
-     OR p_session_id IS NULL OR p_session_id !~ '^cs_[A-Za-z0-9]+$'
-     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9]+$' THEN
+     OR p_session_id IS NULL OR p_session_id !~ '^cs_[A-Za-z0-9_]+$'
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$' THEN
     RAISE EXCEPTION 'Invalid Stripe checkout payment identifiers.';
   END IF;
 
@@ -51,8 +51,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
   IF p_tip_id IS NULL
-     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9]+$'
-     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9]+$'
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$'
+     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9_]+$'
      OR p_refunded_amount_pence IS NULL OR p_refunded_amount_pence <= 0
      OR p_charge_amount_pence IS NULL OR p_charge_amount_pence <= 0
      OR p_refunded_amount_pence > p_charge_amount_pence THEN
@@ -91,8 +91,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 BEGIN
   IF p_tip_id IS NULL
-     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9]+$'
-     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9]+$' THEN
+     OR p_payment_intent_id IS NULL OR p_payment_intent_id !~ '^pi_[A-Za-z0-9_]+$'
+     OR p_charge_id IS NULL OR p_charge_id !~ '^ch_[A-Za-z0-9_]+$' THEN
     RAISE EXCEPTION 'Invalid Stripe dispute details.';
   END IF;
 
