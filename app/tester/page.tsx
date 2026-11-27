@@ -1767,6 +1767,18 @@ function TesterPage() {
           Discover a game, share useful feedback, and build your tester experience.
         </p>
 
+        <section className="mt-6 flex flex-col gap-4 rounded-xl border border-[#77f29b]/25 bg-[#77f29b]/[0.05] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold text-[#aef8c2]">Developers can now tip useful feedback</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-300">
+              Connect your Stripe account to receive tips when developers find your accepted feedback particularly useful. Tips are optional and never guaranteed.
+            </p>
+          </div>
+          <a href="/account#tester-payouts" className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#77f29b] px-5 py-3 text-sm font-bold text-[#071009] transition hover:bg-[#8af6a8]">
+            Set up tip payouts
+          </a>
+        </section>
+
         <TesterRankPanel onProgress={onTestingProgress} revision={reviewRevision} />
         <QualityGuidance collapsible />
 
