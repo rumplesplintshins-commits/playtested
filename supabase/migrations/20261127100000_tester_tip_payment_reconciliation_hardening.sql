@@ -1,6 +1,11 @@
 -- Harden tester tip Stripe event reconciliation against conflicting IDs and out-of-order events.
 BEGIN;
 
+-- A Stripe charge can belong to only one tester-tip ledger entry.
+CREATE UNIQUE INDEX IF NOT EXISTS tester_tips_stripe_charge_id_uidx
+  ON playtested_studios.tester_tips(stripe_charge_id)
+  WHERE stripe_charge_id IS NOT NULL;
+
 CREATE OR REPLACE FUNCTION public.tester_tip_mark_paid(
   p_tip_id uuid,
   p_session_id text,
@@ -92,7 +97,7 @@ BEGIN
   END IF;
 
   UPDATE playtested_studios.tester_tips
-  SET status = 'disputed',
+  SET status = CASE WHEN status = 'refunded' THEN 'refunded' ELSE 'disputed' END,
       stripe_payment_intent_id = coalesce(stripe_payment_intent_id, p_payment_intent_id),
       stripe_charge_id = coalesce(stripe_charge_id, p_charge_id),
       updated_at = clock_timestamp()
