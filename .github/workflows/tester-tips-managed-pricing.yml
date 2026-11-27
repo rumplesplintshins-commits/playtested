@@ -1,9 +1,9 @@
 name: Tester tips Stripe managed pricing
 on:
   push:
-    branches: [feature/tester-tips-stripe-managed-pricing]
+    branches: [feature/tester-tips-stripe-managed-pricing, feature/admin-tester-tip-emergency-pause]
   pull_request:
-    branches: [feature/tester-tips-stripe]
+    branches: [feature/tester-tips-stripe, main]
 permissions:
   contents: read
 jobs:
@@ -21,6 +21,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Tester tipping database and payment regressions
+        run: npm run test:tipping-pause
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Production build
