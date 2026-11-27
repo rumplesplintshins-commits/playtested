@@ -1,0 +1,29 @@
+name: Tester tips Stripe managed pricing
+on:
+  push:
+    branches: [feature/tester-tips-stripe-managed-pricing, feature/admin-tester-tip-emergency-pause]
+  pull_request:
+    branches: [feature/tester-tips-stripe, feature/tester-tips-stripe-managed-pricing, v11, main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-public-placeholder
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Tester tipping database and payment regressions
+        run: npm run test:tipping-pause
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Production build
+        run: npm run build

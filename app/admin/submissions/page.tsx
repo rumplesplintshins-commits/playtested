@@ -19,6 +19,7 @@ import SiteHeader from "../../components/SiteHeader";
 import { createClient } from "../../../lib/supabase";
 import SteamImporter from "./SteamImporter";
 import SubmissionContact from "../../components/SubmissionContact";
+import AdminTesterTippingControl from "@/app/components/AdminTesterTippingControl";
 import ImportedSteamCatalogue from "./ImportedSteamCatalogue";
 
 type SubmissionStatus =
@@ -1504,6 +1505,7 @@ export default function AdminSubmissionsPage() {
       <SiteHeader />
 
       <div className="mx-auto min-w-0 max-w-7xl [overflow-wrap:anywhere] px-5 py-10 sm:px-8">
+        <AdminTesterTippingControl />
         <ListingRevisionQueue/>
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">
