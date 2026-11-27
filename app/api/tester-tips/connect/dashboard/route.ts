@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { createAdminClient, stripeV2Post } from "@/lib/tester-tips/server";
 import { hasTrustedOrigin } from "@/lib/request-origin";
+import { SITE_ORIGIN } from "@/lib/seo";
 
 const reply = (status: number, body: Record<string, unknown>) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -32,13 +33,12 @@ async function createDashboardLink(request: Request): Promise<DashboardLinkResul
       return { response: reply(404, { error: "No Stripe payout account was found." }) };
     }
 
-    const origin = new URL(request.url).origin;
     const link = await stripeV2Post("core/account_links", {
       account: accountId,
       use_case: {
         type: "account_dashboard",
         account_dashboard: {
-          refresh_url: `${origin}/api/tester-tips/connect/dashboard`,
+          refresh_url: `${SITE_ORIGIN}/api/tester-tips/connect/dashboard`,
         },
       },
     });
