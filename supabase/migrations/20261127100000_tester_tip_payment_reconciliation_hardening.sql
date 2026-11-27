@@ -77,6 +77,18 @@ BEGIN
     AND status IN ('pending','checkout_created','failed','expired','paid','partially_refunded','refunded','disputed');
 
   IF NOT FOUND THEN
+    -- Refund events carry cumulative refunded amounts and can arrive out of order.
+    -- A stale event for the same charge is safely ignored after a newer total is stored.
+    IF EXISTS (
+      SELECT 1 FROM playtested_studios.tester_tips
+      WHERE id = p_tip_id
+        AND total_amount_pence = p_charge_amount_pence
+        AND refunded_amount_pence > p_refunded_amount_pence
+        AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = p_payment_intent_id)
+        AND (stripe_charge_id IS NULL OR stripe_charge_id = p_charge_id)
+    ) THEN
+      RETURN;
+    END IF;
     RAISE EXCEPTION 'Tip not found or Stripe refund identifiers/amount conflict.';
   END IF;
 END;
