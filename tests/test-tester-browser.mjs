@@ -30,6 +30,7 @@ try{
      let data=null,status=200;
      if(url.pathname.endsWith('/auth/v1/user'))data=user;
      else if(url.pathname.endsWith('/get_my_feedback_usefulness'))data=[];
+     else if(url.pathname.endsWith('/get_my_tester_tip_history'))data=[];
      else if(url.pathname.endsWith('/get_my_notifications'))data={notifications:[],unread_count:0};
      else if(url.pathname.endsWith('/profiles'))data={id:uid,role:'user',roles:['tester'],tester_xp:0,developer_xp:0,completed_tests:0};
      else if(url.pathname.endsWith('/approved_games'))data=discoveryGames.filter(game=>game.platform).map(({title,developer_name,platform})=>({title,developer_name,platform}));
@@ -173,11 +174,14 @@ try{
  // Expiry must not unmount an in-memory editor if browser draft storage is unavailable.
  claim={...claim,reservation_expires_at:new Date(Date.now()+10000).toISOString()};await page.clock.install({time:Date.now()});await page.reload();await page.getByRole('button',{name:'Finish feedback'}).click();await page.evaluate(()=>{window.__draftSet=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key.startsWith('playtested:feedback-draft:'))throw new Error('Fixture storage unavailable');return window.__draftSet.call(this,key,value)}});await page.locator('form textarea').nth(0).fill('Memory only expired draft');await page.clock.fastForward(11000);await expect(page.getByRole('button',{name:'Submit review'})).toBeDisabled();await expect(page.locator('form textarea').nth(0)).toHaveValue('Memory only expired draft');await expect(page.getByText(/Reservation expired. Your draft is kept/)).toBeVisible();await page.evaluate(()=>{Storage.prototype.setItem=window.__draftSet});
 
- claim={...claim,status:'reviewed',review_outcome:'accepted',xp_awarded:true,base_xp_amount:60,quality_rubric_version:2,feedback_quality_score:60,review_reason:'Approved',submitted_at:new Date().toISOString(),hours_played:1,overall_score:8};reviewEvents=[{id:1,test_id:test,kind:'accepted',reason:'Approved',xp_delta:60,rubric_version:2,quality_score:60,actual_xp_award:60}];await page.reload();
+ claim={...claim,status:'reviewed',review_outcome:'accepted',xp_awarded:true,base_xp_amount:60,quality_rubric_version:2,feedback_quality_score:60,review_reason:'Approved',submitted_at:new Date().toISOString(),hours_played:1,overall_score:8,gameplay_score:7,performance_score:6,continue_playing:'definitely',recommend_game:'probably_not',enjoyed_most:'Great movement',frustrations:'Slow menu',bugs_found:'Missing audio cue',biggest_improvement:'Improve tutorial',feedback:'More levels'};reviewEvents=[{id:1,test_id:test,kind:'accepted',reason:'Approved',xp_delta:60,rubric_version:2,quality_score:60,actual_xp_award:60}];await page.reload();
  const history=page.locator('#testing-activity-'+test);
  await expect(history).toBeVisible();await expect(history.getByText('Overall: 8/10',{exact:true})).toBeVisible();
+ await expect(history.getByText(/Submitted .*\d{1,2}:\d{2}/)).toBeVisible();await expect(history.getByText('Time played: 1 hours',{exact:true})).toBeVisible();
  await expect(history.getByText(/Not yet rated|Waiting|Not useful|Admin reason:|Quality review reason:/i)).toHaveCount(0);
  await history.locator('h3').click();await expect(history.getByRole('button',{name:'Collapse testing history'})).toHaveAttribute('aria-expanded','true');
+ await expect(history.getByText('Continue playing: definitely',{exact:true})).toBeVisible();await expect(history.getByText('Would recommend: probably not',{exact:true})).toBeVisible();
+ for(const detail of ['Great movement','Slow menu','Missing audio cue','Improve tutorial','More levels','Gameplay: 7/10','Performance: 6/10'])await expect(history.getByText(detail,{exact:false}).first()).toBeVisible();
   await expect(history.getByRole('link',{name:'Open your report'})).toHaveAttribute('href',fakeDoc);
   await expect(history.getByRole('link',{name:'Watch your recording'})).toHaveAttribute('href',fakeVideo);
  await expect(history.getByRole('button',{name:'Send request'})).toHaveCount(0);

@@ -1978,6 +1978,10 @@ function TesterPage() {
                             <ActivityStorefrontLink testId={claim.id} url={media?.store_url} />
                           </div>
                           <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm space-y-3">
+                            {(claim.continue_playing || claim.recommend_game) && <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-300">
+                              {claim.continue_playing && <p>Continue playing: {claim.continue_playing.replaceAll("_", " ")}</p>}
+                              {claim.recommend_game && <p>Would recommend: {claim.recommend_game.replaceAll("_", " ")}</p>}
+                            </div>}
                             {claim.enjoyed_most && <div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}
                             {claim.frustrations && <div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}
                             {claim.bugs_found && <div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}
