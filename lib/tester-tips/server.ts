@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const STRIPE_V2_VERSION = "2026-11-18.endive";
+export const STRIPE_API_VERSION = "2026-11-18.endive";
 
 type JsonRecord = Record<string, unknown>;
 type StripeApiResponse = JsonRecord & {
@@ -49,7 +49,7 @@ export async function stripeV2Post(path: string, body: JsonRecord, idempotencyKe
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
       "Content-Type": "application/json",
-      "Stripe-Version": STRIPE_V2_VERSION,
+      "Stripe-Version": STRIPE_API_VERSION,
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
     },
     body: JSON.stringify(body),
@@ -66,7 +66,7 @@ export async function stripeV2Get(path: string, include: string[] = []) {
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
-      "Stripe-Version": STRIPE_V2_VERSION,
+      "Stripe-Version": STRIPE_API_VERSION,
     },
     cache: "no-store",
   });
@@ -79,7 +79,7 @@ export async function stripeV1Get(path: string, connectedAccountId?: string) {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
-      "Stripe-Version": STRIPE_V2_VERSION,
+      "Stripe-Version": STRIPE_API_VERSION,
       ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
     },
     cache: "no-store",
@@ -97,7 +97,7 @@ export async function stripePostForm(
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeSecret()}`,
-      "Stripe-Version": STRIPE_V2_VERSION,
+      "Stripe-Version": STRIPE_API_VERSION,
       "Content-Type": "application/x-www-form-urlencoded",
       "Idempotency-Key": idempotencyKey,
       ...(connectedAccountId ? { "Stripe-Account": connectedAccountId } : {}),
