@@ -70,6 +70,17 @@ try {
   assert.equal(refunded.rows[0].status,"refunded");
   assert.equal(refunded.rows[0].refunded_amount_pence,1150);
   assert.equal(refunded.rows[0].stripe_charge_id,"ch_charge_2");
+  // A delayed earlier partial-refund event must not roll back a later full refund.
+  await db.query(
+    "SELECT public.tester_tip_mark_refund($1,$2,$3,$4,$5)",
+    [tip2,"pi_payment_2","ch_charge_2",500,1150],
+  );
+  const afterStaleRefund = await db.query(
+    "SELECT status,refunded_amount_pence FROM playtested_studios.tester_tips WHERE id=$1",
+    [tip2],
+  );
+  assert.equal(afterStaleRefund.rows[0].status,"refunded");
+  assert.equal(afterStaleRefund.rows[0].refunded_amount_pence,1150);
 
   await assert.rejects(
     db.query(
