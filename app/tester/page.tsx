@@ -1,5 +1,6 @@
 "use client";
 import TestingActivityHeader from '../components/TestingActivityHeader';
+import TesterTipHistory from '../components/TesterTipHistory';
 import ActivityStorefrontLink from '../components/ActivityStorefrontLink';
 import {type ActivityMedia} from '@/lib/testing-activity';
 import GamePcRequirements from "../components/GamePcRequirements";
@@ -1955,7 +1956,7 @@ function TesterPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <TestingActivityHeader title={media?.title??game?.title??claim.game_title??'Previously tested game'} developer={media?.developer_name??game?.developer_name} image={media?.image_url??game?.image_url} usefulness={(feedbackUsefulness[claim.id]??claim.feedback_usefulness)==='useful'?'useful':undefined} usefulOnly status={getStatusLabel(claim)}/>
-                      <button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button>
+                      <div className="flex flex-wrap items-center justify-end gap-2"><TesterTipHistory testId={claim.id} variant="badge"/><button type="button" aria-expanded={isExpanded} aria-label={`${isExpanded?"Collapse":"Expand"} testing history`} onClick={toggleCard}><DisclosureControl expanded={isExpanded}/></button></div>
                     </div>
                     <div className="mt-3 min-w-0">
                       {/* Submission details remain visible in either state. */}
@@ -1976,9 +1977,11 @@ function TesterPage() {
                           <div className="mt-3" onClick={(event) => event.stopPropagation()}>
                             <ActivityStorefrontLink testId={claim.id} url={media?.store_url} />
                           </div>
-                          <p className="mt-2 text-xs text-zinc-500">{claim.submitted_at && `Submitted ${new Date(claim.submitted_at).toLocaleString()}`}</p>
-                          {claim.hours_played != null && <p className="mt-1 text-xs text-zinc-500">Time played: {claim.hours_played} hours</p>}
                           <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm space-y-3">
+                            {(claim.continue_playing || claim.recommend_game) && <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-300">
+                              {claim.continue_playing && <p>Continue playing: {claim.continue_playing.replaceAll("_", " ")}</p>}
+                              {claim.recommend_game && <p>Would recommend: {claim.recommend_game.replaceAll("_", " ")}</p>}
+                            </div>}
                             {claim.enjoyed_most && <div><p className="text-xs font-semibold uppercase tracking-wide text-[#77f29b]">Enjoyed most</p><p className="mt-1 whitespace-pre-wrap">{claim.enjoyed_most}</p></div>}
                             {claim.frustrations && <div><p className="text-xs font-semibold uppercase tracking-wide text-amber-200">Frustrations</p><p className="mt-1 whitespace-pre-wrap">{claim.frustrations}</p></div>}
                             {claim.bugs_found && <div><p className="text-xs font-semibold uppercase tracking-wide text-red-200">Bugs & technical issues</p><p className="mt-1 whitespace-pre-wrap">{claim.bugs_found}</p></div>}
@@ -1986,6 +1989,7 @@ function TesterPage() {
                             {claim.feedback && <div><p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Anything else</p><p className="mt-1 whitespace-pre-wrap">{claim.feedback}</p></div>}
                           </div>
                           <TesterHistoryPrivateEvidence testId={claim.id} />
+                          <TesterTipHistory testId={claim.id} variant="detail"/>
                           {reviewHistoryError && <p className="mt-2 text-xs text-zinc-400">{reviewHistoryError}</p>}
                           {reviewHistory.some(event=>event.test_id===claim.id) && (
                             <details className="group mt-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 text-sm" onClick={(e) => e.stopPropagation()}>

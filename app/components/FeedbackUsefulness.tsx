@@ -17,12 +17,16 @@ type UsefulnessRequest = {
   initialRating: FeedbackUsefulnessValue;
   onRatingChange?: (testId: string, value: FeedbackUsefulnessValue) => void;
 };
+type TipStatus = { status:string; tip_amount_pence:number; paid_at:string|null };
 type UsefulnessState = {
   request: UsefulnessRequest;
   value: Usefulness | null;
   loading: boolean;
   error: string;
 };
+
+const gbpFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+const formatGbp = (amountPence: number) => gbpFormatter.format(amountPence / 100);
 
 export default function FeedbackUsefulness({ testId, onRatingChange, initialRating = null, prefetched = false }: {
   testId: string;
@@ -45,6 +49,81 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
   const [reasonOpen, setReasonOpen] = useState(false);
   const [reasonDraft, setReasonDraft] = useState("");
   const [notice, setNotice] = useState("");
+  const [tipOpen, setTipOpen] = useState(false);
+  const [tipAmount, setTipAmount] = useState("10.00");
+  const [customTipSelected, setCustomTipSelected] = useState(false);
+  const [tipQuote, setTipQuote] = useState<{tipAmountPence:number;platformFeePence:number;totalAmountPence:number;processingFeePolicy:string}|null>(null);
+  const [tipQuoteBusy, setTipQuoteBusy] = useState(false);
+  const [tipCheckoutBusy, setTipCheckoutBusy] = useState(false);
+  const [tipError, setTipError] = useState("");
+  const [tipStatus,setTipStatus]=useState<TipStatus|null>(null);
+  const [tipStatusLoading,setTipStatusLoading]=useState(true);
+  const [tipStatusError,setTipStatusError]=useState("");
+
+  async function refreshTipStatus(){
+    const {data,error}=await createClient().rpc("get_developer_tester_tip",{p_test_id:testId});
+    if(error){setTipStatusError("Tip payment status could not be checked. Refresh before trying again.");return;}
+    const row=Array.isArray(data)?data[0]:null;
+    setTipStatus(row&&typeof row.status==="string"?row as TipStatus:null);
+    setTipStatusError("");
+    if(row?.status==="paid")setTipOpen(false);
+  }
+
+  useEffect(()=>{
+    let active=true;
+    const load=async()=>{
+      const {data,error}=await createClient().rpc("get_developer_tester_tip",{p_test_id:testId});
+      if(!active)return;
+      if(error){setTipStatusError("Tip payment status could not be checked. Refresh before trying again.");setTipStatusLoading(false);return;}
+      const row=Array.isArray(data)?data[0]:null;
+      setTipStatus(row&&typeof row.status==="string"?row as TipStatus:null);
+      setTipStatusError("");setTipStatusLoading(false);
+    };
+    void load();
+    const timer=window.setInterval(()=>{
+      if(tipStatus?.status==="pending"||tipStatus?.status==="checkout_created"||tipStatus?.status==="payment_failed")void refreshTipStatus();
+    },3000);
+    return()=>{active=false;window.clearInterval(timer);};
+  },[testId,tipStatus?.status]);
+
+  async function loadTipQuote() {
+    const parsed = Number(tipAmount);
+    const pence = Math.round(parsed * 100);
+    if (!Number.isFinite(parsed) || !Number.isSafeInteger(pence) || pence < 500 || pence > 3000 || Math.abs(parsed * 100 - pence) > 0.000001) {
+      setTipError("Enter a tip between £5.00 and £30.00.");
+      return;
+    }
+    setTipQuoteBusy(true); setTipError(""); setTipQuote(null);
+    try {
+      const response = await fetch("/api/tester-tips/quote?tipAmountPence=" + pence, { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to calculate the fee.");
+      setTipQuote(data);
+    } catch (cause) {
+      setTipError(cause instanceof Error ? cause.message : "Unable to calculate the fee.");
+    } finally { setTipQuoteBusy(false); }
+  }
+
+  async function startTipCheckout() {
+    const recovering = tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" || tipStatus?.status === "payment_failed";
+    const amountPence = recovering ? tipStatus.tip_amount_pence : tipQuote?.tipAmountPence;
+    if (!amountPence || tipCheckoutBusy) return;
+    setTipCheckoutBusy(true); setTipError("");
+    try {
+      const response = await fetch("/api/tester-tips/checkout", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testId, tipAmountPence: amountPence, returnUrl: window.location.pathname + window.location.search + window.location.hash }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.url !== "string") throw new Error(data.error || "Unable to start checkout.");
+      window.location.assign(data.url);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to start checkout.";
+      setTipError(message);
+      if (recovering) setTipStatusError(message);
+      setTipCheckoutBusy(false);
+    }
+  }
 
   function updateFeedbackState(patch: Partial<UsefulnessState>) {
     setFeedbackState(previous => {
@@ -131,37 +210,43 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2" aria-label="Feedback usefulness">
-          <button
-            type="button"
-            disabled={loading || busy}
-            aria-pressed={value === "useful"}
-            onClick={() => void mark("useful")}
-            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
-              value === "useful"
-                ? "border-[#77f29b]/55 bg-[#77f29b]/12 text-[#aef8c2]"
-                : "border-white/15 text-zinc-300 hover:border-[#77f29b]/35 hover:text-white"
-            }`}
-          >
-            Useful
-          </button>
-          <button
-            type="button"
-            disabled={loading || busy}
-            aria-pressed={value === "not_useful"}
-            onClick={() => { updateFeedbackState({error:""}); setNotice(""); setReasonOpen(true); }}
-            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
-              value === "not_useful"
-                ? "border-amber-300/45 bg-amber-300/[0.08] text-amber-100"
-                : "border-white/15 text-zinc-300 hover:border-white/30 hover:text-white"
-            }`}
-          >
-            Not useful
-          </button>
-        </div>
+        {tipStatus?.paid_at ? (
+          <div className="rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.045] px-3 py-2 text-xs font-semibold text-[#aef8c2]" role="status">
+            <span className="inline-flex items-center gap-2"><span aria-hidden="true">✓</span> Useful · Rating locked after tip sent</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2" aria-label="Feedback usefulness">
+            <button
+              type="button"
+              disabled={loading || busy || tipStatusLoading || Boolean(tipStatusError)}
+              aria-pressed={value === "useful"}
+              onClick={() => void mark("useful")}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+                value === "useful"
+                  ? "border-[#77f29b]/55 bg-[#77f29b]/12 text-[#aef8c2]"
+                  : "border-white/15 text-zinc-300 hover:border-[#77f29b]/35 hover:text-white"
+              }`}
+            >
+              Useful
+            </button>
+            <button
+              type="button"
+              disabled={loading || busy || tipStatusLoading || Boolean(tipStatusError)}
+              aria-pressed={value === "not_useful"}
+              onClick={() => { updateFeedbackState({error:""}); setNotice(""); setReasonOpen(true); }}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+                value === "not_useful"
+                  ? "border-amber-300/45 bg-amber-300/[0.08] text-amber-100"
+                  : "border-white/15 text-zinc-300 hover:border-white/30 hover:text-white"
+              }`}
+            >
+              Not useful
+            </button>
+          </div>
+        )}
       </div>
 
-      {reasonOpen && !loading && (
+      {reasonOpen && !loading && !tipStatus?.paid_at && (
         <form onSubmit={(event) => {event.preventDefault();void mark("not_useful", reasonDraft);}}
           className="mt-3 min-w-0 space-y-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.035] p-3 sm:p-4">
           <label htmlFor={"feedback-reason-" + testId} className="block text-sm font-semibold leading-6 text-amber-100">
@@ -186,25 +271,105 @@ export default function FeedbackUsefulness({ testId, onRatingChange, initialRati
       )}
 
       {value === "useful" && !loading && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
-          <div>
-            <p className="text-sm font-semibold text-zinc-200">Want to reward this tester?</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
-              Tips will let you reward particularly useful feedback while keeping testers anonymous.
-            </p>
+        tipStatusLoading ? <p className="mt-4 text-xs text-zinc-400">Checking tip history...</p> :
+        tipStatusError ? <p role="alert" className="mt-4 text-xs text-amber-200">{tipStatusError}</p> :
+        tipStatus?.paid_at ? (
+          <div className="mt-4 rounded-lg border border-[#77f29b]/25 bg-[#77f29b]/[0.045] p-4">
+            <p className="text-base font-bold text-[#aef8c2]">{formatGbp(tipStatus.tip_amount_pence)} Tip sent!</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-200">Thank you for recognising this tester&apos;s contribution.</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">Your support rewards useful feedback, helps great testers stay engaged and makes the Playtested community stronger.</p>
+            <p className="mt-2 text-xs text-zinc-500">Payment completed{tipStatus.paid_at ? " · " + new Date(tipStatus.paid_at).toLocaleString() : ""}.{tipStatus.status === "refunded" ? " This tip was later refunded." : tipStatus.status === "partially_refunded" ? " This tip was partially refunded." : tipStatus.status === "disputed" ? " This payment is under dispute." : ""}</p>
           </div>
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title="Tester tips are coming soon"
-            className="cursor-not-allowed rounded-lg border border-[#77f29b]/20 bg-[#77f29b]/[0.05] px-3 py-2 text-xs font-semibold text-[#aef8c2]/65"
-          >
-            Send a tip · Coming soon
-          </button>
-        </div>
+        ) : tipStatus?.status === "pending" || tipStatus?.status === "checkout_created" || tipStatus?.status === "payment_failed" ? (
+          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/[0.035] p-3">
+            <p className="text-sm font-semibold text-amber-100">{tipStatus.status === "payment_failed" ? "Tip payment needs resolution" : "Tip payment processing"}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">{tipStatus.status === "payment_failed"
+              ? "Stripe reported a failed payment, but the checkout may still be open. We're checking its final status; another tip cannot be started yet."
+              : "We're confirming the payment with Stripe. Another tip cannot be started for this feedback while it is being checked."}</p>
+            <button type="button" onClick={()=>void refreshTipStatus()} className="mt-2 text-xs font-semibold text-[#aef8c2]">Check payment status</button>
+            <button type="button" disabled={tipCheckoutBusy} onClick={()=>void startTipCheckout()} className="ml-4 mt-2 text-xs font-semibold text-[#aef8c2] disabled:opacity-50">Resume secure checkout</button>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#77f29b]/15 bg-[#77f29b]/[0.025] p-3">
+            <div>
+              <p className="text-sm font-semibold text-zinc-200">Keep great testers coming back</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-400">Recognising useful feedback helps great testers stay engaged and keeps the Playtested community active.</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Completely optional. Your tester stays anonymous and receives the full tip.</p>
+            </div>
+            <button type="button" onClick={() => { setTipAmount("10.00"); setCustomTipSelected(false); setTipOpen(true); setTipQuote(null); setTipError(""); }}
+              className="rounded-lg border border-[#77f29b]/30 bg-[#77f29b]/10 px-3 py-2 text-xs font-semibold text-[#aef8c2] transition hover:bg-[#77f29b]/15">
+              Send a tip
+            </button>
+          </div>
+        )
       )}
 
+      {tipOpen && !tipStatusLoading && !tipStatusError && !tipStatus?.paid_at && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !tipCheckoutBusy) setTipOpen(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby={"tip-dialog-title-" + testId} className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-[#77f29b]/25 bg-[#0d110f] p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 id={"tip-dialog-title-" + testId} className="text-lg font-bold text-white">Recognise great feedback</h3>
+                <p className="mt-1 text-sm leading-5 text-zinc-300">Good testers put time and effort into helping you improve your game. A tip is a simple way to thank them and encourage great testers to keep supporting indie developers on Playtested.</p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">Tipping is optional. Your tester stays anonymous and receives the full tip.</p>
+                <p className="mt-2 text-xs leading-5 text-zinc-400">You pay the tester tip plus the Playtested fee. Playtested covers Stripe processing costs, so no extra processing charge is added.</p>
+              </div>
+              <button type="button" onClick={() => setTipOpen(false)} disabled={tipCheckoutBusy} aria-label="Close tip dialog" title="Close" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-white/20 hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  <path d="m5 5 10 10M15 5 5 15" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-5 text-xs font-semibold text-zinc-300">Choose a tip amount</p>
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {[5, 10, 15].map((amount) => (
+                <button key={amount} type="button" aria-pressed={!customTipSelected && Number(tipAmount) === amount}
+                  onClick={() => { setTipAmount(amount.toFixed(2)); setCustomTipSelected(false); setTipQuote(null); setTipError(""); }}
+                  className={"rounded-lg border px-2 py-3 text-sm font-semibold transition " + (!customTipSelected && Number(tipAmount) === amount ? "border-[#77f29b] bg-[#77f29b]/10 text-[#aef8c2]" : "border-white/15 text-zinc-300 hover:border-[#77f29b]/50")}>
+                  {formatGbp(amount * 100).replace(/\.00$/, "")}
+                </button>
+              ))}
+              <button type="button" aria-pressed={customTipSelected}
+                onClick={() => { setCustomTipSelected(true); setTipQuote(null); setTipError(""); }}
+                className={"rounded-lg border px-2 py-3 text-xs font-semibold transition " + (customTipSelected ? "border-[#77f29b] bg-[#77f29b]/10 text-[#aef8c2]" : "border-white/15 text-zinc-300 hover:border-[#77f29b]/50")}>
+                Custom tip
+              </button>
+            </div>
+            {customTipSelected && (
+              <>
+                <label className="mt-3 block text-xs font-semibold text-zinc-300" htmlFor={"tip-amount-" + testId}>Custom amount ({formatGbp(500)}–{formatGbp(3000)})</label>
+                <div className="mt-2 flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/15 bg-[#090b0a] px-3 transition focus-within:border-[#77f29b] focus-within:ring-1 focus-within:ring-[#77f29b]/30">
+                  <span aria-hidden="true" className="shrink-0 text-sm tabular-nums text-zinc-400">{"\u00A3"}</span>
+                  <input id={"tip-amount-" + testId} type="number" min="5" max="30" step="0.01" value={tipAmount}
+                    onChange={(event) => { setTipAmount(event.target.value); setTipQuote(null); setTipError(""); }}
+                    className="h-full min-w-0 flex-1 bg-transparent text-right text-sm tabular-nums text-white outline-none" />
+                </div>
+              </>
+            )}
+            <button type="button" onClick={() => void loadTipQuote()} disabled={tipQuoteBusy || tipCheckoutBusy}
+              className="mt-3 w-full rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-200 hover:bg-white/5 disabled:opacity-50">
+              {tipQuoteBusy ? "Calculating..." : "Calculate total"}
+            </button>
+            {tipQuote && (
+              <div className="mt-4 space-y-2 rounded-lg border border-white/10 bg-[#090b0a] p-4 text-sm">
+                <div className="flex justify-between gap-3 text-zinc-300"><span>Tester receives</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.tipAmountPence)}</span></div>
+                <div className="flex justify-between gap-3 text-zinc-400"><span>Playtested fee</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.platformFeePence)}</span></div>
+                
+                <div className="flex justify-between gap-3 border-t border-white/10 pt-2 font-bold text-white"><span>Total you pay</span><span className="shrink-0 tabular-nums">{formatGbp(tipQuote.totalAmountPence)}</span></div>
+                <p className="border-t border-white/10 pt-2 text-xs leading-5 text-[#aef8c2]">{tipQuote.processingFeePolicy}</p>
+              </div>
+            )}
+            {tipError && <p role="alert" className="mt-3 text-xs text-red-300">{tipError}</p>}
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setTipOpen(false)} disabled={tipCheckoutBusy} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/5 disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={() => void startTipCheckout()} disabled={!tipQuote || tipCheckoutBusy}
+                className="rounded-lg bg-[#77f29b] px-4 py-2.5 text-sm font-bold text-[#071009] hover:bg-[#8af6a8] disabled:cursor-not-allowed disabled:opacity-40">
+                {tipCheckoutBusy ? "Opening checkout..." : "Continue to secure checkout"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {error && <p role="alert" className="mt-2 text-xs text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-2 text-xs text-emerald-200">{notice}</p>}
     </div>
